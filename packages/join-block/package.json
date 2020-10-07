@@ -1,0 +1,24 @@
+{
+	"name": "uk-greens-join-block",
+	"private": true,
+	"version": "0.1.0",
+	"description": "Example block written with ESNext standard and JSX support – build step required.",
+	"author": "The WordPress Contributors",
+	"license": "GPL-2.0-or-later",
+	"main": "build/index.js",
+	"scripts": {
+		"build": "wp-scripts build && yarn build:widget",
+		"build:widget": "webpack --config webpack.widget.config.js",
+		"format:js": "wp-scripts format-js",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"start": "wp-scripts start"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^12.1.1"
+	},
+	"dependencies": {
+		"uk-greens-join-flow": "*",
+		"@wordpress/components": "^10.1.0"
+	}
+}

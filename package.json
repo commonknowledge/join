@@ -1,0 +1,27 @@
+{
+	"name": "ukgreens",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": {
+		"packages": [
+			"packages/*"
+		],
+		"nohoist": [
+			"uk-greens-join-block/uk-greens-join-flow"
+		]
+	},
+	"main": "index.js",
+	"repository": "git@github.com:commonknowledge/wordpress-chargebee-spike.git",
+	"license": "MIT",
+	"scripts": {
+		"start": "workspaces-run --parallel -- yarn start & docker-compose up",
+		"build": "workspaces-run --parallel -- yarn build"
+	},
+	"devDependencies": {
+		"husky": "^4.2.5",
+		"lint-staged": "^10.2.13",
+		"prettier": "^2.1.1",
+		"typescript": "^4.0.2",
+		"workspaces-run": "^1.0.1"
+	}
+}

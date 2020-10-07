@@ -1,0 +1,17 @@
+.btn-primary {
+  border: none !important;
+  background-color: $primary !important;
+
+  &:hover {
+    box-shadow: 0px 0px 8px $primary;
+  }
+  &:active,
+  &:focus {
+    background-color: $primary-focus !important;
+    box-shadow: 0px 0px 8px $primary-focus;
+  }
+}
+
+.btn {
+    @include text-xs;
+}

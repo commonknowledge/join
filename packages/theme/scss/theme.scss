@@ -1,0 +1,140 @@
+$yiq-contrasted-threshold: 100;
+
+$black: #212529;
+$light-gray: #F8F8F8;
+
+$primary: #52FF00;
+$primary-focus: #50F402;
+$danger: #E3220C;
+$secondary: #7A7C7F;
+$body-bg: $light-gray;
+
+// Layout
+
+$container-max-widths: (
+  sm: 585px,
+  md: 585px,
+  lg: 585px,
+  xl: 585px
+);
+
+// Fonts
+$font-heading: Bebas Neue, sans-serif;
+$font-condensed: "Helvetica Neue LT W1G", "Helvetica Neue", "Helvetica", sans-serif;
+$font-regular: "Helvetica Neue", "Helvetica Neue", "Helvetica" sans-serif;
+
+@mixin text-xl {
+  font-family: $font-heading;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 67.34px;
+  line-height: 90%;
+  text-transform: uppercase;
+}
+
+@mixin text-lg {
+  font-family: $font-heading;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 50.52px;
+  line-height: 90%;
+  text-transform: uppercase;
+}
+
+@mixin text-md {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 37.9px;
+  line-height: 110%;
+}
+
+@mixin text-sm {
+  font-family: $font-condensed;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-sm-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-xs {
+  font-family: $font-condensed;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 21.33px;
+  line-height: 130%;
+  letter-spacing: 0.01em;
+}
+
+@mixin text-xs-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 21.33px;
+  line-height: 130%;
+}
+
+@mixin text-xxs {
+  font-family: $font-condensed;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxs-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxxs {
+  font-family: $font-condensed;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 12px;
+  line-height: 120%;
+}
+
+@font-face {
+  font-family: "Bebas Neue";
+  src: local("BebasNeue"), url(../fonts/BebasNeue-Regular.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Helvetica Neue";
+  src: local("Helvetica Neue"); //, url(../fonts/BebasNeue-Regular.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Helvetica Neue LT W1G";
+  src: local("HelveticaNeue-Light"); //, url(../fonts/BebasNeue-Regular.woff2) format("woff2");
+}
+
+$font-family-sans-serif: $font-regular;
+$headings-font-family: $font-family-sans-serif;
+
+// Forms
+
+$input-border-width: 2px;
+$input-border-color: $black;
+$input-border-radius: 0;
+$input-focus-box-shadow: 0px 0px 8px $primary;
+$input-focus-border-color: $black;
+
+// Buttons
+
+$btn-padding-x: 24px;
+$btn-padding-y: 8px;
+$btn-border-radius: 0;
+$btn-active-box-shadow: 0px 0px 8px $primary;

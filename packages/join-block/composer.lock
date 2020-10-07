@@ -1,0 +1,53 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "7dedf825096a67bbb4896853dbfbe1e5",
+    "packages": [
+        {
+            "name": "chargebee/chargebee-php",
+            "version": "v2.7.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/chargebee/chargebee-php.git",
+                "reference": "debbbde8e578c6f173a80ebd618b97a8c41f1a46"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/chargebee/chargebee-php/zipball/debbbde8e578c6f173a80ebd618b97a8c41f1a46",
+                "reference": "debbbde8e578c6f173a80ebd618b97a8c41f1a46",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "lib/ChargeBee.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "ChargeBee API client implementation for PHP",
+            "homepage": "https://github.com/chargebee/chargebee-php",
+            "keywords": [
+                "chargebee",
+                "payments",
+                "recurring billing",
+                "subscription billing"
+            ],
+            "time": "2020-07-15T11:40:11+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "1.1.0"
+}

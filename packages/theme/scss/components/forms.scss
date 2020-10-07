@@ -1,0 +1,47 @@
+.form-control,
+.form-label {
+  @include text-xs;
+}
+
+.radio-grid {
+  > *:not(:last-child) {
+    margin-bottom:  $space-2;
+  }
+}
+
+.radio-panel {
+  background-color: $white;
+  cursor: pointer;
+  user-select: none;
+  padding: $btn-padding-x;
+  border: $input-border-width solid transparent;
+
+  &:hover {
+    box-shadow: 0px 0px 8px $primary;
+  }
+}
+
+.radio-panel[aria-checked="true"] {
+  box-shadow: 0px 0px 8px $primary;
+  border-color: $primary;
+}
+
+.radio-panel-label {
+  @include text-xs-bold;
+}
+
+.form-section {
+  margin-top: $space-5;
+
+  > * {
+    margin-top: $space-4;
+  }
+}
+
+.form-section-addon {
+  margin-top: $space-3;
+}
+
+.custom-select {
+  border-radius: 0;
+}

@@ -1,0 +1,45 @@
+.root {
+    position: relative;
+}
+
+.progress-steps {
+  > *:not(:last-child)::after {
+    background: url("../../graphics/chevron.svg");
+    content: "";
+    display: inline-block;
+    width: 9.26px;
+    height: 15px;
+    margin: 0 $space-3;
+  }
+}
+
+.progress-text {
+  font-family: Bebas Neue;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 21.33px;
+  line-height: 130%;
+}
+
+.progress-stage-content-enter {
+  opacity: 0.01;
+  transform: scale(1.1);
+}
+
+.progress-stage-content-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all 300ms;
+}
+
+.progress-stage-content-exit {
+  width: 100%;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.progress-stage-content-exit-active {
+  opacity: 0.01;
+  transform: scale(1.1);
+  transition: all 20ms;
+}

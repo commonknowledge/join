@@ -1,0 +1,5 @@
+{
+    "require": {
+        "chargebee/chargebee-php": ">=2, <3"
+    }
+}
