@@ -14,6 +14,8 @@
 	"repository": "git@github.com:commonknowledge/wordpress-chargebee-spike.git",
 	"license": "MIT",
 	"scripts": {
+		"composer": "cd packages/join-block && composer install",
+		"frontend": "cd packages/join-flow && yarn start:frontend",
 		"start": "workspaces-run --parallel -- yarn start & docker-compose up",
 		"build": "workspaces-run --parallel -- yarn build"
 	},
