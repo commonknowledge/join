@@ -26,11 +26,11 @@ Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
-- `packages/theme/dist`: Wordpress theme
+- `packages/theme/dist`: Wordpress plugin
 
 ### Deploying
 
-TODO.
+TODO
 
 ## Developer quickstart
 
@@ -49,7 +49,7 @@ yarn composer
 
 ```bash
 cp .env.template .env
-``
+```
 
 - Boot the site
 
