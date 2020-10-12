@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
 
 export interface PageState {
     stage: 'enter-details' | 'plan' | 'payment-method' | 'payment-details' | 'confirm'
@@ -43,6 +43,17 @@ const resetScroll = () => {
 		left: 0,
 		top: 0,
 	})
+}
+
+export const RouterContext = createContext<StateRouter | undefined>(undefined)
+
+export const useCurrentRouter = () => {
+  const router = useContext(RouterContext)
+  if (!router) {
+    throw Error('No router found!')
+  }
+
+  return router
 }
 
 export const stripUrlParams = () => {

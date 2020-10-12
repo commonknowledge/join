@@ -1,23 +1,28 @@
 import React from "react";
 import { Container, Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
+import { DetailPanel, DetailsCard } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
+import { Summary } from "../components/summary";
+import { FormSchema } from "../schema";
 
-export const ConfirmationPage: StagerComponent = ({ onCompleted }) => {
+export const ConfirmationPage: StagerComponent<FormSchema> = ({
+  data,
+  onCompleted,
+}) => {
   const form = useForm();
-
 
   return (
     <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
-      <section className="radio-grid form-section" role="radiogroup">
-        <h2>Your membershp</h2>
+      <section className="form-section mb-3">
+        <h2>Confirm your details</h2>
 
-        <p>
-          Stuff goes here. Beep boop.
-        </p>
+        <Summary data={data} />
       </section>
 
-      <Button className="form-section-addon" type="submit">Join the Greens</Button>
+      <Button className="form-section-addon" type="submit">
+        Join the Greens
+      </Button>
     </Container>
   );
 };

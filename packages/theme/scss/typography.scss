@@ -2,6 +2,10 @@ body {
   @include text-xs;
 }
 
+.text-xs {
+	@include text-xs;
+}
+
 li:not(:first-child) {
 	margin-top: $space-3;
 }

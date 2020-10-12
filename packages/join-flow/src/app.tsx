@@ -8,7 +8,7 @@ import { Container } from 'react-bootstrap';
 import { DetailsPage } from './pages/details.page';
 import { PaymentPage } from './pages/payment-method.page';
 import { PlanPage } from './pages/plan.page';
-import { StateRouter, stripUrlParams, useStateRouter } from './services/router.service';
+import { RouterContext, StateRouter, stripUrlParams, useStateRouter } from './services/router.service';
 import { useOnce } from './hooks/util';
 import { PaymentDetailsPage } from './pages/paymend-details.page';
 import { Stager } from './components/stager';
@@ -66,13 +66,15 @@ const App = () => {
   }, [router, join, data])
 
   return (
-    <>
-      <Container className="progress-steps">
-        {stages.map((stage, i) => stage.breadcrumb && (
-          <span key={stage.id} className={`progress-text ${i > currentIndex ? 'text-muted' : ''}`}>
-            {stage.label}
-          </span>
-        ))}
+    <RouterContext.Provider value={router}>
+      <Container>
+        <div className="progress-steps px-2 w-100">
+          {stages.map((stage, i) => stage.breadcrumb && (
+            <span key={stage.id} className={`progress-text ${i > currentIndex ? 'text-muted' : ''}`}>
+              {stage.label}
+            </span>
+          ))}
+        </div>
       </Container>
 
       <TransitionGroup component={null}>
@@ -92,7 +94,7 @@ const App = () => {
           />
         </CSSTransition>
       </TransitionGroup>
-    </>
+    </RouterContext.Provider>
   )
 }
 

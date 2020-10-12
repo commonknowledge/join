@@ -12,6 +12,7 @@ import { StagerComponent } from "../components/stager";
 import { useCSSStyle } from "../hooks/util";
 import { FormSchema } from "../schema";
 import ddLogo from "../images/dd_logo_landscape.png";
+import { Summary } from "../components/summary";
 
 Chargebee.init({
   site: process.env.REACT_APP_CHARGEBEE_SITE,
@@ -49,6 +50,10 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
 
   return (
     <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+      <div className="p-2 mt-4">
+        <Summary data={data} />
+      </div>
+
       <section className="form-section">
         <h2>Your bank details</h2>
         <Form.Group>

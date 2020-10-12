@@ -3,6 +3,7 @@ import { Container, Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
+import { Summary } from "../components/summary";
 
 export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
   const form = useForm({
@@ -11,6 +12,10 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
 
   return (
     <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+      <div className="p-2 mt-4">
+        <Summary data={data} />
+      </div>
+
       <section className="radio-grid form-section" role="radiogroup">
         <h2>How would you like to pay?</h2>
         <RadioPanel

@@ -3,6 +3,7 @@ import { Container, Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
+import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
 
 export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => {
@@ -12,6 +13,10 @@ export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => 
 
   return (
     <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+      <div className="p-2 mt-4">
+        <Summary data={data} />
+      </div>
+
       <section className="radio-grid form-section" role="radiogroup">
         <h2>Choose the plan that’s right for you</h2>
         <p className="text-secondary">

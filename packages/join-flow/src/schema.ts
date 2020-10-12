@@ -6,7 +6,7 @@ const Prerequesites = object({
 
   /** Session token required by GoCardless. Generated client-side on load. */
   sessionToken: string().required()
-})
+}).required()
 
 const DetailsSchema = object({
   firstName: string().required(),
@@ -26,9 +26,37 @@ const PlanSchema = object({
   membership: string().oneOf(['standard', 'lowWaged', 'international', 'unwaged']).required()
 }).required()
 
+export const renderPaymentPlan = ({ membership }: FormSchema) => {
+  if (membership === 'standard') {
+    return 'Standard Membership'
+  }
+  if (membership === 'international') {
+    return 'International Membership'
+  }
+  if (membership === 'lowWaged') {
+    return 'Low-Waged Membership'
+  }
+  if (membership === 'unwaged') {
+    return 'Unwaged or Student Membership'
+  }
+
+  return 'None'
+}
+
 const PaymentMethodSchema = object({
   paymentMethod: string().oneOf(['directDebit', 'creditCard']).required()
 }).required()
+
+export const renderPaymentMethod = ({ paymentMethod }: FormSchema) => {
+  if (paymentMethod === 'creditCard') {
+    return 'Credit Card'
+  }
+  if (paymentMethod === 'directDebit') {
+    return 'Monthly Direct Debit'
+  }
+
+  return 'None'
+}
 
 const PaymentMethodDDSchema = object({
   paymentMethod: string().equals(['directDebit']).required(),
