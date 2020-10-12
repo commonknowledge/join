@@ -12,7 +12,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   onCompleted,
 }) => {
   const form = useForm({
-    defaultValues: data,
+    defaultValues: data as {},
   });
   const addressLookupForm = useForm();
   const addressLookup = useAddressLookup(form);

@@ -12,34 +12,26 @@ function gocardless_get_client() {
 	return $client;
 }
 
-function gocardless_create_redirect($data) {
-	error_log(json_encode($data));
-
+function gocardless_create_customer_mandate($data) {
 	$client = gocardless_get_client();
 
-	$redirectFlow = $client->redirectFlows()->create([
-		"params" => [
-			// This will be shown on the payment pages
-			"description" => "Green Party Membership",
-			// Not the access token
-			"session_token" => $data['sessionToken'],
-			"success_redirect_url" => $data['redirectUrl'],
-			"prefilled_customer" => [
-			  "given_name" => $data['firstName'] ?: '',
-			  "family_name" => $data['lastName'] ?: '',
-			  "email" => $data['email'] ?: '',
-			  "address_line1" => $data['addressLine1'] ?: '',
-			  "address_line2" => $data['addressLine2'] ?: '',
-			  "city" => $data['addressCity'] ?: '',
-			  "postal_code" => $data['addressPostcode'] ?: ''
-			]
-		]
-	]);
+	$customer = $client->customers()->create([
+		"params" => ["email" => $data['email'],
+					 "given_name" => $data['firstName'],
+					 "family_name" => $data['lastName'],
+					 "country_code" => $data['addressCountry']]
+	  ]);
 
-	return [
-		"redirectFlow" => [
-			"id" => $redirectFlow->id,
-			"url" => $redirectFlow->redirect_url,
-		]
-	];
+	$account = $client->customerBankAccounts()->create([
+		"params" => ["account_number" => $data["ddAccountNumber"],
+					 "branch_code" => $data["ddSortCode"],
+					 "account_holder_name" => $data["ddAccountHolderName"],
+					 "country_code" => $data["addressCountry"],
+					 "links" => ["customer" => $customer->id]]
+	  ]);
+
+	  return $client->mandates()->create([
+		"params" => ["scheme" => "bacs",
+					 "links" => ["customer_bank_account" => $account->id]]
+	  ]);
 }

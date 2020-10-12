@@ -32,3 +32,4 @@ vendor
 # build artifacts
 build
 dist
+.DS_Store

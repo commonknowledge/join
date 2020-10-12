@@ -7,7 +7,7 @@ import { FormSchema } from "../schema";
 
 export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => {
   const form = useForm({
-    defaultValues: data
+    defaultValues: data as {}
   });
 
   return (

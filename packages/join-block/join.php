@@ -63,13 +63,4 @@ add_action( 'rest_api_init', function () {
 			return rest_ensure_response(handle_join($req->get_json_params()));
 		},
 	));
-	register_rest_route( 'join/v1', '/gocardless', array(
-		'methods' => 'POST',
-		'permission_callback' => function ($req) {
-			return true;
-		},
-		'callback' => function ($req) {
-			return rest_ensure_response(gocardless_create_redirect($req->get_json_params()));
-		},
-	));
 } );

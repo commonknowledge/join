@@ -29,12 +29,7 @@ function handle_join($data) {
 		return $result;
 
 	} else if ($data['paymentMethod'] === 'directDebit') {
-		$gocardless = gocardless_get_client();
-
-		$redirectFlow = $gocardless->redirectFlows()->complete(
-			$data['paymentToken'],
-			["params" => ["session_token" => $data['sessionToken']]]
-		);
+		$mandate = gocardless_create_customer_mandate($data);
 
 		$result = ChargeBee_Customer::create(array(
 		  "firstName" => $data['firstName'],
@@ -44,7 +39,7 @@ function handle_join($data) {
 		  "locale" => "en-GB",
 		  "payment_method" => array(
 				"type" => "direct_debit",
-				"reference_id" => $redirectFlow->links->mandate,
+				"reference_id" => $mandate->id,
 		  ),
 		  "billingAddress" => $billingAddress
 		));

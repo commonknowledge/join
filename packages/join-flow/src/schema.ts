@@ -27,13 +27,23 @@ const PlanSchema = object({
 }).required()
 
 const PaymentMethodSchema = object({
-  paymentMethod: string().oneOf(['directDebit', 'directDebit']).required()
+  paymentMethod: string().oneOf(['directDebit', 'creditCard']).required()
 }).required()
 
-const PaymentDetailsSchema = object({
-  paymentToken: string(),
-  isReturningFromDirectDebitRedirect: boolean(),
+const PaymentMethodDDSchema = object({
+  paymentMethod: string().equals(['directDebit']).required(),
+  ddAccountHolderName: string().required(),
+  ddAccountNumber: string().required(),
+  ddSortCode: string().required(),
+  ddConfirmAccountHolder: boolean().equals([true]).required()
 }).required()
+
+const PaymentMethodCardSchema = object({
+  paymentMethod: string().equals(['creditCard']).required(),
+  paymentToken: string().required()
+}).required()
+
+const PaymentDetailsSchema = PaymentMethodDDSchema.concat(PaymentMethodCardSchema)
 
 export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(Prerequesites)
@@ -47,7 +57,7 @@ export type FormSchema = Partial<
   & InferType<typeof Prerequesites>
   & InferType<typeof DetailsSchema>
   & InferType<typeof PlanSchema>
-  & InferType<typeof PaymentMethodSchema>
+  & (InferType<typeof PaymentMethodDDSchema> | InferType<typeof PaymentMethodCardSchema>)
   & InferType<typeof PaymentDetailsSchema>
 >
 
@@ -68,6 +78,8 @@ export const getTestDataIfEnabled = (): FormSchema => {
       lastName: "Person",
       membership: "standard",
       paymentMethod: "directDebit",
+      ddAccountNumber: " 55779911",
+      ddSortCode: "200000",
     }
   } else {
     return {}

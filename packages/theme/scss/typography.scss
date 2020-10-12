@@ -1,5 +1,7 @@
-
-
 body {
   @include text-xs;
+}
+
+li:not(:first-child) {
+	margin-top: $space-3;
 }

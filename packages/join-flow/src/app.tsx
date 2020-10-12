@@ -31,17 +31,17 @@ const App = () => {
   const [data, setData] = useState(getInitialState)
 
   const router = useStateRouter({
-    stage: getInitialFormStage(data)
+    stage: 'enter-details'
   })
 
   useOnce(stripUrlParams)
 
   const currentIndex = stages.findIndex(x => x.id === router.state.stage)
-  const handlePageCompleted = useCallback((change: Partial<FormSchema>) => {
+  const handlePageCompleted = useCallback((change: FormSchema) => {
     const nextData = {
       ...data,
       ...change,
-    }
+    } as FormSchema
 
     setData(nextData)
     sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(nextData))
@@ -96,7 +96,7 @@ const App = () => {
   )
 }
 
-const getInitialState = (): Partial<FormSchema> => {
+const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substr(1))
 
   const getSavedState = () => {
@@ -121,17 +121,7 @@ const getInitialState = (): Partial<FormSchema> => {
     ...getTestDataIfEnabled(),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams(),
-    paymentToken: queryParams.redirect_flow_id,
-    isReturningFromDirectDebitRedirect: !!queryParams.redirect_flow_id,
-  }
-}
-
-const getInitialFormStage = (state: FormSchema) => {
-  if (state.isReturningFromDirectDebitRedirect) {
-    return 'payment-details'
-  } else {
-    return 'enter-details'
-  }
+  } as any
 }
 
 const Fail: FC<{ router: StateRouter }> = ({ router }) => {

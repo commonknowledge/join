@@ -6,7 +6,7 @@ import { StagerComponent } from "../components/stager";
 
 export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
   const form = useForm({
-    defaultValues: data
+    defaultValues: data as {}
   });
 
   return (
