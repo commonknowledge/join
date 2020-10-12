@@ -1,4 +1,6 @@
+import { memoize } from 'lodash-es'
 import { boolean, InferType, number, object, ObjectSchema, string } from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup';
 
 const Prerequesites = object({
   /** Email passed in via query param */
@@ -8,14 +10,14 @@ const Prerequesites = object({
   sessionToken: string().required()
 }).required()
 
-const DetailsSchema = object({
+export const DetailsSchema = object({
   firstName: string().required(),
   lastName: string().required(),
   dobDay: number().integer().required(),
   dobMonth: number().integer().required(),
   dobYear: number().integer().required(),
   addressLine1: string().required(),
-  addressLine2: string().required(),
+  addressLine2: string(),
   addressCity: string().required(),
   addressCounty: string().required(),
   addressPostcode: string().required(),
@@ -114,14 +116,4 @@ export const getTestDataIfEnabled = (): FormSchema => {
   }
 }
 
-
-export type DirectDebitSetupRequest = FormSchema & {
-  redirectUrl: string
-}
-
-export interface DirectDebitSetupResult {
-  redirectFlow: {
-    id: string
-    url: string
-  }
-}
+export const validate = memoize((schema: ObjectSchema) => yupResolver(schema))

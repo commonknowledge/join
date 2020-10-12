@@ -12,7 +12,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => 
   });
 
   return (
-    <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>

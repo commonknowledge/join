@@ -1,11 +1,12 @@
 import React from "react";
 import { Col, Container, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import isoCountries from 'iso-3166'
+import isoCountries from "iso-3166";
 
 import { StagerComponent } from "../components/stager";
-import { FormSchema } from "../schema";
+import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
+import { FormItem } from "../components/atoms";
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -13,6 +14,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 }) => {
   const form = useForm({
     defaultValues: data as {},
+    resolver: validate(DetailsSchema)
   });
   const addressLookupForm = useForm();
   const addressLookup = useAddressLookup(form);
@@ -21,56 +23,49 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   );
 
   return (
-    <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <section className="form-section">
         <h2>Tell us more about you</h2>
         <p className="text-secondary">
           All fields marked with an asterisk (*) are required.
         </p>
-        <Form.Group>
-          <Form.Label>First Name</Form.Label>
-          <Form.Control name="firstName" ref={form.register} />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Last Name</Form.Label>
-          <Form.Control name="lastName" ref={form.register} />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Email Address</Form.Label>
-          <Form.Control name="email" ref={form.register} />
-        </Form.Group>
+        <FormItem label="First Name" name="firstName" form={form}>
+          <Form.Control />
+        </FormItem>
+        <FormItem label="Last Name" name="lastName" form={form}>
+          <Form.Control />
+        </FormItem>
+        <FormItem label="Email Address" name="email" form={form}>
+          <Form.Control />
+        </FormItem>
       </section>
 
       <section className="form-section">
         <h2>Date of birth</h2>
         <Row>
           <Col>
-            <Form.Group>
-              <Form.Label>Day</Form.Label>
-              <Form.Control name="dobDay" ref={form.register} />
-            </Form.Group>
+            <FormItem label="Day" name="dobDay" form={form}>
+              <Form.Control />
+            </FormItem>
           </Col>
           <Col>
-            <Form.Group>
-              <Form.Label>Month</Form.Label>
-              <Form.Control name="dobMonth" ref={form.register} />
-            </Form.Group>
+            <FormItem label="Month" name="dobMonth" form={form}>
+              <Form.Control />
+            </FormItem>
           </Col>
           <Col>
-            <Form.Group>
-              <Form.Label>Year</Form.Label>
-              <Form.Control name="dobYear" ref={form.register} />
-            </Form.Group>
+            <FormItem label="Year" name="dobYear" form={form}>
+              <Form.Control />
+            </FormItem>
           </Col>
         </Row>
       </section>
 
       <section className="form-section">
         <h2>Contact details</h2>
-        <Form.Group>
-          <Form.Label>Postcode</Form.Label>
-          <Form.Control name="postcode" ref={addressLookupForm.register} />
-        </Form.Group>
+        <FormItem label="Postcode" name="postcode" form={addressLookupForm}>
+          <Form.Control />
+        </FormItem>
 
         <Button className="mt-2" onClick={handleLookupPostcode}>
           Find address
@@ -98,42 +93,30 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
         <Collapse in={!!addressLookup.address || !!data.addressLine1}>
           <div>
-            <Form.Group>
-              <Form.Label>Address line 1</Form.Label>
-              <Form.Control name="addressLine1" ref={form.register} />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Address line 2</Form.Label>
-              <Form.Control name="addressLine2" ref={form.register} />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>City</Form.Label>
-              <Form.Control name="addressCity" ref={form.register} />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>County</Form.Label>
-              <Form.Control name="addressCounty" ref={form.register} />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Postcode</Form.Label>
-              <Form.Control name="addressPostcode" ref={form.register} />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Country</Form.Label>
-              <Form.Control
-                name="addressCountry"
-                as="select"
-                custom
-                className="form-control"
-                ref={form.register}
-              >
+            <FormItem label="Address line 1" name="addressLine1" form={form}>
+              <Form.Control />
+            </FormItem>
+            <FormItem label="Address line 2" name="addressLine2" form={form}>
+              <Form.Control />
+            </FormItem>
+            <FormItem label="City" name="addressCity" form={form}>
+              <Form.Control />
+            </FormItem>
+            <FormItem label="County" name="addressCounty" form={form}>
+              <Form.Control />
+            </FormItem>
+            <FormItem label="Postcode" name="addressPostcode" form={form}>
+              <Form.Control />
+            </FormItem>
+            <FormItem label="Country" form={form} name="addressCountry">
+              <Form.Control as="select" custom className="form-control">
                 {isoCountries.map((c) => (
                   <option key={c.numeric} value={c.alpha2}>
                     {c.name}
                   </option>
                 ))}
               </Form.Control>
-            </Form.Group>
+            </FormItem>
           </div>
         </Collapse>
       </section>

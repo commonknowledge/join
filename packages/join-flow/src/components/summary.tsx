@@ -1,4 +1,4 @@
-import React, { FC, ReactElement } from "react";
+import React, { FC } from "react";
 import { FormSchema, renderPaymentMethod, renderPaymentPlan } from "../schema";
 import { PageState, useCurrentRouter } from "../services/router.service";
 import { DetailPanel, DetailsCard } from "./atoms";

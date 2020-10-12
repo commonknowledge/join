@@ -13,6 +13,7 @@ import { useCSSStyle } from "../hooks/util";
 import { FormSchema } from "../schema";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { Summary } from "../components/summary";
+import { FormItem } from "../components/atoms";
 
 Chargebee.init({
   site: process.env.REACT_APP_CHARGEBEE_SITE,
@@ -49,32 +50,27 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
   });
 
   return (
-    <Container as="form" onSubmit={form.handleSubmit(onCompleted)}>
+    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
 
       <section className="form-section">
         <h2>Your bank details</h2>
-        <Form.Group>
-          <Form.Label>Account Name</Form.Label>
-          <Form.Control name="ddAccountHolderName" ref={form.register} />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Account Number</Form.Label>
-          <Form.Control name="ddAccountNumber" ref={form.register} />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Sort Code</Form.Label>
-          <Form.Control name="ddSortCode" ref={form.register} />
-        </Form.Group>
-        <Form.Group>
+        <FormItem form={form} label="Account Name" name="ddAccountHolderName">
+          <Form.Control  />
+        </FormItem>
+        <FormItem form={form} label="Account Number" name="ddAccountNumber">
+          <Form.Control  />
+        </FormItem>
+        <FormItem form={form} label="Sort Code" name="ddSortCode">
+          <Form.Control  />
+        </FormItem>
+        <FormItem form={form} name="ddConfirmAccountHolder">
           <Form.Check
-            name="ddConfirmAccountHolder"
-            ref={form.register}
-            label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account."
+          label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account."
           />
-        </Form.Group>
+        </FormItem>
       </section>
 
       <section className="form-section">
@@ -155,7 +151,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   };
 
   return (
-    <Container as="form" onSubmit={form.handleSubmit(handleCompleted)}>
+    <Container as="form" noValidate onSubmit={form.handleSubmit(handleCompleted)}>
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
