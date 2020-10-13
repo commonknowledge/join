@@ -11,7 +11,7 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
   });
 
   return (
-    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
@@ -35,6 +35,6 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
       </section>
 
       <Button className="form-section-addon" type="submit">Continue</Button>
-    </Container>
+    </form>
   );
 };

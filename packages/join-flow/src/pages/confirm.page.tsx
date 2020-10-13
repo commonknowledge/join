@@ -1,7 +1,6 @@
 import React from "react";
-import { Container, Button } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import { DetailPanel, DetailsCard } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
@@ -13,7 +12,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const form = useForm();
 
   return (
-    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <section className="form-section mb-3">
         <h2>Confirm your details</h2>
 
@@ -23,6 +22,6 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <Button className="form-section-addon" type="submit">
         Join the Greens
       </Button>
-    </Container>
+    </form>
   );
 };

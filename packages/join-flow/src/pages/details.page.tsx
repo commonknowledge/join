@@ -23,7 +23,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   );
 
   return (
-    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <section className="form-section">
         <h2>Tell us more about you</h2>
         <p className="text-secondary">
@@ -139,6 +139,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       <Button className="form-section-addon" type="submit">
         Continue
       </Button>
-    </Container>
+    </form>
   );
 };

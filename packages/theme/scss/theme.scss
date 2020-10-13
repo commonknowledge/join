@@ -1,6 +1,7 @@
 $yiq-contrasted-threshold: 100;
 
 $black: #212529;
+$gray: #22262A;
 $light-gray: #F8F8F8;
 
 $primary: #6AB023;
@@ -8,15 +9,6 @@ $primary-focus: #50F402;
 $danger: #E3220C;
 $secondary: #7A7C7F;
 $body-bg: $light-gray;
-
-// Layout
-
-$container-max-widths: (
-  sm: 585px,
-  md: 585px,
-  lg: 585px,
-  xl: 585px
-);
 
 // Fonts
 $font-heading: Bebas Neue, sans-serif;

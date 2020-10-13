@@ -67,7 +67,7 @@ const App = () => {
 
   return (
     <RouterContext.Provider value={router}>
-      <Container>
+      <div className="form-content">
         <div className="progress-steps px-2 w-100">
           {stages.map((stage, i) => stage.breadcrumb && (
             <span key={stage.id} className={`progress-text ${i > currentIndex ? 'text-muted' : ''}`}>
@@ -75,7 +75,7 @@ const App = () => {
             </span>
           ))}
         </div>
-      </Container>
+      </div>
 
       <TransitionGroup component={null}>
         <CSSTransition key={router.state.stage} classNames="progress-stage-content" timeout={300}>

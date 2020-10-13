@@ -30,6 +30,13 @@
   @include text-xs-bold;
 }
 
+.form-content {
+	@include media-breakpoint-up(sm) {
+			margin: 0 auto;
+			max-width: 585px;
+	}
+}
+
 .form-section {
   margin-top: $space-5;
 

@@ -32,9 +32,9 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   }
 
   return (
-    <Container>
+    <div className="form-content">
       <Spinner animation="grow" variant="primary" />
-    </Container>
+    </div>
   );
 };
 
@@ -50,7 +50,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
   });
 
   return (
-    <Container as="form" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
@@ -128,7 +128,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       <Button className="form-section-addon" type="submit">
         Continue
       </Button>
-    </Container>
+    </form>
   );
 };
 
@@ -151,7 +151,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   };
 
   return (
-    <Container as="form" noValidate onSubmit={form.handleSubmit(handleCompleted)}>
+    <form className="form-content" noValidate onSubmit={form.handleSubmit(handleCompleted)}>
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
@@ -174,7 +174,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       <Button className="form-section-addon" type="submit">
         Continue
       </Button>
-    </Container>
+    </form>
   );
 };
 
