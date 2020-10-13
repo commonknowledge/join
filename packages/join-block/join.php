@@ -36,14 +36,41 @@ function uk_greens_join_block_init() {
 		$script_asset['version']
 	);
 
-	$bundle_js = 'dist/join-flow/bundle.js';
+	$bundle_js = 'node_modules/join-flow/dist/bundle.js';
+
 	wp_enqueue_script(
-		'uk-greens-join-block-js',
-		plugins_url($bundle_js, __FILE__),
+		'react@16',
+		'https://unpkg.com/react@16/umd/react.production.min.js',
 		array(),
-		filemtime( "$dir/$bundle_js" ),
+		false,
 		true
 	);
+	wp_enqueue_script(
+		'react-dom@16',
+		'https://unpkg.com/react-dom@16/umd/react-dom.production.min.js',
+		array(),
+		false,
+		true
+	);
+
+
+	if (WP_DEBUG === true) {
+		wp_enqueue_script(
+			'uk-greens-join-block-js',
+			"http://localhost:3000/bundle.js",
+			array(),
+			false,
+			true
+		);
+	} else {
+		wp_enqueue_script(
+			'uk-greens-join-block-js',
+			plugins_url($bundle_js, __FILE__),
+			array(),
+			filemtime( "$dir/$bundle_js" ),
+			true
+		);
+	}
 
 	register_block_type( 'uk-greens/join', array(
 		'editor_script' => 'uk-greens-join-block-editor',

@@ -9,13 +9,17 @@ const useTestAddress =
   !process.env.REACT_APP_PRODUCTION_ADDRESS_LOOKUP;
 
 class Address {
-  id = uniqueId("address");
+  id: string;
   post_town!: string;
   postcode!: string;
   line_1!: string;
   line_2!: string;
   country!: string;
-  county!: string;
+	county!: string;
+
+	constructor() {
+		this.id = uniqueId("address")
+	}
 
   toString() {
     return compact([

@@ -7,7 +7,7 @@
 			"packages/*"
 		],
 		"nohoist": [
-			"uk-greens-join-block/uk-greens-join-flow"
+			"uk-greens-join-block/**"
 		]
 	},
 	"main": "index.js",
@@ -15,12 +15,12 @@
 	"license": "MIT",
 	"scripts": {
 		"composer": "cd packages/join-block && composer install",
-		"frontend": "cd packages/join-flow && yarn start:frontend",
+		"frontend": "cd packages/join-flow && yarn start",
 		"start": "workspaces-run --parallel -- yarn start & docker-compose up",
 		"build": "workspaces-run --parallel -- yarn build"
 	},
 	"devDependencies": {
-		"husky": "^4.2.5",
+		"husky": "^4.2.6",
 		"lint-staged": "^10.2.13",
 		"prettier": "^2.1.1",
 		"typescript": "^4.0.2",
