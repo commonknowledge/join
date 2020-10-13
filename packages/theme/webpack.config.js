@@ -1,45 +1,54 @@
-const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const { extname } = require("path");
 
 module.exports = {
-	mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-	entry: ['./scss/index.scss'],
+	mode: process.env.NODE_ENV === "production" ? "production" : "development",
+	entry: ["./scss/index.scss"],
 	output: {
-		path: path.resolve(__dirname, 'dist'),
-		filename: 'index.js',
+		path: path.resolve(__dirname, "dist"),
+		filename: "index.js",
 	},
 	module: {
 		rules: [
 			{
 				test: /\.scss$/,
 				use: [
+					...(process.env.NODE_ENV === "production"
+						? [
+								{
+									loader: "file-loader",
+									options: {
+										name: "style.css",
+									},
+								},
+
+								{
+									loader: "extract-loader",
+								},
+						  ]
+						: [
+							'style-loader'
+						]),
 					{
-						loader: 'file-loader',
-						options: {
-							name: 'style.css',
-						}
+						loader: "css-loader?-url",
 					},
 					{
-						loader: 'extract-loader'
+						loader: "postcss-loader",
 					},
 					{
-						loader: 'css-loader?-url'
+						loader: "sass-loader",
 					},
-					{
-						loader: 'postcss-loader'
-					},
-					{
-						loader: 'sass-loader'
-					}
-				]
-			}
-		]
+				],
+			},
+		],
 	},
-    plugins: [
-        new CopyWebpackPlugin({
-            patterns: [
-                { from: 'static' }
-            ]
-        })
-    ]
+	plugins: [
+		new CopyWebpackPlugin({
+			patterns: [{ from: "static" }],
+		}),
+	],
+	devServer: {
+		writeToDisk: (path) => extname(path) === '.php'
+	}
 };
