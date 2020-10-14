@@ -4,7 +4,7 @@
 	"version": "0.1.0",
 	"scripts": {
 		"start": "webpack serve --port 3001",
-		"build": "webpack"
+		"build": "rm -rf dist && NODE_ENV=production webpack"
 	},
 	"dependencies": {
 		"bootstrap": "^4.5.2",

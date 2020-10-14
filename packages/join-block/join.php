@@ -36,21 +36,6 @@ function uk_greens_join_block_init() {
 		$script_asset['version']
 	);
 
-	wp_enqueue_script(
-		'react@16',
-		'https://unpkg.com/react@16/umd/react.production.min.js',
-		array(),
-		false,
-		true
-	);
-	wp_enqueue_script(
-		'react-dom@16',
-		'https://unpkg.com/react-dom@16/umd/react-dom.production.min.js',
-		array(),
-		false,
-		true
-	);
-
 	$bundle_js = 'build/join-flow/bundle.js';
 	if (WP_DEBUG === true) {
 		wp_enqueue_script(

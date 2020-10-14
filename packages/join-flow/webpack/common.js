@@ -61,11 +61,7 @@ module.exports = {
 			)
 		)
   ],
-  externals: {
-    'react': 'React',
-    'react-dom': 'ReactDOM',
-  },
   performance: {
-    hints: false,
+    hints: "warning",
   },
 };
