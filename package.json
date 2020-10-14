@@ -2,28 +2,21 @@
 	"name": "ukgreens",
 	"version": "1.0.0",
 	"private": true,
-	"workspaces": {
-		"packages": [
-			"packages/*"
-		],
-		"nohoist": [
-			"uk-greens-join-block/**"
-		]
-	},
 	"main": "index.js",
 	"repository": "git@github.com:commonknowledge/wordpress-chargebee-spike.git",
 	"license": "MIT",
 	"scripts": {
+		"postinstall": "yarn composer && lerna bootstrap",
 		"composer": "cd packages/join-block && composer install",
 		"frontend": "cd packages/join-flow && yarn start",
-		"start": "workspaces-run --parallel -- yarn start & docker-compose up",
-		"build": "workspaces-run --parallel -- yarn build"
+		"start": "lerna run --parallel start & docker-compose up",
+		"build": "lerna run build"
 	},
 	"devDependencies": {
 		"husky": "^4.2.6",
+		"lerna": "^3.22.1",
 		"lint-staged": "^10.2.13",
 		"prettier": "^2.1.1",
-		"typescript": "^4.0.2",
-		"workspaces-run": "^1.0.1"
+		"typescript": "^4.0.2"
 	}
 }

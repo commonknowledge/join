@@ -36,8 +36,6 @@ function uk_greens_join_block_init() {
 		$script_asset['version']
 	);
 
-	$bundle_js = 'node_modules/join-flow/dist/bundle.js';
-
 	wp_enqueue_script(
 		'react@16',
 		'https://unpkg.com/react@16/umd/react.production.min.js',
@@ -53,7 +51,7 @@ function uk_greens_join_block_init() {
 		true
 	);
 
-
+	$bundle_js = 'build/join-flow/bundle.js';
 	if (WP_DEBUG === true) {
 		wp_enqueue_script(
 			'uk-greens-join-block-js',
