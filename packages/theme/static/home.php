@@ -23,7 +23,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="container">
+	<div class="container mb-4">
 		<div class="row justify-content-center">
 			<div class="col-lg-8">
 				<p>Ready to do politics differently?</p>

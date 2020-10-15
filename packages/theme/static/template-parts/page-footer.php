@@ -24,9 +24,3 @@
 	</div>
 	</div>
 </footer>
-
-<div class="container-fluid">
-	<div class="container">
-	<div><strong>Need help with membership?</strong> Call us on 02036919400 or email membership@greenparty.org.uk</div>
-	</div>
-</div>
