@@ -31,7 +31,7 @@
 				<form method="GET" action="/join">
 					<div class="row">
 						<div class="col-9">
-							<input type="email" class="form-control">
+							<input type="email" id="email" name="email" class="form-control">
 						</div>
 						<div class="col-3">
 							<button type="submit" class="btn btn-primary">Get started</button>
