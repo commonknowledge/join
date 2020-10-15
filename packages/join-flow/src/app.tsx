@@ -60,7 +60,7 @@ const App = () => {
     }
     else if (router.state.stage === 'confirm') {
       join(data).then((res) => {
-        console.log('Joined!', res)
+        window.location.href = "/new-joiner";
       })
     }
   }, [router, join, data])
