@@ -18,6 +18,8 @@ function clean() {
 theme_dest=$content_dest/themes/greens
 plugin_dest=$content_dest/plugins/join-form
 
+yarn build
+
 clean $theme_dest
 deploy_all packages/theme/dist $theme_dest
 
