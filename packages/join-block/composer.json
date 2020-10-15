@@ -1,6 +1,7 @@
 {
     "require": {
         "chargebee/chargebee-php": ">=2, <3",
-        "gocardless/gocardless-pro": "^4.5"
+        "gocardless/gocardless-pro": "^4.5",
+        "auth0/auth0-php": "^7.4"
     }
 }
