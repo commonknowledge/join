@@ -21,7 +21,8 @@ if (window.Chargebee) {
     publishableKey: process.env.REACT_APP_CHARGEBEE_KEY,
   });
 } else {
-  console.error('Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.')
+  console.error('Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.');
+  console.error('When the Green Party join form is loaded in WordPress, this should be loaded when the Join Form block is present on the page.');
 }
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
