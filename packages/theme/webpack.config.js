@@ -45,7 +45,7 @@ module.exports = {
 	},
 	plugins: [
 		new CopyWebpackPlugin({
-			patterns: [{ from: "static" }],
+			patterns: [{ from: "static" }, { from: "fonts", to: "fonts/" }],
 		}),
 	],
 	devServer: {
