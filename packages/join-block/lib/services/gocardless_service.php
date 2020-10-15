@@ -26,7 +26,7 @@ function gocardless_create_customer_mandate($data) {
 		"params" => ["account_number" => $data["ddAccountNumber"],
 					 "branch_code" => $data["ddSortCode"],
 					 "account_holder_name" => $data["ddAccountHolderName"],
-					 "country_code" => $data["addressCountry"],
+					 "country_code" => 'GB',
 					 "links" => ["customer" => $customer->id]]
 	  ]);
 
