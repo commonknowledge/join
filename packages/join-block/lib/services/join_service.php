@@ -9,7 +9,7 @@ function handle_join($data) {
 		"city" => $data['addressCity'],
 		"state" => $data['addressCounty'],
 		"zip" => $data['addressPostcode'],
-		"country" => $data['addressCountry']
+		"country" => 'GB'
 	);
 
 	if ($data["paymentMethod"] === 'creditCard') {
