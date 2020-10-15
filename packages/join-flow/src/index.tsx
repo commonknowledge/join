@@ -14,9 +14,17 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './app';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('join-form')
-);
+const joinFormElement = document.getElementById('join-form');
+
+if (! joinFormElement) {
+  console.error('Could not find element with ID "join-form" so cannot load Green Party join form');
+} else {
+  ReactDOM.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+    document.getElementById('join-form')
+  );
+}
+
+
