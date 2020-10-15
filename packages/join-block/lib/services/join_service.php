@@ -1,8 +1,6 @@
 <?php
 
 function handle_join($data) {
-	error_log(json_encode($data));
-
 	$billingAddress = array(
 		"firstName" => $data['firstName'],
 		"lastName" => $data['lastName'],
