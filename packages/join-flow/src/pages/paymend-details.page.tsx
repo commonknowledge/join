@@ -15,10 +15,14 @@ import ddLogo from "../images/dd_logo_landscape.png";
 import { Summary } from "../components/summary";
 import { FormItem } from "../components/atoms";
 
-Chargebee.init({
-  site: process.env.REACT_APP_CHARGEBEE_SITE,
-  publishableKey: process.env.REACT_APP_CHARGEBEE_KEY,
-});
+if (window.Chargebee) {
+  window.Chargebee.init({
+    site: process.env.REACT_APP_CHARGEBEE_SITE,
+    publishableKey: process.env.REACT_APP_CHARGEBEE_KEY,
+  });
+} else {
+  console.error('Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.')
+}
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
