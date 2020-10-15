@@ -19,7 +19,7 @@ function gocardless_create_customer_mandate($data) {
 		"params" => ["email" => $data['email'],
 					 "given_name" => $data['firstName'],
 					 "family_name" => $data['lastName'],
-					 "country_code" => 'GB'
+					 "country_code" => 'GB']
 	  ]);
 
 	$account = $client->customerBankAccounts()->create([
