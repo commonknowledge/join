@@ -1,5 +1,6 @@
 {
     "require": {
-        "chargebee/chargebee-php": ">=2, <3"
+        "chargebee/chargebee-php": ">=2, <3",
+        "gocardless/gocardless-pro": "^4.5"
     }
 }
