@@ -4,11 +4,11 @@
 
 This is a monorepo, containing 3 packages:
 
-- `packages/theme`: A bootstrap-based wordpress theme implementing the design system used by the join site.
+- `packages/theme`: A bootstrap-based WordPress theme implementing the design system used by the join site.
 
 - `packages/join-flow`: A React project (using create-react-app) implementing the join form frontend.
 
-- `packages/join-block`: A wordpress Gutenberg block that allows the join form to be dropped into a wordpress page, along with the backend join logic.
+- `packages/join-block`: A WordPress Gutenberg block that allows the join form to be dropped into a WordPress page, along with the backend join logic.
 
 ## Build & deploy workflow
 
@@ -26,7 +26,7 @@ Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
-- `packages/theme/dist`: Wordpress plugin
+- `packages/theme/dist`: WordPress plugin
 
 ### Deploying
 
@@ -34,7 +34,7 @@ TODO
 
 ## Developer quickstart
 
-### Running the whole system as a Wordpress site
+### Running the whole system as a WordPress site
 
 - Ensure you have a recent node >= v12, yarn, composer and docker installed.
 
@@ -57,7 +57,7 @@ cp .env.template .env
 yarn start
 ```
 
-#### To use join form 'in-place' in a wordpress site
+#### To use join form 'in-place' in a WordPress site
 
 - Open <http://localhost:8080/wp-admin/plugins.php> and enable the 'Join' plugin.
 
