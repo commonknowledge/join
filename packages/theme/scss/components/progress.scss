@@ -4,7 +4,7 @@
 
 .progress-steps {
   > *:not(:last-child)::after {
-    background: url("../../graphics/chevron.svg");
+    background: url("graphics/chevron.svg");
     content: "";
     display: inline-block;
     width: 9.26px;
