@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 // When we're running this as a standalone app (in development), we want to pull in the theme.
-// When running in production, we defer to wordpress.
+// When running in production, we defer to WordPress.
 const {USE_BUNDLED_THEME} = window as any
 
 if (process.env.NODE_ENV !== 'production' && USE_BUNDLED_THEME) {
