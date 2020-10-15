@@ -40,67 +40,6 @@
 				</form>
 			</div>
 		</div>
-		<div class="row">
-			<div class="col-lg-6">
-				<div>What do I get for joining?</div>
-			</div>
-			<div class="col-lg-6">
-				<div>
-					<div>
-						<div>Tick</div>
-						<div>Vote in our elections</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Shape the future of the Green Party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Get updates on campaigns</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Recieve invitations to our local party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Organise with your local party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Help us fight for Climate Justice</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Vote in our elections</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Shape the future of the Green Party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Get updates on campaigns</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Recieve invitations to our local party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Organise with your local party</div>
-					</div>
-					<div>
-						<div>Tick</div>
-						<div>Help us fight for Climate Justice</div>
-					</div>
-				</div>
-				<div>
-					<div>Need more information?</div>
-					<div>Email us at <a href="mailto:members@greenparty.org.uk">members@greenparty.org.uk</a></div>
-				</div>
-			</div>
-		</div>
 	</div>
 	<?php get_template_part('template-parts/page-footer') ?>
 	<?php do_action('get_footer'); ?>
