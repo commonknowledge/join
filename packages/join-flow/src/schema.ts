@@ -93,6 +93,7 @@ export type FormSchema = Partial<
 
 export const getTestDataIfEnabled = (): FormSchema => {
   if (process.env.REACT_APP_USE_TEST_DATA) {
+    console.log('REACT_APP_USE_TEST_DATA environment variable set. Using test data.');
     return {
       email: 'me@example.com',
       addressCity: "Oxford",
