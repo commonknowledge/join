@@ -7,6 +7,7 @@ const path = require('path')
 module.exports = merge(commonConfig, {
 	mode: 'development',
   entry: [
+    'regenerator-runtime/runtime',
     'react-hot-loader/patch', // activate HMR for React
     'webpack-dev-server/client?http://localhost:3000',// bundle the client for webpack-dev-server and connect to the provided endpoint
     'webpack/hot/only-dev-server', // bundle the client for hot reloading, only- means to only hot reload for successful updates

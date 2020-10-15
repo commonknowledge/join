@@ -14,9 +14,6 @@ module.exports = {
     filename: 'bundle.js',
     path: resolve(__dirname, '../dist'),
 	},
-	entry: [
-		"regenerator-runtime/runtime"
-	],
   module: {
     rules: [
       {

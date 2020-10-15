@@ -6,7 +6,10 @@ const commonConfig = require('./common');
 
 module.exports = merge(commonConfig, {
   mode: 'production',
-  entry: '../src/index.tsx',
+  entry: [
+    'regenerator-runtime/runtime',
+    '../src/index.tsx'
+  ],
   devtool: 'source-map',
   plugins: [],
 });
