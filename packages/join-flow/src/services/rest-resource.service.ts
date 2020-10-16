@@ -15,9 +15,7 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
 		const endpoint = '/join/v1' + resource
 	
 		// @ts-ignore
-		data.plan = membershipToPlan(data.membership);
-		
-		console.log(data);
+		data.planId = membershipToPlan(data.membership);
 
 		const res = await fetch('/?rest_route=' + endpoint, {
 			method: 'POST',

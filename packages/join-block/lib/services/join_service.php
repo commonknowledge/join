@@ -29,7 +29,7 @@ function handle_join($data) {
 	} else if ($data['paymentMethod'] === 'directDebit') {
 		$mandate = gocardless_create_customer_mandate($data);
 
-		$result = ChargeBee_Customer::create(array(
+		$customerResult = ChargeBee_Customer::create(array(
 		  "firstName" => $data['firstName'],
 		  "lastName" => $data['lastName'],
 		  "email" => $data['email'],
@@ -42,7 +42,12 @@ function handle_join($data) {
 		  "billingAddress" => $billingAddress
 		));
 
-		error_log(json_encode($result));
+		error_log(json_encode($customerResult));
+		
+		$subscriptionResult = ChargeBee_Subscription::createForCustomer($customerResult.id, array(
+			"planId" => $data['planId']
+		));
+
 		return $result;
 	}
 }
