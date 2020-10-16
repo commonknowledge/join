@@ -24,6 +24,10 @@ $font-regular: "Helvetica Neue", "Helvetica Neue", "Helvetica" sans-serif;
   text-transform: uppercase;
 }
 
+.text-xl {
+  @include text-xl;
+}
+
 @mixin text-lg {
   font-family: $font-heading;
   font-style: normal;
@@ -31,6 +35,10 @@ $font-regular: "Helvetica Neue", "Helvetica Neue", "Helvetica" sans-serif;
   font-size: 50.52px;
   line-height: 90%;
   text-transform: uppercase;
+}
+
+.text-lg, .text-l {
+  @include text-lg;
 }
 
 @mixin text-md {
@@ -64,6 +72,10 @@ $font-regular: "Helvetica Neue", "Helvetica Neue", "Helvetica" sans-serif;
   font-size: 21.33px;
   line-height: 130%;
   letter-spacing: 0.01em;
+}
+
+.text-xs {
+	@include text-xs;
 }
 
 @mixin text-xs-bold {
