@@ -45,7 +45,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => 
           value="international"
           label="International Membership"
           description="If you live outside of England or Wales."
-          valueText="12 a year"
+          valueText="£12 a year"
           form={form}
         />
         <RadioPanel
