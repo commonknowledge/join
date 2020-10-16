@@ -11,17 +11,19 @@ const Prerequesites = object({
 }).required()
 
 export const DetailsSchema = object({
-  firstName: string().required(),
-  lastName: string().required(),
-  dobDay: number().integer().required(),
-  dobMonth: number().integer().required(),
-  dobYear: number().integer().required(),
+  firstName: string().required('First name is required'),
+  lastName: string().required('Second name is required'),
+  email: string().typeError('Your email address must be a valid email address').email().required('Email address is required'),
+  dobDay: number().typeError('The day of your birth must be a number').integer().required(),
+  dobMonth: number().typeError('The month of your birth must be a number').integer().required(),
+  dobYear: number().typeError('The year of your birth must be a number').integer().required(),
   addressLine1: string().required(),
   addressLine2: string(),
   addressCity: string().required(),
   addressCounty: string().required(),
   addressPostcode: string().required(),
   addressCountry: string().required(),
+  postcode: string().required('We need your postcode to send you your welcome pack')
 }).required()
 
 const PlanSchema = object({
