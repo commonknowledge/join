@@ -16,10 +16,10 @@
 	<?php get_template_part('template-parts/page-header') ?>
 	<div class="jumbotron jumbotron-fluid">
 		<div class="container">
-			<h1 class="display-4">Better is possible</h1>
-			<div>
-				<div>Join 52,035 members</div>
-				<div>Standing up for what matters</div>
+			<h1 class="display-4 text-bebas-neue text-xl">Better is possible</h1>
+			<div class="w-50">
+				<div class="text-bebas-neue text-l">Join 52,035 members</div>
+				<div class="text-bebas-neue text-l">Strengthening the voice of progressive green leadership in British politics</div>
 			</div>
 		</div>
 	</div>
