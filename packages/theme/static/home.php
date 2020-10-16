@@ -17,7 +17,7 @@
 	<div class="jumbotron jumbotron-fluid">
 		<div class="container">
 			<h1 class="text-bebas-neue text-xl">Better is possible</h1>
-			<div class="w-50">
+			<div class="w-50 mt-5">
 				<div class="text-bebas-neue text-l">Join 52,035 members</div>
 				<div class="text-bebas-neue text-l">Strengthening the voice of progressive green leadership in British politics</div>
 			</div>
