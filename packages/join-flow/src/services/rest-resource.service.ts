@@ -1,8 +1,12 @@
-const membershipToPlan = {
+const membershipToChargebeePlanMap = {
 	standard: 'membership_annual_individual_waged',
 	international: 'membership_annual_international',
 	lowWaged: 'membership_annual_individual_low_waged',
 	unwaged: 'membership_annual_unwaged'
+}
+
+function membershipToPlan(membership: string) {
+	return membershipToChargebeePlanMap[data.membership];
 }
 
 export const usePostResource = <Params, Result = {}>(resource: string) => {
@@ -10,7 +14,7 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
 		const endpoint = '/join/v1' + resource
 		
 		// @ts-ignore
-		data.plan = membershipToPlan[data.membership];
+		data.plan = membershipToPlan(data.membership);
 		
 		console.log(data);
 
