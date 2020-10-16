@@ -41,10 +41,8 @@ function handle_join($data) {
 		  ),
 		  "billingAddress" => $billingAddress
 		));
-
-		error_log(json_encode($customerResult));
 		
-		$subscriptionResult = ChargeBee_Subscription::createForCustomer($customerResult.id, array(
+		$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, array(
 			"planId" => $data['planId']
 		));
 
