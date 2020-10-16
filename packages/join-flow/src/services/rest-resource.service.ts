@@ -5,14 +5,15 @@ const membershipToChargebeePlanMap = {
 	unwaged: 'membership_annual_unwaged'
 }
 
-function membershipToPlan(membership: string) {
+function membershipToPlan(membership: string): string {
+	// @ts-ignore
 	return membershipToChargebeePlanMap[data.membership];
 }
 
 export const usePostResource = <Params, Result = {}>(resource: string) => {
 	return async (data: Params): Promise<Result> => {
 		const endpoint = '/join/v1' + resource
-		
+	
 		// @ts-ignore
 		data.plan = membershipToPlan(data.membership);
 		
