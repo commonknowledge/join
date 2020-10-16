@@ -14,16 +14,15 @@ export const DetailsSchema = object({
   firstName: string().required('First name is required'),
   lastName: string().required('Second name is required'),
   email: string().typeError('Your email address must be a valid email address').email().required('Email address is required'),
-  dobDay: number().typeError('The day of your birth must be a number').integer().required(),
-  dobMonth: number().typeError('The month of your birth must be a number').integer().required(),
-  dobYear: number().typeError('The year of your birth must be a number').integer().required(),
+  dobDay: number().typeError('The day of your birth must be a number').integer().max(31, 'The day of your birth should be a number between 1 and 31, representing the days of the month').required(),
+  dobMonth: number().typeError('The month of your birth must be a number').integer().max(12, 'The month of your birth should be only be a number between 1 and 12, representing the months of the year').required(),
+  dobYear: number().typeError('The year of your birth must be a number').integer().max(9999, 'The year of your birth should be only be a maximum of four numbers, for example 1984').min(2, 'The year of your birth should be only be a minimum of two numbers, for example 1984').required(),
   addressLine1: string().required(),
   addressLine2: string(),
   addressCity: string().required(),
   addressCounty: string().required(),
   addressPostcode: string().required(),
-  addressCountry: string().required(),
-  postcode: string().required('We need your postcode to send you your welcome pack')
+  addressCountry: string().required()
 }).required()
 
 const PlanSchema = object({
