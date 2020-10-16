@@ -5,5 +5,17 @@ $space-4: map-get($map: $spacers, $key: 4);
 $space-5: map-get($map: $spacers, $key: 5);
 
 .img-blend {
-	mix-blend-mode: darken;;
+	mix-blend-mode: darken;
+}
+
+.text-bebas-neue {
+	font-family: $font-heading !important;
+}
+
+.text-black {
+	color: $black !important;
+}
+
+.bg-toxic-green {
+	background-color: #52df00 !important;
 }
