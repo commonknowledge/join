@@ -1,5 +1,4 @@
 <?php
-
 function handle_join($data) {
 	$billingAddress = array(
 		"firstName" => $data['firstName'],
@@ -39,6 +38,8 @@ function handle_join($data) {
 		  ),
 		  "billingAddress" => $billingAddress
 		));
+		
+		$customer = $customerResult->customer();
 		
 		$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, array(
 			"planId" => $data['planId']
