@@ -14,14 +14,14 @@
 	<?php get_template_part('template-parts/full-page-header') ?>
 	<div class="jumbotron jumbotron-fluid">
 		<div class="container">
-			<h1 class="display-4 text-bebas-neue">Welcome!</h1>
+			<h1 class="text-xl text-bebas-neue">Welcome!</h1>
 			<div>
-                <div class="display-4 text-bebas-neue w-50">Thank you!</div>
+                <div class="text-l text-bebas-neue w-50">Thank you!</div>
             </div>
-            <div class="display-6 mt-4 text-bebas-neue">This is your first step to adding strength to the Green movement</div>
+            <div class="text-l mt-4 text-bebas-neue">This is your first step to adding strength to the Green movement</div>
 		</div>
 	</div>
-	<main class="container mt-4 mb-5">
+	<main class="container mt-4 mb-5 text-xs">
 		<?php
 			if ( have_posts() ) :
 				while ( have_posts() ) :
