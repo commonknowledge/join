@@ -1,4 +1,8 @@
-const membershipToChargebeePlanMap = {
+type tmembershipToChargebeePlanMap = {
+    [key: string]: string
+}
+
+const membershipToChargebeePlanMap: tmembershipToChargebeePlanMap = {
 	standard: 'membership_annual_individual_waged',
 	international: 'membership_annual_international',
 	lowWaged: 'membership_annual_individual_low_waged',
@@ -6,8 +10,7 @@ const membershipToChargebeePlanMap = {
 }
 
 function membershipToPlan(membership: string): string {
-	// @ts-ignore
-	return membershipToChargebeePlanMap[data.membership];
+	return membershipToChargebeePlanMap[membership];
 }
 
 export const usePostResource = <Params, Result = {}>(resource: string) => {
