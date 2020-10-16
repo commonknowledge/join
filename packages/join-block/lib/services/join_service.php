@@ -23,9 +23,7 @@ function handle_join($data) {
 		  "billingAddress" => $billingAddress
 		));
 
-		error_log(json_encode($result));
 		return $result;
-
 	} else if ($data['paymentMethod'] === 'directDebit') {
 		$mandate = gocardless_create_customer_mandate($data);
 
@@ -46,6 +44,6 @@ function handle_join($data) {
 			"planId" => $data['planId']
 		));
 
-		return $result;
+		return $customerResult;
 	}
 }
