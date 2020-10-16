@@ -18,7 +18,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => 
       </div>
 
       <section className="radio-grid form-section" role="radiogroup">
-        <h2>Choose the plan that’s right for you</h2>
+        <h2>Choose your membership</h2>
         <p className="text-secondary">
           You can change or cancel whenever you want.
         </p>

@@ -18,7 +18,7 @@ import { usePostResource } from './services/rest-resource.service';
 
 const stages = [
   { id: 'enter-details', label: 'Your Details', breadcrumb: true },
-  { id: 'plan', label: 'Choose a Plan', breadcrumb: true },
+  { id: 'plan', label: 'Your Membership', breadcrumb: true },
   { id: 'payment-details', label: 'Payment', breadcrumb: true },
   { id: 'payment-method', label: 'Payment', breadcrumb: false },
   { id: 'confirm', label: 'Confirm', breadcrumb: false },
