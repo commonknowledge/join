@@ -58,16 +58,16 @@
         },
         {
             "name": "chargebee/chargebee-php",
-            "version": "v2.7.4",
+            "version": "v2.7.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chargebee/chargebee-php.git",
-                "reference": "debbbde8e578c6f173a80ebd618b97a8c41f1a46"
+                "reference": "2cd4a58a3b8ea6446c7cef9790cc75e5c9ce7538"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chargebee/chargebee-php/zipball/debbbde8e578c6f173a80ebd618b97a8c41f1a46",
-                "reference": "debbbde8e578c6f173a80ebd618b97a8c41f1a46",
+                "url": "https://api.github.com/repos/chargebee/chargebee-php/zipball/2cd4a58a3b8ea6446c7cef9790cc75e5c9ce7538",
+                "reference": "2cd4a58a3b8ea6446c7cef9790cc75e5c9ce7538",
                 "shasum": ""
             },
             "type": "library",
@@ -88,7 +88,7 @@
                 "recurring billing",
                 "subscription billing"
             ],
-            "time": "2020-07-15T11:40:11+00:00"
+            "time": "2020-10-16T09:22:23+00:00"
         },
         {
             "name": "gocardless/gocardless-pro",
