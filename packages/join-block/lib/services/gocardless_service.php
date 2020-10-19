@@ -2,10 +2,7 @@
 
 function gocardless_get_client() {
 	$client = new \GoCardlessPro\Client([
-		// We recommend storing your access token in an
-		// environment variable for security
-		'access_token' => getenv('GC_ACCESS_TOKEN'),
-		// Change me to LIVE when you're ready to go live
+		'access_token' => $_ENV['GC_ACCESS_TOKEN'],
 		'environment' => \GoCardlessPro\Environment::SANDBOX
 	]);
 
