@@ -20,7 +20,7 @@ function handle_join($data) {
 		  "email" => $data['email'],
 		  "allow_direct_debit" => true,
 		  "locale" => "en-GB",
-		  "tokenId" => $data['creditCardToken'],
+		  "tokenId" => $data['paymentToken'],
 		  "billingAddress" => $billingAddress
 		));
 	} else if ($data['paymentMethod'] === 'directDebit') {
