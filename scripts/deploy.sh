@@ -27,3 +27,4 @@ deploy packages/join-block/lib $plugin_dest
 deploy packages/join-block/vendor $plugin_dest
 deploy packages/join-block/block.json $plugin_dest
 deploy packages/join-block/join.php $plugin_dest
+deploy packages/join-block/.env $plugin_dest
