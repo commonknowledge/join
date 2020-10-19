@@ -14,7 +14,7 @@ function handle_join($data) {
 	);
 
 	if ($data["paymentMethod"] === 'creditCard') {
-		$result = ChargeBee_Customer::create(array(
+		$customerResult = ChargeBee_Customer::create(array(
 		  "firstName" => $data['firstName'],
 		  "lastName" => $data['lastName'],
 		  "email" => $data['email'],
@@ -23,8 +23,6 @@ function handle_join($data) {
 		  "tokenId" => $data['creditCardToken'],
 		  "billingAddress" => $billingAddress
 		));
-
-		return $result;
 	} else if ($data['paymentMethod'] === 'directDebit') {
 		$mandate = gocardless_create_customer_mandate($data);
 
@@ -40,27 +38,35 @@ function handle_join($data) {
 		  ),
 		  "billingAddress" => $billingAddress
 		));
-		
-		$customer = $customerResult->customer();
-		
-		$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, array(
-			"planId" => $data['planId']
-		));
-		
-		$access_token = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
-		$default_password = $_ENV['AUTH0_DEFAULT_PASSWORD'];
-		
-		$managementApi = new Management($access_token, $_ENV['AUTH0_DOMAIN']);
-		
-		$managementApi->users()->create([
-			'password' => $default_password,
-			"connection" => "Username-Password-Authentication",
-			"email" => $data['email'],
-			"app_metadata" => [
-				"planId" => $data['planId']
-			]
-		]);
-
-		return $customerResult;
 	}
+
+	$customer = $customerResult->customer();
+		
+	$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, array(
+		"planId" => $data['planId']
+	));
+	
+	$access_token = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
+	$default_password = $_ENV['AUTH0_DEFAULT_PASSWORD'];
+	
+	$managementApi = new Management($access_token, $_ENV['AUTH0_DOMAIN']);
+	
+	$defaultRoles = [
+		"authenticated user",
+		"member",
+		"GPEx Voter"
+	];
+	
+	$managementApi->users()->create([
+		'password' => $default_password,
+		"connection" => "Username-Password-Authentication",
+		"email" => $data['email'],
+		"app_metadata" => [
+			"planId" => $data['planId'],
+			"chargebeeCustomerId" =>  $customer->id,
+			"roles" => $defaultRoles
+		]
+	]);
+	
+	return $customerResult;
 }
