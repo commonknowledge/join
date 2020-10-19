@@ -13,12 +13,12 @@
 
 require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
 
 add_action( 'init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init() {
