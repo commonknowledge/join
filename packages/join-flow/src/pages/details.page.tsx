@@ -62,7 +62,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
-        <h2>Contact details</h2>
+        <h2>Home address</h2>
         <FormItem label="Postcode" name="postcode" form={addressLookupForm}>
           <Form.Control />
         </FormItem>
