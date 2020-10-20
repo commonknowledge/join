@@ -117,6 +117,11 @@ const App = () => {
 const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substr(1));
 
+  const getDefaultState = () => ({
+    membership: "standard",
+    paymentMethod: "directDebit"
+  });
+
   const getSavedState = () => {
     const sesisonState = sessionStorage.getItem(SAVED_STATE_KEY);
     if (sesisonState) {
@@ -136,6 +141,7 @@ const getInitialState = (): FormSchema => {
 
   return {
     sessionToken: uuid.v4(),
+    ...getDefaultState(),
     ...getTestDataIfEnabled(),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams()
