@@ -54,13 +54,15 @@ interface FormItemProps {
   label?: string;
   form: UseFormMethods<any>;
   children: ReactElement;
+  required?: Boolean;
 }
 
 export const FormItem: FC<FormItemProps> = ({
   name,
   label,
   form,
-  children
+  children,
+  required
 }) => {
   const error = form.errors[name]?.message;
   if (error) {
@@ -72,13 +74,18 @@ export const FormItem: FC<FormItemProps> = ({
 
   return (
     <Form.Group>
-      {label && <Form.Label htmlFor={name + "-field"}>{label}</Form.Label>}
+      {label && (
+        <Form.Label htmlFor={name + "-field"}>
+          {label} {required && "*"}
+        </Form.Label>
+      )}
       {cloneElement(children, {
         name,
         ref: form.register,
         id: name + "-field",
         isInvalid,
-        isValid
+        isValid,
+        required
       })}
       {isInvalid && (
         <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>

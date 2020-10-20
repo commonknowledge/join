@@ -33,10 +33,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <p className="text-secondary">
           All fields marked with an asterisk (*) are required.
         </p>
-        <FormItem label="First Name" name="firstName" form={form}>
+        <FormItem label="First Name" name="firstName" form={form} required>
           <Form.Control />
         </FormItem>
-        <FormItem label="Last Name" name="lastName" form={form}>
+        <FormItem label="Last Name" name="lastName" form={form} required>
           <Form.Control />
         </FormItem>
       </section>
@@ -45,17 +45,17 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <h2>Date of birth</h2>
         <Row>
           <Col>
-            <FormItem label="Day" name="dobDay" form={form}>
+            <FormItem label="Day" name="dobDay" form={form} required>
               <Form.Control />
             </FormItem>
           </Col>
           <Col>
-            <FormItem label="Month" name="dobMonth" form={form}>
+            <FormItem label="Month" name="dobMonth" form={form} required>
               <Form.Control />
             </FormItem>
           </Col>
           <Col>
-            <FormItem label="Year" name="dobYear" form={form}>
+            <FormItem label="Year" name="dobYear" form={form} required>
               <Form.Control />
             </FormItem>
           </Col>
@@ -64,7 +64,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Home address</h2>
-        <FormItem label="Postcode" name="postcode" form={addressLookupForm}>
+        <FormItem
+          label="Postcode"
+          name="postcode"
+          form={addressLookupForm}
+          required
+        >
           <Form.Control />
         </FormItem>
 
@@ -124,10 +129,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Contact details</h2>
-        <FormItem label="Email Address" name="email" form={form}>
+        <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control />
         </FormItem>
-        <FormItem label="Phone number" name="phoneNumber" form={form}>
+        <FormItem label="Phone number" name="phoneNumber" form={form} required>
           <Form.Control />
         </FormItem>
       </section>
