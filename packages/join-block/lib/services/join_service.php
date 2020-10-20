@@ -1,3 +1,4 @@
+
 <?php
 use Auth0\SDK\API\Management;
 
@@ -62,7 +63,6 @@ function handle_join($data) {
 		'password' => $default_password,
 		"connection" => "Username-Password-Authentication",
 		"email" => $data['email'],
-		"phone_number" => $data['phoneNumber'],
 		"app_metadata" => [
 			"planId" => $data['planId'],
 			"chargebeeCustomerId" => $customer->id,
