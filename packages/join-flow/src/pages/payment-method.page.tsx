@@ -7,7 +7,7 @@ import { Summary } from "../components/summary";
 
 export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
   const form = useForm({
-    defaultValues: data as {},
+    defaultValues: data as {}
   });
 
   return (

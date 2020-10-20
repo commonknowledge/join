@@ -24,7 +24,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
   form,
   name,
   label,
-  className,
+  className
 }) => (
   <Controller
     name={name}
@@ -62,7 +62,7 @@ export const FormItem: FC<FormItemProps> = ({
   name,
   label,
   form,
-  children,
+  children
 }) => {
   const error = form.errors[name]?.message;
   if (error) {
@@ -80,7 +80,7 @@ export const FormItem: FC<FormItemProps> = ({
         ref: form.register,
         id: name + "-field",
         isInvalid,
-        isValid,
+        isValid
       })}
       {isInvalid && (
         <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
@@ -101,7 +101,7 @@ export const DetailsCard: FC = (props) => (
 export const DetailPanel: FC<DetailPanelProps> = ({
   label,
   children,
-  action,
+  action
 }) => {
   const router = useCurrentRouter();
   const onRequestChange = () => {

@@ -12,7 +12,7 @@ import {
   RouterContext,
   StateRouter,
   stripUrlParams,
-  useStateRouter,
+  useStateRouter
 } from "./services/router.service";
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/paymend-details.page";
@@ -26,7 +26,7 @@ const stages = [
   { id: "plan", label: "Your Membership", breadcrumb: true },
   { id: "payment-details", label: "Payment", breadcrumb: true },
   { id: "payment-method", label: "Payment", breadcrumb: false },
-  { id: "confirm", label: "Confirm", breadcrumb: false },
+  { id: "confirm", label: "Confirm", breadcrumb: false }
 ];
 
 const SAVED_STATE_KEY = "greens_join_state_flow";
@@ -36,7 +36,7 @@ const App = () => {
   const [data, setData] = useState(getInitialState);
 
   const router = useStateRouter({
-    stage: "enter-details",
+    stage: "enter-details"
   });
 
   useOnce(stripUrlParams);
@@ -46,7 +46,7 @@ const App = () => {
     (change: FormSchema) => {
       const nextData = {
         ...data,
-        ...change,
+        ...change
       } as FormSchema;
 
       setData(nextData);
@@ -104,7 +104,7 @@ const App = () => {
               plan: PlanPage,
               "payment-details": PaymentDetailsPage,
               "payment-method": PaymentPage,
-              confirm: ConfirmationPage,
+              confirm: ConfirmationPage
             }}
             fallback={<Fail router={router} />}
           />
@@ -121,7 +121,7 @@ const getInitialState = (): FormSchema => {
     const sesisonState = sessionStorage.getItem(SAVED_STATE_KEY);
     if (sesisonState) {
       return FormSchema.cast(JSON.parse(sesisonState), {
-        strict: true,
+        strict: true
       });
     }
   };
@@ -129,7 +129,7 @@ const getInitialState = (): FormSchema => {
   const getProvidedStateFromQueryParams = () => {
     if (queryParams) {
       return FormSchema.cast(queryParams, {
-        strict: true,
+        strict: true
       });
     }
   };
@@ -138,7 +138,7 @@ const getInitialState = (): FormSchema => {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getSavedState(),
-    ...getProvidedStateFromQueryParams(),
+    ...getProvidedStateFromQueryParams()
   } as any;
 };
 

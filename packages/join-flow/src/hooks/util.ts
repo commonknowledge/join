@@ -15,7 +15,7 @@ export const useSet = (initialValues: KeySet | (() => KeySet)): any => {
 		(key: string, value: boolean) => {
 			setState({
 				...stateRef.current,
-				[key]: value,
+				[key]: value
 			});
 		},
 		[stateRef, setState]

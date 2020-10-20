@@ -66,5 +66,5 @@ const STAGE_COMPONENTS: Record<PageState["stage"], FC<{ data: FormSchema }>> = {
 
     return null;
   },
-  confirm: () => null,
+  confirm: () => null
 };

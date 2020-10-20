@@ -24,7 +24,7 @@ export const Stager: Stager = ({
   stage,
   fallback,
   data,
-  onStageCompleted,
+  onStageCompleted
 }) => {
   const StageComponent = components[stage];
   if (!StageComponent) {

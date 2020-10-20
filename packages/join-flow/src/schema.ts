@@ -7,7 +7,7 @@ const Prerequesites = object({
 	email: string().required(),
 
 	/** Session token required by GoCardless. Generated client-side on load. */
-	sessionToken: string().required(),
+	sessionToken: string().required()
 }).required();
 
 export const DetailsSchema = object({
@@ -50,13 +50,13 @@ export const DetailsSchema = object({
 	addressCity: string().required(),
 	addressCounty: string().required(),
 	addressPostcode: string().required(),
-	addressCountry: string().required(),
+	addressCountry: string().required()
 }).required();
 
 const PlanSchema = object({
 	membership: string()
 		.oneOf(["standard", "lowWaged", "international", "unwaged"])
-		.required(),
+		.required()
 }).required();
 
 export const renderPaymentPlan = ({ membership }: FormSchema) => {
@@ -77,7 +77,7 @@ export const renderPaymentPlan = ({ membership }: FormSchema) => {
 };
 
 const PaymentMethodSchema = object({
-	paymentMethod: string().oneOf(["directDebit", "creditCard"]).required(),
+	paymentMethod: string().oneOf(["directDebit", "creditCard"]).required()
 }).required();
 
 export const renderPaymentMethod = ({ paymentMethod }: FormSchema) => {
@@ -96,12 +96,12 @@ const PaymentMethodDDSchema = object({
 	ddAccountHolderName: string().required(),
 	ddAccountNumber: string().required(),
 	ddSortCode: string().required(),
-	ddConfirmAccountHolder: boolean().equals([true]).required(),
+	ddConfirmAccountHolder: boolean().equals([true]).required()
 }).required();
 
 const PaymentMethodCardSchema = object({
 	paymentMethod: string().equals(["creditCard"]).required(),
-	paymentToken: string().required(),
+	paymentToken: string().required()
 }).required();
 
 const PaymentDetailsSchema = PaymentMethodDDSchema.concat(
@@ -148,7 +148,7 @@ export const getTestDataIfEnabled = (): FormSchema => {
 			membership: "standard",
 			paymentMethod: "directDebit",
 			ddAccountNumber: " 55779911",
-			ddSortCode: "200000",
+			ddSortCode: "200000"
 		};
 	} else {
 		return {};

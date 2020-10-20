@@ -7,7 +7,7 @@ import { FormSchema } from "../schema";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
-  onCompleted,
+  onCompleted
 }) => {
   const form = useForm();
 

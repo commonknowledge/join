@@ -3,7 +3,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
-	useState,
+	useState
 } from "react";
 
 export interface PageState {
@@ -48,14 +48,14 @@ export const useStateRouter = (value: PageState): StateRouter => {
 
 	return {
 		state,
-		setState,
+		setState
 	};
 };
 
 const resetScroll = () => {
 	window.scrollTo({
 		left: 0,
-		top: 0,
+		top: 0
 	});
 };
 

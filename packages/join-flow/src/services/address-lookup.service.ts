@@ -27,7 +27,7 @@ class Address {
 			this.line_2,
 			this.postcode,
 			this.county,
-			this.country,
+			this.country
 		]).join(", ");
 	}
 }
@@ -39,7 +39,7 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 	const setPostcode = async (postcode: string) => {
 		try {
 			const addresses = await client.lookupPostcode({
-				postcode: useTestAddress ? "ID1 1QD" : postcode,
+				postcode: useTestAddress ? "ID1 1QD" : postcode
 			});
 
 			setAddressValue(undefined);
@@ -71,7 +71,7 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 			el.value = value;
 			form.setValue(name, value, {
 				shouldDirty: true,
-				shouldValidate: true,
+				shouldValidate: true
 			});
 		};
 
@@ -89,6 +89,6 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 		setPostcode,
 		setAddress,
 		address,
-		options,
+		options
 	};
 };

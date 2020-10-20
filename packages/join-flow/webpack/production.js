@@ -8,5 +8,5 @@ module.exports = merge(commonConfig, {
   mode: "production",
   entry: ["regenerator-runtime/runtime", "../src/index.tsx"],
   devtool: "source-map",
-  plugins: [],
+  plugins: []
 });

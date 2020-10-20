@@ -3,7 +3,7 @@ import {
   CardCVV,
   CardExpiry,
   CardNumber,
-  CardComponent,
+  CardComponent
 } from "@chargebee/chargebee-js-react-wrapper";
 import { Container, Button, Spinner, FormGroup, Form } from "react-bootstrap";
 import { useForm } from "react-hook-form";
@@ -18,7 +18,7 @@ import { FormItem } from "../components/atoms";
 if (window.Chargebee) {
   window.Chargebee.init({
     site: process.env.REACT_APP_CHARGEBEE_SITE,
-    publishableKey: process.env.REACT_APP_CHARGEBEE_KEY,
+    publishableKey: process.env.REACT_APP_CHARGEBEE_KEY
   });
 } else {
   console.error(
@@ -28,7 +28,7 @@ if (window.Chargebee) {
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
-  onCompleted,
+  onCompleted
 }) => {
   if (data.paymentMethod === "directDebit") {
     return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
@@ -46,13 +46,13 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
 
 const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
   data,
-  onCompleted,
+  onCompleted
 }) => {
   const form = useForm({
     defaultValues: {
       ddAccountHolderName: [data.firstName, data.lastName].join(" "),
-      ...data,
-    },
+      ...data
+    }
   });
 
   return (
@@ -142,7 +142,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
 };
 
 const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
-  onCompleted,
+  onCompleted
 }) => {
   const cardRef = useRef<any>();
   const form = useForm();
@@ -155,7 +155,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   const handleCompleted = async () => {
     const { token } = await cardRef.current.tokenize();
     onCompleted({
-      paymentToken: token,
+      paymentToken: token
     });
   };
 
@@ -205,5 +205,5 @@ const chargebeeStylePropsList = [
   "fontSmoothing",
   "fontSmoothing",
   "fontStyle",
-  "fontVariant",
+  "fontVariant"
 ];
