@@ -30,7 +30,8 @@ export const DetailsSchema = object({
     .required("Email address is required"),
   dobDay: number()
     .typeError("The day of your birth must be a number")
-    .integer()
+    .integer("The day of your birth should be a whole number")
+    .positive("The day of your birth should be a positive number")
     .max(
       31,
       "The day of your birth should be a number between 1 and 31, representing the days of the month"
@@ -38,7 +39,8 @@ export const DetailsSchema = object({
     .required(),
   dobMonth: number()
     .typeError("The month of your birth must be a number")
-    .integer()
+    .integer("The month of your birth should be a whole number")
+    .positive("The month of your birth should be a positive number")
     .max(
       12,
       "The month of your birth should be only be a number between 1 and 12, representing the months of the year"
@@ -46,7 +48,8 @@ export const DetailsSchema = object({
     .required(),
   dobYear: number()
     .typeError("The year of your birth must be a number")
-    .integer()
+    .integer("The year of your birth should be a whole number")
+    .positive("The year of your birth should be a positive number")
     .max(
       9999,
       "The year of your birth should be only be a maximum of four numbers, for example 1984"
