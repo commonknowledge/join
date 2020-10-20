@@ -43,6 +43,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Date of birth</h2>
+        <p className="text-secondary">
+          We collect every member's date of birth because our membership types
+          are based on age.
+        </p>
         <Row>
           <Col>
             <FormItem label="Day" name="dobDay" form={form} required>
@@ -64,6 +68,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Home address</h2>
+        <p className="text-secondary">
+          We’ll use this to find your nearest local group and send your new
+          membership card.
+        </p>
         <FormItem
           label="Postcode"
           name="postcode"
@@ -76,6 +84,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <Button className="mt-2" onClick={handleLookupPostcode}>
           Find address
         </Button>
+
+        <p className="text-secondary">
+          <a href="#" className="text-secondary text-decoration-underline">
+            If you can't find your address, you can enter it manually.
+          </a>
+        </p>
 
         <Collapse in={!!addressLookup.options}>
           <Form.Group>
@@ -129,6 +143,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Contact details</h2>
+        <p className="text-secondary">
+          We’ll use this to keep in touch about things that matter to you.
+        </p>
         <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control />
         </FormItem>

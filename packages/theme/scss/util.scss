@@ -1,21 +1,40 @@
-$space-1: map-get($map: $spacers, $key: 1);
-$space-2: map-get($map: $spacers, $key: 2);
-$space-3: map-get($map: $spacers, $key: 3);
-$space-4: map-get($map: $spacers, $key: 4);
-$space-5: map-get($map: $spacers, $key: 5);
+$space-1: map-get(
+  $map: $spacers,
+  $key: 1
+);
+$space-2: map-get(
+  $map: $spacers,
+  $key: 2
+);
+$space-3: map-get(
+  $map: $spacers,
+  $key: 3
+);
+$space-4: map-get(
+  $map: $spacers,
+  $key: 4
+);
+$space-5: map-get(
+  $map: $spacers,
+  $key: 5
+);
 
 .img-blend {
-	mix-blend-mode: darken;
+  mix-blend-mode: darken;
 }
 
 .text-bebas-neue {
-	font-family: $font-heading !important;
+  font-family: $font-heading !important;
 }
 
 .text-black {
-	color: $black !important;
+  color: $black !important;
 }
 
 .bg-toxic-green {
-	background-color: #52df00 !important;
+  background-color: #52df00 !important;
+}
+
+.text-decoration-underline {
+  text-decoration: underline !important;
 }
