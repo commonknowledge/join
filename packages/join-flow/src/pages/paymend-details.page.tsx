@@ -1,19 +1,18 @@
 import React, { useRef } from "react";
 import {
+  CardComponent,
   CardCVV,
   CardExpiry,
-  CardNumber,
-  CardComponent
+  CardNumber
 } from "@chargebee/chargebee-js-react-wrapper";
-import { Container, Button, Spinner, FormGroup, Form } from "react-bootstrap";
+import { Button, Form, FormGroup, Spinner } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-
-import { StagerComponent } from "../components/stager";
-import { useCSSStyle } from "../hooks/util";
-import { FormSchema } from "../schema";
-import ddLogo from "../images/dd_logo_landscape.png";
-import { Summary } from "../components/summary";
 import { FormItem } from "../components/atoms";
+import { StagerComponent } from "../components/stager";
+import { Summary } from "../components/summary";
+import { useCSSStyle } from "../hooks/util";
+import ddLogo from "../images/dd_logo_landscape.png";
+import { FormSchema } from "../schema";
 
 if (window.Chargebee) {
   window.Chargebee.init({
