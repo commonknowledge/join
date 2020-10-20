@@ -64,9 +64,7 @@ export const DetailsSchema = object({
   addressCountry: string().required(),
   phoneNumber: string()
     .phone(undefined, false, "A valid phone number is required")
-    .required(),
-  contactViaEmail: boolean(),
-  contactViaPhone: boolean()
+    .required()
 }).required();
 
 const PlanSchema = object({
@@ -165,9 +163,7 @@ export const getTestDataIfEnabled = (): FormSchema => {
       paymentMethod: "directDebit",
       ddAccountNumber: " 55779911",
       ddSortCode: "200000",
-      phoneNumber: "02036919400",
-      contactViaEmail: true,
-      contactViaPhone: true
+      phoneNumber: "02036919400"
     };
   } else {
     return {};
