@@ -10,7 +10,7 @@ import { FormItem } from "../components/atoms";
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
-  onCompleted,
+  onCompleted
 }) => {
   const form = useForm({
     defaultValues: data as {},
@@ -23,7 +23,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   );
 
   return (
-    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form
+      className="form-content"
+      noValidate
+      onSubmit={form.handleSubmit(onCompleted)}
+    >
       <section className="form-section">
         <h2>Tell us more about you</h2>
         <p className="text-secondary">
@@ -33,9 +37,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <Form.Control />
         </FormItem>
         <FormItem label="Last Name" name="lastName" form={form}>
-          <Form.Control />
-        </FormItem>
-        <FormItem label="Email Address" name="email" form={form}>
           <Form.Control />
         </FormItem>
       </section>
@@ -119,6 +120,19 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             </FormItem>
           </div>
         </Collapse>
+      </section>
+
+      <section className="form-section">
+        <h2>Contact details</h2>
+        <FormItem label="Email Address" name="email" form={form}>
+          <Form.Control />
+        </FormItem>
+        <FormItem label="Phone number" name="phoneNumber" form={form}>
+          <Form.Control />
+        </FormItem>
+        <p>
+          <strong>How would you prefer us to contact you?</strong>
+        </p>
       </section>
 
       <section className="form-section">
