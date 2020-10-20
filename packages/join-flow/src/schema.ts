@@ -166,7 +166,7 @@ export const getTestDataIfEnabled = (): FormSchema => {
       phoneNumber: "02036919400"
     };
   } else {
-    return {};
+    return { membership: "standard", paymentMethod: "directDebit" };
   }
 };
 
