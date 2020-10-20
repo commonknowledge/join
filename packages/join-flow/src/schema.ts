@@ -50,7 +50,10 @@ export const DetailsSchema = object({
 	addressCity: string().required(),
 	addressCounty: string().required(),
 	addressPostcode: string().required(),
-	addressCountry: string().required()
+	addressCountry: string().required(),
+	phoneNumber: string().required(),
+	contactViaEmail: boolean(),
+	contactViaPhone: boolean()
 }).required();
 
 const PlanSchema = object({
@@ -148,7 +151,10 @@ export const getTestDataIfEnabled = (): FormSchema => {
 			membership: "standard",
 			paymentMethod: "directDebit",
 			ddAccountNumber: " 55779911",
-			ddSortCode: "200000"
+			ddSortCode: "200000",
+			phoneNumber: "02036919400",
+			contactViaEmail: true,
+			contactViaPhone: true
 		};
 	} else {
 		return {};
