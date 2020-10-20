@@ -51,13 +51,10 @@ export const DetailsSchema = object({
     .integer("The year of your birth should be a whole number")
     .positive("The year of your birth should be a positive number")
     .max(
-      9999,
-      "The year of your birth should be only be a maximum of four numbers, for example 1984"
+      new Date().getFullYear(),
+      "The year of your birth should not be in the future"
     )
-    .min(
-      2,
-      "The year of your birth should be only be a minimum of two numbers, for example 1984"
-    )
+    .min(1900, "The year of your birth should not be in the distant past")
     .required(),
   addressLine1: string().required(),
   addressLine2: string(),
