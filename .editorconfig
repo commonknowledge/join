@@ -23,5 +23,8 @@ trim_trailing_whitespace = false
 [*.tsx]
 indent_style = space
 
+[*.ts]
+indent_style = space
+
 [*.js]
 indent_style = space
