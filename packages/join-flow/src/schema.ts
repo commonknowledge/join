@@ -3,6 +3,7 @@ import { boolean, InferType, number, object, ObjectSchema, string } from "yup";
 import "yup-phone";
 import { yupResolver } from "@hookform/resolvers/yup";
 
+// Typescript support for Yup phone validation
 declare module "yup" {
   export interface StringSchema {
     phone(
