@@ -34,6 +34,7 @@ function handle_join($data) {
 		  "email" => $data['email'],
 		  "allow_direct_debit" => true,
 		  "locale" => "en-GB",
+		  "phone" => $data['phoneNumber'],
 		  "payment_method" => array(
 				"type" => "direct_debit",
 				"reference_id" => $mandate->id,
