@@ -69,8 +69,8 @@ export const FormItem: FC<FormItemProps> = ({
     console.log(error);
   }
 
-  const isInvalid = !!error
-  const isValid = form.formState.isSubmitted && !error
+  const isInvalid = !!error;
+  const isValid = form.formState.isSubmitted && !error;
 
   return (
     <Form.Group>
@@ -82,7 +82,9 @@ export const FormItem: FC<FormItemProps> = ({
         isInvalid,
         isValid,
       })}
-      {isInvalid && <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>}
+      {isInvalid && (
+        <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
+      )}
     </Form.Group>
   );
 };

@@ -12,7 +12,11 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const form = useForm();
 
   return (
-    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form
+      className="form-content"
+      noValidate
+      onSubmit={form.handleSubmit(onCompleted)}
+    >
       <section className="form-section mb-3">
         <h2>Confirm your details</h2>
 

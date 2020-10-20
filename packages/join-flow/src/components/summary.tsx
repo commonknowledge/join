@@ -2,15 +2,18 @@ import React, { FC } from "react";
 import { FormSchema, renderPaymentMethod, renderPaymentPlan } from "../schema";
 import { PageState, useCurrentRouter } from "../services/router.service";
 import { DetailPanel, DetailsCard } from "./atoms";
-import { takeWhile } from 'lodash-es'
+import { takeWhile } from "lodash-es";
 
 interface SummaryProps {
   data: FormSchema;
 }
 
 export const Summary: FC<SummaryProps> = ({ data }) => {
-  const router = useCurrentRouter()
-  const stages = takeWhile(Object.keys(STAGE_COMPONENTS), stage => stage !== router.state.stage) as PageState["stage"][]
+  const router = useCurrentRouter();
+  const stages = takeWhile(
+    Object.keys(STAGE_COMPONENTS),
+    (stage) => stage !== router.state.stage
+  ) as PageState["stage"][];
 
   return (
     <DetailsCard>
@@ -35,14 +38,14 @@ const STAGE_COMPONENTS: Record<PageState["stage"], FC<{ data: FormSchema }>> = {
   ),
   "payment-method": ({ data }) => (
     <DetailPanel label="Billing" action={{ stage: "payment-method" }}>
-    {renderPaymentMethod(data)}
+      {renderPaymentMethod(data)}
     </DetailPanel>
   ),
   "payment-details": ({ data }) => {
     if (data.paymentMethod === "directDebit") {
       return (
         <>
-        <DetailPanel
+          <DetailPanel
             action={{ stage: "payment-details" }}
             label="Account Name"
           >

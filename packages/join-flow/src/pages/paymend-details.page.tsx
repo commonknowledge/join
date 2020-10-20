@@ -21,7 +21,9 @@ if (window.Chargebee) {
     publishableKey: process.env.REACT_APP_CHARGEBEE_KEY,
   });
 } else {
-  console.error('Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.\n\nWhen the Green Party join form is loaded in WordPress, this should be loaded when the Join Form block is present on the page.');
+  console.error(
+    "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.\n\nWhen the Green Party join form is loaded in WordPress, this should be loaded when the Join Form block is present on the page."
+  );
 }
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
@@ -54,7 +56,11 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
   });
 
   return (
-    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form
+      className="form-content"
+      noValidate
+      onSubmit={form.handleSubmit(onCompleted)}
+    >
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
@@ -62,18 +68,16 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       <section className="form-section">
         <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
-          <Form.Control  />
+          <Form.Control />
         </FormItem>
         <FormItem form={form} label="Account Number" name="ddAccountNumber">
-          <Form.Control  />
+          <Form.Control />
         </FormItem>
         <FormItem form={form} label="Sort Code" name="ddSortCode">
-          <Form.Control  />
+          <Form.Control />
         </FormItem>
         <FormItem form={form} name="ddConfirmAccountHolder">
-          <Form.Check
-          label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account."
-          />
+          <Form.Check label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account." />
         </FormItem>
       </section>
 
@@ -124,11 +128,12 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
               target="_blank"
             >
               GoCardless privacy notice
-            </a> for more information.
+            </a>{" "}
+            for more information.
           </small>
         </p>
       </section>
-      
+
       <Button className="form-section-addon" type="submit">
         Continue
       </Button>
@@ -155,7 +160,11 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   };
 
   return (
-    <form className="form-content" noValidate onSubmit={form.handleSubmit(handleCompleted)}>
+    <form
+      className="form-content"
+      noValidate
+      onSubmit={form.handleSubmit(handleCompleted)}
+    >
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}

@@ -2,4 +2,4 @@
 
 declare module "@chargebee/chargebee-js-react-wrapper";
 
-declare const Chargebee: any
+declare const Chargebee: any;

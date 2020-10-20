@@ -11,7 +11,8 @@
 		"frontend": "cd packages/join-flow && yarn start",
 		"start": "lerna run --parallel start & docker-compose up",
 		"build": "lerna run build",
-		"deploy": "yarn build && sh scripts/deploy.sh"
+		"deploy": "yarn build && sh scripts/deploy.sh",
+		"prettier": "prettier --write packages/join-flow"
 	},
 	"devDependencies": {
 		"lerna": "^3.22.1",

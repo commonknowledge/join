@@ -6,13 +6,20 @@ import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
 
-export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => {
+export const PlanPage: StagerComponent<FormSchema> = ({
+  data,
+  onCompleted,
+}) => {
   const form = useForm({
-    defaultValues: data as {}
+    defaultValues: data as {},
   });
 
   return (
-    <form className="form-content" noValidate onSubmit={form.handleSubmit(onCompleted)}>
+    <form
+      className="form-content"
+      noValidate
+      onSubmit={form.handleSubmit(onCompleted)}
+    >
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
@@ -58,7 +65,9 @@ export const PlanPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => 
         />
       </section>
 
-      <Button className="form-section-addon" type="submit">Continue</Button>
+      <Button className="form-section-addon" type="submit">
+        Continue
+      </Button>
     </form>
   );
 };
