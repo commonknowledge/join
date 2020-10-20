@@ -21,7 +21,8 @@ function handle_join($data) {
 		  "allow_direct_debit" => true,
 		  "locale" => "en-GB",
 		  "tokenId" => $data['paymentToken'],
-		  "billingAddress" => $billingAddress
+		  "billingAddress" => $billingAddress,
+		  "phone" => $data['phoneNumber']
 		));
 	} else if ($data['paymentMethod'] === 'directDebit') {
 		$mandate = gocardless_create_customer_mandate($data);
@@ -61,9 +62,10 @@ function handle_join($data) {
 		'password' => $default_password,
 		"connection" => "Username-Password-Authentication",
 		"email" => $data['email'],
+		"phone_number" => $data['phoneNumber'],
 		"app_metadata" => [
 			"planId" => $data['planId'],
-			"chargebeeCustomerId" =>  $customer->id,
+			"chargebeeCustomerId" => $customer->id,
 			"roles" => $defaultRoles
 		]
 	]);
