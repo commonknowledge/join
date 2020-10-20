@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import isoCountries from "iso-3166";
@@ -17,6 +17,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     resolver: validate(DetailsSchema)
   });
   const addressLookupForm = useForm();
+
+  const [manuallyOpen, setAddressManuallyOpen] = useState(false);
+
   const addressLookup = useAddressLookup(form);
   const handleLookupPostcode = addressLookupForm.handleSubmit(({ postcode }) =>
     addressLookup.setPostcode(postcode)
@@ -86,7 +89,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </Button>
 
         <p className="text-secondary">
-          <a href="#" className="text-secondary text-decoration-underline">
+          <a
+            className="text-secondary text-decoration-underline cursor-pointer"
+            onClick={() =>
+              setAddressManuallyOpen((manuallyOpen) => !manuallyOpen)
+            }
+          >
             If you can't find your address, you can enter it manually.
           </a>
         </p>
@@ -111,7 +119,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           </Form.Group>
         </Collapse>
 
-        <Collapse in={!!addressLookup.address || !!data.addressLine1}>
+        <Collapse
+          in={!!addressLookup.address || !!data.addressLine1 || manuallyOpen}
+        >
           <div>
             <FormItem label="Address line 1" name="addressLine1" form={form}>
               <Form.Control />
