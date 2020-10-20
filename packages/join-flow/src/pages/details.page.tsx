@@ -134,11 +134,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <strong>How would you prefer us to contact you?</strong>
         </p>
 
-        <FormItem label="Email" name="contactViaEmail" form={form}>
-          <Form.Control type="checkbox" />
+        <FormItem name="contactViaEmail" form={form}>
+          <Form.Check type="checkbox" label="Email" />
         </FormItem>
-        <FormItem label="Phone" name="contactViaPhone" form={form}>
-          <Form.Control type="checkbox" />
+        <FormItem name="contactViaPhone" form={form}>
+          <Form.Check type="checkbox" label="Phone" />
         </FormItem>
       </section>
 
