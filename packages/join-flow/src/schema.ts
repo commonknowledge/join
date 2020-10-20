@@ -14,8 +14,7 @@ export const DetailsSchema = object({
 	firstName: string().required("First name is required"),
 	lastName: string().required("Second name is required"),
 	email: string()
-		.typeError("Your email address must be a valid email address")
-		.email()
+		.email("Your email address must be a valid email address")
 		.required("Email address is required"),
 	dobDay: number()
 		.typeError("The day of your birth must be a number")
