@@ -76,7 +76,13 @@ export const FormItem: FC<FormItemProps> = ({
     <Form.Group>
       {label && (
         <Form.Label htmlFor={name + "-field"}>
-          {label} {required && "*"}
+          {label}{" "}
+          {required && (
+            <>
+              <span aria-hidden="true">*</span>{" "}
+              <div className="sr-only">required</div>
+            </>
+          )}
         </Form.Label>
       )}
       {cloneElement(children, {
