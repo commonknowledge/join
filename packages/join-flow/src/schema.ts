@@ -3,6 +3,8 @@ import { boolean, InferType, number, object, ObjectSchema, string } from "yup";
 import "yup-phone";
 import { yupResolver } from "@hookform/resolvers/yup";
 
+import { getDaysInMonth, isPast } from "date-fns";
+
 // Typescript support for Yup phone validation
 declare module "yup" {
   export interface StringSchema {
@@ -22,6 +24,24 @@ const Prerequesites = object({
   sessionToken: string().required()
 }).required();
 
+function isValidDayOfMonth(value: number | null | undefined | object) {
+  const correctDaysInMonth = getDaysInMonth(
+    new Date(this.options.parent.dobYear, this.options.parent.dobMonth - 1)
+  );
+
+  return value <= correctDaysInMonth;
+}
+
+function isInPast(value: number | null | undefined | object) {
+  return isPast(
+    new Date(
+      this.options.parent.dobYear,
+      this.options.parent.dobMonth - 1,
+      this.options.parent.dobDay - 1
+    )
+  );
+}
+
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
@@ -35,6 +55,11 @@ export const DetailsSchema = object({
     .max(
       31,
       "The day of your birth should be a number between 1 and 31, representing the days of the month"
+    )
+    .test(
+      "is-valid-day-of-month",
+      "This is not a valid day in the month",
+      isValidDayOfMonth
     )
     .required(),
   dobMonth: number()
@@ -50,11 +75,12 @@ export const DetailsSchema = object({
     .typeError("The year of your birth must be a number")
     .integer("The year of your birth should be a whole number")
     .positive("The year of your birth should be a positive number")
-    .max(
-      new Date().getFullYear(),
-      "The year of your birth should not be in the future"
-    )
     .min(1900, "The year of your birth should not be in the distant past")
+    .test(
+      "is-not-in-future",
+      "The date of your birth should not be in the future",
+      isInPast
+    )
     .required(),
   addressLine1: string().required(),
   addressLine2: string(),
