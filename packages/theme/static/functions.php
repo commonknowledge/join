@@ -2,6 +2,9 @@
 
 function init_assets()
 {
+	
+	wp_enqueue_style('typekit-fonts', '//use.typekit.net/ejc1mhh.css');
+	
 	if (WP_DEBUG === true) {
 		wp_enqueue_script('style', 'http://localhost:3001/index.js');
 	} else {
