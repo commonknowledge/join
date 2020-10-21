@@ -42,6 +42,7 @@ const STAGE_COMPONENTS: Record<PageState["stage"], FC<{ data: FormSchema }>> = {
     </DetailPanel>
   ),
   "payment-details": ({ data }) => {
+    // TODO: Fix Typescript error
     if (data.paymentMethod === "directDebit") {
       return (
         <>
