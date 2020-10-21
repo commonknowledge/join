@@ -29,7 +29,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <section className="form-section mb-3">
         <h2>Confirm your details</h2>
 
-        {false ? joiningSpinner : <Summary data={data} />}
+        {form.formState.isSubmitting ? joiningSpinner : <Summary data={data} />}
       </section>
 
       <Button
