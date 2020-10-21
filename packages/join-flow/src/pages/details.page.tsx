@@ -16,10 +16,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     defaultValues: data as {},
     resolver: validate(DetailsSchema)
   });
-  const addressLookupForm = useForm();
-
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
 
+  const addressLookupForm = useForm();
   const addressLookup = useAddressLookup(form);
   const handleLookupPostcode = addressLookupForm.handleSubmit(({ postcode }) =>
     addressLookup.setPostcode(postcode)
