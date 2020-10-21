@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "react-bootstrap";
+import { Button, FormText } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
@@ -11,6 +11,15 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 }) => {
   const form = useForm();
 
+  const joiningSpinner = (
+    <div className="d-flex justify-content-center align-items-center flex-column">
+      <div className="spinner-border" role="status">
+        <span className="sr-only">Please wait</span>
+      </div>
+      <div className="mt-3">Joining the Green Party</div>
+    </div>
+  );
+
   return (
     <form
       className="form-content"
@@ -20,10 +29,14 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <section className="form-section mb-3">
         <h2>Confirm your details</h2>
 
-        <Summary data={data} />
+        {form.formState.isSubmitting ? joiningSpinner : <Summary data={data} />}
       </section>
 
-      <Button className="form-section-addon" type="submit">
+      <Button
+        className="form-section-addon"
+        type="submit"
+        disabled={form.formState.isSubmitting}
+      >
         Join the Greens
       </Button>
     </form>
