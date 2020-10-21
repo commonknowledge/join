@@ -1,5 +1,5 @@
 .root {
-    position: relative;
+  position: relative;
 }
 
 .progress-steps {
@@ -14,7 +14,7 @@
 }
 
 .progress-text {
-  font-family: Bebas Neue;
+  font-family: $font-heading;
   font-style: normal;
   font-weight: normal;
   font-size: 21.33px;
@@ -45,5 +45,5 @@
 }
 
 .summary-row:not(:last-child) > * {
-	border-bottom: 1px solid $light-gray;
+  border-bottom: 1px solid $light-gray;
 }
