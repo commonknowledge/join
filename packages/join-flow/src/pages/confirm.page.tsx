@@ -12,7 +12,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const form = useForm();
 
   const joiningSpinner = (
-    <div className="d-flex justify-content-center align-items-center flex-column">
+    <div className="d-flex justify-content-center align-items-center flex-column h-200px">
       <div className="spinner-border" role="status">
         <span className="sr-only">Please wait</span>
       </div>
@@ -29,7 +29,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <section className="form-section mb-3">
         <h2>Confirm your details</h2>
 
-        {form.formState.isSubmitting ? joiningSpinner : <Summary data={data} />}
+        {false ? joiningSpinner : <Summary data={data} />}
       </section>
 
       <Button
