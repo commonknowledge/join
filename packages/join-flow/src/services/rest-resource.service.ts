@@ -3,9 +3,10 @@ type tmembershipToChargebeePlanMap = {
 };
 
 const membershipToChargebeePlanMap: tmembershipToChargebeePlanMap = {
-  standard: "membership_annual_individual_waged",
-  international: "membership_annual_international",
+  suggested: "suggested",
+  standard: "membership_monthly_individual",
   lowWaged: "membership_annual_individual_low_waged",
+  student: "membership_annual_student",
   unwaged: "membership_annual_unwaged"
 };
 

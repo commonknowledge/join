@@ -28,35 +28,43 @@ export const PlanPage: StagerComponent<FormSchema> = ({
 
         <RadioPanel
           name="membership"
+          value="suggested"
+          label="Suggested Membership Contribution"
+          valueText="£10 a month"
+          description="For those who are able to do more to help progress the Green Movement."
+          form={form}
+        />
+        <RadioPanel
+          name="membership"
           value="standard"
           label="Standard Membership"
-          valueText="£36 a year"
-          valueMeta="or £3 a month"
+          valueText="£3 a month"
+          valueMeta="or £36 a year"
           description="Available to everyone."
           form={form}
         />
         <RadioPanel
           name="membership"
           value="lowWaged"
-          label="Low–Waged Membership"
+          label="Concessionary Membership"
           valueText="£12 a year"
           description="If you are in low-waged employment."
           form={form}
         />
         <RadioPanel
           name="membership"
-          value="international"
-          label="International Membership"
-          description="If you live outside of England or Wales."
-          valueText="£12 a year"
+          value="student"
+          valueText="£6 a year"
+          label="Student Membership"
+          description="If you are a student."
           form={form}
         />
         <RadioPanel
           name="membership"
           value="unwaged"
           valueText="£6 a year"
-          label="Unwaged or Student Membership"
-          description="If you are a student or not in employment."
+          label="Reduced Membership"
+          description="If you are without paid work."
           form={form}
         />
       </section>

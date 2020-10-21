@@ -44,10 +44,28 @@ function handle_join($data) {
 	}
 
 	$customer = $customerResult->customer();
+	
+	$chargebeeSubscriptionPayload = [];
+
+	/* 
+		"Suggested Member Contribution" has two components in Chargebee
+			- A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
+			- An additional donation, in Chargebee an add-on callled "additional_donation_month" we set to £7
+	*/
+	if ($data['planId'] === 'suggested') {
+		$chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
 		
-	$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, array(
-		"planId" => $data['planId']
-	));
+		$chargebeeSubscriptionPayload['addons'] = [
+			[
+				"id" => "additional_donation_month",
+				"unitPrice" => "700"
+			]
+		];
+	} else {
+		$chargebeeSubscriptionPayload['planId'] =  $data['planId'];
+	}
+	
+	$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
 	
 	$access_token = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 	$default_password = $_ENV['AUTH0_DEFAULT_PASSWORD'];
@@ -65,7 +83,7 @@ function handle_join($data) {
 		"connection" => "Username-Password-Authentication",
 		"email" => $data['email'],
 		"app_metadata" => [
-			"planId" => $data['planId'],
+			"planId" => $chargebeeSubscriptionPayload['planId'],
 			"chargebeeCustomerId" => $customer->id,
 			"roles" => $defaultRoles
 		]

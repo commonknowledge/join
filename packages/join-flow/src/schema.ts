@@ -95,7 +95,14 @@ export const DetailsSchema = object({
 
 const PlanSchema = object({
   membership: string()
-    .oneOf(["standard", "lowWaged", "international", "unwaged"])
+    .oneOf([
+      "standard",
+      "lowWaged",
+      "international",
+      "unwaged",
+      "student",
+      "suggested"
+    ])
     .required()
 }).required();
 
@@ -106,11 +113,21 @@ export const renderPaymentPlan = ({ membership }: FormSchema) => {
   if (membership === "international") {
     return "International Membership";
   }
+
   if (membership === "lowWaged") {
-    return "Low-Waged Membership";
+    return "Concessionary Membership";
   }
+
+  if (membership === "student") {
+    return "Student Membership";
+  }
+
   if (membership === "unwaged") {
     return "Unwaged or Student Membership";
+  }
+
+  if (membership === "suggested") {
+    return "Suggested Membership Contribution";
   }
 
   return "None";

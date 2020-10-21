@@ -118,7 +118,7 @@ const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substr(1));
 
   const getDefaultState = () => ({
-    membership: "standard",
+    membership: "suggested",
     paymentMethod: "directDebit"
   });
 
