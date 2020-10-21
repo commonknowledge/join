@@ -108,7 +108,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               className="form-control"
               onChange={(e) => addressLookup.setAddress(e.currentTarget.value)}
             >
-              <option />
+              <option>Choose your address</option>
 
               {addressLookup.options?.map((opt) => (
                 <option key={opt.id} value={opt.id}>
