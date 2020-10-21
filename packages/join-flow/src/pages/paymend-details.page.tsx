@@ -29,6 +29,7 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
+  // TODO: Fix Typescript error messages
   if (data.paymentMethod === "directDebit") {
     return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
   }
