@@ -15,7 +15,9 @@ function handle_join($data) {
 	);
 	
 	$phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
-	$phoneNumber = $phoneUtil->format($data['phoneNumber'], \libphonenumber\PhoneNumberFormat::E164);
+	
+	$phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
+	$phoneNumber = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
 
 	if ($data["paymentMethod"] === 'creditCard') {
 		$customerResult = ChargeBee_Customer::create(array(
