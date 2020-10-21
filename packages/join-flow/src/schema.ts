@@ -137,15 +137,29 @@ const PaymentMethodSchema = object({
   paymentMethod: string().oneOf(["directDebit", "creditCard"]).required()
 }).required();
 
-export const renderPaymentMethod = ({ paymentMethod }: FormSchema) => {
+const membershipIsAnnual = (membership: string) =>
+  membership === "lowWaged" ||
+  membership === "student" ||
+  membership === "unwaged";
+
+export const renderPaymentMethod = ({
+  paymentMethod,
+  membership
+}: FormSchema) => {
+  let paymentFormat = "None";
+
   if (paymentMethod === "creditCard") {
-    return "Credit Card";
-  }
-  if (paymentMethod === "directDebit") {
-    return "Monthly Direct Debit";
+    paymentFormat = "Credit Card";
   }
 
-  return "None";
+  if (paymentMethod === "directDebit") {
+    paymentFormat = "Direct Debit";
+  }
+
+  const paymentFrequency =
+    membership && membershipIsAnnual(membership) ? "Yearly" : "Monthly";
+
+  return `${paymentFrequency} ${paymentFormat}`;
 };
 
 export const PaymentMethodDDSchema = object({
