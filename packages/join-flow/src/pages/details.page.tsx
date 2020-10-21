@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import isoCountries from "iso-3166";
@@ -7,6 +7,13 @@ import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { FormItem } from "../components/atoms";
+
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+
+const addressLookupFormSchema = yup.object().shape({
+  postcode: yup.string().required("We need a postcode to search your postcode")
+});
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -18,11 +25,30 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   });
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
 
-  const addressLookupForm = useForm();
+  const addressLookupForm = useForm({
+    resolver: yupResolver(addressLookupFormSchema)
+  });
   const addressLookup = useAddressLookup(form);
   const handleLookupPostcode = addressLookupForm.handleSubmit(({ postcode }) =>
     addressLookup.setPostcode(postcode)
   );
+
+  useEffect(() => {
+    // Check if all we haven't touched the postcode at all or manually entered something, then give an error.
+    if (
+      Object.keys(form.errors).filter((error) => error.includes("address"))
+        .length === 4
+    ) {
+      console.log("We have address errors");
+      addressLookupForm.setError("postcode", {
+        type: "manual",
+        message:
+          "Please fill in your address. Enter your postcode above then click on Find Address to find it, then use Select Address"
+      });
+    } else {
+      addressLookupForm.clearErrors("postcode");
+    }
+  }, [form.errors]);
 
   return (
     <form
