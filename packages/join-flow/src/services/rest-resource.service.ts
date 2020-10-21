@@ -2,6 +2,13 @@ type tmembershipToChargebeePlanMap = {
   [key: string]: string;
 };
 
+/*
+  All membership types map exactly to one Chargebee plan, except for suggested.
+  
+  Suggested is a combination of a membership_monthly_individual plan and a £7 donation.
+  
+  See packages/join-block/lib/services/join_service.php for details.
+*/
 const membershipToChargebeePlanMap: tmembershipToChargebeePlanMap = {
   suggested: "suggested",
   standard: "membership_monthly_individual",
