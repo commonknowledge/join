@@ -131,11 +131,21 @@ export const renderPaymentMethod = ({ paymentMethod }: FormSchema) => {
   return "None";
 };
 
-const PaymentMethodDDSchema = object({
+export const PaymentMethodDDSchema = object({
   paymentMethod: string().equals(["directDebit"]).required(),
   ddAccountHolderName: string().required(),
-  ddAccountNumber: string().required(),
-  ddSortCode: string().required(),
+  ddAccountNumber: string()
+    .matches(
+      /^(\d){8}$/,
+      "A account number looks like eight digits. For example, 1122334455"
+    )
+    .required(),
+  ddSortCode: string()
+    .matches(
+      /^(?!(?:0{6}|00-00-00))(?:\d{6}|\d\d-\d\d-\d\d)$/,
+      "A valid sort code looks like six digits, which can be separated by hyphens. For example, 04-00-04"
+    )
+    .required(),
   ddConfirmAccountHolder: boolean().equals([true]).required()
 }).required();
 

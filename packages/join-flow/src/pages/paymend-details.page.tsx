@@ -12,7 +12,7 @@ import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
-import { FormSchema } from "../schema";
+import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
 if (window.Chargebee) {
   window.Chargebee.init({
@@ -51,7 +51,8 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
     defaultValues: {
       ddAccountHolderName: [data.firstName, data.lastName].join(" "),
       ...data
-    }
+    },
+    resolver: validate(PaymentMethodDDSchema)
   });
 
   return (
