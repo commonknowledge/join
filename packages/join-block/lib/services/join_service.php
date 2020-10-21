@@ -17,7 +17,7 @@ function handle_join($data) {
 	$phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 	
 	$phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
-	$phoneNumber = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+	$data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
 
 	if ($data["paymentMethod"] === 'creditCard') {
 		$customerResult = ChargeBee_Customer::create(array(
@@ -28,7 +28,7 @@ function handle_join($data) {
 		  "locale" => "en-GB",
 		  "tokenId" => $data['paymentToken'],
 		  "billingAddress" => $billingAddress,
-		  "phone" => $phoneNumber
+		  "phone" => $data['phoneNumber']
 		));
 	} else if ($data['paymentMethod'] === 'directDebit') {
 		$mandate = gocardless_create_customer_mandate($data);
@@ -39,7 +39,7 @@ function handle_join($data) {
 		  "email" => $data['email'],
 		  "allow_direct_debit" => true,
 		  "locale" => "en-GB",
-		  "phone" => $phoneNumber,
+		  "phone" => $data['phoneNumber'],
 		  "payment_method" => array(
 				"type" => "direct_debit",
 				"reference_id" => $mandate->id,
