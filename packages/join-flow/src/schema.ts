@@ -149,7 +149,6 @@ export const renderPaymentMethod = ({ paymentMethod }: FormSchema) => {
 };
 
 export const PaymentMethodDDSchema = object({
-  paymentMethod: string().equals(["directDebit"]).required(),
   ddAccountHolderName: string().required(),
   ddAccountNumber: string()
     .matches(
@@ -167,7 +166,6 @@ export const PaymentMethodDDSchema = object({
 }).required();
 
 const PaymentMethodCardSchema = object({
-  paymentMethod: string().equals(["creditCard"]).required(),
   paymentToken: string().required()
 }).required();
 
