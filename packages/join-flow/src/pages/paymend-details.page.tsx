@@ -7,7 +7,7 @@ import {
 } from "@chargebee/chargebee-js-react-wrapper";
 import { Button, Form, FormGroup, Spinner } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import { FormItem } from "../components/atoms";
+import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { useCSSStyle } from "../hooks/util";
@@ -135,9 +135,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
         </p>
       </section>
 
-      <Button className="form-section-addon" type="submit">
-        Continue
-      </Button>
+      <ContinueButton />
     </form>
   );
 };
@@ -185,9 +183,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
         </FormGroup>
       </CardComponent>
 
-      <Button className="form-section-addon" type="submit">
-        Continue
-      </Button>
+      <ContinueButton />
     </form>
   );
 };

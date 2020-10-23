@@ -1,17 +1,12 @@
 .btn-primary {
   border: none !important;
   background-color: $primary !important;
-
-  &:hover {
-    box-shadow: 0px 0px 8px $primary;
-  }
-  &:active,
-  &:focus {
-    background-color: $primary-focus !important;
-    box-shadow: 0px 0px 8px $primary-focus;
-  }
 }
 
 .btn {
-    @include text-xs;
+  font-size: 28.43px;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 120%;
+  text-transform: uppercase;
 }

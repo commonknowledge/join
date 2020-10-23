@@ -6,7 +6,7 @@ import isoCountries from "iso-3166";
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
-import { FormItem } from "../components/atoms";
+import { ContinueButton, FormItem } from "../components/atoms";
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -204,9 +204,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </p>
       </section>
 
-      <Button className="form-section-addon" type="submit">
-        Continue
-      </Button>
+      <ContinueButton />
     </form>
   );
 };

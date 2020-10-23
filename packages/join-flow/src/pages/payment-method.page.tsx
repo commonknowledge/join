@@ -1,7 +1,7 @@
 import React from "react";
 import { Container, Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import { RadioPanel } from "../components/atoms";
+import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 
@@ -38,9 +38,7 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
         />
       </section>
 
-      <Button className="form-section-addon" type="submit">
-        Continue
-      </Button>
+      <ContinueButton />
     </form>
   );
 };

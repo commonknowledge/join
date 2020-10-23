@@ -4,8 +4,8 @@ $black: #212529;
 $gray: #22262a;
 $light-gray: #f8f8f8;
 
-$primary: #6ab023;
-$primary-focus: #50f402;
+$primary: #00643b;
+$primary-focus: #00643b;
 $danger: #e3220c;
 $secondary: #7a7c7f;
 $body-bg: $light-gray;
@@ -117,12 +117,14 @@ $headings-font-family: $font-family-sans-serif;
 $input-border-width: 2px;
 $input-border-color: $black;
 $input-border-radius: 0;
-$input-focus-box-shadow: 0px 0px 8px $primary;
+$input-focus-box-shadow: none;
 $input-focus-border-color: $black;
 
 // Buttons
-
+$btn-font-family: $font-heading;
+$btn-font-weight: bold;
+$btn-link-hover-color: null;
 $btn-padding-x: 24px;
 $btn-padding-y: 8px;
 $btn-border-radius: 0;
-$btn-active-box-shadow: 0px 0px 8px $primary;
+$btn-active-box-shadow: none;
