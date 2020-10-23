@@ -21,7 +21,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
       </div>
 
       <section className="radio-grid form-section" role="radiogroup">
-        <h2>Choose your membership</h2>
+        <h1>Choose your membership</h1>
         <p className="text-secondary">
           You can change or cancel whenever you want.
         </p>

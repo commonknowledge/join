@@ -67,7 +67,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       </div>
 
       <section className="form-section">
-        <h2>Your bank details</h2>
+        <h1>Your bank details</h1>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
           <Form.Control />
         </FormItem>

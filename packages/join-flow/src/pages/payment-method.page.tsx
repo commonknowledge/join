@@ -21,7 +21,7 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
       </div>
 
       <section className="radio-grid form-section" role="radiogroup">
-        <h2>How would you like to pay?</h2>
+        <h1>How would you like to pay?</h1>
         <RadioPanel
           name="paymentMethod"
           value="directDebit"
