@@ -105,7 +105,7 @@ export const FormItem: FC<FormItemProps> = ({
   return (
     <Form.Group>
       {label && (
-        <Form.Label htmlFor={name + "-field"}>
+        <Form.Label htmlFor={name}>
           {label}{" "}
           {required && (
             <>
@@ -118,7 +118,7 @@ export const FormItem: FC<FormItemProps> = ({
       {cloneElement(children, {
         name,
         ref: form.register,
-        id: name + "-field",
+        id: name,
         isInvalid,
         isValid,
         required
