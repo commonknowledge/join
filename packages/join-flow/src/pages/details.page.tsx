@@ -75,23 +75,25 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           We collect every member's date of birth because our membership types
           are based on age.
         </p>
-        <Row>
-          <Col>
-            <FormItem label="Day" name="dobDay" form={form} required>
-              <Form.Control />
-            </FormItem>
-          </Col>
-          <Col>
-            <FormItem label="Month" name="dobMonth" form={form} required>
-              <Form.Control />
-            </FormItem>
-          </Col>
-          <Col>
-            <FormItem label="Year" name="dobYear" form={form} required>
-              <Form.Control />
-            </FormItem>
-          </Col>
-        </Row>
+        <fieldset>
+          <Row>
+            <Col>
+              <FormItem label="Day" name="dobDay" form={form} required>
+                <Form.Control />
+              </FormItem>
+            </Col>
+            <Col>
+              <FormItem label="Month" name="dobMonth" form={form} required>
+                <Form.Control />
+              </FormItem>
+            </Col>
+            <Col>
+              <FormItem label="Year" name="dobYear" form={form} required>
+                <Form.Control />
+              </FormItem>
+            </Col>
+          </Row>
+        </fieldset>
       </section>
 
       <section className="form-section">
