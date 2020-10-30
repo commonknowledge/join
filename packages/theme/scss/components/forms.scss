@@ -42,7 +42,7 @@
 .form-section {
   margin-top: $space-5;
 
-  > * {
+  > *:not(:first-child) {
     margin-top: $space-4;
   }
 }
@@ -66,4 +66,8 @@
 	&.checked {
 		background: url('../../graphics/radio-checked.svg');
 	}
+}
+
+legend {
+	margin: 0
 }

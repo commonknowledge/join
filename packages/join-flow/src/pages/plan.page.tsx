@@ -20,8 +20,8 @@ export const PlanPage: StagerComponent<FormSchema> = ({
         <Summary data={data} />
       </div>
 
-      <section className="radio-grid form-section" role="radiogroup">
-        <h1>Choose your membership</h1>
+      <fieldset className="radio-grid form-section" role="radiogroup">
+        <legend className="text-md">Choose the plan that’s right for you</legend>
         <p className="text-secondary">
           You can change or cancel whenever you want.
         </p>
@@ -67,7 +67,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           description="If you are without paid work."
           form={form}
         />
-      </section>
+      </fieldset>
 
       <ContinueButton />
     </form>

@@ -20,8 +20,8 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
         <Summary data={data} />
       </div>
 
-      <section className="radio-grid form-section" role="radiogroup">
-        <h1>How would you like to pay?</h1>
+      <fieldset className="radio-grid form-section" role="radiogroup">
+        <legend className="text-md">How would you like to pay?</legend>
         <RadioPanel
           name="paymentMethod"
           value="directDebit"
@@ -36,7 +36,7 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
           label="Credit or Debit Card"
           form={form}
         />
-      </section>
+      </fieldset>
 
       <ContinueButton />
     </form>

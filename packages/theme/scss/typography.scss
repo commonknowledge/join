@@ -2,6 +2,10 @@ body {
   @include text-xs;
 }
 
+.text-md {
+	@include text-md;
+}
+
 .text-xs {
 	@include text-xs;
 }
