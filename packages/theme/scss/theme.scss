@@ -1,3 +1,7 @@
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins/_breakpoints";
+
 $yiq-contrasted-threshold: 100;
 
 $black: #212529;
@@ -34,6 +38,10 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   font-size: 50.52px;
   line-height: 90%;
   text-transform: uppercase;
+
+  @include media-breakpoint-down(sm) {
+    font-size: 32px;
+  }
 }
 
 .text-lg,
