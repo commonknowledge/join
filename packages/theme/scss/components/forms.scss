@@ -10,6 +10,7 @@
 }
 
 .radio-panel {
+	display: block;
   background-color: $white;
   cursor: pointer;
   user-select: none;
@@ -18,13 +19,14 @@
 
   &:hover {
     box-shadow: 0px 0px 8px $primary;
-  }
+	}
+
+	&.selected {
+		box-shadow: 0px 0px 8px $primary;
+		border-color: $primary;
+	}
 }
 
-.radio-panel[aria-checked="true"] {
-  box-shadow: 0px 0px 8px $primary;
-  border-color: $primary;
-}
 
 .radio-panel-label {
   @include text-xs-bold;
@@ -51,4 +53,17 @@
 
 .custom-select {
   border-radius: 0;
+}
+
+.custom-radio {
+	display: inline-block;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+
+	background: url('../../graphics/radio.svg');
+
+	&.checked {
+		background: url('../../graphics/radio-checked.svg');
+	}
 }
