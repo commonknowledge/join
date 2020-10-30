@@ -1,3 +1,7 @@
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins/_breakpoints";
+
 .page-logo {
   width: 245px;
   height: 69px;
@@ -24,5 +28,13 @@
   a {
     color: inherit;
     text-decoration: inherit;
+  }
+}
+
+.fineprint {
+  font-size: 14px;
+
+  @include media-breakpoint-up(sm) {
+    font-size: 16px;
   }
 }
