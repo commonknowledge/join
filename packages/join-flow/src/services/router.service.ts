@@ -23,7 +23,7 @@ export interface StateRouter {
 /**
  * Super-simple router to allow back-navigation between form stages
  */
-export const useStateRouter = (value: PageState): StateRouter => {
+export const useStateRouter = (value: PageState, titles: { id: string, label: string }[]): StateRouter => {
   const [state, setStateValue] = useState(() => window.history.state ?? value);
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
@@ -37,10 +37,17 @@ export const useStateRouter = (value: PageState): StateRouter => {
     return () => window.removeEventListener("popstate", onPopState);
   }, [value]);
 
+  useEffect(() => {
+    document.title = titles.find(x => x.id === state.stage)?.label ?? document.title
+  }, [])
+
   const setState = useCallback(
     (newState) => {
       resetScroll();
-      window.history.pushState(newState, document.title);
+      const title = titles.find(x => x.id === newState.stage)?.label ?? document.title
+      window.history.pushState(newState, title);
+      document.title = title
+
       setStateValue(newState);
     },
     [setStateValue]

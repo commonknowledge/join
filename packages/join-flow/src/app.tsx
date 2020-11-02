@@ -37,7 +37,7 @@ const App = () => {
 
   const router = useStateRouter({
     stage: "enter-details"
-  });
+  }, stages);
 
   useOnce(stripUrlParams);
 
