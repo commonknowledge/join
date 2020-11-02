@@ -62,10 +62,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           All fields marked with an asterisk (*) are required.
         </p>
         <FormItem label="First Name" name="firstName" form={form} required>
-          <Form.Control />
+          <Form.Control autoComplete="given-name" />
         </FormItem>
         <FormItem label="Last Name" name="lastName" form={form} required>
-          <Form.Control />
+          <Form.Control autoComplete="family-name" />
         </FormItem>
       </section>
 
@@ -79,17 +79,17 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <Row>
             <Col>
               <FormItem label="Day" name="dobDay" form={form} required>
-                <Form.Control />
+                <Form.Control autoComplete="bday-day" />
               </FormItem>
             </Col>
             <Col>
               <FormItem label="Month" name="dobMonth" form={form} required>
-                <Form.Control />
+                <Form.Control autoComplete="bday-month" />
               </FormItem>
             </Col>
             <Col>
               <FormItem label="Year" name="dobYear" form={form} required>
-                <Form.Control />
+                <Form.Control autoComplete="bday-year" />
               </FormItem>
             </Col>
           </Row>
@@ -107,13 +107,14 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           name="postcode"
           form={addressLookupForm}
           required
+          after={
+            <Button className="mt-2" onClick={handleLookupPostcode}>
+              Find address
+            </Button>
+          }
         >
-          <Form.Control />
+          <Form.Control className="mb-2" autoComplete="postal-code" />
         </FormItem>
-
-        <Button className="mt-2" onClick={handleLookupPostcode}>
-          Find address
-        </Button>
 
         <p className="text-secondary">
           <a
@@ -151,13 +152,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         >
           <div>
             <FormItem label="Address line 1" name="addressLine1" form={form}>
-              <Form.Control />
+              <Form.Control autoComplete="address-line-1" />
             </FormItem>
             <FormItem label="Address line 2" name="addressLine2" form={form}>
-              <Form.Control />
+              <Form.Control autoComplete="address-line-2" />
             </FormItem>
             <FormItem label="City" name="addressCity" form={form}>
-              <Form.Control />
+              <Form.Control autoComplete="address-level1" />
             </FormItem>
             <FormItem label="County" name="addressCounty" form={form}>
               <Form.Control />
@@ -166,7 +167,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               <Form.Control />
             </FormItem>
             <FormItem label="Country" form={form} name="addressCountry">
-              <Form.Control as="select" custom className="form-control">
+              <Form.Control autoComplete="country" as="select" custom className="form-control">
                 {isoCountries.map((c) => (
                   <option key={c.numeric} value={c.alpha2}>
                     {c.name}
@@ -184,10 +185,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           We’ll use this to keep in touch about things that matter to you.
         </p>
         <FormItem label="Email Address" name="email" form={form} required>
-          <Form.Control />
+          <Form.Control autoComplete="email" type="email" />
         </FormItem>
         <FormItem label="Phone number" name="phoneNumber" form={form} required>
-          <Form.Control />
+          <Form.Control autoComplete="tel-national" type="tel" />
         </FormItem>
       </section>
 

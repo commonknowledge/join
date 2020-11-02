@@ -35,7 +35,7 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   font-family: $font-heading;
   font-style: normal;
   font-weight: normal;
-  font-size: 50.52px;
+  font-size: 44px;
   line-height: 90%;
   text-transform: uppercase;
 
@@ -53,7 +53,7 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   font-family: $font-regular;
   font-style: normal;
   font-weight: bold;
-  font-size: 37.9px;
+  font-size: 32px;
   line-height: 110%;
 }
 
@@ -131,6 +131,7 @@ $input-focus-border-color: $black;
 // Buttons
 $btn-font-family: $font-heading;
 $btn-font-weight: bold;
+$btn-font-size: 28.43px;
 $btn-link-hover-color: null;
 $btn-padding-x: 24px;
 $btn-padding-y: 8px;

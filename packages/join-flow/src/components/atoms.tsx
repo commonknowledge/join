@@ -92,17 +92,21 @@ export const RadioPanel: FC<RadioPanelProps> = ({
 
 interface FormItemProps {
   name: string;
+  className?: string
   label?: string;
   form: UseFormMethods<any>;
   children: ReactElement;
   required?: Boolean;
+  after?: ReactElement
 }
 
 export const FormItem: FC<FormItemProps> = ({
   name,
   label,
   form,
+  className,
   children,
+  after,
   required
 }) => {
 	const error = form.errors[name]?.message;
@@ -114,7 +118,7 @@ export const FormItem: FC<FormItemProps> = ({
   const isValid = form.formState.isSubmitted && !error;
 
   return (
-    <Form.Group>
+    <Form.Group className={className}>
       {label && (
         <Form.Label htmlFor={name}>
           {label}{" "}
@@ -137,6 +141,7 @@ export const FormItem: FC<FormItemProps> = ({
       {isInvalid && (
         <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
       )}
+      {after}
     </Form.Group>
   );
 };

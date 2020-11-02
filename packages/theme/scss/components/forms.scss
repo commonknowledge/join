@@ -51,6 +51,14 @@
   margin-top: $space-4;
 }
 
+.form-group {
+    margin-bottom: $space-4;
+
+    label {
+        margin-bottom: $space-1;
+    }
+}
+
 .custom-select {
   border-radius: 0;
 }
