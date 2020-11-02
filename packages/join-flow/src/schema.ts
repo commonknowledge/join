@@ -88,6 +88,15 @@ export const DetailsSchema = object({
   addressCounty: string().required(),
   addressPostcode: string().required(),
   addressCountry: string().required(),
+  password: string()
+    .min(8, "Password must be at least 8 characters")
+    .matches(/[0-9]/, "Password must contain a number.")
+    .matches(/[A-Z]/, "Password must contain an uppercase letter.")
+    .matches(
+      /[!@#$%^&*]/,
+      "Password must only contain at least one special character, !@#$%^&* are allowed."
+    )
+    .required(),
   phoneNumber: string()
     .phone(undefined, false, "A valid phone number is required")
     .required()
