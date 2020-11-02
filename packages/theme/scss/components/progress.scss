@@ -7,18 +7,30 @@
     background: url("graphics/chevron.svg");
     content: "";
     display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
     width: 9.26px;
     height: 15px;
-    margin: 0 $space-3;
+    margin: 0 $space-2;
+
+    @include media-breakpoint-up(sm) {
+      margin: 0 $space-3;
+    }
   }
 }
 
 .progress-text {
   font-family: $font-heading;
+  text-transform: uppercase;
   font-style: normal;
   font-weight: normal;
-  font-size: 21.33px;
   line-height: 130%;
+  font-size: 16px;
+
+  @include media-breakpoint-up(sm) {
+    font-size: 21.33px;
+  }
 }
 
 .progress-stage-content-enter {

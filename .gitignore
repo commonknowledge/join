@@ -33,3 +33,5 @@ vendor
 build
 dist
 .DS_Store
+
+packages/*/.env
