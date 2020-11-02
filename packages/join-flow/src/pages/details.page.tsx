@@ -192,6 +192,17 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
+        <h2>Password</h2>
+        <p className="text-secondary">
+          You'll be able to use this password to login to the Green Party
+          website, its forums and vote in its elections.
+        </p>
+        <FormItem label="Password" name="password" form={form} required>
+          <Form.Control type="password" />
+        </FormItem>
+      </section>
+
+      <section className="form-section">
         <h2>Your privacy</h2>
         <p>
           The Green Party of England and Wales is committed to protecting your
