@@ -39,7 +39,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       Object.keys(form.errors).filter((error) => error.includes("address"))
         .length === 4
     ) {
-      console.log("We have address errors");
       addressLookupForm.setError("postcode", {
         type: "manual",
         message:
