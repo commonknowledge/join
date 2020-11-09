@@ -166,7 +166,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               <Form.Control />
             </FormItem>
             <FormItem label="Country" form={form} name="addressCountry">
-              <Form.Control autoComplete="country" as="select" custom className="form-control">
+              <Form.Control
+                autoComplete="country"
+                as="select"
+                custom
+                className="form-control"
+              >
                 {isoCountries.map((c) => (
                   <option key={c.numeric} value={c.alpha2}>
                     {c.name}
@@ -204,12 +209,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Your privacy</h2>
-        <p>
+        <p className="fineprint">
           The Green Party of England and Wales is committed to protecting your
           privacy, including online, and in the transparent use of any online
           information you give us in accordance with our legal obligations.
         </p>
-        <p>
+        <p className="fineprint">
           Our Privacy Policy sets out in detail the purposes for which we
           process your personal data, who we share it with, what rights you have
           in relation to that data and everything else we think it's important

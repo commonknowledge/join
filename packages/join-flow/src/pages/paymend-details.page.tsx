@@ -90,7 +90,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
           src={ddLogo}
         />
         <h2 className="mt-2">The Direct Debit Guarantee</h2>
-        <ul className="text-sm">
+        <ul className="fineprint">
           <li>
             The Guarantee is offered by all banks and building societies that
             accept instructions to pay Direct Debits
@@ -120,18 +120,16 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
           </li>
         </ul>
 
-        <p>
-          <small>
-            Direct debit payments are processed by GoCardless. Read the{" "}
-            <a
-              href="https://gocardless.com/legal/privacy/"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              GoCardless privacy notice
-            </a>{" "}
-            for more information.
-          </small>
+        <p className="fineprint">
+          Direct debit payments are processed by GoCardless. Read the{" "}
+          <a
+            href="https://gocardless.com/legal/privacy/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            GoCardless privacy notice
+          </a>{" "}
+          for more information.
         </p>
       </section>
 
