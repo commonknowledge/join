@@ -89,6 +89,9 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         >
           <Form.Control />
         </FormItem>
+        <FormItem form={form} name="recurDonation">
+          <Form.Check label="Make this recurring" />
+        </FormItem>
       </fieldset>
 
       <ContinueButton text="Continue without donation" />
