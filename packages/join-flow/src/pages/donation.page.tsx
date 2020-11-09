@@ -39,8 +39,8 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     <form
       className="form-content"
       onSubmit={form.handleSubmit((data) => {
-        // From the perspective of the form schema, keep things clean with only having one variable for donation level
-        // So remove the otherDonationAmount if we have it.
+        // From the perspective of the form schema, keep things clean with only having one variable for donation amount
+        // So remove the otherDonationAmount if we have it and copy it across.
         if (data.otherDonationAmount !== "") {
           data.donationAmount = data.otherDonationAmount;
           delete data.otherDonationAmount;
