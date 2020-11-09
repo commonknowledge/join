@@ -1,6 +1,6 @@
 .form-control,
 .form-label {
-  @include text-xs;
+  @include text-body;
 }
 
 .radio-grid {
@@ -28,7 +28,7 @@
 }
 
 .radio-panel-label {
-  @include text-xs-bold;
+  @include text-body-bold;
 }
 
 .form-content {
@@ -42,7 +42,11 @@
   margin-top: $space-5;
 
   > *:not(:first-child) {
+    margin-top: $space-3;
+
+    @include media-breakpoint-up(sm) {
     margin-top: $space-4;
+    }
   }
 }
 

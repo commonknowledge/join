@@ -27,10 +27,6 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   text-transform: uppercase;
 }
 
-.text-xl {
-  @include text-xl;
-}
-
 @mixin text-lg {
   font-family: $font-heading;
   font-style: normal;
@@ -42,11 +38,6 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   @include media-breakpoint-down(sm) {
     font-size: 32px;
   }
-}
-
-.text-lg,
-.text-l {
-  @include text-lg;
 }
 
 @mixin text-md {
@@ -81,10 +72,6 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   line-height: 130%;
 }
 
-.text-xs {
-  @include text-xs;
-}
-
 @mixin text-xs-bold {
   font-family: $font-regular;
   font-style: normal;
@@ -115,6 +102,22 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   font-weight: normal;
   font-size: 12px;
   line-height: 120%;
+}
+
+@mixin text-body {
+  @include text-xxs;
+
+  @include media-breakpoint-up(sm) {
+      @include text-xs;
+  }
+}
+
+@mixin text-body-bold {
+  @include text-xxs-bold;
+
+  @include media-breakpoint-up(sm) {
+      @include text-xs-bold;
+  }
 }
 
 $font-family-sans-serif: $font-regular;
