@@ -102,7 +102,7 @@ export const DetailsSchema = object({
     .required()
 }).required();
 
-const PlanSchema = object({
+export const PlanSchema = object({
   membership: string()
     .oneOf([
       "standard",

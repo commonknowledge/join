@@ -1,10 +1,25 @@
 import React from "react";
-import { Container, Button } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import { ContinueButton, RadioPanel } from "../components/atoms";
+import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
+
+const membershipToDonationTiers = (membership: string): Array<number> => {
+  switch (membership) {
+    case "suggested":
+    case "standard":
+      return [25, 50, 100, 500];
+    case "lowWaged":
+      return [4, 8];
+    case "unwaged":
+    case "student":
+      return [3, 6];
+    default:
+      return [25, 50, 100, 500];
+  }
+};
 
 export const DonationPage: StagerComponent<FormSchema> = ({
   data,
@@ -13,6 +28,10 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   const form = useForm({
     defaultValues: data as {}
   });
+
+  const donationTiers = data.membership
+    ? membershipToDonationTiers(data.membership)
+    : [5, 10, 15, 20];
 
   return (
     <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
@@ -27,6 +46,19 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           which will lead Britain to Build Back Better, with a Just Recovery
           that uplifts everyone, especially those marginalised by our systems.
         </p>
+      </fieldset>
+      <fieldset>
+        {donationTiers.map((donationTierAmount) => (
+          <Button className="mr-2">£{donationTierAmount}</Button>
+        ))}
+        <FormItem
+          label="Or enter another amount"
+          name="otherAmount"
+          form={form}
+          className="mt-5"
+        >
+          <Form.Control />
+        </FormItem>
       </fieldset>
 
       <ContinueButton />
