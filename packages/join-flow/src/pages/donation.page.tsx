@@ -36,7 +36,19 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   const selectedDonationAmount = form.watch("donationAmount");
 
   return (
-    <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
+    <form
+      className="form-content"
+      onSubmit={form.handleSubmit((data) => {
+        // From the perspective of the form schema, keep things clean with only having one variable for donation level
+        // So remove the otherDonationAmount if we have it.
+        if (data.otherDonationAmount !== "") {
+          data.donationAmount = data.otherDonationAmount;
+          delete data.otherDonationAmount;
+        }
+
+        onCompleted(data);
+      })}
+    >
       <div className="p-2 mt-4">
         <Summary data={data} />
       </div>
@@ -55,6 +67,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             className="mr-2"
             onClick={() => {
               form.setValue("donationAmount", donationTierAmount);
+              form.setValue("otherDonationAmount", null);
             }}
             ref={form.register}
             variant={
@@ -70,7 +83,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         ))}
         <FormItem
           label="Or enter another amount"
-          name="otherAmount"
+          name="otherDonationAmount"
           form={form}
           className="mt-5"
         >
