@@ -61,7 +61,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         </FormItem>
       </fieldset>
 
-      <ContinueButton />
+      <ContinueButton text="Continue without donation" />
     </form>
   );
 };
