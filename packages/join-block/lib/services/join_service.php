@@ -51,6 +51,7 @@ function handle_join($data) {
 	$customer = $customerResult->customer();
 	
 	$chargebeeSubscriptionPayload = [];
+	$chargebeeSubscriptionPayload['addons'] = [];
 
 	// "Suggested Member Contribution" has two components in Chargebee and therefore a special treatment.
 	// - A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
@@ -58,14 +59,24 @@ function handle_join($data) {
 	if ($data['planId'] === 'suggested') {
 		$chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
 		
-		$chargebeeSubscriptionPayload['addons'] = [
+		$chargebeeSubscriptionPayload['addons'].push([
 			[
 				"id" => "additional_donation_month",
 				"unitPrice" => "700"
 			]
-		];
+		]);
 	} else {
 		$chargebeeSubscriptionPayload['planId'] =  $data['planId'];
+	}
+	
+	// Handle donation amount, which is sent to us in GBP but Chargebee requires in pence
+	if ($data['donationAmount'] !== '') {
+		$chargebeeSubscriptionPayload['addons'].push([
+			[
+				"id" => "additional_donation_single",
+				"unitPrice" => (int)$data['donationAmount'] * 100
+			]
+		]);
 	}
 	
 	$subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
