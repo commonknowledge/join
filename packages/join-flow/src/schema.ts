@@ -196,10 +196,15 @@ const PaymentDetailsSchema = PaymentMethodDDSchema.concat(
   PaymentMethodCardSchema
 );
 
+const DonationSchema = object({
+  donationAmount: number().positive().integer()
+}).required();
+
 export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(Prerequesites)
   .concat(DetailsSchema)
   .concat(PlanSchema)
+  .concat(DonationSchema)
   .concat(PaymentMethodSchema)
   .concat(PaymentDetailsSchema)
   .required();

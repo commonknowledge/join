@@ -33,6 +33,8 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     ? membershipToDonationTiers(data.membership)
     : [5, 10, 15, 20];
 
+  const selectedDonationAmount = form.watch("donationAmount");
+
   return (
     <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
       <div className="p-2 mt-4">
@@ -49,7 +51,22 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       </fieldset>
       <fieldset>
         {donationTiers.map((donationTierAmount) => (
-          <Button className="mr-2">£{donationTierAmount}</Button>
+          <Button
+            className="mr-2"
+            onClick={() => {
+              form.setValue("donationAmount", donationTierAmount);
+            }}
+            ref={form.register}
+            variant={
+              selectedDonationAmount === donationTierAmount.toString()
+                ? "dark"
+                : "outline-dark"
+            }
+            key={donationTierAmount}
+            name="donationAmount"
+          >
+            £{donationTierAmount}
+          </Button>
         ))}
         <FormItem
           label="Or enter another amount"
