@@ -70,9 +70,9 @@ function handle_join($data) {
 	}
 	
 	// Handle donation amount, which is sent to us in GBP but Chargebee requires in pence
-	
+
 	// Non-recurring
-	if ($data['donationAmount'] !== '' && $data['recurDonation'] !== 'false') {
+	if ($data['donationAmount'] !== '' && $data['recurDonation'] === false) {
 		$chargebeeSubscriptionPayload['addons'][] = [
 			[
 				"id" => "additional_donation_single",
@@ -82,7 +82,7 @@ function handle_join($data) {
 	}
 	
 	// Recurring
-	if ($data['donationAmount'] !== '' && $data['recurDonation'] === 'true') {
+	if ($data['donationAmount'] !== '' && $data['recurDonation'] === true) {
 		$chargebeeSubscriptionPayload['addons'][] = [
 			[
 				"id" => "additional_donation_month",
