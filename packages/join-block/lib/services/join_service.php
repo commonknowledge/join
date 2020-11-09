@@ -52,11 +52,9 @@ function handle_join($data) {
 	
 	$chargebeeSubscriptionPayload = [];
 
-	/* 
-		"Suggested Member Contribution" has two components in Chargebee
-			- A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
-			- An additional donation, in Chargebee an add-on callled "additional_donation_month" we set to £7
-	*/
+	// "Suggested Member Contribution" has two components in Chargebee and therefore a special treatment.
+	// - A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
+	// - An additional donation, in Chargebee an add-on callled "additional_donation_month" we set to £7
 	if ($data['planId'] === 'suggested') {
 		$chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
 		
