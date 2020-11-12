@@ -4,6 +4,7 @@
         "gocardless/gocardless-pro": "^4.5",
         "auth0/auth0-php": "^7.4",
         "vlucas/phpdotenv": "^5.2",
-        "giggsey/libphonenumber-for-php": "^8.12"
+        "giggsey/libphonenumber-for-php": "^8.12",
+        "htmlburger/carbon-fields": "^3.2"
     }
 }
