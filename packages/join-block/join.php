@@ -17,7 +17,7 @@ $dotenv->load();
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
-require 'lib/services/blocks.php';
+require 'lib/blocks.php';
 
 add_action('after_setup_theme', 'crb_load');
 function crb_load() {

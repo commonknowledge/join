@@ -1,4 +1,3 @@
-
 <?php
 use Auth0\SDK\API\Management;
 
