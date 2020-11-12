@@ -19,6 +19,12 @@ $dotenv->load();
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
+require 'lib/services/blocks.php';
+
+add_action( 'after_setup_theme', 'crb_load' );
+function crb_load() {
+    \Carbon_Fields\Carbon_Fields::boot();
+}
 
 add_action( 'init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init() {
