@@ -8,6 +8,7 @@ import { Container } from "react-bootstrap";
 import { DetailsPage } from "./pages/details.page";
 import { PaymentPage } from "./pages/payment-method.page";
 import { PlanPage } from "./pages/plan.page";
+import { DonationPage } from "./pages/donation.page";
 import {
   RouterContext,
   StateRouter,
@@ -24,6 +25,7 @@ import { usePostResource } from "./services/rest-resource.service";
 const stages = [
   { id: "enter-details", label: "Your Details", breadcrumb: true },
   { id: "plan", label: "Your Membership", breadcrumb: true },
+  { id: "donation", label: "Can you chip in?", breadcrumb: false },
   { id: "payment-details", label: "Payment", breadcrumb: true },
   { id: "payment-method", label: "Payment", breadcrumb: false },
   { id: "confirm", label: "Confirm", breadcrumb: false }
@@ -35,9 +37,12 @@ const App = () => {
   const join = usePostResource<FormSchema>("/join");
   const [data, setData] = useState(getInitialState);
 
-  const router = useStateRouter({
-    stage: "enter-details"
-  }, stages);
+  const router = useStateRouter(
+    {
+      stage: "enter-details"
+    },
+    stages
+  );
 
   useOnce(stripUrlParams);
 
@@ -55,6 +60,8 @@ const App = () => {
       if (router.state.stage === "enter-details") {
         router.setState({ stage: "plan" });
       } else if (router.state.stage === "plan") {
+        router.setState({ stage: "donation" });
+      } else if (router.state.stage === "donation") {
         router.setState({ stage: "payment-method" });
       } else if (router.state.stage === "payment-method") {
         router.setState({ stage: "payment-details" });
@@ -102,6 +109,7 @@ const App = () => {
             components={{
               "enter-details": DetailsPage,
               plan: PlanPage,
+              donation: DonationPage,
               "payment-details": PaymentDetailsPage,
               "payment-method": PaymentPage,
               confirm: ConfirmationPage

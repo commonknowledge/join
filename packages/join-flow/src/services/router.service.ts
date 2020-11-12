@@ -10,6 +10,7 @@ export interface PageState {
   stage:
     | "enter-details"
     | "plan"
+    | "donation"
     | "payment-method"
     | "payment-details"
     | "confirm";
