@@ -19,12 +19,12 @@ require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
 require 'lib/services/blocks.php';
 
-add_action( 'after_setup_theme', 'crb_load' );
+add_action('after_setup_theme', 'crb_load');
 function crb_load() {
     \Carbon_Fields\Carbon_Fields::boot();
 }
 
-add_action( 'init', 'uk_greens_join_block_init');
+add_action('init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init() {
 	$dir = dirname( __FILE__);
 
@@ -70,7 +70,7 @@ function uk_greens_join_block_init() {
 	));
 }
 
-add_action( 'rest_api_init', function () {
+add_action('rest_api_init', function () {
 	register_rest_route( 'join/v1', '/join', array(
 		'methods' => 'POST',
 		'permission_callback' => function ($req) {
