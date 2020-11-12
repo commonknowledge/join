@@ -1,22 +1,22 @@
 {
-	"name": "ukgreens",
-	"version": "1.0.0",
-	"private": true,
-	"main": "index.js",
-	"repository": "git@github.com:commonknowledge/wordpress-chargebee-spike.git",
-	"license": "MIT",
-	"scripts": {
-		"postinstall": "yarn composer && lerna bootstrap",
-		"composer": "cd packages/join-block && composer install",
-		"frontend": "cd packages/join-flow && yarn start",
-		"start": "lerna run --parallel start & docker-compose up",
-		"build": "lerna run build",
-		"deploy": "yarn build && sh scripts/deploy.sh",
-		"prettier": "prettier --write packages/join-flow"
-	},
-	"devDependencies": {
-		"lerna": "^3.22.1",
-		"prettier": "^2.1.1",
-		"typescript": "^4.0.2"
-	}
+  "name": "ukgreens",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "repository": "git@github.com:commonknowledge/wordpress-chargebee-spike.git",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "yarn composer && lerna bootstrap",
+    "composer": "cd packages/join-block && composer install",
+    "frontend": "cd packages/join-flow && yarn start",
+    "start": "lerna run --parallel start && docker-compose up",
+    "build": "lerna run build",
+    "deploy": "yarn build && sh scripts/deploy.sh",
+    "prettier": "prettier --write packages/join-flow"
+  },
+  "devDependencies": {
+    "lerna": "^3.22.1",
+    "prettier": "^2.1.1",
+    "typescript": "^4.0.2"
+  }
 }
