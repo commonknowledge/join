@@ -14,15 +14,15 @@ require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+add_action( 'after_setup_theme', function () {
+    \Carbon_Fields\Carbon_Fields::boot(); 
+});
+
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
-require 'lib/blocks.php';
 
-add_action('after_setup_theme', 'crb_load');
-function crb_load() {
-    \Carbon_Fields\Carbon_Fields::boot();
-}
+require 'lib/blocks.php';
 
 add_action('init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init() {
