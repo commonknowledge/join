@@ -57,21 +57,14 @@ $space-5: map-get(
   text-transform: none !important;
 }
 
-.jumbotron {
-  position: relative;
-  overflow: hidden;
-}
-
-.jumbotron-background-img {
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.6;
-}
-
 .bg-black {
-  background-color: #000;
+  background-color: #000 !important;
+}
+
+.bg-size-cover {
+  background-size: cover !important;
+}
+
+.bg-position-center {
+  background-position: center !important;
 }

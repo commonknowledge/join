@@ -12,8 +12,7 @@ add_action( 'carbon_fields_register_fields', function () {
     ) )
     ->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
         ?>
-        <div class="jumbotron jumbotron-fluid full-bleed bg-black">
-            <img class="jumbotron-background-img" src="<?php echo wp_get_attachment_image_src( $fields['background_image'], 'full' )[0]; ?>" />
+        <div class="jumbotron jumbotron-fluid full-bleed bg-black bg-size-cover bg-position-center" style="background-image: linear-gradient(89.93deg, rgba(33, 37, 41, 0.4) 31.12%, rgba(33, 37, 41, 0) 62.75%), url(<?php echo wp_get_attachment_image_src( $fields['background_image'], 'full' )[0]; ?>);">
             <div class="container">
                 <h1 class="text-bebas-neue text-xl text-white text-no-transform"><?php echo esc_html( $fields['heading'] ); ?></h1>
                 <div class="w-50 mt-5 text-white">
