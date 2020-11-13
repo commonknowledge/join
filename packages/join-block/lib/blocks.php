@@ -13,7 +13,7 @@ add_action( 'carbon_fields_register_fields', function () {
     ) )
     ->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
         ?>
-        <div class="jumbotron jumbotron-fluid">
+        <div class="jumbotron jumbotron-fluid full-bleed">
             <div class="container">
                 <h1 class="text-bebas-neue text-xl"><?php echo esc_html( $fields['heading'] ); ?></h1>
                 <div class="w-50 mt-5">
