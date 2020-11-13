@@ -13,3 +13,5 @@ function init_assets()
 }
 
 add_action('init', 'init_assets');
+
+add_theme_support('title-tag');
