@@ -60,6 +60,39 @@ add_action( 'carbon_fields_register_fields', function () {
 		</div>
         <?php
     });
+    
+    Block::make(__( 'Membership Benefits' ) )
+    ->add_fields( array(
+        Field::make( 'text', 'title', __( 'Benefits title' ) ),
+        Field::make( 'complex', 'membership_benefits', __( 'Benefits' ) )
+            ->add_fields( array(
+                Field::make( 'image', 'benefit_icon', __( 'Icon' ) ),
+                Field::make( 'text', 'benefit_title', __( 'Title' ) ),
+                Field::make( 'text', 'benefit_description', __( 'Description' ) )
+            ) ))
+    )
+    ->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
+        ?>
+            <div class="row">
+              <div class="col-lg-6">
+                <div><?php echo esc_html( $fields['title'] ); ?></div>
+              </div>
+              <div class="col-lg-6">
+                <div>
+                  <div>
+                    <?php foreach ($fields['membership_benefits'] as $benefit): ?>
+                    <div>Tick</div>
+                    <div><?php echo esc_html( $benefit['benefit_title'] ); ?></div>
+                    <?php endforeach; ?>
+                  </div>
+                  <div>
+                    <div>Need more information?</div>
+                    <div>Email us at <a href="mailto:members@greenparty.org.uk">members@greenparty.org.uk</a></div>
+                  </div>
+              </div>
+            </div>
+        <?php
+    });
 });
 
 
