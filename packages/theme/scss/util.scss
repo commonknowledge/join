@@ -52,3 +52,26 @@ $space-5: map-get(
   margin-left: 50%;
   transform: translateX(-50%);
 }
+
+.text-no-transform {
+  text-transform: none !important;
+}
+
+.jumbotron {
+  position: relative;
+  overflow: hidden;
+}
+
+.jumbotron-background-img {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+
+.bg-black {
+  background-color: #000;
+}

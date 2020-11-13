@@ -2,8 +2,6 @@
 use Carbon_Fields\Block;
 use Carbon_Fields\Field;
 
-
-
 add_action( 'carbon_fields_register_fields', function () {
     Block::make(__( 'Join Header' ) )
     ->add_fields( array(
@@ -14,13 +12,13 @@ add_action( 'carbon_fields_register_fields', function () {
     ) )
     ->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
         ?>
-        <div class="jumbotron jumbotron-fluid full-bleed" style="background-image: url(<?php echo wp_get_attachment_image_src( $fields['background_image'], 'full' )[0]; ?>);">
+        <div class="jumbotron jumbotron-fluid full-bleed bg-black">
+            <img class="jumbotron-background-img" src="<?php echo wp_get_attachment_image_src( $fields['background_image'], 'full' )[0]; ?>" />
             <div class="container">
-                
-                <h1 class="text-bebas-neue text-xl"><?php echo esc_html( $fields['heading'] ); ?></h1>
-                <div class="w-50 mt-5">
-                    <div class="text-bebas-neue text-l"><?php echo esc_html( $fields['numbers'] ); ?></div>
-                    <div class="text-bebas-neue text-l"><?php echo esc_html( $fields['slogan'] ); ?></div>
+                <h1 class="text-bebas-neue text-xl text-white text-no-transform"><?php echo esc_html( $fields['heading'] ); ?></h1>
+                <div class="w-50 mt-5 text-white">
+                    <div class="text-bebas-neue text-md text-no-transform"><?php echo esc_html( $fields['numbers'] ); ?></div>
+                    <div class="text-bebas-neue text-md text-no-transform"><?php echo esc_html( $fields['slogan'] ); ?></div>
                 </div>
             </div>
         </div>
