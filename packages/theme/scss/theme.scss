@@ -108,7 +108,7 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   @include text-xxs;
 
   @include media-breakpoint-up(sm) {
-      @include text-xs;
+    @include text-xs;
   }
 }
 
@@ -116,7 +116,7 @@ $font-regular: "Helvetica Neue", "Helvetica", Arial, "Lucida Grande", sans-serif
   @include text-xxs-bold;
 
   @include media-breakpoint-up(sm) {
-      @include text-xs-bold;
+    @include text-xs-bold;
   }
 }
 
