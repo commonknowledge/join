@@ -10,11 +10,13 @@ add_action( 'carbon_fields_register_fields', function () {
         Field::make( 'text', 'heading', __( 'Block Heading' ) ),
         Field::make( 'text', 'numbers', __( 'Numbers' ) ),
         Field::make( 'text', 'slogan', __( 'Slogan' ) ),
+        Field::make('image', 'background_image',  __( 'Background Image' ) )
     ) )
     ->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
         ?>
-        <div class="jumbotron jumbotron-fluid full-bleed">
+        <div class="jumbotron jumbotron-fluid full-bleed" style="background-image: url(<?php echo wp_get_attachment_image_src( $fields['background_image'], 'full' )[0]; ?>);">
             <div class="container">
+                
                 <h1 class="text-bebas-neue text-xl"><?php echo esc_html( $fields['heading'] ); ?></h1>
                 <div class="w-50 mt-5">
                     <div class="text-bebas-neue text-l"><?php echo esc_html( $fields['numbers'] ); ?></div>
