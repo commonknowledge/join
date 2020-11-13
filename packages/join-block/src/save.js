@@ -10,7 +10,7 @@ export default function save() {
 				__html: `var GreensJoinFormConfig = ${JSON.stringify(config)}`
 			}}
 			/>
-			<div id="join-form" />
+			<div className="mt-4" id="join-form" />
 		</Fragment>
 	)
 }
