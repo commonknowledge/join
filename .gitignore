@@ -32,6 +32,10 @@ vendor
 # build artifacts
 build
 dist
+*.zip
+
+# Mac OS files
 .DS_Store
 
+# Environment files
 packages/*/.env
