@@ -75,20 +75,24 @@ add_action( 'carbon_fields_register_fields', function () {
         ?>
             <div class="row">
               <div class="col-lg-6">
-                <div><?php echo esc_html( $fields['title'] ); ?></div>
+                <div class="text-xl mb-45px"><?php echo esc_html( $fields['title'] ); ?></div>
               </div>
               <div class="col-lg-6">
-                <div>
                   <div>
-                    <?php foreach ($fields['membership_benefits'] as $benefit): ?>
-                    <div>Tick</div>
-                    <div><?php echo esc_html( $benefit['benefit_title'] ); ?></div>
-                    <?php endforeach; ?>
-                  </div>
-                  <div>
-                    <div>Need more information?</div>
-                    <div>Email us at <a href="mailto:members@greenparty.org.uk">members@greenparty.org.uk</a></div>
-                  </div>
+                        <?php foreach ($fields['membership_benefits'] as $benefit): ?>
+                        <div class="d-flex mb-45px">
+                            <div class="mr-30px"><img class="membership-benefit-icon" src="<?php echo wp_get_attachment_image_src( $benefit['benefit_icon'], 'full' )[0]; ?>"/></div>
+                            <div>
+                                <div class="text-md mb-10px"><?php echo esc_html( $benefit['benefit_title'] ); ?></div>
+                                <div class="text-xs"><?php echo esc_html( $benefit['benefit_description'] ); ?></div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                      <div class="text-xs">
+                        <div>Need more information?</div>
+                        <div>Email us at <a class="text-decoration-none" href="mailto:members@greenparty.org.uk">members@greenparty.org.uk</a></div>
+                      </div>
+                   </div>
               </div>
             </div>
         <?php
