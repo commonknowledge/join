@@ -78,17 +78,29 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <Row>
             <Col>
               <FormItem label="Day" name="dobDay" form={form} required>
-                <Form.Control autoComplete="bday-day" />
+                <Form.Control
+                  autoComplete="bday-day"
+                  placeholder="DD"
+                  maxLength={2}
+                />
               </FormItem>
             </Col>
             <Col>
               <FormItem label="Month" name="dobMonth" form={form} required>
-                <Form.Control autoComplete="bday-month" />
+                <Form.Control
+                  autoComplete="bday-month"
+                  placeholder="MM"
+                  maxLength={2}
+                />
               </FormItem>
             </Col>
             <Col>
               <FormItem label="Year" name="dobYear" form={form} required>
-                <Form.Control autoComplete="bday-year" />
+                <Form.Control
+                  autoComplete="bday-year"
+                  placeholder="YYYY"
+                  maxLength={4}
+                />
               </FormItem>
             </Col>
           </Row>
