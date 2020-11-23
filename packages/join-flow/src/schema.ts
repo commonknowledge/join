@@ -146,7 +146,7 @@ const PaymentMethodSchema = object({
   paymentMethod: string().oneOf(["directDebit", "creditCard"]).required()
 }).required();
 
-const membershipIsAnnual = (membership: string) =>
+export const membershipIsAnnual = (membership: string): boolean =>
   membership === "lowWaged" ||
   membership === "student" ||
   membership === "unwaged";
@@ -214,6 +214,7 @@ export type FormSchema = Partial<
   InferType<typeof Prerequesites> &
     InferType<typeof DetailsSchema> &
     InferType<typeof PlanSchema> &
+    InferType<typeof PaymentMethodSchema> &
     (
       | InferType<typeof PaymentMethodDDSchema>
       | InferType<typeof PaymentMethodCardSchema>

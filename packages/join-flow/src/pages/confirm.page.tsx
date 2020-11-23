@@ -1,9 +1,9 @@
 import React from "react";
-import { Button, FormText } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema } from "../schema";
+import { FormSchema, membershipIsAnnual } from "../schema";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
@@ -20,6 +20,35 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     </div>
   );
 
+  let directDebitDetailsMessage = null;
+
+  const organisationName = "The Green Party";
+  const organisationEmailAddress = "membership@greenparty.org.uk";
+  const organisationMailToLink = `mailto:${organisationEmailAddress}`;
+
+  if (data.paymentMethod === "directDebit" && data.membership) {
+    directDebitDetailsMessage = (
+      <section className="form-section mb-3">
+        <p>
+          You are paying for your membership of The Green Party by Direct Debit.
+        </p>
+        <p>
+          This will be charged every{" "}
+          {membershipIsAnnual(data.membership) ? "year" : "month"} from your
+          bank account.
+        </p>
+        <p>
+          On your bank statement the charge will appear as "GC RE{" "}
+          {organisationName}".
+        </p>
+        <p className="fineprint">
+          You can contact the membership team of {organisationName} at{" "}
+          <a href={organisationMailToLink}>{organisationEmailAddress}</a>
+        </p>
+      </section>
+    );
+  }
+
   return (
     <form
       className="form-content"
@@ -31,7 +60,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
         {form.formState.isSubmitting ? joiningSpinner : <Summary data={data} />}
       </section>
-
+      {directDebitDetailsMessage}
       <Button
         className="form-section-addon"
         type="submit"
