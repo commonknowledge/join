@@ -56,6 +56,8 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
     resolver: validate(PaymentMethodDDSchema)
   });
 
+  const organisation = "GC re The Green Party";
+
   return (
     <form
       className="form-content"
@@ -97,9 +99,9 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
           </li>
           <li>
             If there are any changes to the amount, date or frequency of your
-            Direct Debit the organisation will notify you (normally 10 working
+            Direct Debit {organisation} will notify you (normally 3 working
             days) in advance of your account being debited or as otherwise
-            agreed. If you request the organisation to collect a payment,
+            agreed. If you request {organisation} to collect a payment,
             confirmation of the amount and date will be given to you at the time
             of the request
           </li>
@@ -111,7 +113,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
           </li>
           <li>
             If you receive a refund you are not entitled to, you must pay it
-            back when the organisation asks you to
+            back when {organisation} asks you to
           </li>
           <li>
             You can cancel a Direct Debit at any time by simply contacting your
