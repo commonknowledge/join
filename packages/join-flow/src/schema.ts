@@ -215,6 +215,7 @@ export type FormSchema = Partial<
   InferType<typeof Prerequesites> &
     InferType<typeof DetailsSchema> &
     InferType<typeof PlanSchema> &
+    InferType<typeof DonationSchema> &
     InferType<typeof PaymentMethodSchema> &
     (
       | InferType<typeof PaymentMethodDDSchema>
