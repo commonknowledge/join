@@ -14,17 +14,6 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
-if (window.Chargebee) {
-  window.Chargebee.init({
-    site: process.env.REACT_APP_CHARGEBEE_SITE,
-    publishableKey: process.env.REACT_APP_CHARGEBEE_KEY
-  });
-} else {
-  console.error(
-    "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.\n\nWhen the Green Party join form is loaded in WordPress, this should be loaded when the Join Form block is present on the page."
-  );
-}
-
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
