@@ -202,6 +202,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           You'll be able to use this password to login to the Green Party
           website, its forums and vote in its elections.
         </p>
+        <p className="text-secondary">
+          Your password should contain at least one number, one uppercase letter
+          and one special character. It must be at least 8 characters long.
+        </p>
         <FormItem label="Password" name="password" form={form} required>
           <Form.Control type="password" />
         </FormItem>

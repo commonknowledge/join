@@ -94,7 +94,7 @@ export const DetailsSchema = object({
     .matches(/[A-Z]/, "Password must contain an uppercase letter.")
     .matches(
       /[!@#$%^&*]/,
-      "Password must only contain at least one special character, !@#$%^&* are allowed."
+      "Password must contain at least one special character, !@#$%^&* are allowed."
     )
     .required(),
   phoneNumber: string()
