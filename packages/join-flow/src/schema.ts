@@ -98,7 +98,7 @@ export const DetailsSchema = object({
     )
     .required(),
   phoneNumber: string()
-    .phone(undefined, false, "A valid phone number is required")
+    .phone("GB", false, "A valid phone number is required")
     .required()
 }).required();
 
