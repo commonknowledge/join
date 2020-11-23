@@ -119,6 +119,7 @@ export const renderPaymentPlan = ({ membership }: FormSchema) => {
   if (membership === "standard") {
     return "Standard Membership";
   }
+
   if (membership === "international") {
     return "International Membership";
   }

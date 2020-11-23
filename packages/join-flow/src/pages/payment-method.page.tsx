@@ -4,10 +4,11 @@ import { useForm } from "react-hook-form";
 import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
+import { FormSchema, renderPaymentMethod, renderPaymentPlan } from "../schema";
 
 export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
   const form = useForm({
-    defaultValues: data as {}
+    defaultValues: data as FormSchema
   });
 
   return (
@@ -26,7 +27,6 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
           name="paymentMethod"
           value="directDebit"
           label="Direct Debit"
-          valueText="£36 a year"
           description="Best for the party!"
           form={form}
         />
