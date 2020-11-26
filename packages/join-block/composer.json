@@ -1,10 +1,21 @@
 {
-    "require": {
-        "chargebee/chargebee-php": ">=2, <3",
-        "gocardless/gocardless-pro": "^4.5",
-        "auth0/auth0-php": "^7.4",
-        "vlucas/phpdotenv": "^5.2",
-        "giggsey/libphonenumber-for-php": "^8.12",
-        "htmlburger/carbon-fields": "^3.2"
-    }
+  "require": {
+    "chargebee/chargebee-php": ">=2, <3",
+    "gocardless/gocardless-pro": "^4.5",
+    "auth0/auth0-php": "^7.4",
+    "vlucas/phpdotenv": "^5.2",
+    "giggsey/libphonenumber-for-php": "^8.12",
+    "htmlburger/carbon-fields": "^3.2"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.5"
+  },
+  "scripts": {
+    "lint": [
+      "phpcs --ignore=vendor,tests,uk-greens-theme --extensions=php --standard=PSR12 ."
+    ],
+    "lint:fix": [
+      "phpcbf --ignore=vendor,tests,uk-greens-theme --extensions=php --standard=PSR12 ."
+    ]
+  }
 }

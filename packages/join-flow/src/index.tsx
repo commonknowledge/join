@@ -17,15 +17,21 @@ const joinFormElement = document.getElementById("join-form");
 function getEnvironmentFromHTML() {
   const element = document.getElementById("env");
 
+  let env = {};
+
   if (!element) {
-    return {};
+    return env;
   }
 
   if (!element.textContent) {
-    return {};
+    return env;
   }
 
-  const env = JSON.parse(element.textContent);
+  try {
+    env = JSON.parse(element.textContent);
+  } catch (error) {
+    console.error("Could not load environment");
+  }
 
   return env;
 }
@@ -39,6 +45,9 @@ if (!joinFormElement) {
   window.process = Object.assign(window.process || {}, {
     env: getEnvironmentFromHTML()
   });
+
+  console.log("Environment loaded");
+  console.log(window.process.env);
 
   if (window.Chargebee) {
     window.Chargebee.init({

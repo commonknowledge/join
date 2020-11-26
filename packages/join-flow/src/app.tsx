@@ -69,7 +69,7 @@ const App = () => {
         router.setState({ stage: "confirm" });
       } else if (router.state.stage === "confirm") {
         join(data).then((res) => {
-          window.location.href = "/new-joiner";
+          window.location.href = window.process.env.SUCCESS_REDIRECT || "/";
         });
       }
     },

@@ -23,12 +23,12 @@ function membershipToPlan(membership: string): string {
 
 export const usePostResource = <Params, Result = {}>(resource: string) => {
   return async (data: Params): Promise<Result> => {
-    const endpoint = "/join/v1" + resource;
+    const endpoint = "join/v1" + resource;
 
     // @ts-ignore
     data.planId = membershipToPlan(data.membership);
 
-    const res = await fetch("/?rest_route=" + endpoint, {
+    const res = await fetch(`${window.process.env.WP_REST_API}` + endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
