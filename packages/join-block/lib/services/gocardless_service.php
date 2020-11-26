@@ -2,9 +2,15 @@
 
 function gocardless_get_client()
 {
+    if ($_ENV['WP_ENV'] === 'production') {
+        $gocardlessEnvironment =  \GoCardlessPro\Environment::PRODUCTION;
+    } else {
+        $gocardlessEnvironment =  \GoCardlessPro\Environment::SANDBOX;
+    }
+
     $client = new \GoCardlessPro\Client([
         'access_token' => $_ENV['GC_ACCESS_TOKEN'],
-        'environment' => \GoCardlessPro\Environment::SANDBOX
+        'environment' => $gocardlessEnvironment
     ]);
 
     return $client;
