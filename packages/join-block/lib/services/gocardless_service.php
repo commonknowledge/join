@@ -3,7 +3,7 @@
 function gocardless_get_client()
 {
     if ($_ENV['WP_ENV'] === 'production') {
-        $gocardlessEnvironment =  \GoCardlessPro\Environment::PRODUCTION;
+        $gocardlessEnvironment =  \GoCardlessPro\Environment::LIVE;
     } else {
         $gocardlessEnvironment =  \GoCardlessPro\Environment::SANDBOX;
     }
