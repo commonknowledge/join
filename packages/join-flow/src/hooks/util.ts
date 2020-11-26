@@ -34,6 +34,7 @@ export const useAsync = <T>(fn: () => Promise<T>): T | undefined => {
   return state;
 };
 
+// Creates a invisible element and adds it to the DOM
 const getHiddenWrapperElement = memoize(() => {
   const el = document.createElement("div");
   el.style.opacity = "0";
@@ -43,20 +44,25 @@ const getHiddenWrapperElement = memoize(() => {
   return el;
 });
 
-/** Trick for getting an iframed control to inherit the parent window's css */
+// Trick for getting an iframed control to inherit the parent window's CSS
 export const useCSSStyle = (
   className: string,
   type = "div",
   propsList?: string[]
 ) => {
   return useMemo(() => {
+    // Create an element on the page and apply the style to it
     const el = document.createElement(type);
     el.className = className;
+
+    // Append element invisibly to the DOM
     getHiddenWrapperElement().appendChild(el);
 
+    // Query the styles of this element
     const styles = window.getComputedStyle(el);
     const res: any = {};
 
+    // Translate styles into a styles object that can be understood by React
     Array.from(styles).forEach((key) => {
       const value = styles.getPropertyValue(key);
       if (value) {

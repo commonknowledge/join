@@ -159,7 +159,7 @@ export const renderPaymentMethod = ({
   let paymentFormat = "None";
 
   if (paymentMethod === "creditCard") {
-    paymentFormat = "Credit Card";
+    paymentFormat = "Credit or Debit Card";
   }
 
   if (paymentMethod === "directDebit") {

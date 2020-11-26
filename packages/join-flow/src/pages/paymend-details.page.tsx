@@ -5,7 +5,7 @@ import {
   CardExpiry,
   CardNumber
 } from "@chargebee/chargebee-js-react-wrapper";
-import { Button, Form, FormGroup, Spinner } from "react-bootstrap";
+import { Form, FormGroup, Spinner } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
@@ -129,10 +129,29 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
 };
 
 const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
-  onCompleted
+  onCompleted,
+  data
 }) => {
   const cardRef = useRef<any>();
   const form = useForm();
+
+  const chargebeeStylePropsList = [
+    "color",
+    "letterSpacing",
+    "textAlign",
+    "textTransform",
+    "textDecoration",
+    "textShadow",
+    "fontFamily",
+    "fontWeight",
+    "fontSize",
+    "fontSmoothing",
+    "fontSmoothing",
+    "fontSmoothing",
+    "fontStyle",
+    "fontVariant"
+  ];
+
   const inputStyle = useCSSStyle(
     "form-control",
     "input",
@@ -152,22 +171,51 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(handleCompleted)}
     >
+      <div className="p-2 mt-4">
+        <Summary data={data} />
+      </div>
+
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
+        classes={{
+          invalid: "is-invalid"
+        }}
         ref={cardRef}
       >
-        <FormGroup>
+        <h1>Card details</h1>
+        <p className="text-secondary mb-5">
+          You've chosen to join The Green Party by paying by card.
+        </p>
+        <FormGroup className="mb-5">
           <Form.Label>Card Number</Form.Label>
-          <CardNumber />
+          <p className="text-secondary">
+            The long number on the front of your card.
+          </p>
+          <CardNumber className="form-control" />
+          <Form.Control.Feedback type="invalid">
+            This doesn't look like a valid credit or debit card number.
+          </Form.Control.Feedback>
         </FormGroup>
-        <FormGroup>
-          <Form.Label>Expiry</Form.Label>
-          <CardExpiry />
+        <FormGroup className="mb-5">
+          <Form.Label>Card Expiry</Form.Label>
+          <p className="text-secondary">Should be on the front of your card.</p>
+          <CardExpiry className="form-control" />
+          <Form.Control.Feedback type="invalid">
+            This doesn't look like a valid credit or debit card expiry date. It
+            should a date in the future.
+          </Form.Control.Feedback>
         </FormGroup>
-        <FormGroup>
+        <FormGroup className="mb-5">
           <Form.Label>CVV</Form.Label>
-          <CardCVV />
+          <p className="text-secondary">
+            The three number security code on the back of your card.
+          </p>
+          <CardCVV className="form-control" />
+          <Form.Control.Feedback type="invalid">
+            This doesn't look like a valid recredit or debit card CVV - it's
+            normally three numbers on the back of your card.
+          </Form.Control.Feedback>
         </FormGroup>
       </CardComponent>
 
@@ -175,20 +223,3 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
     </form>
   );
 };
-
-const chargebeeStylePropsList = [
-  "color",
-  "letterSpacing",
-  "textAlign",
-  "textTransform",
-  "textDecoration",
-  "textShadow",
-  "fontFamily",
-  "fontWeight",
-  "fontSize",
-  "fontSmoothing",
-  "fontSmoothing",
-  "fontSmoothing",
-  "fontStyle",
-  "fontVariant"
-];
