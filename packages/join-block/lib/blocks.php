@@ -22,14 +22,15 @@ add_action('carbon_fields_register_fields', function () {
         } else {
             $homeUrl = home_url();
         }
-        
+
         $successRedirect = get_page_link($fields['joined_page'][0]['id']);
- 
+
         $environment = [
-            "CHARGEBEE_API_PUBLISHABLE_KEY" => $_ENV["CHARGEBEE_API_PUBLISHABLE_KEY"], 
             'HOME_URL' => $homeUrl,
+            "WP_REST_API" => get_rest_url(),
             'SUCCESS_REDIRECT' => $successRedirect,
-            "WP_REST_API" => get_rest_url()
+            'CHARGEBEE_SITE_NAME' => $_ENV["CHARGEBEE_SITE_NAME"],
+            "CHARGEBEE_API_PUBLISHABLE_KEY" => $_ENV["CHARGEBEE_API_PUBLISHABLE_KEY"],
         ];
         ?>
         <script type="application/json" id="env">
