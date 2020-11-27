@@ -1,7 +1,7 @@
 {
   "name": "uk-greens-join-block",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Example block written with ESNext standard and JSX support – build step required.",
   "author": "The WordPress Contributors",
   "license": "GPL-2.0-or-later",
