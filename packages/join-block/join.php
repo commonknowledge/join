@@ -6,8 +6,6 @@
  * Version:         0.0.4
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     uk-greens
- *
- * @package         uk-greens
  */
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
