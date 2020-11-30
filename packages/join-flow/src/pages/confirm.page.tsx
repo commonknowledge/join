@@ -16,7 +16,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <div className="spinner-border" role="status">
         <span className="sr-only">Please wait</span>
       </div>
-      <div className="mt-3">Joining the Green Party</div>
+      <div className="mt-3">Joining The Green Party</div>
     </div>
   );
 

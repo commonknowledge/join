@@ -38,7 +38,7 @@ function getEnvironmentFromHTML() {
 
 if (!joinFormElement) {
   console.error(
-    'Could not find element with ID "join-form" so cannot load Green Party join form'
+    'Could not find element with ID "join-form" so cannot load The Green Party join form'
   );
 } else {
   console.log("Loading environment");
