@@ -66,7 +66,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
         type="submit"
         disabled={form.formState.isSubmitting}
       >
-        Join the Greens
+        Join The Green Party
       </Button>
     </form>
   );
