@@ -68,14 +68,14 @@
 
 .custom-radio {
   display: inline-block;
-  min-width: 30px;
+  width: 30px;
   height: 30px;
-  padding: 0;
-
   background: url("graphics/radio.svg");
 
   &.checked {
     background: url("graphics/radio-checked.svg");
+    width: 30px;
+    height: 30px;
   }
 }
 
