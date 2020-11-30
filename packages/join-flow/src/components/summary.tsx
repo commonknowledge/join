@@ -38,7 +38,9 @@ const STAGE_COMPONENTS: Record<PageState["stage"], FC<{ data: FormSchema }>> = {
   ),
   donation: ({ data }) => (
     <DetailPanel label="Donation" action={{ stage: "donation" }}>
-      {data.donationAmount ? `£${data.donationAmount}` : "None right now"}
+      {data.donationAmount && data.donationAmount > 0
+        ? `£${data.donationAmount}`
+        : "None right now"}
     </DetailPanel>
   ),
   "payment-method": ({ data }) => (
