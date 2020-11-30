@@ -25,13 +25,16 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  const form = useForm({
-    defaultValues: data as {}
-  });
-
   const donationTiers = data.membership
     ? membershipToDonationTiers(data.membership)
     : [5, 10, 15, 20];
+
+  const form = useForm({
+    defaultValues: {
+      donationAmount: donationTiers[1],
+      ...data
+    }
+  });
 
   const selectedDonationAmount = form.watch("donationAmount");
 
@@ -94,7 +97,14 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         </FormItem>
       </fieldset>
 
-      <ContinueButton text="Continue without donation" />
+      <ContinueButton text="Yes I'll chip in" />
+
+      <ContinueButton
+        onClick={() => {
+          form.setValue("donationAmount", 0);
+        }}
+        text="Not right now"
+      />
     </form>
   );
 };
