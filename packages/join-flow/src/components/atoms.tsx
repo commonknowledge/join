@@ -5,6 +5,7 @@ import { PageState, useCurrentRouter } from "../services/router.service";
 
 interface ContinueButtonProps {
   text?: string;
+  onClick?(event: React.MouseEvent<HTMLButtonElement>): void;
 }
 
 const ChevronSVG = (
@@ -23,10 +24,11 @@ const ChevronSVG = (
   </svg>
 );
 
-export const ContinueButton: FC<ContinueButtonProps> = ({ text }) => (
+export const ContinueButton: FC<ContinueButtonProps> = ({ text, onClick }) => (
   <Button
     className="form-section-addon d-flex align-items-center"
     type="submit"
+    onClick={onClick}
   >
     {text || "Continue"}
     {ChevronSVG}
