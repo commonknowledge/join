@@ -2,9 +2,12 @@
 
 function gocardless_get_client()
 {
+    global $joinBlockLog;
+
     if ($_ENV['WP_ENV'] === 'production') {
         $gocardlessEnvironment =  \GoCardlessPro\Environment::LIVE;
     } else {
+        $joinBlockLog->warning('WP_ENV is not set to production, using GoCardless Sandbox environment.');
         $gocardlessEnvironment =  \GoCardlessPro\Environment::SANDBOX;
     }
 
