@@ -110,8 +110,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       <section className="form-section">
         <h2>Home address</h2>
         <p className="text-secondary">
-          We’ll use this to find your nearest local group and send your new
-          membership card.
+          We’ll use this to connect you with your local group.
         </p>
         <FormItem
           label="Postcode"

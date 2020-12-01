@@ -97,7 +97,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           <Form.Control />
         </FormItem>
         <FormItem form={form} name="recurDonation">
-          <Form.Check label="Make this recurring" />
+          <Form.Check label="Make this extra donation recurring in addition to your recurring membership fee" />
         </FormItem>
       </fieldset>
 
