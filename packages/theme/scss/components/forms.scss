@@ -31,6 +31,11 @@
   @include text-body-bold;
 }
 
+.radio-panel-description {
+  display: inline;
+  font-size: 17px;
+}
+
 .form-content {
   @include media-breakpoint-up(sm) {
     margin: 0 auto;

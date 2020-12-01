@@ -86,7 +86,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
               <span className="float-right">{valueText}</span>
             </div>
 
-            {description}
+            <div className="radio-panel-description">{description}</div>
             {valueMeta && <span className="float-right">{valueMeta}</span>}
           </div>
         </Form.Label>
