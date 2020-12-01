@@ -54,7 +54,7 @@ function uk_greens_join_block_init()
         $joinBlockLog->warning('DEBUG_JOIN_FLOW environment variable set to true, meaning join form starting in debug mode. Using local frontend serving from http://localhost:3000/bundle.js for form.');
 
         wp_enqueue_script(
-            'uk-greens-join-block-js',
+            'join-block-js',
             "http://localhost:3000/bundle.js",
             array(),
             false,
@@ -62,7 +62,7 @@ function uk_greens_join_block_init()
         );
     } else {
         wp_enqueue_script(
-            'uk-greens-join-block-js',
+            'join-block-js',
             plugins_url($joinFormJavascriptBundleLocation, __FILE__),
             array(),
             filemtime("$directoryName/$bundle_js"),
