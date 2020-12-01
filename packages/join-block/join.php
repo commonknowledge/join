@@ -28,10 +28,6 @@ use Monolog\Handler\ErrorLogHandler;
 $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
 
-if ($_ENV['DEBUG_JOIN_FLOW'] === 'true') {
-    $joinBlockLog->warning('DEBUG_JOIN_FLOW environment variable set, meaning join form starting in debug mode - using local frontend serving from http://localhost:3000/bundle.js');
-}
-
 add_action('rest_api_init', function () {
     register_rest_route('join/v1', '/join', array(
         'methods' => 'POST',
@@ -48,11 +44,15 @@ add_action('rest_api_init', function () {
 add_action('init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init()
 {
+    global $joinBlockLog;
+ 
     $directoryName = dirname(__FILE__);
 
     $joinFormJavascriptBundleLocation = 'build/join-flow/bundle.js';
 
     if ($_ENV['DEBUG_JOIN_FLOW'] === 'true') {
+        $joinBlockLog->warning('DEBUG_JOIN_FLOW environment variable set to true, meaning join form starting in debug mode. Using local frontend serving from http://localhost:3000/bundle.js for form.');
+
         wp_enqueue_script(
             'uk-greens-join-block-js',
             "http://localhost:3000/bundle.js",
