@@ -56,15 +56,19 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         <Summary data={data} />
       </div>
 
-      <fieldset className="form-section">
+      <div className="form-section">
         <legend className="text-md">Can you chip in?</legend>
         <p className="text-secondary">
-          If 2,500 people give £20 each we can lay the groundwork for change
-          which will lead Britain to Build Back Better, with a Just Recovery
-          that uplifts everyone, especially those marginalised by our systems.
+          In 2021, we will be fighting our largest number of elections ever in
+          one year.
         </p>
-      </fieldset>
-      <fieldset>
+        <p className="text-secondary">
+          We won't let the events of 2020 be just another reminder of how broken
+          our society is. Will you help us put an end to business as usual by
+          chipping in today?
+        </p>
+      </div>
+      <fieldset className="mt-5">
         {donationTiers.map((donationTierAmount) => (
           <Button
             className="mr-2"
