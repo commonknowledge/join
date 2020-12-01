@@ -1,9 +1,9 @@
 {
-  "name": "uk-greens-join-block",
+  "name": "join-block",
   "private": true,
-  "version": "0.0.4",
-  "description": "Example block written with ESNext standard and JSX support – build step required.",
-  "author": "The WordPress Contributors",
+  "version": "0.0.5",
+  "description": "Join Flow block for The Green Party",
+  "author": "Common Knowledge",
   "license": "GPL-2.0-or-later",
   "main": "build/index.js",
   "scripts": {
