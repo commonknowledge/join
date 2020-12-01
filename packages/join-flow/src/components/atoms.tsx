@@ -26,7 +26,7 @@ const ChevronSVG = (
 
 export const ContinueButton: FC<ContinueButtonProps> = ({ text, onClick }) => (
   <Button
-    className="form-section-addon d-flex align-items-center"
+    className="form-section-addon d-flex align-items-center text-uppercase text-bebas"
     type="submit"
     onClick={onClick}
   >

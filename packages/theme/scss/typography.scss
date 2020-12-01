@@ -3,35 +3,35 @@ body {
 }
 
 h2 {
-    @include text-sm-bold;
+  @include text-sm-bold;
 
-    @include media-breakpoint-up(sm) {
-        @include text-md;
-    }
+  @include media-breakpoint-up(sm) {
+    @include text-md;
+  }
 }
 
 .text-md {
-    @include text-sm-bold;
+  @include text-sm-bold;
 
-    @include media-breakpoint-up(sm) {
-        @include text-md;
-    }
+  @include media-breakpoint-up(sm) {
+    @include text-md;
+  }
 }
 
 .text-xs {
-    @include text-xxs;
+  @include text-xxs;
 
-    @include media-breakpoint-up(sm) {
-        @include text-xs;
-    }
+  @include media-breakpoint-up(sm) {
+    @include text-xs;
+  }
 }
 
 .text-xxs {
-    @include text-xxxs;
+  @include text-xxxs;
 
-    @include media-breakpoint-up(sm) {
-        @include text-xxs;
-    }
+  @include media-breakpoint-up(sm) {
+    @include text-xxs;
+  }
 }
 
 .text-xl {
@@ -44,5 +44,9 @@ h2 {
 }
 
 li:not(:first-child) {
-	margin-top: $space-3;
+  margin-top: $space-3;
+}
+
+.text-bebas {
+  font-family: $font-heading !important;
 }
