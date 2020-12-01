@@ -5,7 +5,8 @@
     "auth0/auth0-php": "^7.4",
     "vlucas/phpdotenv": "^5.2",
     "giggsey/libphonenumber-for-php": "^8.12",
-    "htmlburger/carbon-fields": "^3.2"
+    "htmlburger/carbon-fields": "^3.2",
+    "monolog/monolog": "^2.1"
   },
   "require-dev": {
     "squizlabs/php_codesniffer": "^3.5"

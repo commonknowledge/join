@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin Name:     The Green Party Join Plugin
  * Description:     Green Party join flow plugin.
@@ -22,6 +21,16 @@ require 'lib/services/join_service.php';
 require 'lib/services/gocardless_service.php';
 
 require 'lib/blocks.php';
+
+use Monolog\Logger;
+use Monolog\Handler\ErrorLogHandler;
+
+$joinBlockLog = new Logger('join-block');
+$joinBlockLog->pushHandler(new ErrorLogHandler());
+
+if ($_ENV['DEBUG_JOIN_FLOW'] === 'true') {
+    $joinBlockLog->notice('DEBUG_JOIN_FLOW environment variable set, meaning join form starting in debug mode - using local frontend serving from http://localhost:3000/bundle.js');
+}
 
 add_action('rest_api_init', function () {
     register_rest_route('join/v1', '/join', array(
