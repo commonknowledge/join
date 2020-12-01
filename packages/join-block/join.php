@@ -29,7 +29,7 @@ $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
 
 if ($_ENV['DEBUG_JOIN_FLOW'] === 'true') {
-    $joinBlockLog->notice('DEBUG_JOIN_FLOW environment variable set, meaning join form starting in debug mode - using local frontend serving from http://localhost:3000/bundle.js');
+    $joinBlockLog->warning('DEBUG_JOIN_FLOW environment variable set, meaning join form starting in debug mode - using local frontend serving from http://localhost:3000/bundle.js');
 }
 
 add_action('rest_api_init', function () {
