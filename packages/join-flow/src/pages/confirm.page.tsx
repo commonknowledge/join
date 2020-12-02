@@ -62,7 +62,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       </section>
       {directDebitDetailsMessage}
       <Button
-        className="form-section-addon"
+        className="form-section-addon text-bebas text-uppercase"
         type="submit"
         disabled={form.formState.isSubmitting}
       >
