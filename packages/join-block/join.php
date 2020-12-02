@@ -42,7 +42,7 @@ add_action('rest_api_init', function () {
             $joinBlockLog->info('Join process started', ['request' => $request]);
             
             try {
-                $joinProcessResult = handle_join($request->get_json_params());
+                handle_join($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
             } catch (ClientException $error) {
                 $joinBlockLog->error('Join process failed at Auth0 user creation', ['error' => $error]);
