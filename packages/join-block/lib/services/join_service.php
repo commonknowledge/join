@@ -137,7 +137,7 @@ function handle_join($data)
         "GPEx Voter"
     ];
     
-    $joinBlockLog->info('Creating user for creation in Auth0');
+    $joinBlockLog->info('Creating user in Auth0');
 
     try {
         $managementApi->users()->create([
