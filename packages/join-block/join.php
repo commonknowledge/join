@@ -37,8 +37,16 @@ add_action('rest_api_init', function () {
         'callback' => function ($req) {
             global $joinBlockLog;
             
-            $joinBlockLog->info('Join process started', $req);
-            return rest_ensure_response(handle_join($req->get_json_params()));
+            $joinBlockLog->info('Join process started', ['request' => $req]);
+            
+            try {
+                $joinProcessResult = handle_join($req->get_json_params());
+                $joinBlockLog->info('Join process successful');
+            } catch (Error $error) {
+                $joinBlockLog->error('Join process failed', ['error' => $error]);
+            }
+
+            return rest_ensure_response($joinProcessResult);
         },
     ));
 });

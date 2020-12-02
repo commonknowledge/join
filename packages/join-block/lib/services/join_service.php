@@ -43,11 +43,11 @@ function handle_join($data)
         try {
             $mandate = gocardless_create_customer_mandate($data);
         } catch(Exception $expection) {
-            $joinBlockLog->error('GoCardless Direct Debit mandate creation failed',  $expection);
+            $joinBlockLog->error('GoCardless Direct Debit mandate creation failed',  ['exception' => $expection]);
             throw new Error('GoCardless Direct Debit mandate creation failed');
         }
         
-        $joinBlockLog->info('DirectDebit mandate via GoCardless successful, creating Chargebee customer');
+        $joinBlockLog->info('Direct Debit mandate via GoCardless successful, creating Chargebee customer');
 
         try {
             $customerResult = ChargeBee_Customer::create(array(
@@ -64,7 +64,7 @@ function handle_join($data)
                 "billingAddress" => $billingAddress
               ));
         } catch (Exception $expection) {
-            $joinBlockLog->error('Chargebee customer creation failed',  $expection);
+            $joinBlockLog->error('Chargebee customer creation failed',  ['exception' => $expection]);
             throw new Error('Chargebee customer creation failed');
         }
     }
@@ -121,7 +121,7 @@ function handle_join($data)
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
     } catch (Exception $expection) {
-        $joinBlockLog->error('Chargebee subscription failed', $expection);
+        $joinBlockLog->error('Chargebee subscription failed', ['exception' => $expection]);
         throw new Error('Chargebee subscription failed');
     }
 
@@ -151,7 +151,7 @@ function handle_join($data)
             ]
         ]);
     } catch (Exception $expection) {
-        $joinBlockLog->error('Auth0 user creatioon failed', $expection);
+        $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
         throw new Error('Auth0 user creatioon failed');
     }
 
