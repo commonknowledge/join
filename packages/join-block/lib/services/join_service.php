@@ -154,6 +154,8 @@ function handle_join($data)
         $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
         throw $expection;
     }
+    
+    $joinBlockLog->info('Auth0 user creation successful');
 
     return $customerResult;
 }
