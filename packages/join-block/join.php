@@ -53,10 +53,7 @@ add_action('rest_api_init', function () {
                 return new WP_Error( 'join_failed', 'Join process failed', ['status' => 500 ] );
             }
 
-            return new WP_REST_Response([
-                'status' => 200,
-                'body_response' => ['status' => 'ok']
-            ]);
+            return new WP_REST_Response(['status' => 'ok'], 200);
         },
     ));
 });
