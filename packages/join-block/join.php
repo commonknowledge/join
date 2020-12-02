@@ -25,6 +25,8 @@ require 'lib/blocks.php';
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
 
+use GuzzleHttp\Exception\ClientException;
+
 $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
 
@@ -34,19 +36,27 @@ add_action('rest_api_init', function () {
         'permission_callback' => function ($req) {
             return true;
         },
-        'callback' => function ($req) {
+        'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
             
-            $joinBlockLog->info('Join process started', ['request' => $req]);
+            $joinBlockLog->info('Join process started', ['request' => $request]);
             
             try {
-                $joinProcessResult = handle_join($req->get_json_params());
+                $joinProcessResult = handle_join($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
-            } catch (Error $error) {
+            } catch (ClientException $error) {
+                $joinBlockLog->error('Join process failed at Auth0 user creation', ['error' => $error]);
+                return new WP_Error( 'join_failed', 'Join process failed', ['status' => 500 ] );
+            }
+            catch (Error $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
+                return new WP_Error( 'join_failed', 'Join process failed', ['status' => 500 ] );
             }
 
-            return rest_ensure_response($joinProcessResult);
+            return new WP_REST_Response([
+                'status' => 200,
+                'body_response' => ['status' => 'ok']
+            ]);
         },
     ));
 });
