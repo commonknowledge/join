@@ -24,11 +24,18 @@ require 'lib/blocks.php';
 
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
+use Monolog\Processor\WebProcessor;
 
 use GuzzleHttp\Exception\ClientException;
 
 $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
+$joinBlockLog->pushProcessor(new WebProcessor());
+
+if ($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] && $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] !== '') {
+    $joinBlockLog->info('Sending error messages to Microsoft Teams');
+    $joinBlockLog->pushHandler(new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'], \Monolog\Logger::ERROR));
+}
 
 add_action('rest_api_init', function () {
     register_rest_route('join/v1', '/join', array(
