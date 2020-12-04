@@ -125,11 +125,11 @@ function handle_join($data)
         throw new Error('Chargebee subscription failed');
     }
 
-    $access_token = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
+    $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 
     $joinBlockLog->info('Preparing user for creation in Auth0');
 
-    $managementApi = new Management($access_token, $_ENV['AUTH0_DOMAIN']);
+    $managementApi = new Management($auth0ManagementAccessToken, $_ENV['AUTH0_DOMAIN']);
 
     $defaultRoles = [
         "authenticated user",
