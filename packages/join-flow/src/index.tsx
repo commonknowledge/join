@@ -55,7 +55,7 @@ if (!joinFormElement) {
         window.process.env.CHARGEBEE_SITE_NAME ||
         process.env.REACT_APP_CHARGEBEE_SITE,
       publishableKey:
-        window.process.env.CHARGEBEE_PUBLISHABLE_KEY ||
+        window.process.env.CHARGEBEE_API_PUBLISHABLE_KEY ||
         process.env.REACT_APP_CHARGEBEE_KEY
     });
   } else {
