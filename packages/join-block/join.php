@@ -33,7 +33,6 @@ $joinBlockLog->pushHandler(new ErrorLogHandler());
 $joinBlockLog->pushProcessor(new WebProcessor());
 
 if ($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] && $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] !== '') {
-    $joinBlockLog->info('Sending error messages to Microsoft Teams');
     $joinBlockLog->pushHandler(new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'], \Monolog\Logger::ERROR));
 }
 
