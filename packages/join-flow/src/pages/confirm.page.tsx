@@ -83,26 +83,28 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
           <>
             <Summary data={data} />
             {directDebitDetailsMessage}
+            {joinError && (
+              <div className="alert alert-danger" role="alert">
+                <p>Sorry you cannot join {organisationName} at this time.</p>
+                <p>Please try again in an hour.</p>
+                <p>
+                  If you continue to have problems please contact{" "}
+                  <a href={organisationMailToLink}>
+                    {organisationEmailAddress}
+                  </a>
+                </p>
+              </div>
+            )}
+            <Button
+              className="form-section-addon text-bebas text-uppercase"
+              type="submit"
+              disabled={requestInFlight}
+            >
+              Join {organisationName}
+            </Button>
           </>
         )}
       </section>
-      {joinError && (
-        <div className="alert alert-danger" role="alert">
-          <p>Sorry you cannot join {organisationName} at this time.</p>
-          <p>Please try again in an hour.</p>
-          <p>
-            If you continue to have problems please contact{" "}
-            <a href={organisationMailToLink}>{organisationEmailAddress}</a>
-          </p>
-        </div>
-      )}
-      <Button
-        className="form-section-addon text-bebas text-uppercase"
-        type="submit"
-        disabled={requestInFlight}
-      >
-        Join {organisationName}
-      </Button>
     </form>
   );
 };
