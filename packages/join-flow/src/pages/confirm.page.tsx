@@ -15,6 +15,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
 
   const form = useForm();
+
   const join = usePostResource<FormSchema>("/join");
 
   const [requestInFlight, setRequestInFlight] = useState(false);
@@ -54,7 +55,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     );
   }
 
-  const onSubmit = async (data: FormSchema) => {
+  const onSubmit = async () => {
     setRequestInFlight(true);
     join(data).then(
       (res) => {
@@ -76,16 +77,6 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     >
       <section className="form-section mb-3">
         <h1>Confirm your details</h1>
-        {joinError && (
-          <div className="alert alert-danger" role="alert">
-            <p>Sorry you cannot join {organisationName} at this time.</p>
-            <p>Please try again in an hour.</p>
-            <p>
-              If you continue to have problems please contact{" "}
-              <a href={organisationMailToLink}>{organisationEmailAddress}</a>
-            </p>
-          </div>
-        )}
         {requestInFlight ? (
           joiningSpinner
         ) : (
@@ -95,6 +86,16 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
           </>
         )}
       </section>
+      {joinError && (
+        <div className="alert alert-danger" role="alert">
+          <p>Sorry you cannot join {organisationName} at this time.</p>
+          <p>Please try again in an hour.</p>
+          <p>
+            If you continue to have problems please contact{" "}
+            <a href={organisationMailToLink}>{organisationEmailAddress}</a>
+          </p>
+        </div>
+      )}
       <Button
         className="form-section-addon text-bebas text-uppercase"
         type="submit"
