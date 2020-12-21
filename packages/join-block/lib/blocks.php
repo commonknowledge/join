@@ -39,7 +39,7 @@ add_action('carbon_fields_register_fields', function () {
             ?>
         </script>
         <script src="https://js.chargebee.com/v2/chargebee.js"></script>
-        <div className="mt-4" id="join-form"></div>
+        <div class="mt-4" id="join-form"></div>
         <?php
     });
 
