@@ -34,7 +34,6 @@ const stages = [
 const SAVED_STATE_KEY = "greens_join_state_flow";
 
 const App = () => {
-  const join = usePostResource<FormSchema>("/join");
   const [data, setData] = useState(getInitialState);
 
   const router = useStateRouter(
@@ -68,12 +67,10 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         router.setState({ stage: "confirm" });
       } else if (router.state.stage === "confirm") {
-        join(data).then((res) => {
-          window.location.href = window.process.env.SUCCESS_REDIRECT || "/";
-        });
+        window.location.href = window.process.env.SUCCESS_REDIRECT || "/";
       }
     },
-    [router, join, data]
+    [router, data]
   );
 
   return (

@@ -1,15 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema, membershipIsAnnual } from "../schema";
+import { usePostResource } from "../services/rest-resource.service";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
+  const organisationName = "The Green Party";
+  const organisationEmailAddress = "membership@greenparty.org.uk";
+  const organisationMailToLink = `mailto:${organisationEmailAddress}`;
+
   const form = useForm();
+  const join = usePostResource<FormSchema>("/join");
+
+  const [requestInFlight, setRequestInFlight] = useState(false);
+  const [joinError, setJoinError] = useState(false);
 
   const joiningSpinner = (
     <div className="d-flex justify-content-center align-items-center flex-column h-200px">
@@ -21,10 +30,6 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   );
 
   let directDebitDetailsMessage = null;
-
-  const organisationName = "The Green Party";
-  const organisationEmailAddress = "membership@greenparty.org.uk";
-  const organisationMailToLink = `mailto:${organisationEmailAddress}`;
 
   if (data.paymentMethod === "directDebit" && data.membership) {
     directDebitDetailsMessage = (
@@ -49,24 +54,53 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     );
   }
 
+  const onSubmit = async (data: FormSchema) => {
+    setRequestInFlight(true);
+    join(data).then(
+      (res) => {
+        onCompleted(data);
+      },
+      (error) => {
+        setRequestInFlight(false);
+        console.error(error.message);
+        setJoinError(true);
+      }
+    );
+  };
+
   return (
     <form
       className="form-content"
       noValidate
-      onSubmit={form.handleSubmit(onCompleted)}
+      onSubmit={form.handleSubmit(onSubmit)}
     >
       <section className="form-section mb-3">
         <h1>Confirm your details</h1>
-
-        {form.formState.isSubmitting ? joiningSpinner : <Summary data={data} />}
+        {joinError && (
+          <div className="alert alert-danger" role="alert">
+            <p>Sorry you cannot join {organisationName} at this time.</p>
+            <p>Please try again in an hour.</p>
+            <p>
+              If you continue to have problems please contact{" "}
+              <a href={organisationMailToLink}>{organisationEmailAddress}</a>
+            </p>
+          </div>
+        )}
+        {requestInFlight ? (
+          joiningSpinner
+        ) : (
+          <>
+            <Summary data={data} />
+            {directDebitDetailsMessage}
+          </>
+        )}
       </section>
-      {directDebitDetailsMessage}
       <Button
         className="form-section-addon text-bebas text-uppercase"
         type="submit"
-        disabled={form.formState.isSubmitting}
+        disabled={requestInFlight}
       >
-        Join The Green Party
+        Join {organisationName}
       </Button>
     </form>
   );
