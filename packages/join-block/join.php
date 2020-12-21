@@ -51,8 +51,7 @@ add_action('rest_api_init', function () {
                 handle_join($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
             } catch (ClientException $error) {
-                $joinBlockLog->error('Join process failed at Auth0 user creation', ['error' => $error]);
-                return new WP_Error( 'join_failed', 'Join process failed', ['status' => 500 ] );
+                $joinBlockLog->error('Join process failed at Auth0 user creation, but customer created in Chargebee.', ['error' => $error]);
             }
             catch (Error $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
