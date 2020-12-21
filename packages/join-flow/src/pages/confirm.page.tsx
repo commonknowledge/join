@@ -11,7 +11,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   onCompleted
 }) => {
   const organisationName = "The Green Party";
-  const organisationEmailAddress = "membership@greenparty.org.uk";
+  const organisationEmailAddress = "members@greenparty.org.uk";
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
 
   const form = useForm();
