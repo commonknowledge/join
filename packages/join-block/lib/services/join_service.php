@@ -116,7 +116,7 @@ function handle_join($data)
         ];
     }
 
-    $joinBlockLog->info('Creating subcription in Chargebee');
+    $joinBlockLog->info('Creating subscription in Chargebee');
     
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
