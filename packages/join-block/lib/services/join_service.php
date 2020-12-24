@@ -124,6 +124,8 @@ function handle_join($data)
         $joinBlockLog->error('Chargebee subscription failed', ['exception' => $expection]);
         throw new Error('Chargebee subscription failed');
     }
+    
+    $joinBlockLog->info('Chargebee subscription successful');
 
     $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 
