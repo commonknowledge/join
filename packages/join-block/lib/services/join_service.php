@@ -144,7 +144,7 @@ function createAuth0User($data, $planId, $customerId)
 {
     global $joinBlockLog;
 
-    $joinBlockLog->info('Obtaining Auth0 access token');
+    $joinBlockLog->info('Obtaining Auth0 Management API access token');
 
     $auth0Api = new Authentication(
         $_ENV['AUTH0_DOMAIN'],
@@ -160,8 +160,11 @@ function createAuth0User($data, $planId, $customerId)
     try {
         $result = $auth0Api->client_credentials($config);
     } catch (Exception $exception) {
+        $joinBlockLog->info('Auth0 Management API access token request failed');
         throw $exception;
     }
+
+    $joinBlockLog->info('Obtaining Auth0 Management API access token successfully obtained');
 
     $auth0ManagementAccessToken = $result['access_token'];
 
@@ -175,11 +178,16 @@ function createAuth0User($data, $planId, $customerId)
 
     $joinBlockLog->info('Creating user in Auth0');
 
+    $fullName = implode(' ', [$data['firstName'], $data['lastName']]);
+
     try {
         $managementApi->users()->create([
-            "password" => $data['password'],
             "connection" => "Username-Password-Authentication",
+            'name' => $fullName,
             "email" => $data['email'],
+            "password" => $data['password'],
+            'given_name' => $data['firstName'],
+            'family_name' => $data['lastName'],
             "app_metadata" => [
                 "planId" => $planId,
                 "chargebeeCustomerId" => $customerId,
