@@ -19,7 +19,6 @@ add_action('after_setup_theme', function () {
 
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
-require 'lib/services/gocardless_service.php';
 
 require 'lib/blocks.php';
 
