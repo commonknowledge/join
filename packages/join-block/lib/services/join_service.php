@@ -6,7 +6,7 @@ function handle_join($data)
 {
     global $joinBlockLog;
 
-    $billingAddress = array(
+    $billingAddress = [
         "firstName" => $data['firstName'],
         "lastName" => $data['lastName'],
         "line1" => $data['addressLine1'],
@@ -15,7 +15,7 @@ function handle_join($data)
         "state" => $data['addressCounty'],
         "zip" => $data['addressPostcode'],
         "country" => $data['addressCountry']
-    );
+    ];
 
     $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
@@ -26,7 +26,7 @@ function handle_join($data)
 
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Charging credit or debit card via Chargebee');
-        $customerResult = ChargeBee_Customer::create(array(
+        $customerResult = ChargeBee_Customer::create([
           "firstName" => $data['firstName'],
           "lastName" => $data['lastName'],
           "email" => $data['email'],
@@ -35,7 +35,7 @@ function handle_join($data)
           "tokenId" => $data['paymentToken'],
           "billingAddress" => $billingAddress,
           "phone" => $data['phoneNumber']
-        ));
+        ]);
 
         $joinBlockLog->info('Credit or debit card charge via Chargebee successful');
     } elseif ($data['paymentMethod'] === 'directDebit') {
@@ -50,19 +50,19 @@ function handle_join($data)
         $joinBlockLog->info('Direct Debit mandate via GoCardless successful, creating Chargebee customer');
 
         try {
-            $customerResult = ChargeBee_Customer::create(array(
+            $customerResult = ChargeBee_Customer::create([
                 "firstName" => $data['firstName'],
                 "lastName" => $data['lastName'],
                 "email" => $data['email'],
                 "allow_direct_debit" => true,
                 "locale" => "en-GB",
                 "phone" => $data['phoneNumber'],
-                "payment_method" => array(
-                      "type" => "direct_debit",
-                      "reference_id" => $mandate->id,
-                ),
+                "payment_method" => [
+                    "type" => "direct_debit",
+                    "reference_id" => $mandate->id,
+                ],
                 "billingAddress" => $billingAddress
-              ));
+            ]);
         } catch (Exception $expection) {
             $joinBlockLog->error('Chargebee customer creation failed', ['exception' => $expection]);
             throw new Error('Chargebee customer creation failed');
@@ -94,7 +94,7 @@ function handle_join($data)
     // Handle donation amount, which is sent to us in GBP but Chargebee requires in pence
     $joinBlockLog->info('Handling donation');
 
-    // Non-recurring
+    // Non-recurring donation
     if ($data['donationAmount'] !== '' && $data['recurDonation'] === false) {
         $joinBlockLog->info('Setting up non-recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
@@ -105,7 +105,7 @@ function handle_join($data)
         ];
     }
 
-    // Recurring
+    // Recurring donation
     if ($data['donationAmount'] !== '' && $data['recurDonation'] === true) {
         $joinBlockLog->info('Setting up recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
@@ -127,9 +127,22 @@ function handle_join($data)
 
     $joinBlockLog->info('Chargebee subscription successful');
 
+    try {
+        createAuth0User($data, $chargebeeSubscriptionPayload, $customer);
+    } catch (Exception $expection) {
+        $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
+        throw $expection;
+    }
+
+    return $customerResult;
+}
+
+
+function createAuth0User($data, $chargebeeSubscriptionPayload, $customer)
+{
     $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 
-    $joinBlockLog->info('Preparing user for creation in Auth0');
+    $joinBlockLog->info('Creatin user in Auth0');
 
     $managementApi = new Management($auth0ManagementAccessToken, $_ENV['AUTH0_DOMAIN']);
 
@@ -153,11 +166,8 @@ function handle_join($data)
             ]
         ]);
     } catch (Exception $expection) {
-        $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
         throw $expection;
     }
 
     $joinBlockLog->info('Auth0 user creation successful');
-
-    return $customerResult;
 }
