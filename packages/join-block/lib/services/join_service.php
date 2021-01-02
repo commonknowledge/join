@@ -140,6 +140,8 @@ function handle_join($data)
 
 function createAuth0User($data, $chargebeeSubscriptionPayload, $customer)
 {
+    global $joinBlockLog;
+
     $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 
     $joinBlockLog->info('Creatin user in Auth0');
