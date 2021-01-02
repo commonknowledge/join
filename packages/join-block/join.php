@@ -78,7 +78,7 @@ function uk_greens_join_block_init()
         wp_enqueue_script(
             'join-block-js',
             "http://localhost:3000/bundle.js",
-            array(),
+            [],
             false,
             true
         );
@@ -86,7 +86,7 @@ function uk_greens_join_block_init()
         wp_enqueue_script(
             'join-block-js',
             plugins_url($joinFormJavascriptBundleLocation, __FILE__),
-            array(),
+            [],
             filemtime("$directoryName/$bundle_js"),
             true
         );
