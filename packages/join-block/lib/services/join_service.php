@@ -144,6 +144,8 @@ function createAuth0User($data, $planId, $customerId)
 {
     global $joinBlockLog;
     
+    $joinBlockLog->info('Obtaining Auth0 access token');
+    
     $auth0Api = new Authentication(
         $_ENV['AUTH0_DOMAIN'],
         $_ENV['AUTH0_CLIENT_ID']
@@ -162,8 +164,6 @@ function createAuth0User($data, $planId, $customerId)
     }
 
     $auth0ManagementAccessToken = $result['access_token'];
-
-    $joinBlockLog->info('Creating user in Auth0');
 
     $managementApi = new Management($auth0ManagementAccessToken, $_ENV['AUTH0_DOMAIN']);
 
