@@ -144,7 +144,7 @@ function createAuth0User($data, $chargebeeSubscriptionPayload, $customer)
 
     $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
 
-    $joinBlockLog->info('Creatin user in Auth0');
+    $joinBlockLog->info('Creating user in Auth0');
 
     $managementApi = new Management($auth0ManagementAccessToken, $_ENV['AUTH0_DOMAIN']);
 
