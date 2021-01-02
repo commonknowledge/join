@@ -21,7 +21,7 @@ function handle_join($data)
 
     $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
     $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
-    
+
     $joinBlockLog->info('Beginning join process');
 
     if ($data["paymentMethod"] === 'creditCard') {
@@ -36,17 +36,17 @@ function handle_join($data)
           "billingAddress" => $billingAddress,
           "phone" => $data['phoneNumber']
         ));
-        
+
         $joinBlockLog->info('Credit or debit card charge via Chargebee successful');
     } elseif ($data['paymentMethod'] === 'directDebit') {
         $joinBlockLog->info('Creating Direct Debit mandate via GoCardless');
         try {
             $mandate = gocardless_create_customer_mandate($data);
-        } catch(Exception $expection) {
-            $joinBlockLog->error('GoCardless Direct Debit mandate creation failed',  ['exception' => $expection]);
+        } catch (Exception $expection) {
+            $joinBlockLog->error('GoCardless Direct Debit mandate creation failed', ['exception' => $expection]);
             throw new Error('GoCardless Direct Debit mandate creation failed');
         }
-        
+
         $joinBlockLog->info('Direct Debit mandate via GoCardless successful, creating Chargebee customer');
 
         try {
@@ -64,7 +64,7 @@ function handle_join($data)
                 "billingAddress" => $billingAddress
               ));
         } catch (Exception $expection) {
-            $joinBlockLog->error('Chargebee customer creation failed',  ['exception' => $expection]);
+            $joinBlockLog->error('Chargebee customer creation failed', ['exception' => $expection]);
             throw new Error('Chargebee customer creation failed');
         }
     }
@@ -117,14 +117,14 @@ function handle_join($data)
     }
 
     $joinBlockLog->info('Creating subscription in Chargebee');
-    
+
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
     } catch (Exception $expection) {
         $joinBlockLog->error('Chargebee subscription failed', ['exception' => $expection]);
         throw new Error('Chargebee subscription failed');
     }
-    
+
     $joinBlockLog->info('Chargebee subscription successful');
 
     $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
@@ -138,7 +138,7 @@ function handle_join($data)
         "member",
         "GPEx Voter"
     ];
-    
+
     $joinBlockLog->info('Creating user in Auth0');
 
     try {
@@ -156,7 +156,7 @@ function handle_join($data)
         $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
         throw $expection;
     }
-    
+
     $joinBlockLog->info('Auth0 user creation successful');
 
     return $customerResult;

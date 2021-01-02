@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name:     The Green Party Join Plugin
  * Description:     Green Party join flow plugin.
@@ -44,18 +45,17 @@ add_action('rest_api_init', function () {
         },
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
-            
+
             $joinBlockLog->info('Join process started', ['request' => $request]);
-            
+
             try {
                 handle_join($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
             } catch (ClientException $error) {
                 $joinBlockLog->error('Join process failed at Auth0 user creation, but customer created in Chargebee.', ['error' => $error]);
-            }
-            catch (Error $error) {
+            } catch (Error $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
-                return new WP_Error( 'join_failed', 'Join process failed', ['status' => 500 ] );
+                return new WP_Error('join_failed', 'Join process failed', ['status' => 500 ]);
             }
 
             return new WP_REST_Response(['status' => 'ok'], 200);
@@ -68,7 +68,7 @@ add_action('init', 'uk_greens_join_block_init');
 function uk_greens_join_block_init()
 {
     global $joinBlockLog;
- 
+
     $directoryName = dirname(__FILE__);
 
     $joinFormJavascriptBundleLocation = 'build/join-flow/bundle.js';
