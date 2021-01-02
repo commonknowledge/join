@@ -5,6 +5,8 @@ use Auth0\SDK\API\Management;
 function handle_join($data)
 {
     global $joinBlockLog;
+    
+    $joinBlockLog->info('Beginning join process');
 
     $billingAddress = [
         "firstName" => $data['firstName'],
@@ -22,8 +24,6 @@ function handle_join($data)
     $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
     $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
 
-    $joinBlockLog->info('Beginning join process');
-
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Charging credit or debit card via Chargebee');
         $customerResult = ChargeBee_Customer::create([
@@ -40,6 +40,7 @@ function handle_join($data)
         $joinBlockLog->info('Credit or debit card charge via Chargebee successful');
     } elseif ($data['paymentMethod'] === 'directDebit') {
         $joinBlockLog->info('Creating Direct Debit mandate via GoCardless');
+
         try {
             $mandate = gocardless_create_customer_mandate($data);
         } catch (Exception $expection) {
@@ -128,7 +129,7 @@ function handle_join($data)
     $joinBlockLog->info('Chargebee subscription successful');
 
     try {
-        createAuth0User($data, $chargebeeSubscriptionPayload, $customer);
+        createAuth0User($data, $chargebeeSubscriptionPayload['planId'], $customer->id);
     } catch (Exception $expection) {
         $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
         throw $expection;
@@ -138,7 +139,7 @@ function handle_join($data)
 }
 
 
-function createAuth0User($data, $chargebeeSubscriptionPayload, $customer)
+function createAuth0User($data, $planId, $customerId)
 {
     global $joinBlockLog;
 
@@ -158,12 +159,12 @@ function createAuth0User($data, $chargebeeSubscriptionPayload, $customer)
 
     try {
         $managementApi->users()->create([
-            'password' => $data['password'],
+            "password" => $data['password'],
             "connection" => "Username-Password-Authentication",
             "email" => $data['email'],
             "app_metadata" => [
-                "planId" => $chargebeeSubscriptionPayload['planId'],
-                "chargebeeCustomerId" => $customer->id,
+                "planId" => $planId,
+                "chargebeeCustomerId" => $customerId,
                 "roles" => $defaultRoles
             ]
         ]);
