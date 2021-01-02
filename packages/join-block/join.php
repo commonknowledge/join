@@ -87,7 +87,7 @@ function uk_greens_join_block_init()
             'join-block-js',
             plugins_url($joinFormJavascriptBundleLocation, __FILE__),
             [],
-            filemtime("$directoryName/$bundle_js"),
+            filemtime("$directoryName/$joinFormJavascriptBundleLocation"),
             true
         );
     }
