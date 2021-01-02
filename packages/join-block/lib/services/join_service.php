@@ -1,5 +1,6 @@
 <?php
 
+use Auth0\SDK\API\Authentication;
 use Auth0\SDK\API\Management;
 
 function handle_join($data)
@@ -142,8 +143,25 @@ function handle_join($data)
 function createAuth0User($data, $planId, $customerId)
 {
     global $joinBlockLog;
+    
+    $auth0Api = new Authentication(
+        $_ENV['AUTH0_DOMAIN'],
+        $_ENV['AUTH0_CLIENT_ID']
+    );
+    
+    $config = [
+        'client_secret' => $_ENV['AUTH0_CLIENT_SECRET'],
+        'client_id' => $_ENV['AUTH0_CLIENT_ID'],
+        'audience' => $_ENV['AUTH0_MANAGEMENT_AUDIENCE'],
+    ];
+    
+    try {
+        $result = $auth0Api->client_credentials($config);
+    } catch (Exception $exception) {
+        throw $exception;
+    }
 
-    $auth0ManagementAccessToken = $_ENV['AUTH0_MANAGEMENT_API_TOKEN'];
+    $auth0ManagementAccessToken = $result['access_token'];
 
     $joinBlockLog->info('Creating user in Auth0');
 
