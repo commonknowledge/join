@@ -6,7 +6,7 @@ use Auth0\SDK\API\Management;
 function handle_join($data)
 {
     global $joinBlockLog;
-    
+
     $joinBlockLog->info('Beginning join process');
 
     $billingAddress = [
@@ -143,20 +143,20 @@ function handle_join($data)
 function createAuth0User($data, $planId, $customerId)
 {
     global $joinBlockLog;
-    
+
     $joinBlockLog->info('Obtaining Auth0 access token');
-    
+
     $auth0Api = new Authentication(
         $_ENV['AUTH0_DOMAIN'],
         $_ENV['AUTH0_CLIENT_ID']
     );
-    
+
     $config = [
         'client_secret' => $_ENV['AUTH0_CLIENT_SECRET'],
         'client_id' => $_ENV['AUTH0_CLIENT_ID'],
         'audience' => $_ENV['AUTH0_MANAGEMENT_AUDIENCE'],
     ];
-    
+
     try {
         $result = $auth0Api->client_credentials($config);
     } catch (Exception $exception) {
