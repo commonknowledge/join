@@ -85,7 +85,7 @@ function handle_join($data)
 
         $chargebeeSubscriptionPayload['addons'][] = [
             "id" => "additional_donation_month",
-            "unitPrice" => "700"
+            "unitPrice" => 700
         ];
     } else {
         $chargebeeSubscriptionPayload['planId'] =  $data['planId'];
