@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     The Green Party Join Plugin
  * Description:     Green Party join flow plugin.
- * Version:         1.0.0-beta
+ * Version:         1.0.1
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     uk-greens
  */

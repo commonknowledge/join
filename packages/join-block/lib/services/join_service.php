@@ -78,7 +78,7 @@ function handle_join($data)
 
     // "Suggested Member Contribution" has two components in Chargebee and therefore a special treatment.
     // - A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
-    // - An additional donation, in Chargebee an add-on callled "suggested_contribution_month" we set to £7
+    // - An additional donation, in Chargebee an add-on callled "suggested_contribution_month"
     if ($data['planId'] === 'suggested') {
         $joinBlockLog->info('Setting up Suggested Membership Contribution');
         $chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
