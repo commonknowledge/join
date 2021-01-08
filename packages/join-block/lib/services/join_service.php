@@ -97,7 +97,7 @@ function handle_join($data)
     $joinBlockLog->info('Handling donation');
 
     // Non-recurring donation
-    if ($data['donationAmount'] !== '' && $data['recurDonation'] === false) {
+    if ($data['donationAmount'] !== '0' && $data['recurDonation'] === false) {
         $joinBlockLog->info('Setting up non-recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
             "id" => "additional_donation_single",
@@ -106,7 +106,7 @@ function handle_join($data)
     }
 
     // Recurring donation
-    if ($data['donationAmount'] !== '' && $data['recurDonation'] === true) {
+    if ($data['donationAmount'] !== '0' && $data['recurDonation'] === true) {
         $joinBlockLog->info('Setting up recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
             "id" => "additional_donation_month",
