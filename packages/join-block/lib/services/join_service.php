@@ -24,6 +24,8 @@ function handle_join($data)
 
     $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
     $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+    
+    $joinBlockLog->info('Data input is ' . json_encode($data));
 
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Charging credit or debit card via Chargebee');
@@ -113,6 +115,7 @@ function handle_join($data)
     }
 
     $joinBlockLog->info('Creating subscription in Chargebee');
+    $joinBlockLog->info("Chargebee subcription payload is:\n" . json_encode($chargebeeSubscriptionPayload));
  
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
