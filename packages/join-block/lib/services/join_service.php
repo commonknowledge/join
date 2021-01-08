@@ -84,10 +84,8 @@ function handle_join($data)
         $chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
 
         $chargebeeSubscriptionPayload['addons'][] = [
-            [
-                "id" => "additional_donation_month",
-                "unitPrice" => "700"
-            ]
+            "id" => "additional_donation_month",
+            "unitPrice" => "700"
         ];
     } else {
         $chargebeeSubscriptionPayload['planId'] =  $data['planId'];
@@ -100,10 +98,8 @@ function handle_join($data)
     if ($data['donationAmount'] !== '' && $data['recurDonation'] === false) {
         $joinBlockLog->info('Setting up non-recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
-            [
-                "id" => "additional_donation_single",
-                "unitPrice" => (int)$data['donationAmount'] * 100
-            ]
+            "id" => "additional_donation_single",
+            "unitPrice" => (int)$data['donationAmount'] * 100
         ];
     }
 
@@ -111,15 +107,13 @@ function handle_join($data)
     if ($data['donationAmount'] !== '' && $data['recurDonation'] === true) {
         $joinBlockLog->info('Setting up recurring donation');
         $chargebeeSubscriptionPayload['addons'][] = [
-            [
-                "id" => "additional_donation_month",
-                "unitPrice" => (int)$data['donationAmount'] * 100
-            ]
+            "id" => "additional_donation_month",
+            "unitPrice" => (int)$data['donationAmount'] * 100
         ];
     }
 
     $joinBlockLog->info('Creating subscription in Chargebee');
-
+ 
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
     } catch (Exception $expection) {
