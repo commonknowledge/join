@@ -69,15 +69,15 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
-        <legend>
-          <h2>Date of birth</h2>
-        </legend>
-
-        <p className="text-secondary">
-          We collect every member's date of birth because our membership types
-          are based on age.
-        </p>
         <fieldset>
+          <legend>
+            <h2>Date of birth</h2>
+          </legend>
+
+          <p className="text-secondary">
+            We collect every member's date of birth because our membership types
+            are based on age.
+          </p>
           <Row>
             <Col>
               <FormItem label="Day" name="dobDay" form={form} required>
