@@ -69,7 +69,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
-        <h2>Date of birth</h2>
+        <legend>
+          <h2>Date of birth</h2>
+        </legend>
+
         <p className="text-secondary">
           We collect every member's date of birth because our membership types
           are based on age.
