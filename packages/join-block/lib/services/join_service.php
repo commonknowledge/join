@@ -8,7 +8,7 @@ function handle_join($data)
     global $joinBlockLog;
 
     $joinBlockLog->info('Beginning join process');
-
+    
     $billingAddress = [
         "firstName" => $data['firstName'],
         "lastName" => $data['lastName'],
@@ -19,11 +19,15 @@ function handle_join($data)
         "zip" => $data['addressPostcode'],
         "country" => $data['addressCountry']
     ];
-
+ 
     $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
     $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
     $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+    
+    // Chargebee dates are of format yyyy-MM-dd
+    $dayOfBirthTwoDigits = str_pad($data['dobDay'], 2, '0', STR_PAD_LEFT);
+    $dateOfBirth = implode('-', [$data['dobYear'], $data['dobMonth'], $dayOfBirthTwoDigits]);
 
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Charging credit or debit card via Chargebee');
@@ -63,7 +67,8 @@ function handle_join($data)
                     "type" => "direct_debit",
                     "reference_id" => $mandate->id,
                 ],
-                "billingAddress" => $billingAddress
+                "billingAddress" => $billingAddress,
+                "cf_birthdate" => $dateOfBirth
             ]);
         } catch (Exception $expection) {
             $joinBlockLog->error('Chargebee customer creation failed', ['exception' => $expection]);
@@ -113,7 +118,7 @@ function handle_join($data)
 
     $joinBlockLog->info('Creating subscription in Chargebee');
     $joinBlockLog->info("Chargebee subcription payload is:\n" . json_encode($chargebeeSubscriptionPayload));
- 
+    
     try {
         $subscriptionResult = ChargeBee_Subscription::createForCustomer($customer->id, $chargebeeSubscriptionPayload);
     } catch (Exception $expection) {
