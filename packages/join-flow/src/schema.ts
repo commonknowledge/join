@@ -125,7 +125,7 @@ export const renderPaymentPlan = ({ membership }: FormSchema) => {
   }
 
   if (membership === "lowWaged") {
-    return "Concessionary Membership";
+    return "Reduced Rate Membership";
   }
 
   if (membership === "student") {
@@ -133,7 +133,7 @@ export const renderPaymentPlan = ({ membership }: FormSchema) => {
   }
 
   if (membership === "unwaged") {
-    return "Unwaged or Student Membership";
+    return "Concessionary or Student Membership";
   }
 
   if (membership === "suggested") {

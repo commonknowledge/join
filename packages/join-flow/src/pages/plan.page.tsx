@@ -38,7 +38,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           name="membership"
           value="standard"
           label="Standard Membership"
-          valueText="£3 a month"
+          valueText="£3.33 a month"
           valueMeta="or £36 a year"
           description="Available to everyone."
           form={form}
@@ -46,8 +46,8 @@ export const PlanPage: StagerComponent<FormSchema> = ({
         <RadioPanel
           name="membership"
           value="lowWaged"
-          label="Concessionary Membership"
-          valueText="£12 a year"
+          label="Reduced Rate Membership"
+          valueText="£13 a year"
           description="If you are in low-waged employment."
           form={form}
         />
@@ -63,7 +63,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           name="membership"
           value="unwaged"
           valueText="£6 a year"
-          label="Reduced Membership"
+          label="Concessionary Membership"
           description="If you are without paid work."
           form={form}
         />
