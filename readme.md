@@ -10,9 +10,9 @@ This is a monorepo, containing 3 packages:
 
 - `packages/join-block`: A WordPress Gutenberg block that allows the join flow to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member.
 
-## How this works
+## How does the Join Flow work?
 
-In order to enable joining the Green Party to be distributed across the WordPress network and neatly dropped into any page or post, this join flow is written as a WordPress block, that launches a form flow written in React.
+In order to enable joining the Green Party to be distributed across the Green Party's WordPress network and neatly dropped into any page or post, this join flow is written as a WordPress block, that launches a form flow written in React. This also allows the Green Party to create highly situational and bespoke join pages on the fly, by just throwing together a WordPress page. Hopefully this will allow The Green Party to be highly reactive to ongoing political events and take the opportunity to gain members when the moment arrives.
 
 The general user flow, including technical detail is:
 
@@ -22,7 +22,18 @@ The general user flow, including technical detail is:
 4. On success, the React application is sent a JSON response. The user is redirected to a success page of the initial page with "Join Form" on it's choosing.
 5. All done!
 
-## Build & deploy workflow
+## WordPress Blocks Included
+
+These WordPress blocks form the basis of the current main way of [joining The Green Party](https://join.greenparty.org.uk/).
+
+They are designed to have the copy changed - nothing is hard coded. This is intended to allow the copy to be iterated to improve the performance of this landing page.
+
+- **Join Form Fullscreen Takeover** The whole join flow experience. Add this to one page and you are ready to allow someone to join. The React application takes over the whole page, so the rest of the page will be ignored. Also works on posts.
+- **Join Header** A large image and a slogan to encourage someone to join the Green Party. As seen on [the top of the current join page](https://join.greenparty.org.uk/).
+- **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in.
+- **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them.
+
+## Build and Deployment Workflow
 
 ### Build
 
