@@ -126,7 +126,7 @@ yarn
 
 - Copy the .env template into place, open it and add any missing configurations
 
-````bash
+```bash
 cp .env.template .env
 ```
 
@@ -134,6 +134,6 @@ cp .env.template .env
 
 ```bash
 yarn start:frontend
-````
+```
 
 - Open <http://localhost:3000>
