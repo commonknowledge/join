@@ -16,7 +16,9 @@ We want to make the ability to join the Green Party widely available.
 
 To do so, it is useful for the ability to join to be distributed across the Green Party's WordPress network and neatly dropped into any page or post. Therefore this join flow is written as a WordPress block, that launches a form flow written in React.
 
-This also allows the Green Party to create highly situational and bespoke join pages on the fly, by just throwing together a WordPress page. Hopefully this will allow The Green Party to be highly reactive to ongoing political events and take the opportunity to gain members when the moment arrives.
+This also allows the Green Party to create highly situational and bespoke join pages on the fly, by just throwing together a WordPress page.
+
+Hopefully this will allow The Green Party to be highly reactive to ongoing political events and take the opportunity to gain members when the moment arrives.
 
 The general user flow, including technical detail is:
 
