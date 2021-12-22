@@ -4,7 +4,7 @@
 
 This is a monorepo, containing 3 packages:
 
-- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site.
+- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site and The Green Party brand.
 
 - `packages/join-flow`: A React project (using create-react-app) implementing the join flow frontend.
 
