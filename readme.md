@@ -29,9 +29,9 @@ These WordPress blocks form the basis of the current main way of [joining The Gr
 They are designed to have the copy changed - nothing is hard coded. This is intended to allow the copy to be iterated to improve the performance of this landing page.
 
 - **Join Form Fullscreen Takeover** The whole join flow experience. Add this to one page and you are ready to allow someone to join. The React application takes over the whole page, so the rest of the page will be ignored. Also works on posts.
-- **Join Header** A large image and a slogan to encourage someone to join the Green Party. As seen on [the top of the current join page](https://join.greenparty.org.uk/).
-- **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in.
-- **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them.
+- **Join Header** A large image and a slogan to encourage someone to join the Green Party. As seen on the top of the current join page.
+- **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
+- **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
 ## Build and Deployment Workflow
 
