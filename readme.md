@@ -28,7 +28,7 @@ The general user flow, including technical detail is:
 4. On success, the React application is sent a JSON response. The user is redirected to a success page of the initial page with "Join Form" on it's choosing.
 5. All done!
 
-## WordPress Blocks Included
+## WordPress Blocks Included
 
 These WordPress blocks form the basis of the current main way of [joining The Green Party](https://join.greenparty.org.uk/).
 
