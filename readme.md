@@ -4,11 +4,11 @@
 
 This is a monorepo, containing 3 packages:
 
-- `packages/theme`: A bootstrap-based WordPress theme implementing the design system used by the join site.
+- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site.
 
 - `packages/join-flow`: A React project (using create-react-app) implementing the join form frontend.
 
-- `packages/join-block`: A WordPress Gutenberg block that allows the join form to be dropped into a WordPress page, along with the backend join logic.
+- `packages/join-block`: A WordPress Gutenberg block that allows the join form to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member.
 
 ## Build & deploy workflow
 
@@ -36,7 +36,7 @@ TODO
 
 ### Running the whole system as a WordPress site
 
-- Ensure you have a recent node >= v12, yarn, composer and docker installed.
+- Ensure you have a recent Node.js >= v12, Yarn, Composer and Docker installed.
 
 - Install dependencies
 
@@ -65,13 +65,13 @@ yarn start
 
 - Add a 'join' block to the page.
 
-#### To work on the join form as a self-contained react app (with live-reload, etc)
+#### To work on the join form as a self-contained React application (with live-reload, etc)
 
 - Open <http://localhost:3000>
 
 ### Running the front end in isolation (without a backend)
 
-- Ensure you have a recent node >= v12 and yarn installed.
+- Ensure you have a recent Node.js >= v12 and Yarn installed.
 
 - Install dependencies
 
@@ -81,7 +81,7 @@ yarn
 
 - Copy the .env template into place, open it and add any missing configurations
 
-```bash
+````bash
 cp .env.template .env
 ``
 
@@ -89,6 +89,6 @@ cp .env.template .env
 
 ```bash
 yarn start:frontend
-```
+````
 
 - Open <http://localhost:3000>
