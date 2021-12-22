@@ -1,4 +1,4 @@
-# Join-Greens
+# The Green Party of England and Wales Join System
 
 ## Overview
 
