@@ -66,7 +66,7 @@ Results in deployable artifacts:
 In order to deploy this work, you need to create a WordPress plugin and theme and add them to the WordPress instance as needed.
 
 1. Run the build commands above to compile the React application.
-2. Run `sh scripts/package.sh`. This will create zip files of a WordPress plugin and a WordPress theme in the root directory.
+2. Run `sh scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
 3. Upload them to a WordPress site and activate both.
 
 ## Developer quickstart
