@@ -128,7 +128,7 @@ yarn
 
 ````bash
 cp .env.template .env
-``
+```
 
 - Boot the site
 
