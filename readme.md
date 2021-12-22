@@ -6,9 +6,9 @@ This is a monorepo, containing 3 packages:
 
 - `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site.
 
-- `packages/join-flow`: A React project (using create-react-app) implementing the join form frontend.
+- `packages/join-flow`: A React project (using create-react-app) implementing the join flow frontend.
 
-- `packages/join-block`: A WordPress Gutenberg block that allows the join form to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member.
+- `packages/join-block`: A WordPress Gutenberg block that allows the join flow to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member.
 
 ## How this works
 
@@ -42,7 +42,11 @@ Results in deployable artifacts:
 
 ### Deploying
 
-TODO
+In order to deploy this work, you need to create a WordPress plugin and theme and add them to the WordPress instance as needed.
+
+1. Run the build commands above to compile the React application.
+2. Run `sh scripts/package.sh`. This will create zip files of a WordPress plugin and a WordPress theme in the root directory.
+3. Upload them to a WordPress site and activate both.
 
 ## Developer quickstart
 
