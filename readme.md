@@ -28,9 +28,9 @@ The general user flow, including technical detail is:
 4. On success, the React application is sent a JSON response. The user is redirected to a success page. This page can be any page on the WordPress site. This is setup when the "Join Form Fullscreen Takeover" block is setup.
 5. All done!
 
-## WordPress Blocks Included
+## WordPress Blocks included
 
-These WordPress blocks form the basis of the current main way of [joining The Green Party](https://join.greenparty.org.uk/).
+These [WordPress blocks](https://wordpress.org/support/article/blocks/) form the basis of the current main way of [joining The Green Party](https://join.greenparty.org.uk/).
 
 They are designed to have the copy changed - nothing is hard coded. This is intended to allow the copy to be iterated to improve the performance of this landing page.
 
