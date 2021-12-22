@@ -33,6 +33,8 @@ They are designed to have the copy changed - nothing is hard coded. This is inte
 - **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
 - **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
+These blocks are lightly styled by a simple Bootstrap based WordPress theme that sticks to The Green Party brand. This is also found within this repository.
+
 ## Build and Deployment Workflow
 
 ### Build
