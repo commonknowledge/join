@@ -57,13 +57,21 @@ cp .env.template .env
 yarn start
 ```
 
+```bash
+docker compose up
+```
+
 #### To use join form 'in-place' in a WordPress site
+
+- Start an instance of WordPress by running `docker compose up` in the root directory of this project.
 
 - Open <http://localhost:8080/wp-admin/plugins.php> and enable the 'Join' plugin.
 
-- Navigate to any page in the editor and type '/' or press '+'
+- Add the "Join Form Fullscreen Takeover" block to a WordPress page. This will be where the join form itself will live. It can be linked to directly. Save this page.
 
-- Add a 'join' block to the page.
+- Wherever you want the join form to be launched from, add the "Join Form" WordPress block. This allows the email address to be pre-filled for the person wanting to join. Connect this to the page you have just created. Save the post.
+
+- You will now have a working join form that is working from the code on your machine. If you modify the code in `packages/join-flow` this will update the join flow. If you modify the code in `packages/join-block` this will change the backend logic of the WordPress plugin.
 
 #### To work on the join form as a self-contained React application (with live-reload, etc)
 
