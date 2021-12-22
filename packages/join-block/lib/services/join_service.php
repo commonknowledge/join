@@ -3,6 +3,9 @@
 require_once('auth0_service.php');
 require_once('gocardless_service.php');
 
+use Carbon\Carbon;
+
+
 function handle_join($data)
 {
     global $joinBlockLog;
@@ -25,9 +28,10 @@ function handle_join($data)
     $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
     $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
     
-    // Chargebee dates are of format yyyy-MM-dd
-    $dayOfBirthTwoDigits = str_pad($data['dobDay'], 2, '0', STR_PAD_LEFT);
-    $dateOfBirth = implode('-', [$data['dobYear'], $data['dobMonth'], $dayOfBirthTwoDigits]);
+    // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
+    // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
+    $dateOfBirth = Carbon::createFromDate($data['dobYear'], $data['dobMonth'], $data['dobDay']);
+    $formattedDateOfBirth = $dateOfBirth->toDateString();
 
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Charging credit or debit card via Chargebee');
@@ -68,7 +72,7 @@ function handle_join($data)
                     "reference_id" => $mandate->id,
                 ],
                 "billingAddress" => $billingAddress,
-                "cf_birthdate" => $dateOfBirth
+                "cf_birthdate" => $formattedDateOfBirth
             ]);
         } catch (Exception $expection) {
             $joinBlockLog->error('Chargebee customer creation failed', ['exception' => $expection]);
