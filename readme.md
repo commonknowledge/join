@@ -63,7 +63,7 @@ docker compose up
 
 #### To use join form 'in-place' in a WordPress site
 
-- Start an instance of WordPress by running `docker compose up` in the root directory of this project.
+- Start an instance of WordPress by running `docker compose up` in the root directory of this project. This will launch an instance of WordPress on <http://localhost:8080>.
 
 - Open <http://localhost:8080/wp-admin/plugins.php> and enable the 'Join' plugin.
 
