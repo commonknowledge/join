@@ -41,7 +41,7 @@ They are designed to have the copy changed - nothing is hard coded. This is inte
 
 These blocks are lightly styled by a simple Bootstrap based WordPress theme that sticks to The Green Party brand. This is also found within this repository.
 
-Without the WordPress theme installed and turned on the blocks and the join flow are functional, but render as plain HTML without styling.
+Without the WordPress theme the blocks and the join flow are functional, but render as plain HTML without styling.
 
 ## Build and Deployment Workflow
 
