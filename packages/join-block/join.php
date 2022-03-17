@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin Name:     The Green Party Join Plugin
  * Description:     Green Party join flow plugin.
@@ -19,6 +18,7 @@ add_action('after_setup_theme', function () {
 
 require 'lib/settings.php';
 require 'lib/services/join_service.php';
+require 'lib/exceptions.php';
 
 require 'lib/blocks.php';
 
@@ -48,13 +48,17 @@ add_action('rest_api_init', function () {
             $joinBlockLog->info('Join process started', ['request' => $request]);
 
             try {
-                handle_join($request->get_json_params());
+                GreenParty\JoinBlock\Handlers\handleJoin($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
             } catch (ClientException $error) {
                 $joinBlockLog->error('Join process failed at Auth0 user creation, but customer created in Chargebee.', ['error' => $error]);
             } catch (Error $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
-                return new WP_Error('join_failed', 'Join process failed', ['status' => 500 ]);
+                return new WP_Error('join_failed', 'Join process failed', ['status' => 500, 'error_code'=> $error->getCode(), 'error_message' => $error->getMessage()]);
+            }
+            catch (\GreenParty\JoinBlock\Exception\JoinBlockException $exception) {
+                $joinBlockLog->error('Join process failed', ['error' => $exception, 'fields' => $exception->getFields()]);
+                return new WP_Error('join_failed', 'Join process failed', ['status' => 500, 'error_code'=> $exception->getCode(), 'error_message' => $exception->getMessage(), 'fields' => $exception->getFields()]);
             }
 
             return new WP_REST_Response(['status' => 'ok'], 200);

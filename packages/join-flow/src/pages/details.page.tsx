@@ -226,6 +226,40 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
+        <h2>How did you hear about us?</h2>
+        <FormItem name="howDidYouHearAboutUs" form={form}>
+          <Form.Control as="select" custom className="form-control">
+            <option>Choose an option</option>
+
+            <option>A Green Party representative</option>
+            <option>An email from The Green Party</option>
+            <option>Social media</option>
+            <option>Press/radio</option>
+            <option>TV</option>
+            <option>Other</option>
+          </Form.Control>
+        </FormItem>
+      </section>
+
+      <section className="form-section">
+        <h2>Code of Conduct</h2>
+        <p className="text-secondary">
+          I agree to adhere to the Green Party members{" "}
+          <a href="https://www.greenparty.org.uk/safeguarding/commitment.html">
+            Safeguarding Commitment
+          </a>{" "}
+          and{" "}
+          <a href="https://www.greenparty.org.uk/code-of-conduct.html">
+            Code of Conduct
+          </a>
+          .
+        </p>
+        <FormItem form={form} name="codeOfConductionConfirmed">
+          <Form.Check label="I Agree" />
+        </FormItem>
+      </section>
+
+      <section className="form-section">
         <h2>Your privacy</h2>
         <p className="fineprint">
           The Green Party of England and Wales is committed to protecting your

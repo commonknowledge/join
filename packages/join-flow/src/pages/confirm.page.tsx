@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, ReactElement } from "react";
 import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema, membershipIsAnnual } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
+import { upperFirst } from "lodash-es";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
@@ -19,7 +20,9 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const join = usePostResource<FormSchema>("/join");
 
   const [requestInFlight, setRequestInFlight] = useState(false);
-  const [joinError, setJoinError] = useState(false);
+  const [joinError, setJoinError] = useState<ReactElement | string | boolean>(
+    false
+  );
 
   const joiningSpinner = (
     <div className="d-flex justify-content-center align-items-center flex-column h-200px">
@@ -58,13 +61,78 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const onSubmit = async () => {
     setRequestInFlight(true);
     join(data).then(
-      (res) => {
+      () => {
         onCompleted(data);
       },
       (error) => {
         setRequestInFlight(false);
         console.error(error.message);
-        setJoinError(true);
+
+        const errorInformaton = JSON.parse(error.message);
+
+        let message = <p>Please try again in an hour.</p>;
+
+        switch (errorInformaton?.data?.error_code) {
+          case 1:
+            message = <p>Please try re-entering your payment details.</p>;
+            break;
+          case 2:
+            message = (
+              <p>
+                We couldn't charge the account as it didn't have sufficient
+                funds. Maybe try another card?
+              </p>
+            );
+            break;
+          case 3:
+            message = (
+              <>
+                <p>Something is wrong with your Direct Debit mandate.</p>
+                <ul>
+                  {errorInformaton.data.fields.map((fieldInformation: any) => (
+                    <li>
+                      {upperFirst(fieldInformation.field)}{" "}
+                      {fieldInformation.message}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            );
+
+            break;
+          case 4:
+            message = (
+              <p>
+                We couldn't charge the account as the card you entered has
+                expired. Maybe try another card?
+              </p>
+            );
+            break;
+          case 25:
+            message = (
+              <>
+                <p>
+                  We seem to already have an active membership for you. If you'd
+                  like to update your details, we recommend using the{" "}
+                  <a href="https://greenparty.chargebeeportal.com/portal/v2/login">
+                    Green Party membership management page
+                  </a>
+                  .
+                </p>
+                <p>
+                  If you'd like to update your details, we recommend using the{" "}
+                  <a href="https://greenparty.chargebeeportal.com/portal/v2/login">
+                    Green Party membership management page
+                  </a>
+                  .
+                </p>
+                <p>Thanks for being a member already!</p>
+              </>
+            );
+            break;
+        }
+
+        setJoinError(message);
       }
     );
   };
@@ -86,7 +154,8 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
             {joinError && (
               <div className="alert alert-danger" role="alert">
                 <p>Sorry you cannot join {organisationName} at this time.</p>
-                <p>Please try again in an hour.</p>
+                {joinError}
+
                 <p>
                   If you continue to have problems please contact{" "}
                   <a href={organisationMailToLink}>

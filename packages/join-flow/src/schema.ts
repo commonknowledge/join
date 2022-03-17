@@ -99,6 +99,9 @@ export const DetailsSchema = object({
     .required(),
   phoneNumber: string()
     .phone("GB", false, "A valid phone number is required")
+    .required(),
+  codeOfConductionConfirmed: boolean()
+    .oneOf([true], "You must accept the code of conduct")
     .required()
 }).required();
 

@@ -22,7 +22,7 @@ function createAuth0User($data, $planId, $customerId)
 
     try {
         $result = $auth0Api->client_credentials($config);
-    } catch (Exception $exception) {
+    } catch (\Exception $exception) {
         $joinBlockLog->error('Auth0 Management API access token request failed');
         throw $exception;
     }
@@ -57,7 +57,7 @@ function createAuth0User($data, $planId, $customerId)
                 "roles" => $defaultRoles
             ]
         ]);
-    } catch (Exception $expection) {
+    } catch (\Exception $expection) {
         $joinBlockLog->error('Auth0 Management API user creation request failed');
         throw $expection;
     }
