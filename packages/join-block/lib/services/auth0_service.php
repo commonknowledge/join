@@ -32,6 +32,22 @@ function createAuth0User($data, $planId, $customerId)
     $auth0ManagementAccessToken = $result['access_token'];
 
     $managementApi = new Management($auth0ManagementAccessToken, $_ENV['AUTH0_DOMAIN']);
+    
+    $joinBlockLog->info('Checking for existing user on Auth0');
+    
+    $q = 'email:' . urlencode($data['email']);
+    
+    try {
+        $users = $managementApi->users()->getAll(['q' => $q]);
+    } catch (\Exception $expection) {
+        $joinBlockLog->error('User check on Auth0 failed');
+        throw $expection;
+    }
+    
+    if ($users !== null) {
+        $joinBlockLog->info('User already exists in Auth0, skipping', ['count' => count($users), 'query' => $q, 'response' => json_encode($users)]);
+        return;
+    }
 
     $defaultRoles = [
         "authenticated user",

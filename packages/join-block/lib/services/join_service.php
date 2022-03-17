@@ -10,6 +10,8 @@ use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
 use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
+use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
+
 // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
 // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
 function formatDateForChargebee($day, $month, $year)
