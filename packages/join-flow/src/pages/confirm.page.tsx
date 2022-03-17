@@ -108,6 +108,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
               </p>
             );
             break;
+
           case 25:
             message = (
               <>

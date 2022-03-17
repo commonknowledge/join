@@ -6,6 +6,7 @@ require_once('auth0_service.php');
 require_once('gocardless_service.php');
 
 use Carbon\Carbon;
+use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
 use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
@@ -64,8 +65,6 @@ function handleJoin($data)
             throw new \Error('Current customer has an existing and active membership subscription', 25);
         }
     }
-
-    exit;
 
     if ($data["paymentMethod"] === 'creditCard') {
         $joinBlockLog->info('Creating customer with credit or debit card via Chargebee');
