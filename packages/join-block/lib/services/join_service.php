@@ -116,6 +116,7 @@ function handleJoin($data)
         try {
             $mandate = gocardless_create_customer_mandate($data);
         }
+
         /*
             Handle different GoCardless errors.
           
