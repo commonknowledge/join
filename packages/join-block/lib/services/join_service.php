@@ -6,9 +6,6 @@ require_once('auth0_service.php');
 require_once('gocardless_service.php');
 
 use Carbon\Carbon;
-use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
-
-use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
 use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
