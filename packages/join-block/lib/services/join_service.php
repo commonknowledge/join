@@ -81,7 +81,10 @@ function handleJoin($data)
         ];
         
         if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
+            $joinBlockLog->info('Customer has given how did you hear about us details: ' . $data['howDidYouHearAboutUs']);
             $chargebeeCreditCardPayload['cf_how_did_you_hear_about_us'] = $data['howDidYouHearAboutUs'];
+        } else {
+            $joinBlockLog->info('Customer has not given how did you hear about us details');
         }
         
         try {
@@ -163,6 +166,9 @@ function handleJoin($data)
         
         if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
             $directDebitChargebeeCustomer['cf_how_did_you_hear_about_us'] = $data['howDidYouHearAboutUs'];
+            $joinBlockLog->info('Customer has given how did you hear about us details: ' . $data['howDidYouHearAboutUs']);
+        } else {
+            $joinBlockLog->info('Customer has not given how did you hear about us details');
         }
         
         try {
