@@ -111,14 +111,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
           case 25:
             message = (
               <>
-                <p>
-                  We seem to already have an active membership for you. If you'd
-                  like to update your details, we recommend using the{" "}
-                  <a href="https://greenparty.chargebeeportal.com/portal/v2/login">
-                    Green Party membership management page
-                  </a>
-                  .
-                </p>
+                <p>We seem to already have an active membership for you.</p>
                 <p>
                   If you'd like to update your details, we recommend using the{" "}
                   <a href="https://greenparty.chargebeeportal.com/portal/v2/login">
