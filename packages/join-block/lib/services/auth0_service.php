@@ -43,8 +43,8 @@ function createAuth0User($data, $planId, $customerId)
         $joinBlockLog->error('User check on Auth0 failed');
         throw $expection;
     }
-    
-    if ($users !== null) {
+
+    if (count($users) > 0) {
         $joinBlockLog->info('User already exists in Auth0, skipping', ['count' => count($users), 'query' => $q, 'response' => json_encode($users)]);
         return;
     }

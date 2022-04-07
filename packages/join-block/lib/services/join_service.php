@@ -41,6 +41,7 @@ function handleJoin($data)
     $formattedDateOfBirth = formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
     
     // Before we create a customer, we check if they exist in Chargebee
+    $joinBlockLog->info("Checking Chargebee for existing customers with email address " . $data['email']);
     $existingCustomers = \ChargeBee_Customer::all(["email[is]" => $data['email']]);
     
     if (count($existingCustomers) > 0) {
