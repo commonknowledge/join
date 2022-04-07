@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "require": {
     "chargebee/chargebee-php": ">=2, <3",
     "gocardless/gocardless-pro": "^4.5",
