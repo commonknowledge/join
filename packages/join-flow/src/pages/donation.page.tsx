@@ -59,13 +59,12 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       <div className="form-section">
         <legend className="text-md">Can you chip in?</legend>
         <p className="text-secondary">
-          In 2021, we will be fighting our largest number of elections ever in
-          one year.
+          On May 5th, Greens are contesting seats in over 100 areas as the only party 
+          with the policies needed to transform England and Wales and make our future 
+          Greener, fairer and safer.
         </p>
         <p className="text-secondary">
-          We won't let the events of 2020 be just another reminder of how broken
-          our society is. Will you help us put an end to business as usual by
-          chipping in today?
+          Will you help get more greens elected by chipping in today?
         </p>
       </div>
       <fieldset className="mt-5">
