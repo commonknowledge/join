@@ -39,7 +39,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           value="standard"
           label="Standard Membership"
           valueText="£3.33 a month"
-          valueMeta="or £36 a year"
+          valueMeta="or £40 a year"
           description="Available to everyone."
           form={form}
         />
