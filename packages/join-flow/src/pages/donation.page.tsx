@@ -59,12 +59,13 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       <div className="form-section">
         <legend className="text-md">Can you chip in?</legend>
         <p className="text-secondary">
-          On May 5th, Greens are contesting seats in over 100 areas as the only party 
-          with the policies needed to transform England and Wales and make our future 
-          Greener, fairer and safer.
+          We rely on our members' generosity to build our movement, 
+          particularly as we look ahead to the next General Election and 
+          the work that needs to be done to gain more MPs.
         </p>
         <p className="text-secondary">
-          Will you help get more greens elected by chipping in today?
+          Many of our members top up their membership, which forms a vital part of our income. 
+          We'd be very grateful if you would consider doing the same.
         </p>
       </div>
       <fieldset className="mt-5">
