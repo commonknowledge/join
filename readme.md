@@ -55,6 +55,12 @@ yarn composer
 yarn build
 ```
 
+**NOTE:** When using linux (including WSL). You may encounter an error related to the `gifsicle` package when running `yarn build`. Add the following to the `resolutions` and `devDependecies` section of the `packages/join-flow/package.json` file and re-run `yarn` and `yarn build`
+
+```bash
+"gifsicle": "4.0.1"
+```
+
 Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
@@ -66,7 +72,7 @@ Results in deployable artifacts:
 In order to deploy this work, you need to create a WordPress plugin and theme and add them to the WordPress instance as needed.
 
 1. Run the build commands above to compile the React application.
-2. Run `sh scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
+2. Run `sh scripts/package.sh` on linux this can be run as `./scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
 3. Upload them to a WordPress site and activate both.
 
 ## Developer quickstart
