@@ -2,7 +2,7 @@
 
 ## Overview
 
-A version of the Join Flow is [currently used by The Green Party in production](https://join.greenparty.org.uk/join-us/). 
+A version of the Join Flow is [currently used by The Green Party in production](https://join.greenparty.org.uk/join-us/). Our [repository of that code is here](https://github.com/commonknowledge/join-form-green-party-fork). The Green Party now use GitLab.
 
 A version of this code is incorporated into what was called [Monorail](https://github.com/commonknowledge/ckmap) which runs the [Nurses United join form](https://join.nursesunited.org.uk/#). 
 
