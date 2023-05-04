@@ -1,24 +1,38 @@
-# The Green Party of England and Wales Join Flow
+# Join Flow
 
 ## Overview
 
+A version of the Join Flow is [currently used by The Green Party in production](https://join.greenparty.org.uk/join-us/). 
+
+A version of this code is incorporated into what was called [Monorail](https://github.com/commonknowledge/ckmap) which runs the [Nurses United join form](https://join.nursesunited.org.uk/#). 
+
+In this code we currently call out to various systems the Green Party uses - Auth0, ChargeBee, Go Cardless and so on. In the Nurses United version [we communicate with Stripe](https://github.com/commonknowledge/ckmap/blob/main/ckmap/external/models/stripe.py), albeit in Python. The underlying React frontend code is largely unchanged in the Monorail variant.
+
+## Code Structure
+
 This is a monorepo, containing 3 packages:
 
-- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site and The Green Party brand.
+- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site and The Green Party brand. This can be removed, as we want this to sit in other environments.
 
-- `packages/join-flow`: A React project (using `create-react-app`) implementing the join flow frontend.
+- `packages/join-flow`: A React project (using `create-react-app`) implementing the join flow frontend. i.e. the form itself, its fields and the passage through it.
 
-- `packages/join-block`: A WordPress Gutenberg block that allows the join flow to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member.
+- `packages/join-block`: A WordPress Gutenberg block that allows the join flow to be dropped into a WordPress page, along with the backend join logic that communicates services to make the person a member - in the Green Party instance Auth0, ChargeBee and Go Cardless. The Gutenberg block is very simple and uses [Carbon Fields](https://carbonfields.net/) to render onto the page. 
+
+Probably the `join-block` and the `join-flow` can be integrated with one another as one single package. They don't really work without one another in any case. Simply at the time we wanted the `join-flow` to be agnostic of any particular backend. Though it is quite nice to be able to test them distinctly. 
+
+It is also worth noting that the native way of creating [WordPress Blocks is React](https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/) - this is also the reason the flow itself is in React. There is a future way of coding this where Join Flow itself, with all its powers is a complete native block in the WordPress ecosystem, rather than how it is now, which is a freestanding piece of code, [rendered into WordPress by a Carbon Fields block, but otherwise having no relation to the way in which Gutenberg blocks do React](https://github.com/commonknowledge/join/blob/master/packages/join-block/lib/blocks.php#L6-L44).
 
 ## How does the Join Flow work?
 
-We want to make the ability to join the Green Party widely available.
+We wanted to make the ability to join the Green Party widely available.
 
 To do so, it is useful for the ability to join to be distributed across the Green Party's WordPress network and neatly dropped into any page or post. Therefore this join flow is written as a WordPress block, that launches a form flow written in React.
 
 This also allows the Green Party to create highly situational and bespoke join pages on the fly, by just throwing together a WordPress page.
 
 Hopefully this will allow The Green Party to be highly reactive to ongoing political events and take the opportunity to gain members when the moment arrives.
+
+We hope to re-use this as a generalisable way of joining organisations and taking payment.
 
 The general user flow, including technical detail is:
 
@@ -39,9 +53,13 @@ They are designed to have the copy changed - nothing is hard coded. This is inte
 - **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
 - **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
+You can see these final three employed on the [Nurses United pre-join page](https://www.nursesunited.org.uk/join/). While this version of the join form uses the Monorail application rather than hosting things on WordPress for the whole flow like the Green Party, the blocks on Nurses United WordPress site that render this pre-join page are [basically copy and pasted into the Nurses United theme](https://github.com/commonknowledge/nurses-united-website/blob/master/web/app/themes/nurses-united-2020/app/blocks.php).
+
 These blocks are lightly styled by a simple Bootstrap based WordPress theme that sticks to The Green Party brand. This is also found within this repository.
 
 Without the WordPress theme the blocks and the join flow are functional, but render as plain HTML without styling.
+
+These Gutenberg blocks use [Carbon Fields](https://carbonfields.net/) to administer and render themselves.
 
 ## Build and Deployment Workflow
 
