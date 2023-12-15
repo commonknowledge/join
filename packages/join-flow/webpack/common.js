@@ -7,7 +7,8 @@ require("dotenv").config({ path: "../../.env" });
 
 module.exports = {
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".jsx", ".ts", ".tsx"]
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".ts", ".tsx"],
+    fallback: { "querystring": require.resolve("querystring-es3") }
   },
   context: resolve(__dirname, "../src"),
   output: {
@@ -45,7 +46,18 @@ module.exports = {
         test: /\.(jpe?g|png|gif|svg|woff2)$/i,
         use: [
           "file-loader?hash=sha512&digest=hex&name=img/[hash].[ext]",
-          "image-webpack-loader?bypassOnDebug&optipng.optimizationLevel=7&gifsicle.interlaced=false"
+          {
+            loader: "image-webpack-loader",
+            options: {
+              bypassOnDebug: true,
+              optipng: {
+                optimizationLevel: 7
+              },
+              gifsicle: {
+                interlaced: false
+              }
+            }
+          }
         ]
       }
     ]

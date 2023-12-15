@@ -180,7 +180,7 @@ export const PaymentMethodDDSchema = object({
   ddAccountNumber: string()
     .matches(
       /^(\d){8}$/,
-      "A account number looks like eight digits. For example, 1122334455"
+      "A account number looks like eight digits. For example, 11223344"
     )
     .required(),
   ddSortCode: string()
@@ -247,7 +247,7 @@ export const getTestDataIfEnabled = (): FormSchema => {
       lastName: "Person",
       membership: "standard",
       paymentMethod: "directDebit",
-      ddAccountNumber: " 55779911",
+      ddAccountNumber: "55779911",
       ddSortCode: "200000",
       phoneNumber: "02036919400"
     };

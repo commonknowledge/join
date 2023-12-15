@@ -2,9 +2,7 @@
 
 ## Overview
 
-This is a monorepo, containing 3 packages:
-
-- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site and The Green Party brand.
+This is a monorepo, containing 2 packages:
 
 - `packages/join-flow`: A React project (using `create-react-app`) implementing the join flow frontend.
 
@@ -39,10 +37,6 @@ They are designed to have the copy changed - nothing is hard coded. This is inte
 - **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
 - **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
-These blocks are lightly styled by a simple Bootstrap based WordPress theme that sticks to The Green Party brand. This is also found within this repository.
-
-Without the WordPress theme the blocks and the join flow are functional, but render as plain HTML without styling.
-
 ## Build and Deployment Workflow
 
 ### Build
@@ -65,11 +59,10 @@ Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
-- `packages/theme/dist`: WordPress plugin
 
 ### Deploying
 
-In order to deploy this work, you need to create a WordPress plugin and theme and add them to the WordPress instance as needed.
+In order to deploy this work, you need to create a WordPress plugin and add it to the WordPress instance as needed.
 
 1. Run the build commands above to compile the React application.
 2. Run `sh scripts/package.sh` on linux this can be run as `./scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.

@@ -7,7 +7,7 @@
     "postinstall": "yarn composer && lerna bootstrap",
     "composer": "cd packages/join-block && composer install",
     "frontend": "cd packages/join-flow && yarn start",
-    "start": "lerna run --parallel start && docker-compose up",
+    "start": "docker-compose up -d && lerna run --parallel start",
     "build": "lerna run build",
     "dist": "lerna run build && scripts/package.sh",
     "deploy": "yarn build && sh scripts/deploy.sh",

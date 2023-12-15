@@ -158,7 +158,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
               </div>
             )}
             <Button
-              className="form-section-addon text-bebas text-uppercase"
+              className="form-section-addon font-family-heading text-uppercase"
               type="submit"
               disabled={requestInFlight}
             >

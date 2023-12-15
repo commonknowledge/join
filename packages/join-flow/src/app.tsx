@@ -120,7 +120,7 @@ const App = () => {
 };
 
 const getInitialState = (): FormSchema => {
-  const queryParams = parse(window.location.search.substr(1));
+  const queryParams = parse(window.location.search.substring(1));
 
   const getDefaultState = () => ({
     membership: "suggested",
