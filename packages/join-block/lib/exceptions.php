@@ -1,5 +1,5 @@
 <?php
-namespace GreenParty\JoinBlock\Exception;
+namespace CommonKnowledge\JoinBlock\Exception;
 
 class JoinBlockException extends \Exception
 {

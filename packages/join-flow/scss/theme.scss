@@ -19,8 +19,8 @@ $link-color: $primary;
 $link-hover-color: $primary-focus;
 
 // Fonts
-$font-heading: var(--wp--preset--font-family--heading, 'sans-serif');
-$font-regular: var(--wp--preset--font-family--body, 'sans-serif');
+$font-heading: var(--wp--preset--font-family--heading, sans-serif);
+$font-regular: var(--wp--preset--font-family--body, sans-serif);
 
 @mixin text-xl {
   font-family: $font-heading;

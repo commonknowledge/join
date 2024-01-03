@@ -1,13 +1,13 @@
 <?php
 
-namespace GreenParty\JoinBlock\Handlers;
+namespace CommonKnowledge\JoinBlock\Handlers;
 
 require_once('auth0_service.php');
 require_once('gocardless_service.php');
 
 use Carbon\Carbon;
 
-use GreenParty\JoinBlock\Exception\JoinBlockException as JoinBlockException;
+use CommonKnowledge\JoinBlock\Exception\JoinBlockException as JoinBlockException;
 
 // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
 // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
@@ -48,8 +48,7 @@ function handleJoin($data)
         $joinBlockLog->info("There is more than one customer with this email address (" . $data['email'] . ") - " . count($existingCustomers) . ' in total have this email address');
     }
     
-    // Does this customer have an active subscription? If so immediately redirect the customer to the subscription page at https://greenparty.chargebeeportal.com/portal/v2/login
-    // to update their details as needed.
+    // Does this customer have an active subscription? If so return an error informing them of this.
     foreach ($existingCustomers as $existingCustomer) {
         $all = \ChargeBee_Subscription::all(array(
             "customerId[is]" => $existingCustomer->customer()->id,

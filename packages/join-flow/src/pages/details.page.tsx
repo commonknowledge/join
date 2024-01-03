@@ -212,10 +212,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Password</h2>
-        <p className="text-secondary">
-          You'll be able to use this password to login to the Green Party
-          website, its forums and vote in its elections.
-        </p>
+        {passwordPurpose ? (
+          <p className="text-secondary">
+            {passwordPurpose}
+          </p>
+        ) : ''}
         <p className="text-secondary">
           Your password should contain at least one number, one uppercase letter
           and one special character. It must be at least 8 characters long.

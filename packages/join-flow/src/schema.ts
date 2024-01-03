@@ -4,6 +4,7 @@ import "yup-phone";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import { getDaysInMonth, isPast } from "date-fns";
+import { get as getEnv } from "./env";
 
 // Typescript support for Yup phone validation
 declare module "yup" {
@@ -228,7 +229,8 @@ export type FormSchema = Partial<
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {
-  if (process.env.REACT_APP_USE_TEST_DATA) {
+  const useTestData = getEnv('USE_TEST_DATA');
+  if (useTestData) {
     console.log(
       "REACT_APP_USE_TEST_DATA environment variable set. Using test data."
     );

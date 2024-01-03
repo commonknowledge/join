@@ -102,12 +102,13 @@ add_action('carbon_fields_register_fields', function () {
 
     Block::make(__('Membership Benefits'))
     ->add_fields(array(
-        Field::make('text', 'title', __('Benefits title')),
+        Field::make('text', 'title', __('Benefits title'))->set_required(true),
+        Field::make('text', 'contact_email', __('Contact Email'))->set_required(true),
         Field::make('complex', 'membership_benefits', __('Benefits'))
             ->add_fields(array(
                 Field::make('image', 'benefit_icon', __('Icon')),
                 Field::make('text', 'benefit_title', __('Title')),
-                Field::make('text', 'benefit_description', __('Description'))
+                Field::make('text', 'benefit_description', __('Description')),
             ))))
     ->set_render_callback(function ($fields, $attributes, $inner_blocks) {
         ?>
@@ -128,7 +129,7 @@ add_action('carbon_fields_register_fields', function () {
                         <?php endforeach; ?>
                       <div class="text-xs">
                         <div>Need more information?</div>
-                        <div>Email us at <a class="text-decoration-none" href="mailto:members@greenparty.org.uk">members@greenparty.org.uk</a></div>
+                        <div>Email us at <a class="text-decoration-none" href="mailto:<?= $fields['contact_email'] ?>"><?= $fields['contact_email'] ?></a></div>
                       </div>
                    </div>
               </div>

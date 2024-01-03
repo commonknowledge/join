@@ -3,10 +3,10 @@ import { useState } from "react";
 import { compact, uniqueId } from "lodash-es";
 import { UseFormMethods } from "react-hook-form";
 
-const client = new Client({ api_key: process.env.REACT_APP_POSTCODE_API_KEY! });
-const useTestAddress =
-  process.env.NODE_ENV !== "production" &&
-  !process.env.REACT_APP_PRODUCTION_ADDRESS_LOOKUP;
+import { get as getEnv } from '../env';
+
+const client = new Client({ api_key: getEnv('POSTCODE_API_KEY') });
+const useTestAddress = process.env.NODE_ENV !== "production"
 
 class Address {
   id: string;

@@ -14,6 +14,8 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
+import { get as getEnv } from '../env';
+
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
@@ -43,8 +45,8 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
     },
     resolver: validate(PaymentMethodDDSchema)
   });
-
-  const organisation = "GC re The Green Party";
+  const organisationName =  getEnv('ORGANISATION_NAME');
+  const organisation = `GC re ${organisationName}`;
 
   return (
     <form
@@ -132,6 +134,8 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
   data
 }) => {
+  const organisationName =  getEnv('ORGANISATION_NAME');
+
   const cardRef = useRef<any>();
   const form = useForm();
 
@@ -185,7 +189,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       >
         <h1>Card details</h1>
         <p className="text-secondary mb-5">
-          You've chosen to join The Green Party by paying by card.
+          You've chosen to join {organisationName} by paying by card.
         </p>
         <FormGroup className="mb-5">
           <Form.Label>Card Number</Form.Label>
@@ -213,7 +217,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
           </p>
           <CardCVV className="form-control" />
           <Form.Control.Feedback type="invalid">
-            This doesn't look like a valid recredit or debit card CVV - it's
+            This doesn't look like a valid credit or debit card CVV - it's
             normally three numbers on the back of your card.
           </Form.Control.Feedback>
         </FormGroup>

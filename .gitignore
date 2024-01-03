@@ -34,10 +34,6 @@ build
 dist
 *.zip
 
-# Extracted versions of the plugin and theme
-green-party-join-plugin
-green-party-join-theme
-
 # Mac OS files
 .DS_Store
 

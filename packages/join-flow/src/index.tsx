@@ -7,56 +7,25 @@ import "../scss/index.scss";
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./app";
+import { initFromHtml, get as getEnv } from "./env";
 
 const joinFormElement = document.getElementById("join-form");
 
-function getEnvironmentFromHTML() {
-  const element = document.getElementById("env");
-
-  let env = {};
-
-  if (!element) {
-    return env;
-  }
-
-  if (!element.textContent) {
-    return env;
-  }
-
-  try {
-    env = JSON.parse(element.textContent);
-  } catch (error) {
-    console.error("Could not load environment");
-  }
-
-  return env;
-}
-
 if (!joinFormElement) {
   console.error(
-    'Could not find element with ID "join-form" so cannot load The Green Party join form'
+    'Could not find element with ID "join-form" so cannot load the join form'
   );
 } else {
-  console.log("Loading environment");
-  window.process = Object.assign(window.process || {}, {
-    env: getEnvironmentFromHTML()
-  });
-
-  console.log("Environment loaded");
-  console.log(window.process.env);
+  initFromHtml();
 
   if (window.Chargebee) {
     window.Chargebee.init({
-      site:
-        window.process.env.CHARGEBEE_SITE_NAME ||
-        process.env.REACT_APP_CHARGEBEE_SITE,
-      publishableKey:
-        window.process.env.CHARGEBEE_API_PUBLISHABLE_KEY ||
-        process.env.REACT_APP_CHARGEBEE_KEY
+      site: getEnv('CHARGEBEE_SITE_NAME'),
+      publishableKey: getEnv('CHARGEBEE_API_PUBLISHABLE_KEY'),
     });
   } else {
     console.error(
-      "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result.\n\nWhen the Green Party join form is loaded in WordPress, this should be loaded when the Join Form block is present on the page."
+      "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result. The WordPress Join Form block will include this library."
     );
   }
 
