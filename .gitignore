@@ -28,6 +28,7 @@ fi.env
 
 # php
 vendor
+wordpress
 
 # build artifacts
 build
@@ -38,4 +39,4 @@ dist
 .DS_Store
 
 # Environment files
-packages/*/.env
+.env

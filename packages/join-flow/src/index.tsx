@@ -7,7 +7,7 @@ import "../scss/index.scss";
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./app";
-import { initFromHtml, get as getEnv } from "./env";
+import { get as getEnv } from "./env";
 
 const joinFormElement = document.getElementById("join-form");
 
@@ -16,8 +16,6 @@ if (!joinFormElement) {
     'Could not find element with ID "join-form" so cannot load the join form'
   );
 } else {
-  initFromHtml();
-
   if (window.Chargebee) {
     window.Chargebee.init({
       site: getEnv('CHARGEBEE_SITE_NAME'),

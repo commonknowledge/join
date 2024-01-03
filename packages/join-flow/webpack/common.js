@@ -3,7 +3,7 @@ const { resolve } = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
-require("dotenv").config({ path: "../.env" });
+const parsed = require("dotenv").config({ path: resolve(__dirname, '../.env') });
 
 module.exports = {
   resolve: {
@@ -13,7 +13,7 @@ module.exports = {
   context: resolve(__dirname, "../src"),
   output: {
     filename: "bundle.js",
-    path: resolve(__dirname, "../dist")
+    path: resolve(__dirname, "../../join-block/build/join-flow"),
   },
   module: {
     rules: [

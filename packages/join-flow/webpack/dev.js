@@ -14,7 +14,7 @@ module.exports = merge(commonConfig, {
   devServer: {
     hot: true, // enable HMR on the server
     port: 3000,
-    static: path.join(__dirname, "dist"),
+    static: path.resolve(__dirname, "../../join-block/build/join-flow"),
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",

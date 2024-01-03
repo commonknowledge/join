@@ -6,7 +6,6 @@ services:
     restart: always
     ports:
       - 8080:80
-    env_file: .env
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: exampleuser
@@ -15,7 +14,6 @@ services:
       WP_DEBUG: "true"
     volumes:
       - ./packages/join-block:/var/www/html/wp-content/plugins/join-form
-      - ./packages/theme/dist:/var/www/html/wp-content/themes/greens
   db:
     image: mysql
     restart: always

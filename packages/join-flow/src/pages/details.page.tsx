@@ -3,6 +3,7 @@ import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import isoCountries from "iso-3166";
 
+import { get as getEnv } from '../env';
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
@@ -14,6 +15,8 @@ import * as yup from "yup";
 const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
 });
+
+const passwordPurpose = getEnv('PASSWORD_PURPOSE');
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,

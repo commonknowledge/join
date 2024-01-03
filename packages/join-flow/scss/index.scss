@@ -2,6 +2,8 @@
    them to the join block */
 @import "theme";
 .form-content {
+    @include text-body;
+
     @import "bootstrap";
     @import "util.scss";
     @import "typography.scss";

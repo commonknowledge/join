@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name:     Common Knowledge Join Plugin
  * Description:     Common Knowledge join flow plugin.
@@ -16,12 +17,8 @@ add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
 });
 
-require 'lib/settings.php';
-require 'lib/services/join_service.php';
-require 'lib/exceptions.php';
-
-require 'lib/blocks.php';
-
+use ChargeBee\ChargeBee\Environment;
+use CommonKnowledge\JoinBlock\Services\JoinService;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Processor\WebProcessor;
@@ -33,7 +30,12 @@ $joinBlockLog->pushHandler(new ErrorLogHandler());
 $joinBlockLog->pushProcessor(new WebProcessor());
 
 if ($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] && $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] !== '') {
-    $joinBlockLog->pushHandler(new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'], \Monolog\Logger::ERROR));
+    $joinBlockLog->pushHandler(
+        new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler(
+            $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'],
+            \Monolog\Logger::ERROR
+        )
+    );
 }
 
 add_action('rest_api_init', function () {
@@ -48,17 +50,35 @@ add_action('rest_api_init', function () {
             $joinBlockLog->info('Join process started', ['request' => $request]);
 
             try {
-                CommonKnowledge\JoinBlock\Handlers\handleJoin($request->get_json_params());
+                JoinService::handleJoin($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
             } catch (ClientException $error) {
-                $joinBlockLog->error('Join process failed at Auth0 user creation, but customer created in Chargebee.', ['error' => $error]);
+                $joinBlockLog->error(
+                    'Join process failed at Auth0 user creation, but customer created in Chargebee.',
+                    ['error' => $error]
+                );
             } catch (Error $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
-                return new WP_Error('join_failed', 'Join process failed', ['status' => 500, 'error_code'=> $error->getCode(), 'error_message' => $error->getMessage()]);
-            }
-            catch (\CommonKnowledge\JoinBlock\Exception\JoinBlockException $exception) {
-                $joinBlockLog->error('Join process failed', ['error' => $exception, 'fields' => $exception->getFields()]);
-                return new WP_Error('join_failed', 'Join process failed', ['status' => 500, 'error_code'=> $exception->getCode(), 'error_message' => $exception->getMessage(), 'fields' => $exception->getFields()]);
+                return new WP_Error(
+                    'join_failed',
+                    'Join process failed',
+                    ['status' => 500, 'error_code' => $error->getCode(), 'error_message' => $error->getMessage()]
+                );
+            } catch (\CommonKnowledge\JoinBlock\Exceptions\JoinBlockException $exception) {
+                $joinBlockLog->error(
+                    'Join process failed',
+                    ['error' => $exception, 'fields' => $exception->getFields()]
+                );
+                return new WP_Error(
+                    'join_failed',
+                    'Join process failed',
+                    [
+                        'status' => 500,
+                        'error_code' => $exception->getCode(),
+                        'error_message' => $exception->getMessage(),
+                        'fields' => $exception->getFields()
+                    ]
+                );
             }
 
             return new WP_REST_Response(['status' => 'ok'], 200);
@@ -67,32 +87,6 @@ add_action('rest_api_init', function () {
 });
 
 
-add_action('init', 'uk_greens_join_block_init');
-function uk_greens_join_block_init()
-{
-    global $joinBlockLog;
-
-    $directoryName = dirname(__FILE__);
-
-    $joinFormJavascriptBundleLocation = 'build/join-flow/bundle.js';
-
-    if ($_ENV['DEBUG_JOIN_FLOW'] === 'true') {
-        $joinBlockLog->warning('DEBUG_JOIN_FLOW environment variable set to true, meaning join form starting in debug mode. Using local frontend serving from http://localhost:3000/bundle.js for form.');
-
-        wp_enqueue_script(
-            'join-block-js',
-            "http://localhost:3000/bundle.js",
-            [],
-            false,
-            true
-        );
-    } else {
-        wp_enqueue_script(
-            'join-block-js',
-            plugins_url($joinFormJavascriptBundleLocation, __FILE__),
-            [],
-            filemtime("$directoryName/$joinFormJavascriptBundleLocation"),
-            true
-        );
-    }
-}
+add_action('init', function () {
+    Environment::configure($_ENV['CHARGEBEE_SITE_NAME'], $_ENV['CHARGEBEE_API_KEY']);
+});
