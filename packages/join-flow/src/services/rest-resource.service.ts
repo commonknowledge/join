@@ -31,7 +31,7 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
     data.planId = membershipToPlan(data.membership);
 
     const baseUrl = getEnv('WP_REST_API').replace(/\/$/, ''); // trim trailing slash
-    const res = await fetch(`${baseUrl}/endpoint`, {
+    const res = await fetch(`${baseUrl}/${endpoint}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

@@ -53,6 +53,13 @@ Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
+## Auth0 Setup
+
+You must create an Auth0 machine-to-machine application, and then authorize this application for the Auth0 Management API.
+This is found in Applications => APIs => Auth0 Management API => Machine to Machine Applications.
+
+Once you have authorized the application, you must click the arrow to expand the authorization, and add the following
+scopes: read:users, update:users, create:users, delete:users.
 
 ### Deploying
 

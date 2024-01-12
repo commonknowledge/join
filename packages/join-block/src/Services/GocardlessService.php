@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
+use CommonKnowledge\JoinBlock\Settings;
+
 class GocardlessService
 {
     public static function createCustomerMandate($data)
@@ -42,15 +44,15 @@ class GocardlessService
     {
         global $joinBlockLog;
 
-        if ($_ENV['WP_ENV'] === 'production') {
+        if (Settings::get('GC_ENVIRONMENT') === 'live') {
             $gocardlessEnvironment =  \GoCardlessPro\Environment::LIVE;
         } else {
-            $joinBlockLog->warning('WP_ENV is not set to production, using GoCardless Sandbox environment.');
+            $joinBlockLog->warning('WP_ENV is not set to live, using GoCardless Sandbox environment.');
             $gocardlessEnvironment =  \GoCardlessPro\Environment::SANDBOX;
         }
 
         $client = new \GoCardlessPro\Client([
-            'access_token' => $_ENV['GC_ACCESS_TOKEN'],
+            'access_token' => Settings::get('GC_ACCESS_TOKEN'),
             'environment' => $gocardlessEnvironment
         ]);
 

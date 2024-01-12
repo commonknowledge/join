@@ -24,7 +24,7 @@
   },
   "scripts": {
     "lint": [
-      "phpcs --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 . && phpstan analyse -c phpstan.neon"
+      "phpcs --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 . && phpstan analyse -c phpstan.neon --memory-limit 2G"
     ],
     "lint:fix": [
       "phpcbf --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 ."

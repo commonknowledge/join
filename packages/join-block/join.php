@@ -10,6 +10,15 @@
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
+use ChargeBee\ChargeBee\Environment;
+use CommonKnowledge\JoinBlock\Services\JoinService;
+use CommonKnowledge\JoinBlock\Blocks;
+use CommonKnowledge\JoinBlock\Settings;
+use Monolog\Logger;
+use Monolog\Handler\ErrorLogHandler;
+use Monolog\Processor\WebProcessor;
+use GuzzleHttp\Exception\ClientException;
+
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -17,13 +26,11 @@ add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
 });
 
-use ChargeBee\ChargeBee\Environment;
-use CommonKnowledge\JoinBlock\Services\JoinService;
-use Monolog\Logger;
-use Monolog\Handler\ErrorLogHandler;
-use Monolog\Processor\WebProcessor;
+add_action('carbon_fields_register_fields', function () {
+    Settings::init();
+    Blocks::init();
+});
 
-use GuzzleHttp\Exception\ClientException;
 
 $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
@@ -86,7 +93,9 @@ add_action('rest_api_init', function () {
     ));
 });
 
-
+// Happens after carbon_fields_register_fields
 add_action('init', function () {
-    Environment::configure($_ENV['CHARGEBEE_SITE_NAME'], $_ENV['CHARGEBEE_API_KEY']);
+    $chargebee_site_name = Settings::get('CHARGEBEE_SITE_NAME');
+    $chargebee_api_key = Settings::get('CHARGEBEE_API_KEY');
+    Environment::configure($chargebee_site_name, $chargebee_api_key);
 });

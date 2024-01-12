@@ -235,7 +235,7 @@ export const getTestDataIfEnabled = (): FormSchema => {
       "REACT_APP_USE_TEST_DATA environment variable set. Using test data."
     );
     return {
-      email: "me@example.com",
+      email: "someone@example.com",
       addressCity: "Oxford",
       addressCountry: "GB",
       addressCounty: "Oxfordshire",
