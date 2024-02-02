@@ -40,7 +40,7 @@ interface RadioPanelProps {
   form?: UseFormMethods<any>;
   name: string;
   label: string;
-  valueText?: string;
+  priceLabel?: string;
   description?: string;
   valueMeta?: string;
   className?: string;
@@ -50,7 +50,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
   value,
   valueMeta,
   description,
-  valueText,
+  priceLabel,
   form,
   name,
   label,
@@ -78,12 +78,12 @@ export const RadioPanel: FC<RadioPanelProps> = ({
             type="radio"
             checked={checked}
             className={checked ? "checked" : undefined}
-            onClick={() => onChange(value)}
+            onChange={() => onChange(value)}
           />
           <div className="flex-grow-1">
             <div className="radio-panel-label">
               {label}
-              <span className="float-right">{valueText}</span>
+              <span className="float-right">{priceLabel}</span>
             </div>
 
             <div className="radio-panel-description">{description}</div>

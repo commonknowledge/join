@@ -43,13 +43,29 @@ function isInPast(value: number | null | undefined | object) {
   );
 }
 
+const passwordSchemaItem = () => {
+  if (!getEnv('CREATE_AUTH0_ACCOUNT')) {
+    return null;
+  }
+  let password = string()
+    .min(8, "Password must be at least 8 characters")
+    .matches(/[0-9]/, "Password must contain a number.")
+    .matches(/[A-Z]/, "Password must contain an uppercase letter.")
+    .matches(
+      /[!@#$%^&*]/,
+      "Password must contain at least one special character, !@#$%^&* are allowed."
+    )
+    .required()
+  return password
+}
+
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
   email: string()
     .email("Your email address must be a valid email address")
     .required("Email address is required"),
-  dobDay: number()
+  dobDay: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
     .typeError("The day of your birth must be a number")
     .integer("The day of your birth should be a whole number")
     .positive("The day of your birth should be a positive number")
@@ -62,8 +78,8 @@ export const DetailsSchema = object({
       "This is not a valid day in the month",
       isValidDayOfMonth
     )
-    .required(),
-  dobMonth: number()
+    .required() : number(),
+  dobMonth: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
     .typeError("The month of your birth must be a number")
     .integer("The month of your birth should be a whole number")
     .positive("The month of your birth should be a positive number")
@@ -71,8 +87,8 @@ export const DetailsSchema = object({
       12,
       "The month of your birth should be only be a number between 1 and 12, representing the months of the year"
     )
-    .required(),
-  dobYear: number()
+    .required() : number(),
+  dobYear: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
     .typeError("The year of your birth must be a number")
     .integer("The year of your birth should be a whole number")
     .positive("The year of your birth should be a positive number")
@@ -82,14 +98,14 @@ export const DetailsSchema = object({
       "The date of your birth should not be in the future",
       isInPast
     )
-    .required(),
+    .required() : number(),
   addressLine1: string().required(),
   addressLine2: string(),
   addressCity: string().required(),
   addressCounty: string().required(),
   addressPostcode: string().required(),
   addressCountry: string().required(),
-  password: string()
+  password: getEnv('CREATE_AUTH0_ACCOUNT') ? string()
     .min(8, "Password must be at least 8 characters")
     .matches(/[0-9]/, "Password must contain a number.")
     .matches(/[A-Z]/, "Password must contain an uppercase letter.")
@@ -97,10 +113,12 @@ export const DetailsSchema = object({
       /[!@#$%^&*]/,
       "Password must contain at least one special character, !@#$%^&* are allowed."
     )
-    .required(),
+    .required() : string(),
   phoneNumber: string()
     .phone("GB", false, "A valid phone number is required")
     .required(),
+  contactByEmail: boolean(),
+  contactByPhone: boolean(),
   codeOfConductionConfirmed: boolean()
     .oneOf([true], "You must accept the code of conduct")
     .required()
@@ -217,15 +235,15 @@ export const FormSchema: ObjectSchema<FormSchema> = object()
 
 export type FormSchema = Partial<
   InferType<typeof Prerequesites> &
-    InferType<typeof DetailsSchema> &
-    InferType<typeof PlanSchema> &
-    InferType<typeof DonationSchema> &
-    InferType<typeof PaymentMethodSchema> &
-    (
-      | InferType<typeof PaymentMethodDDSchema>
-      | InferType<typeof PaymentMethodCardSchema>
-    ) &
-    InferType<typeof PaymentDetailsSchema>
+  InferType<typeof DetailsSchema> &
+  InferType<typeof PlanSchema> &
+  InferType<typeof DonationSchema> &
+  InferType<typeof PaymentMethodSchema> &
+  (
+    | InferType<typeof PaymentMethodDDSchema>
+    | InferType<typeof PaymentMethodCardSchema>
+  ) &
+  InferType<typeof PaymentDetailsSchema>
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {

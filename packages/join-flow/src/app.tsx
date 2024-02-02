@@ -19,7 +19,7 @@ import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
 import { FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import { get as getEnv } from "./env";
+import { get as getEnv, getPaymentMethods } from "./env";
 
 const stages = [
   { id: "enter-details", label: "Your Details", breadcrumb: true },
@@ -30,7 +30,7 @@ const stages = [
   { id: "confirm", label: "Confirm", breadcrumb: false }
 ];
 
-const SAVED_STATE_KEY = "greens_join_state_flow";
+const SAVED_STATE_KEY = "ck_join_state_flow";
 
 const App = () => {
   const [data, setData] = useState(getInitialState);
@@ -52,22 +52,36 @@ const App = () => {
         ...change
       } as FormSchema;
 
+      const includeDonationPage = getEnv("ASK_FOR_ADDITIONAL_DONATION");
+
       setData(nextData);
       sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(nextData));
 
+      let nextStage = router.state.stage
+
       if (router.state.stage === "enter-details") {
-        router.setState({ stage: "plan" });
+        nextStage = "plan"
       } else if (router.state.stage === "plan") {
-        router.setState({ stage: "donation" });
+        nextStage = "donation"
       } else if (router.state.stage === "donation") {
-        router.setState({ stage: "payment-method" });
+        nextStage = "payment-method"
       } else if (router.state.stage === "payment-method") {
-        router.setState({ stage: "payment-details" });
+        nextStage = "payment-details"
       } else if (router.state.stage === "payment-details") {
-        router.setState({ stage: "confirm" });
+        nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
-        window.location.href = getEnv('SUCCESS_REDIRECT') || "/";
+        window.location.href = getEnv('SUCCESS_REDIRECT') as string || "/";
       }
+      
+      if (nextStage === "donation" && !includeDonationPage) {
+        nextStage = "payment-method"
+      }
+
+      if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
+        nextStage = "payment-details"
+      }
+    
+      router.setState({ stage: nextStage });
     },
     [router, data]
   );
@@ -121,15 +135,17 @@ const App = () => {
 const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substring(1));
 
+  const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[]
+  const paymentMethods = getPaymentMethods();
   const getDefaultState = () => ({
-    membership: "suggested",
-    paymentMethod: "directDebit"
+    membership: membershipPlans.length ? membershipPlans[0] : "standard",
+    paymentMethod: paymentMethods.length ? paymentMethods[0] : "directDebit"
   });
 
   const getSavedState = () => {
-    const sesisonState = sessionStorage.getItem(SAVED_STATE_KEY);
-    if (sesisonState) {
-      return FormSchema.cast(JSON.parse(sesisonState), {
+    const sessionState = sessionStorage.getItem(SAVED_STATE_KEY);
+    if (sessionState) {
+      return FormSchema.cast(JSON.parse(sessionState), {
         strict: true
       });
     }
@@ -145,8 +161,8 @@ const getInitialState = (): FormSchema => {
 
   return {
     sessionToken: uuid.v4(),
-    ...getDefaultState(),
     ...getTestDataIfEnabled(),
+    ...getDefaultState(),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams()
   } as any;

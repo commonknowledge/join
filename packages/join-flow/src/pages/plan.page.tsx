@@ -5,6 +5,7 @@ import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
+import { get as getEnv } from "../env"
 
 export const PlanPage: StagerComponent<FormSchema> = ({
   data,
@@ -26,47 +27,17 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           You can change or cancel whenever you want.
         </p>
 
-        <RadioPanel
-          name="membership"
-          value="suggested"
-          label="Suggested Membership Contribution"
-          valueText="£10 a month"
-          description="For those who are able to do more to help progress the Green Movement."
-          form={form}
-        />
-        <RadioPanel
-          name="membership"
-          value="standard"
-          label="Standard Membership"
-          valueText="£3.33 a month"
-          valueMeta="or £40 a year"
-          description="Available to everyone."
-          form={form}
-        />
-        <RadioPanel
-          name="membership"
-          value="lowWaged"
-          label="Reduced Rate Membership"
-          valueText="£13 a year"
-          description="If you are in low-waged employment."
-          form={form}
-        />
-        <RadioPanel
-          name="membership"
-          value="student"
-          valueText="£6 a year"
-          label="Student Membership"
-          description="If you are a student."
-          form={form}
-        />
-        <RadioPanel
-          name="membership"
-          value="unwaged"
-          valueText="£6 a year"
-          label="Concessionary Membership"
-          description="If you are without paid work."
-          form={form}
-        />
+        {(getEnv('MEMBERSHIP_PLANS') as any[]).map((plan) => (
+          <RadioPanel
+            key={plan.value}
+            name="membership"
+            value={plan.value}
+            label={plan.label}
+            priceLabel={plan.priceLabel}
+            description={plan.description}
+            form={form}
+          />
+        ))}
       </fieldset>
 
       <ContinueButton />

@@ -1,6 +1,7 @@
 /* Wrap all styles within .form-content to restrict
    them to the join block */
 @import "theme";
+// TODO: make this class name specific to the join block
 .form-content {
     @include text-body;
 
