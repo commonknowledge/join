@@ -1,0 +1,144 @@
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins/_breakpoints";
+
+$yiq-contrasted-threshold: 100;
+
+// Colors
+$black: var(--wp--preset--color--black, #212529);
+$gray: #22262a;
+$light-gray: #f8f8f8;
+
+$primary: var(--wp--preset--color--accent, #00643b);
+$primary-focus: color-mix(in lch, var(--color-primary) 90%, white);
+$danger: var(--wp--preset--color--accent-5, #e3220c);
+$secondary: #7a7c7f;
+$body-bg: var(--wp--preset--color--base, #f7f6f4);
+
+$link-color: $primary;
+$link-hover-color: $primary-focus;
+
+// Fonts
+$font-heading: var(--wp--preset--font-family--heading, sans-serif);
+$font-regular: var(--wp--preset--font-family--body, sans-serif);
+
+@mixin text-xl {
+  font-family: $font-heading;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 67.34px;
+  line-height: 90%;
+}
+
+@mixin text-lg {
+  font-family: $font-heading;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 44px;
+  line-height: 90%;
+
+  @include media-breakpoint-down(sm) {
+    font-size: 32px;
+  }
+}
+
+@mixin text-md {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 32px;
+  line-height: 110%;
+}
+
+@mixin text-sm {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-sm-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-xs {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 21.33px;
+  line-height: 130%;
+}
+
+@mixin text-xs-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 21.33px;
+  line-height: 130%;
+}
+
+@mixin text-xxs {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxs-bold {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxxs {
+  font-family: $font-regular;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 12px;
+  line-height: 120%;
+}
+
+@mixin text-body {
+  @include text-xxs;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xs;
+  }
+}
+
+@mixin text-body-bold {
+  @include text-xxs-bold;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xs-bold;
+  }
+}
+
+$font-family-sans-serif: $font-regular;
+$headings-font-family: $font-family-sans-serif;
+
+// Forms
+
+$input-border-width: 2px;
+$input-border-color: $black;
+$input-border-radius: 0;
+$input-focus-box-shadow: none;
+$input-focus-border-color: $black;
+
+// Buttons
+$btn-font-family: $font-heading;
+$btn-font-weight: bold;
+$btn-font-size: 28.43px;
+$btn-link-hover-color: null;
+$btn-padding-x: 24px;
+$btn-padding-y: 8px;
+$btn-border-radius: 0;
+$btn-active-box-shadow: none;

@@ -3,7 +3,6 @@ import { parse } from "querystring";
 import * as uuid from "uuid";
 import React, { FC, useCallback, useState } from "react";
 import { TransitionGroup, CSSTransition } from "react-transition-group";
-import { Container } from "react-bootstrap";
 
 import { DetailsPage } from "./pages/details.page";
 import { PaymentPage } from "./pages/payment-method.page";
@@ -16,11 +15,11 @@ import {
   useStateRouter
 } from "./services/router.service";
 import { useOnce } from "./hooks/util";
-import { PaymentDetailsPage } from "./pages/paymend-details.page";
+import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
 import { FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import { usePostResource } from "./services/rest-resource.service";
+import { get as getEnv } from "./env";
 
 const stages = [
   { id: "enter-details", label: "Your Details", breadcrumb: true },
@@ -67,7 +66,7 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         router.setState({ stage: "confirm" });
       } else if (router.state.stage === "confirm") {
-        window.location.href = window.process.env.SUCCESS_REDIRECT || "/";
+        window.location.href = getEnv('SUCCESS_REDIRECT') || "/";
       }
     },
     [router, data]
@@ -120,7 +119,7 @@ const App = () => {
 };
 
 const getInitialState = (): FormSchema => {
-  const queryParams = parse(window.location.search.substr(1));
+  const queryParams = parse(window.location.search.substring(1));
 
   const getDefaultState = () => ({
     membership: "suggested",

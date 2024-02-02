@@ -3,6 +3,7 @@ import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import isoCountries from "iso-3166";
 
+import { get as getEnv } from '../env';
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
@@ -14,6 +15,8 @@ import * as yup from "yup";
 const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
 });
+
+const passwordPurpose = getEnv('PASSWORD_PURPOSE');
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -212,10 +215,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Password</h2>
-        <p className="text-secondary">
-          You'll be able to use this password to login to the Green Party
-          website, its forums and vote in its elections.
-        </p>
+        {passwordPurpose ? (
+          <p className="text-secondary">
+            {passwordPurpose}
+          </p>
+        ) : ''}
         <p className="text-secondary">
           Your password should contain at least one number, one uppercase letter
           and one special character. It must be at least 8 characters long.

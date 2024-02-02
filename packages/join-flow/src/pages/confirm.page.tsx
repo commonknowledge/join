@@ -7,13 +7,16 @@ import { FormSchema, membershipIsAnnual } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
+import { get as getEnv } from '../env';
+
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  const organisationName = "The Green Party";
-  const organisationEmailAddress = "members@greenparty.org.uk";
+  const organisationName =  getEnv('ORGANISATION_NAME');
+  const organisationEmailAddress = getEnv('ORGANISATION_EMAIL_ADDRESS');
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
+  const chargebeeSiteName =  getEnv('CHARGEBEE_SITE_NAME');
 
   const form = useForm();
 
@@ -29,7 +32,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <div className="spinner-border" role="status">
         <span className="sr-only">Please wait</span>
       </div>
-      <div className="mt-3">Joining The Green Party</div>
+      <div className="mt-3">Joining {organisationName}</div>
     </div>
   );
 
@@ -39,7 +42,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     directDebitDetailsMessage = (
       <section className="form-section mb-3">
         <p>
-          You are paying for your membership of The Green Party by Direct Debit.
+          You are paying for your membership of {organisationName} by Direct Debit.
         </p>
         <p>
           This will be charged every{" "}
@@ -114,8 +117,8 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
                 <p>We seem to already have an active membership for you.</p>
                 <p>
                   If you'd like to update your details, we recommend using the{" "}
-                  <a href="https://greenparty.chargebeeportal.com/portal/v2/login">
-                    Green Party membership management page
+                  <a href={`https://${chargebeeSiteName}.chargebeeportal.com/portal/v2/login`}>
+                    {organisationName} membership management page
                   </a>
                   .
                 </p>
@@ -158,7 +161,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
               </div>
             )}
             <Button
-              className="form-section-addon text-bebas text-uppercase"
+              className="form-section-addon font-family-heading text-uppercase"
               type="submit"
               disabled={requestInFlight}
             >

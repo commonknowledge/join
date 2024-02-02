@@ -1,0 +1,52 @@
+body {
+  @include text-body;
+}
+
+h2 {
+  @include text-sm-bold;
+
+  @include media-breakpoint-up(sm) {
+    @include text-md;
+  }
+}
+
+.text-md {
+  @include text-sm-bold;
+
+  @include media-breakpoint-up(sm) {
+    @include text-md;
+  }
+}
+
+.text-xs {
+  @include text-xxs;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xs;
+  }
+}
+
+.text-xxs {
+  @include text-xxxs;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xxs;
+  }
+}
+
+.text-xl {
+  @include text-xl;
+}
+
+.text-lg,
+.text-l {
+  @include text-lg;
+}
+
+li:not(:first-child) {
+  margin-top: $space-3;
+}
+
+.font-family-heading {
+  font-family: $font-heading !important;
+}

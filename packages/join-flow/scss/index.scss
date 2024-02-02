@@ -1,0 +1,14 @@
+/* Wrap all styles within .form-content to restrict
+   them to the join block */
+@import "theme";
+.form-content {
+    @include text-body;
+
+    @import "bootstrap";
+    @import "util.scss";
+    @import "typography.scss";
+    @import "components/buttons.scss";
+    @import "components/forms.scss";
+    @import "components/progress.scss";
+    @import "components/page.scss";
+}

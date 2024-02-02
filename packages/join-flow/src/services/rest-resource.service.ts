@@ -1,4 +1,6 @@
-type tmembershipToChargebeePlanMap = {
+import { get as getEnv } from '../env';
+
+type membershipToChargebeePlanMap = {
   [key: string]: string;
 };
 
@@ -9,7 +11,7 @@ type tmembershipToChargebeePlanMap = {
   
   See packages/join-block/lib/services/join_service.php for details.
 */
-const membershipToChargebeePlanMap: tmembershipToChargebeePlanMap = {
+const membershipToChargebeePlanMap: membershipToChargebeePlanMap = {
   suggested: "suggested",
   standard: "membership_monthly_individual",
   lowWaged: "membership_annual_individual_low_waged",
@@ -28,7 +30,8 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
     // @ts-ignore
     data.planId = membershipToPlan(data.membership);
 
-    const res = await fetch(`${window.process.env.WP_REST_API}` + endpoint, {
+    const baseUrl = getEnv('WP_REST_API').replace(/\/$/, ''); // trim trailing slash
+    const res = await fetch(`${baseUrl}/${endpoint}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

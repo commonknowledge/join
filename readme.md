@@ -2,9 +2,7 @@
 
 ## Overview
 
-This is a monorepo, containing 3 packages:
-
-- `packages/theme`: A Bootstrap based WordPress theme implementing the design system used by the join site and The Green Party brand.
+This is a monorepo, containing 2 packages:
 
 - `packages/join-flow`: A React project (using `create-react-app`) implementing the join flow frontend.
 
@@ -39,10 +37,6 @@ They are designed to have the copy changed - nothing is hard coded. This is inte
 - **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
 - **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
-These blocks are lightly styled by a simple Bootstrap based WordPress theme that sticks to The Green Party brand. This is also found within this repository.
-
-Without the WordPress theme the blocks and the join flow are functional, but render as plain HTML without styling.
-
 ## Build and Deployment Workflow
 
 ### Build
@@ -55,21 +49,21 @@ yarn composer
 yarn build
 ```
 
-**NOTE:** When using linux (including WSL). You may encounter an error related to the `gifsicle` package when running `yarn build`. Add the following to the `resolutions` and `devDependecies` section of the `packages/join-flow/package.json` file and re-run `yarn` and `yarn build`
-
-```bash
-"gifsicle": "4.0.1"
-```
-
 Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
-- `packages/theme/dist`: WordPress plugin
+## Auth0 Setup
+
+You must create an Auth0 machine-to-machine application, and then authorize this application for the Auth0 Management API.
+This is found in Applications => APIs => Auth0 Management API => Machine to Machine Applications.
+
+Once you have authorized the application, you must click the arrow to expand the authorization, and add the following
+scopes: read:users, update:users, create:users, delete:users.
 
 ### Deploying
 
-In order to deploy this work, you need to create a WordPress plugin and theme and add them to the WordPress instance as needed.
+In order to deploy this work, you need to create a WordPress plugin and add it to the WordPress instance as needed.
 
 1. Run the build commands above to compile the React application.
 2. Run `sh scripts/package.sh` on linux this can be run as `./scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
@@ -79,7 +73,7 @@ In order to deploy this work, you need to create a WordPress plugin and theme an
 
 ### Running the whole system as a WordPress site
 
-- Ensure you have a recent Node.js >= v12, Yarn, Composer and Docker installed.
+- Ensure you have a recent Node.js >= v18, Yarn, Composer and Docker installed.
 
 - Install dependencies
 
@@ -91,17 +85,14 @@ yarn composer
 - Copy the .env template into place, open it and add any missing configurations
 
 ```bash
-cp .env.template .env
+cd packages/join-flow
+cp .env.example .env
 ```
 
 - Boot the site
 
 ```bash
 yarn start
-```
-
-```bash
-docker compose up
 ```
 
 #### To use join form 'in-place' in a WordPress site
@@ -120,7 +111,7 @@ docker compose up
 
 ### Running the front end in isolation (without a backend)
 
-- Ensure you have a recent Node.js >= v12 and Yarn installed.
+- Ensure you have a recent Node.js >= v18 and Yarn installed.
 
 - Install dependencies
 
@@ -131,13 +122,14 @@ yarn
 - Copy the .env template into place, open it and add any missing configurations
 
 ```bash
-cp .env.template .env
+cd packages/join-flow
+cp .env.example .env
 ```
 
 - Boot the site
 
 ```bash
-yarn start:frontend
+yarn run frontend
 ```
 
 - Open <http://localhost:3000>

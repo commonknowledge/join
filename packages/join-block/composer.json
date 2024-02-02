@@ -1,25 +1,39 @@
 {
   "version": "1.0.6",
   "require": {
-    "chargebee/chargebee-php": ">=2, <3",
     "gocardless/gocardless-pro": "^4.5",
-    "auth0/auth0-php": "^7.4",
     "vlucas/phpdotenv": "^5.2",
     "giggsey/libphonenumber-for-php": "^8.12",
     "htmlburger/carbon-fields": "^3.2",
     "monolog/monolog": "^2.1",
     "cmdisp/monolog-microsoft-teams": "^1.1",
-    "nesbot/carbon": "^2.55"
+    "nesbot/carbon": "^2.55",
+    "auth0/auth0-php": "^8.10",
+    "http-interop/http-factory-guzzle": "^1.2",
+    "chargebee/chargebee-php": "^3.23"
   },
   "require-dev": {
-    "squizlabs/php_codesniffer": "^3.5"
+    "squizlabs/php_codesniffer": "^3.5",
+    "phpstan/phpstan": "^1.10",
+    "roots/wordpress": "^6.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "CommonKnowledge\\JoinBlock\\": "src"
+    }
   },
   "scripts": {
     "lint": [
-      "phpcs --ignore=vendor,tests,uk-greens-theme --extensions=php --standard=PSR12 ."
+      "phpcs --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 . && phpstan analyse -c phpstan.neon --memory-limit 2G"
     ],
     "lint:fix": [
-      "phpcbf --ignore=vendor,tests,uk-greens-theme --extensions=php --standard=PSR12 ."
+      "phpcbf --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 ."
     ]
+  },
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "roots/wordpress-core-installer": true
+    }
   }
 }

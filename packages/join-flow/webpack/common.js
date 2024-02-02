@@ -3,16 +3,17 @@ const { resolve } = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
-require("dotenv").config({ path: "../../.env" });
+const parsed = require("dotenv").config({ path: resolve(__dirname, '../.env') });
 
 module.exports = {
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".jsx", ".ts", ".tsx"]
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".ts", ".tsx"],
+    fallback: { "querystring": require.resolve("querystring-es3") }
   },
   context: resolve(__dirname, "../src"),
   output: {
     filename: "bundle.js",
-    path: resolve(__dirname, "../dist")
+    path: resolve(__dirname, "../../join-block/build/join-flow"),
   },
   module: {
     rules: [
@@ -45,7 +46,18 @@ module.exports = {
         test: /\.(jpe?g|png|gif|svg|woff2)$/i,
         use: [
           "file-loader?hash=sha512&digest=hex&name=img/[hash].[ext]",
-          "image-webpack-loader?bypassOnDebug&optipng.optimizationLevel=7&gifsicle.interlaced=false"
+          {
+            loader: "image-webpack-loader",
+            options: {
+              bypassOnDebug: true,
+              optipng: {
+                optimizationLevel: 7
+              },
+              gifsicle: {
+                interlaced: false
+              }
+            }
+          }
         ]
       }
     ]
