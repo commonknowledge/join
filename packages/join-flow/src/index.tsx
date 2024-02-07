@@ -9,11 +9,11 @@ import ReactDOM from "react-dom";
 import App from "./app";
 import { get as getEnv } from "./env";
 
-const joinFormElement = document.getElementById("join-form");
+const joinFormElement = document.querySelector(".ck-join-form");
 
 if (!joinFormElement) {
   console.error(
-    'Could not find element with ID "join-form" so cannot load the join form'
+    'Could not find element with class "ck-join-form" so cannot load the join form'
   );
 } else {
   if (window.Chargebee) {
@@ -31,6 +31,6 @@ if (!joinFormElement) {
     <React.StrictMode>
       <App />
     </React.StrictMode>,
-    document.getElementById("join-form")
+    joinFormElement
   );
 }

@@ -67,6 +67,8 @@ class Blocks
         /** @var Block_Container $block_container */
         $block_container = Block::make(__('Join Form Fullscreen Takeover'))
             ->add_fields(array(
+                Field::make('rich_text', 'home_address_copy', 'Privacy Copy'),
+                Field::make('rich_text', 'privacy_copy', 'Privacy Copy'),
                 $joined_page_association
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
@@ -79,20 +81,43 @@ class Blocks
 
             $successRedirect = get_page_link($fields['joined_page'][0]['id']);
 
+            $membership_plans = Settings::get("MEMBERSHIP_PLANS");
+            $membership_plans_prepared = array_map(function ($plan) {
+                return [
+                    "value" => sanitize_title($plan["label"]),
+                    "label" => $plan["label"],
+                    "priceLabel" => $plan["price_label"],
+                    "description" => $plan["description"]
+                ];
+            }, $membership_plans);
+
             $environment = [
                 'HOME_URL' => $homeUrl,
                 "WP_REST_API" => get_rest_url(),
                 'SUCCESS_REDIRECT' => $successRedirect,
+                "ASK_FOR_ADDITIONAL_DONATION" => Settings::get("ASK_FOR_ADDITIONAL_DONATION"),
                 'CHARGEBEE_SITE_NAME' => Settings::get('CHARGEBEE_SITE_NAME'),
                 "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
+                "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
+                "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
+                "MEMBERSHIP_PLANS" => $membership_plans_prepared,
+                "PASSWORD_PURPOSE" => Settings::get("PASSWORD_PURPOSE"),
+                "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
+                "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             ];
-            ?>
+?>
+            <style>
+                :root {
+                    --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
+                    --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
+                }
+            </style>
             <script type="application/json" id="env">
                 <?php echo json_encode($environment); ?>
             </script>
             <script src="https://js.chargebee.com/v2/chargebee.js"></script>
-            <div class="mt-4" id="join-form"></div>
-            <?php
+            <div class="ck-join-form mt-4"></div>
+        <?php
         });
 
         /** @var Block_Container $block_container */
@@ -116,7 +141,7 @@ class Blocks
                 );
             }
             $headerClass = "jumbotron jumbotron-fluid full-bleed bg-black bg-size-cover bg-position-center";
-            ?>
+        ?>
             <div class="<?= $headerClass ?>" style="background-image: <?= $background ?>">
                 <div class="container">
                     <h1 class="text-xl text-white text-no-transform">
@@ -133,7 +158,7 @@ class Blocks
                 </div>
             </div>
 
-            <?php
+        <?php
         });
 
         /** @var Association_Field $join_page_association */
@@ -154,7 +179,7 @@ class Blocks
                 $join_page_association
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
-            ?>
+        ?>
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <p><?php echo esc_html($fields['ready']); ?></p>
@@ -173,7 +198,7 @@ class Blocks
                     </form>
                 </div>
             </div>
-            <?php
+        <?php
         });
 
         /** @var Complex_Field $membership_benefits_field */
@@ -191,7 +216,7 @@ class Blocks
                 $membership_benefits_field
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
-            ?>
+        ?>
             <div class="row">
                 <div class="col-lg-6">
                     <div class="text-xl mb-45px"><?php echo esc_html($fields['title']); ?></div>
@@ -226,7 +251,7 @@ class Blocks
                     </div>
                 </div>
             </div>
-            <?php
+<?php
         });
     }
 }

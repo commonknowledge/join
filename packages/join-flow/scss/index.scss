@@ -1,7 +1,9 @@
 /* Wrap all styles within .form-content to restrict
    them to the join block */
 @import "theme";
-.form-content {
+
+// TODO: make this class name specific to the join block
+.ck-join-form {
     @include text-body;
 
     @import "bootstrap";
@@ -11,4 +13,10 @@
     @import "components/forms.scss";
     @import "components/progress.scss";
     @import "components/page.scss";
+
+    max-width: none !important;
+
+    @include media-breakpoint-up(sm) {
+        display: flex;
+    }
 }

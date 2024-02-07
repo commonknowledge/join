@@ -71,47 +71,49 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </FormItem>
       </section>
 
-      <section className="form-section">
-        <fieldset>
-          <legend>
-            <h2>Date of birth</h2>
-          </legend>
+      {getEnv('COLLECT_DATE_OF_BIRTH') ? (
+        <section className="form-section">
+          <fieldset>
+            <legend>
+              <h2>Date of birth</h2>
+            </legend>
 
-          <p className="text-secondary">
-            We collect every member's date of birth because our membership types
-            are based on age.
-          </p>
-          <Row>
-            <Col>
-              <FormItem label="Day" name="dobDay" form={form} required>
-                <Form.Control
-                  autoComplete="bday-day"
-                  placeholder="DD"
-                  maxLength={2}
-                />
-              </FormItem>
-            </Col>
-            <Col>
-              <FormItem label="Month" name="dobMonth" form={form} required>
-                <Form.Control
-                  autoComplete="bday-month"
-                  placeholder="MM"
-                  maxLength={2}
-                />
-              </FormItem>
-            </Col>
-            <Col>
-              <FormItem label="Year" name="dobYear" form={form} required>
-                <Form.Control
-                  autoComplete="bday-year"
-                  placeholder="YYYY"
-                  maxLength={4}
-                />
-              </FormItem>
-            </Col>
-          </Row>
-        </fieldset>
-      </section>
+            <p className="text-secondary">
+              We collect every member's date of birth because our membership types
+              are based on age.
+            </p>
+            <Row>
+              <Col>
+                <FormItem label="Day" name="dobDay" form={form} required>
+                  <Form.Control
+                    autoComplete="bday-day"
+                    placeholder="DD"
+                    maxLength={2}
+                  />
+                </FormItem>
+              </Col>
+              <Col>
+                <FormItem label="Month" name="dobMonth" form={form} required>
+                  <Form.Control
+                    autoComplete="bday-month"
+                    placeholder="MM"
+                    maxLength={2}
+                  />
+                </FormItem>
+              </Col>
+              <Col>
+                <FormItem label="Year" name="dobYear" form={form} required>
+                  <Form.Control
+                    autoComplete="bday-year"
+                    placeholder="YYYY"
+                    maxLength={4}
+                  />
+                </FormItem>
+              </Col>
+            </Row>
+          </fieldset>
+        </section>
+      ) : null}
 
       <section className="form-section">
         <h2>Home address</h2>
@@ -211,23 +213,32 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <FormItem label="Phone number" name="phoneNumber" form={form} required>
           <Form.Control autoComplete="tel-national" type="tel" />
         </FormItem>
-      </section>
-
-      <section className="form-section">
-        <h2>Password</h2>
-        {passwordPurpose ? (
-          <p className="text-secondary">
-            {passwordPurpose}
-          </p>
-        ) : ''}
         <p className="text-secondary">
-          Your password should contain at least one number, one uppercase letter
-          and one special character. It must be at least 8 characters long.
+          How would you like us to contact you?
         </p>
-        <FormItem label="Password" name="password" form={form} required>
-          <Form.Control type="password" />
+        <FormItem form={form} name="contactByEmail">
+          <Form.Check label="Email" />
+        </FormItem>
+        <FormItem form={form} name="contactByName">
+          <Form.Check label="Phone" />
         </FormItem>
       </section>
+
+      {getEnv('CREATE_AUTH0_ACCOUNT') ? (
+        <section className="form-section">
+          <h2>Password</h2>
+          {passwordPurpose ? (
+            <p className="text-secondary" dangerouslySetInnerHTML={{ __html: String(passwordPurpose) }}></p>
+          ) : ''}
+          <p className="text-secondary">
+            Your password should contain at least one number, one uppercase letter
+            and one special character. It must be at least 8 characters long.
+          </p>
+          <FormItem label="Password" name="password" form={form} required>
+            <Form.Control type="password" />
+          </FormItem>
+        </section>
+      ) : null}
 
       <section className="form-section">
         <h2>How did you hear about us?</h2>
@@ -235,8 +246,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <Form.Control as="select" custom className="form-control">
             <option>Choose an option</option>
 
-            <option>A Green Party representative</option>
-            <option>An email from The Green Party</option>
+            <option>From another member</option>
+            <option>An email from us</option>
             <option>Social media</option>
             <option>Press/radio</option>
             <option>TV</option>

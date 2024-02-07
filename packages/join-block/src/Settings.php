@@ -4,20 +4,45 @@ namespace CommonKnowledge\JoinBlock;
 
 use Carbon_Fields\Container;
 use Carbon_Fields\Field;
+use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Select_Field;
 
 class Settings
 {
     public static function init()
     {
-        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment'));
         /** @var Select_Field $gc_environment_select */
+        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment'));
         $gc_environment_select->set_options(array(
             'Sandbox' => 'sandbox',
             'Live' => 'live',
         ));
+        /** @var Complex_Field $membership_plans */
+        $membership_plans = Field::make('complex', 'membership_plans');
+        $membership_plans->add_fields([
+            Field::make('text', 'label', "Name")->set_required(true),
+            Field::make('text', 'price_label', "Price")->set_required(true)->set_help_text("E.G. £10 per month"),
+            Field::make('text', 'description'),
+        ]);
         Container::make('theme_options', 'CK Join Block')
             ->add_fields(array(
+                Field::make('separator', 'features', 'Features'),
+                Field::make('checkbox', 'collect_date_of_birth'),
+                Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'create_auth0_account'),
+                Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
+                Field::make('checkbox', 'use_chargebee'),
+                Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
+                $membership_plans,
+                Field::make('separator', 'theme', 'Theme'),
+                Field::make('color', 'theme_primary_color', 'Primary Color')
+                    ->set_help_text("The color of interactive elements, e.g. buttons"),
+                Field::make('color', 'theme_gray_color', 'Gray Color')
+                    ->set_default_value('#dfdcda')
+                    ->set_help_text("The color of background elements"),
+                Field::make('separator', 'copy', 'Copy'),
+                Field::make('rich_text', 'password_purpose')
+                    ->set_help_text("E.G. Use this password to log in at https://example.com"),
                 Field::make('separator', 'chargebee', 'Chargebee'),
                 Field::make('text', 'chargebee_site_name'),
                 Field::make('text', 'chargebee_api_key'),

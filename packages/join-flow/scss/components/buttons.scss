@@ -2,6 +2,10 @@
   border: none !important;
   background-color: $primary !important;
   color: $white;
+
+  &:hover,&:focus {
+    background-color: $primary-focus !important;
+  }
 }
 
 .btn {
