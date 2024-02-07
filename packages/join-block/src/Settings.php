@@ -34,6 +34,12 @@ class Settings
                 Field::make('checkbox', 'use_chargebee'),
                 Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
                 $membership_plans,
+                Field::make('separator', 'theme', 'Theme'),
+                Field::make('color', 'theme_primary_color', 'Primary Color')
+                    ->set_help_text("The color of interactive elements, e.g. buttons"),
+                Field::make('color', 'theme_gray_color', 'Gray Color')
+                    ->set_default_value('#dfdcda')
+                    ->set_help_text("The color of background elements"),
                 Field::make('separator', 'copy', 'Copy'),
                 Field::make('rich_text', 'password_purpose')
                     ->set_help_text("E.G. Use this password to log in at https://example.com"),

@@ -2,7 +2,6 @@ import { parse } from "querystring";
 
 import * as uuid from "uuid";
 import React, { FC, useCallback, useState } from "react";
-import { TransitionGroup, CSSTransition } from "react-transition-group";
 
 import { DetailsPage } from "./pages/details.page";
 import { PaymentPage } from "./pages/payment-method.page";
@@ -72,7 +71,7 @@ const App = () => {
       } else if (router.state.stage === "confirm") {
         window.location.href = getEnv('SUCCESS_REDIRECT') as string || "/";
       }
-      
+
       if (nextStage === "donation" && !includeDonationPage) {
         nextStage = "payment-method"
       }
@@ -80,7 +79,7 @@ const App = () => {
       if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
         nextStage = "payment-details"
       }
-    
+
       router.setState({ stage: nextStage });
     },
     [router, data]
@@ -88,46 +87,43 @@ const App = () => {
 
   return (
     <RouterContext.Provider value={router}>
-      <div className="form-content">
-        <div className="progress-steps px-2 w-100">
+      <div className="progress-steps">
+        <h6>Join Us</h6>
+        <ul className="p-0 list-unstyled">
           {stages.map(
             (stage, i) =>
               stage.breadcrumb && (
-                <span
+                <li
                   key={stage.id}
-                  className={`progress-text ${
-                    i > currentIndex ? "text-muted" : ""
-                  }`}
+                  className={`progress-step progress-step--${i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'next'}`}
                 >
-                  {stage.label}
-                </span>
+                  <div>
+                    <span className="progress-circle"></span>
+                    <span className="progress-text">
+                      {stage.label}
+                    </span>
+                  </div>
+                  <div className="progress-line"></div>
+                </li>
               )
           )}
-        </div>
+        </ul>
       </div>
 
-      <TransitionGroup component={null}>
-        <CSSTransition
-          key={router.state.stage}
-          classNames="progress-stage-content"
-          timeout={300}
-        >
-          <Stager
-            stage={router.state.stage}
-            data={data}
-            onStageCompleted={handlePageCompleted}
-            components={{
-              "enter-details": DetailsPage,
-              plan: PlanPage,
-              donation: DonationPage,
-              "payment-details": PaymentDetailsPage,
-              "payment-method": PaymentPage,
-              confirm: ConfirmationPage
-            }}
-            fallback={<Fail router={router} />}
-          />
-        </CSSTransition>
-      </TransitionGroup>
+      <Stager
+        stage={router.state.stage}
+        data={data}
+        onStageCompleted={handlePageCompleted}
+        components={{
+          "enter-details": DetailsPage,
+          plan: PlanPage,
+          donation: DonationPage,
+          "payment-details": PaymentDetailsPage,
+          "payment-method": PaymentPage,
+          confirm: ConfirmationPage
+        }}
+        fallback={<Fail router={router} />}
+      />
     </RouterContext.Provider>
   );
 };
@@ -138,7 +134,7 @@ const getInitialState = (): FormSchema => {
   const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[]
   const paymentMethods = getPaymentMethods();
   const getDefaultState = () => ({
-    membership: membershipPlans.length ? membershipPlans[0] : "standard",
+    membership: membershipPlans.length ? membershipPlans[0].value : "standard",
     paymentMethod: paymentMethods.length ? paymentMethods[0] : "directDebit"
   });
 

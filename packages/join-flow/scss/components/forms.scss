@@ -39,12 +39,15 @@
 .form-content {
   @include media-breakpoint-up(sm) {
     margin: 0 auto;
-    max-width: 585px;
+    max-width: calc(585px + 2rem);
+    padding: 0 1rem;
   }
 }
 
 .form-section {
-  margin-top: $space-5;
+  &:not(:first-child) {
+    margin-top: $space-5;
+  }
 
   > *:not(:first-child) {
     margin-top: $space-3;

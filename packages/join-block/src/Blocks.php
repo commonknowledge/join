@@ -90,7 +90,6 @@ class Blocks
                     "description" => $plan["description"]
                 ];
             }, $membership_plans);
-            $a = 3;
 
             $environment = [
                 'HOME_URL' => $homeUrl,
@@ -107,11 +106,17 @@ class Blocks
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             ];
 ?>
+            <style>
+                :root {
+                    --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
+                    --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
+                }
+            </style>
             <script type="application/json" id="env">
                 <?php echo json_encode($environment); ?>
             </script>
             <script src="https://js.chargebee.com/v2/chargebee.js"></script>
-            <div class="mt-4" id="join-form"></div>
+            <div class="ck-join-form mt-4"></div>
         <?php
         });
 

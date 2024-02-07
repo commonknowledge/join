@@ -2,18 +2,13 @@
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins/_breakpoints";
 
-$yiq-contrasted-threshold: 100;
-
 // Colors
 $black: var(--wp--preset--color--black, #212529);
-$gray: #22262a;
-$light-gray: #f8f8f8;
+$gray: var(--ck-join-form-gray-color, --wp--preset--color--cyan-bluish-gray, #dfdcda);
 
-$primary: var(--wp--preset--color--accent, #00643b);
-$primary-focus: color-mix(in lch, var(--color-primary) 90%, white);
+$primary: var(--ck-join-form-primary-color, --wp--preset--color--accent, #00643b);
+$primary-focus: color-mix(in lch, $primary 75%, white);
 $danger: var(--wp--preset--color--accent-5, #e3220c);
-$secondary: #7a7c7f;
-$body-bg: var(--wp--preset--color--base, #f7f6f4);
 
 $link-color: $primary;
 $link-hover-color: $primary-focus;
@@ -70,7 +65,7 @@ $font-regular: var(--wp--preset--font-family--body, sans-serif);
   font-family: $font-regular;
   font-style: normal;
   font-weight: normal;
-  font-size: 21.33px;
+  font-size: 18px;
   line-height: 130%;
 }
 
