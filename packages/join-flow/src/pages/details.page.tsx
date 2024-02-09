@@ -17,6 +17,18 @@ const addressLookupFormSchema = yup.object().shape({
 });
 
 const passwordPurpose = getEnv('PASSWORD_PURPOSE');
+const privacyCopy = getEnv('PRIVACY_COPY');
+
+const sortedCountries = isoCountries.sort((a, b) => {
+  // Prioritize The United Kingdom
+  if (a.alpha2 === "GB") {
+    return -1
+  }
+  if (b.alpha2 === "GB") {
+    return 1
+  }
+  return a.name < b.name ? -1 : 1
+})
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -191,7 +203,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
                 custom
                 className="form-control"
               >
-                {isoCountries.map((c) => (
+                {sortedCountries.map((c) => (
                   <option key={c.numeric} value={c.alpha2}>
                     {c.name}
                   </option>
@@ -257,36 +269,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <section className="form-section">
-        <h2>Code of Conduct</h2>
-        <p className="text-secondary">
-          I agree to adhere to the Green Party members{" "}
-          <a href="https://www.greenparty.org.uk/safeguarding/commitment.html">
-            Safeguarding Commitment
-          </a>{" "}
-          and{" "}
-          <a href="https://www.greenparty.org.uk/code-of-conduct.html">
-            Code of Conduct
-          </a>
-          .
-        </p>
-        <FormItem form={form} name="codeOfConductionConfirmed">
-          <Form.Check label="I Agree" />
-        </FormItem>
-      </section>
-
-      <section className="form-section">
-        <h2>Your privacy</h2>
-        <p className="fineprint">
-          The Green Party of England and Wales is committed to protecting your
-          privacy, including online, and in the transparent use of any online
-          information you give us in accordance with our legal obligations.
-        </p>
-        <p className="fineprint">
-          Our Privacy Policy sets out in detail the purposes for which we
-          process your personal data, who we share it with, what rights you have
-          in relation to that data and everything else we think it's important
-          for you to know.
-        </p>
+        <div dangerouslySetInnerHTML={{ __html: privacyCopy }}></div>
       </section>
 
       <ContinueButton />

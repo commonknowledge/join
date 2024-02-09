@@ -1,6 +1,94 @@
-body {
-  @include text-body;
+@mixin text-xl {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 67.34px;
+  line-height: 90%;
 }
+
+@mixin text-lg {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 44px;
+  line-height: 90%;
+
+  @include media-breakpoint-down(sm) {
+    font-size: 32px;
+  }
+}
+
+@mixin text-md {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 32px;
+  line-height: 110%;
+}
+
+@mixin text-sm {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-sm-bold {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 28.43px;
+  line-height: 120%;
+}
+
+@mixin text-xs {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 18px;
+  line-height: 130%;
+}
+
+@mixin text-xs-bold {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 21.33px;
+  line-height: 130%;
+}
+
+@mixin text-xxs {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxs-bold {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 120%;
+}
+
+@mixin text-xxxs {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 12px;
+  line-height: 120%;
+}
+
+@mixin text-body {
+  @include text-xxs;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xs;
+  }
+}
+
+@mixin text-body-bold {
+  @include text-xxs-bold;
+
+  @include media-breakpoint-up(sm) {
+    @include text-xs-bold;
+  }
+}
+
+@include text-body();
 
 h2 {
   @include text-sm-bold;
@@ -45,8 +133,4 @@ h2 {
 
 li:not(:first-child) {
   margin-top: $space-3;
-}
-
-.font-family-heading {
-  font-family: $font-heading !important;
 }

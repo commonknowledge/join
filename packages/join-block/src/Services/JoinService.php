@@ -9,6 +9,7 @@ use ChargeBee\ChargeBee\Exceptions\PaymentException;
 use ChargeBee\ChargeBee\Models\Customer;
 use ChargeBee\ChargeBee\Models\Subscription;
 use CommonKnowledge\JoinBlock\Exceptions\JoinBlockException;
+use CommonKnowledge\JoinBlock\Settings;
 
 class JoinService
 {
@@ -25,6 +26,11 @@ class JoinService
 
         $joinBlockLog->info('Beginning join process');
 
+        $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+
+        $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
+        $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+
         $billingAddress = [
             "firstName" => $data['firstName'],
             "lastName" => $data['lastName'],
@@ -36,12 +42,41 @@ class JoinService
             "country" => $data['addressCountry']
         ];
 
-        $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+        $customerResult = null;
 
-        $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
-        $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+        $useChargebee = Settings::get('USE_CHARGEBEE');
+        if ($useChargebee) {
+            $customerResult = self::handleChargebee($data, $billingAddress);
+        }
 
-        $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
+        if (Settings::get('USE_GOCARDLESS')) {
+            $mandate = self::handleGocardless($data);
+            if ($mandate && $useChargebee) {
+                $customerResult = self::createDirectDebitChargebeeCustomer($data, $billingAddress, $mandate);
+            }
+        }
+
+        $subscriptionPlanId = '';
+        if ($useChargebee && $customerResult) {
+            $customer = $customerResult->customer();
+            $subscriptionPlanId = self::handleChargebeeSubscription($data, $customer);
+        }
+
+        if (Settings::get("CREATE_AUTH0_ACCOUNT")) {
+            try {
+                Auth0Service::createAuth0User($data, $subscriptionPlanId, $customer->id);
+            } catch (\Exception $expection) {
+                $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
+                throw $expection;
+            }
+        }
+
+        return $customerResult;
+    }
+
+    private static function handleChargebee($data, $billingAddress)
+    {
+        global $joinBlockLog;
 
         // Before we create a customer, we check if they exist in Chargebee
         $joinBlockLog->info("Checking Chargebee for existing customers with email address " . $data['email']);
@@ -129,7 +164,17 @@ class JoinService
             }
 
             $joinBlockLog->info('Credit or debit card customer creation via Chargebee successful');
-        } elseif ($data['paymentMethod'] === 'directDebit') {
+        }
+        return $customerResult;
+    }
+
+    private static function handleGocardless($data)
+    {
+        global $joinBlockLog;
+
+        $mandate = null;
+
+        if ($data['paymentMethod'] === 'directDebit') {
             $joinBlockLog->info('Creating Direct Debit mandate via GoCardless');
 
             /*
@@ -185,43 +230,61 @@ class JoinService
                 throw new \Error('GoCardless Direct Debit mandate creation failed');
             }
 
-            $joinBlockLog->info('Direct Debit mandate via GoCardless successful, creating Chargebee customer');
-
-            $directDebitChargebeeCustomer = [
-                "firstName" => $data['firstName'],
-                "lastName" => $data['lastName'],
-                "email" => $data['email'],
-                "allow_direct_debit" => true,
-                "locale" => "en-GB",
-                "phone" => $data['phoneNumber'],
-                "payment_method" => [
-                    "type" => "direct_debit",
-                    "reference_id" => $mandate->id,
-                ],
-                "billingAddress" => $billingAddress,
-                "cf_birthdate" => $formattedDateOfBirth,
-                "cf_safeguard_code_of_conduct" => $data['codeOfConductionConfirmed']
-            ];
-
-            if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
-                $directDebitChargebeeCustomer['cf_how_did_you_hear_about_us'] = $data['howDidYouHearAboutUs'];
-                $joinBlockLog->info(
-                    'Customer has given how did you hear about us details: ' .
-                        $data['howDidYouHearAboutUs']
-                );
-            } else {
-                $joinBlockLog->info('Customer has not given how did you hear about us details');
-            }
-
-            try {
-                $customerResult = Customer::create($directDebitChargebeeCustomer);
-            } catch (\Exception $exception) {
-                $joinBlockLog->error('Chargebee customer creation failed', ['exception' => $exception]);
-                throw new \Error('Chargebee customer creation failed');
-            }
+            $joinBlockLog->info('Direct Debit mandate via GoCardless successful');
         }
 
-        $customer = $customerResult->customer();
+        return $mandate;
+    }
+
+    private static function createDirectDebitChargebeeCustomer($data, $billingAddress, $mandate)
+    {
+        global $joinBlockLog;
+        $joinBlockLog->info('Creating Direct Debit Chargebee Customer');
+
+        $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
+        $directDebitChargebeeCustomer = [
+            "firstName" => $data['firstName'],
+            "lastName" => $data['lastName'],
+            "email" => $data['email'],
+            "allow_direct_debit" => true,
+            "locale" => "en-GB",
+            "phone" => $data['phoneNumber'],
+            "payment_method" => [
+                "type" => "direct_debit",
+                "reference_id" => $mandate->id,
+            ],
+            "billingAddress" => $billingAddress,
+            "cf_birthdate" => $formattedDateOfBirth,
+            "cf_safeguard_code_of_conduct" => $data['codeOfConductionConfirmed']
+        ];
+
+        if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
+            $directDebitChargebeeCustomer['cf_how_did_you_hear_about_us'] = $data['howDidYouHearAboutUs'];
+            $joinBlockLog->info(
+                'Customer has given how did you hear about us details: ' .
+                    $data['howDidYouHearAboutUs']
+            );
+        } else {
+            $joinBlockLog->info('Customer has not given how did you hear about us details');
+        }
+
+        try {
+            $customerResult = Customer::create($directDebitChargebeeCustomer);
+        } catch (\Exception $exception) {
+            $joinBlockLog->error('Chargebee customer creation failed. Customer attempting charge with direct debit', ['exception' => $exception]);
+            throw new \Error('Chargebee customer creation failed');
+        }
+
+        return $customerResult;
+    }
+
+    /**
+     * Creates the Chargebee subscription and returns the Plan ID so it can
+     * be stored in Auth0
+     */
+    private static function handleChargebeeSubscription($data, $customer)
+    {
+        global $joinBlockLog;
 
         $chargebeeSubscriptionPayload = [];
         $chargebeeSubscriptionPayload['addons'] = [];
@@ -276,11 +339,11 @@ class JoinService
             $joinBlockLog->error('Chargebee subscription failed on payment', ['data' => $exception->getJsonObject()]);
 
             /*
-            Unfortunately, Chargebee errors lack clear error codes, so we have to use pattern matching to
-            establish something unambigious.
+                Unfortunately, Chargebee errors lack clear error codes, so we have to use pattern matching to
+                establish something unambigious.
 
-            See https://apidocs.chargebee.com/docs/api?lang=php#error_codes_list for further details.
-        */
+                See https://apidocs.chargebee.com/docs/api?lang=php#error_codes_list for further details.
+            */
             if (strpos($exception->getMessage(), 'Error message: (3001) Insufficient funds.') !== false) {
                 throw new \Error('Chargebee subscription failed. Insufficient funds on charging account', 2);
             }
@@ -309,14 +372,6 @@ class JoinService
         }
 
         $joinBlockLog->info('Chargebee subscription successful');
-
-        try {
-            Auth0Service::createAuth0User($data, $chargebeeSubscriptionPayload['planId'], $customer->id);
-        } catch (\Exception $expection) {
-            $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
-            throw $expection;
-        }
-
-        return $customerResult;
+        return $chargebeeSubscriptionPayload['planId'] ?? '';
     }
 }

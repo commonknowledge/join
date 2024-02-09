@@ -37,10 +37,12 @@
 }
 
 .form-content {
+  padding-bottom: 1rem;
+
   @include media-breakpoint-up(sm) {
     margin: 0 auto;
     max-width: calc(585px + 2rem);
-    padding: 0 1rem;
+    padding: 0 1rem 1rem;
   }
 }
 

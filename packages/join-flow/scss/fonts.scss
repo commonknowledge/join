@@ -1,0 +1,28 @@
+h2 {
+    font-family: $font-regular;
+}
+
+.text-md {
+    font-family: $font-regular;
+}
+
+.text-xs {
+    font-family: $font-regular;
+}
+
+.text-xxs {
+    font-family: $font-regular;
+}
+
+.text-xl {
+    font-family: $font-heading;
+}
+
+.text-lg,
+.text-l {
+    font-family: $font-heading;
+}
+
+.font-family-heading {
+    font-family: $font-heading !important;
+}
