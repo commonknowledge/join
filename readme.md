@@ -1,4 +1,4 @@
-# The Green Party of England and Wales Join Flow
+# Common Knowledge Join Flow
 
 ## Overview
 
@@ -10,32 +10,23 @@ This is a monorepo, containing 2 packages:
 
 ## How does the Join Flow work?
 
-We want to make the ability to join the Green Party widely available.
+We want to make the ability to join organisations widely available.
 
-To do so, it is useful for the ability to join to be distributed across the Green Party's WordPress network and neatly dropped into any page or post. Therefore this join flow is written as a WordPress block, that launches a form flow written in React.
-
-This also allows the Green Party to create highly situational and bespoke join pages on the fly, by just throwing together a WordPress page.
-
-Hopefully this will allow The Green Party to be highly reactive to ongoing political events and take the opportunity to gain members when the moment arrives.
+To do so, it is useful for the ability to join to be neatly dropped into any page or post. Therefore this join flow is written as a WordPress block, that launches a form flow written in React.
 
 The general user flow, including technical detail is:
 
-1. User visits a WordPress page with the "Join Form" block on it. This prompts the user for their email address and encourages them to join the Green Party.
+1. User visits a WordPress page with the "Join Form" block on it. This prompts the user for their email address and encourages them to join the organisation.
 2. When they enter their email address and press the button they are directed to another page with the block "Join Form Fullscreen Takeover" on it. This is a React application that takes them through the join process and validates their details client side.
-3. When the user is done with the form, the React application sends a POST request is sent to an special endpoint in the [WordPress REST API](https://developer.wordpress.org/rest-api/). This is setup by a WordPress plugin, which also adds the above mentioned blocks to the WordPress site. This handles the server side logic needed to make someone a member of the Green Party. It creates them on Chargebee, sets up payment and then creates their user on Auth0 so they can login to the Green Party digital estate.
+3. When the user is done with the form, the React application sends a POST request is sent to an special endpoint in the [WordPress REST API](https://developer.wordpress.org/rest-api/). This is setup by a WordPress plugin, which also adds the above mentioned blocks to the WordPress site. This handles the server side logic needed to make someone a member of the organisation. It creates them on Chargebee, sets up payment and then creates their user on Auth0.
 4. On success, the React application is sent a JSON response. The user is redirected to a success page. This page can be any page on the WordPress site. This is setup when the "Join Form Fullscreen Takeover" block is setup.
 5. All done!
 
 ## WordPress Blocks included
 
-These [WordPress blocks](https://wordpress.org/support/article/blocks/) form the basis of the current main way of [joining The Green Party](https://join.greenparty.org.uk/).
-
 They are designed to have the copy changed - nothing is hard coded. This is intended to allow the copy to be iterated to improve the performance of this landing page.
 
 - **Join Form Fullscreen Takeover** The whole join flow experience. Add this to one page and you are ready to allow someone to join. The React application takes over the whole page, so the rest of the page will be ignored. Also works on posts.
-- **Join Header** A large image and a slogan to encourage someone to join the Green Party. As seen on the top of the current join page.
-- **Join Form** An email address field which lets someone enter their email address, press a button and launch the join flow. When they arrive at the join flow, their email address will be automatically filled in. As seen on the middle of the current join page.
-- **Membership Benefits** A listing of membership benefits. You can add as many as you like and an icon to illustrate them. As seen on the bottom of the current join page.
 
 ## Build and Deployment Workflow
 

@@ -19,8 +19,19 @@ use Monolog\Handler\ErrorLogHandler;
 use Monolog\Processor\WebProcessor;
 use GuzzleHttp\Exception\ClientException;
 
+$joinBlockLog = new Logger('join-block');
+$joinBlockLog->pushHandler(new ErrorLogHandler());
+$joinBlockLog->pushProcessor(new WebProcessor());
+
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+
+try {
+    $dotenv->load();
+} catch (\Throwable $e) {
+    // Ignore missing .env as all settings are also available in the
+    // plugin settings page
+    $joinBlockLog->debug("Could not load environment variables from .env file: " . $e->getMessage());
+}
 
 add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
@@ -31,15 +42,11 @@ add_action('carbon_fields_register_fields', function () {
     Blocks::init();
 });
 
-
-$joinBlockLog = new Logger('join-block');
-$joinBlockLog->pushHandler(new ErrorLogHandler());
-$joinBlockLog->pushProcessor(new WebProcessor());
-
-if ($_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] && $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] !== '') {
+$teamsWebhook = $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] ?? null;
+if ($teamsWebhook) {
     $joinBlockLog->pushHandler(
         new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler(
-            $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'],
+            $teamsWebhook,
             \Monolog\Logger::ERROR
         )
     );

@@ -6,8 +6,10 @@ interface StaticEnv {
     CREATE_AUTH0_ACCOUNT: boolean;
     MEMBERSHIP_PLANS: object[];
     ORGANISATION_NAME: string;
+    ORGANISATION_BANK_NAME: string;
     ORGANISATION_EMAIL_ADDRESS: string;
     PASSWORD_PURPOSE: string;
+    PRIVACY_COPY: string;
     POSTCODE_API_KEY: string;
     SUCCESS_REDIRECT: string;
     USE_CHARGEBEE: boolean;
@@ -30,8 +32,10 @@ const staticEnv: StaticEnv = {
     CREATE_AUTH0_ACCOUNT: parseBooleanEnvVar("REACT_APP_CREATE_AUTH0_ACCOUNT"),
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
     ORGANISATION_NAME: process.env.REACT_APP_ORGANISATION_NAME || '',
+    ORGANISATION_BANK_NAME: process.env.REACT_APP_ORGANISATION_BANK_NAME || '',
     ORGANISATION_EMAIL_ADDRESS: process.env.REACT_APP_ORGANISATION_EMAIL_ADDRESS || '',
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
+    PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     POSTCODE_API_KEY: process.env.REACT_APP_POSTCODE_API_KEY || '',
     SUCCESS_REDIRECT: '/',
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),

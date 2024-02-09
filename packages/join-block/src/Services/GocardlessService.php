@@ -8,7 +8,32 @@ class GocardlessService
 {
     public static function createCustomerMandate($data)
     {
+        global $joinBlockLog;
         $client = self::getClient();
+
+        // Catch case when the user has managed to submit twice in succession
+        // (should be impossible but you never know)
+        $fiveMinsAgo = gmdate('Y-m-d\TH:i:s\Z', strtotime('-5 minutes'));
+        $customers = $client->customers()->list([
+            "params" => ["created_at[gt]" => $fiveMinsAgo]
+        ]);
+
+        $existingCustomer = null;
+        foreach ($customers->records as $customer) {
+            if ($customer->email === $data["email"]) {
+                $existingCustomer = $customer;
+            }
+        }
+
+        if ($existingCustomer) {
+            $mandates = $client->mandates()->list([
+                "params" => ["customer" => $customer->id]
+            ]);
+            if (count($mandates->records) > 0) {
+                $joinBlockLog->info("Found existing mandate for " . $data['email']);
+                return $mandates->records[0];
+            }
+        }
 
         $customer = $client->customers()->create([
             "params" => [

@@ -14,6 +14,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   onCompleted
 }) => {
   const organisationName =  getEnv('ORGANISATION_NAME');
+  const organisationBankName =  getEnv('ORGANISATION_BANK_NAME');
   const organisationEmailAddress = getEnv('ORGANISATION_EMAIL_ADDRESS');
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
   const chargebeeSiteName =  getEnv('CHARGEBEE_SITE_NAME');
@@ -50,12 +51,11 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
           bank account.
         </p>
         <p>
-          On your bank statement the charge will appear as "GC RE{" "}
-          {organisationName}".
+          On your bank statement the charge will appear as "{organisationBankName}".
         </p>
         <p className="fineprint">
           You can contact the membership team of {organisationName} at{" "}
-          <a href={organisationMailToLink}>{organisationEmailAddress}</a>
+          <a href={organisationMailToLink}>{organisationEmailAddress}</a>.
         </p>
       </section>
     );
@@ -94,7 +94,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
                 <ul>
                   {errorInformaton.data.fields.map((fieldInformation: any) => (
                     <li>
-                      {upperFirst(fieldInformation.field)}{" "}
+                      {upperFirst(fieldInformation.field).replace(/_/g, ' ')}{" "}
                       {fieldInformation.message}
                     </li>
                   ))}

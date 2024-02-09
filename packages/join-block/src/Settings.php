@@ -7,6 +7,8 @@ use Carbon_Fields\Field;
 use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Select_Field;
 
+const CONTAINER_ID = 'ck_join_flow';
+
 class Settings
 {
     public static function init()
@@ -23,8 +25,8 @@ class Settings
             Field::make('text', 'label', "Name")->set_required(true),
             Field::make('text', 'price_label', "Price")->set_required(true)->set_help_text("E.G. £10 per month"),
             Field::make('text', 'description'),
-        ]);
-        Container::make('theme_options', 'CK Join Block')
+        ])->set_min(1)->set_required(true);
+        Container::make('theme_options', CONTAINER_ID, 'CK Join Block')
             ->add_fields(array(
                 Field::make('separator', 'features', 'Features'),
                 Field::make('checkbox', 'collect_date_of_birth'),
@@ -40,9 +42,18 @@ class Settings
                 Field::make('color', 'theme_gray_color', 'Gray Color')
                     ->set_default_value('#dfdcda')
                     ->set_help_text("The color of background elements"),
+                Field::make('textarea', 'custom_css'),
                 Field::make('separator', 'copy', 'Copy'),
+                Field::make('text', 'organisation_name')->set_help_text("The name that will appear on the member's bank statement")
+                    ->set_required(true),
+                Field::make('text', 'organisation_bank_name')->set_help_text("The name that will appear on the member's bank statement")
+                    ->set_required(true),
+                Field::make('text', 'organisation_email_address')->set_help_text("The support email for members")
+                    ->set_required(true),
                 Field::make('rich_text', 'password_purpose')
                     ->set_help_text("E.G. Use this password to log in at https://example.com"),
+                Field::make('rich_text', 'privacy_copy')
+                    ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
                 Field::make('separator', 'chargebee', 'Chargebee'),
                 Field::make('text', 'chargebee_site_name'),
                 Field::make('text', 'chargebee_api_key'),
@@ -66,7 +77,7 @@ class Settings
     public static function get($key)
     {
         $carbon_key = strtolower($key);
-        $val = carbon_get_theme_option($carbon_key);
+        $val = carbon_get_theme_option($carbon_key, "carbon_fields_container_" . CONTAINER_ID);
         if ($val) {
             return $val;
         }

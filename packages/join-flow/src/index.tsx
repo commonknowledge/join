@@ -11,20 +11,29 @@ import { get as getEnv } from "./env";
 
 const joinFormElement = document.querySelector(".ck-join-form");
 
-if (!joinFormElement) {
-  console.error(
-    'Could not find element with class "ck-join-form" so cannot load the join form'
-  );
-} else {
-  if (window.Chargebee) {
+const init = () => {
+  if (!joinFormElement) {
+    console.info(
+      'Could not find element with class "ck-join-form" so cannot load the join form'
+    );
+    return;
+  }
+
+  if (getEnv('USE_CHARGEBEE')) {
+    if (!window.Chargebee) {
+      console.error(
+        "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result. The WordPress Join Form block will include this library."
+      );
+      return
+    }
+    if (!getEnv('CHARGEBEE_SITE_NAME') || !getEnv('CHARGEBEE_API_PUBLISHABLE_KEY')) {
+      console.error("Chargebee credentials are missing.");
+      return
+    }
     window.Chargebee.init({
       site: getEnv('CHARGEBEE_SITE_NAME'),
       publishableKey: getEnv('CHARGEBEE_API_PUBLISHABLE_KEY'),
     });
-  } else {
-    console.error(
-      "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result. The WordPress Join Form block will include this library."
-    );
   }
 
   ReactDOM.render(
@@ -34,3 +43,5 @@ if (!joinFormElement) {
     joinFormElement
   );
 }
+
+init()

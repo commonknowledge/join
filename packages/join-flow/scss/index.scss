@@ -4,8 +4,6 @@
 
 // TODO: make this class name specific to the join block
 .ck-join-form {
-    @include text-body;
-
     @import "bootstrap";
     @import "util.scss";
     @import "typography.scss";
@@ -19,4 +17,8 @@
     @include media-breakpoint-up(sm) {
         display: flex;
     }
+}
+
+.ck-join-form.custom-fonts {
+    @import "fonts.scss";
 }

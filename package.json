@@ -1,6 +1,6 @@
 {
-  "name": "ukgreens",
-  "version": "1.0.1",
+  "name": "ck-join-flow",
+  "version": "2.0.0",
   "private": true,
   "main": "index.js",
   "scripts": {

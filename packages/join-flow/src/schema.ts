@@ -118,10 +118,7 @@ export const DetailsSchema = object({
     .phone("GB", false, "A valid phone number is required")
     .required(),
   contactByEmail: boolean(),
-  contactByPhone: boolean(),
-  codeOfConductionConfirmed: boolean()
-    .oneOf([true], "You must accept the code of conduct")
-    .required()
+  contactByPhone: boolean()
 }).required();
 
 export const PlanSchema = object({
