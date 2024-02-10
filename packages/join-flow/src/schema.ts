@@ -134,32 +134,18 @@ export const PlanSchema = object({
     .required()
 }).required();
 
+const ucwords = (str: string) => {
+  return str.split(' ').map(s => {
+    return `${s.substring(0, 1).toLocaleUpperCase()}${s.substring(1)}`
+  }).join(' ')
+}
+
 export const renderPaymentPlan = ({ membership }: FormSchema) => {
-  if (membership === "standard") {
-    return "Standard Membership";
+  if (!membership) {
+    return "None";
   }
 
-  if (membership === "international") {
-    return "International Membership";
-  }
-
-  if (membership === "lowWaged") {
-    return "Reduced Rate Membership";
-  }
-
-  if (membership === "student") {
-    return "Student Membership";
-  }
-
-  if (membership === "unwaged") {
-    return "Concessionary or Student Membership";
-  }
-
-  if (membership === "suggested") {
-    return "Suggested Membership Contribution";
-  }
-
-  return "None";
+  return ucwords(membership)
 };
 
 const PaymentMethodSchema = object({

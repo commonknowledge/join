@@ -141,7 +141,13 @@ const getInitialState = (): FormSchema => {
   const getSavedState = () => {
     const sessionState = sessionStorage.getItem(SAVED_STATE_KEY);
     if (sessionState) {
-      return FormSchema.cast(JSON.parse(sessionState), {
+      const state = JSON.parse(sessionState);
+      const membership = state?.membership;
+      const isMembershipValid = membershipPlans.filter(p => p.value === membership).length > 0
+      if (!isMembershipValid) {
+        state.membership = membershipPlans.length ? membershipPlans[0].value : "standard";
+      }
+      return FormSchema.cast(state, {
         strict: true
       });
     }

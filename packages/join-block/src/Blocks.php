@@ -74,10 +74,19 @@ class Blocks
             ),
         ))->set_max(1);
 
+        /** @var Complex_Field $custom_membership_plans */
+        $custom_membership_plans = Field::make('complex', 'custom_membership_plans');
+        $custom_membership_plans->add_fields([
+            Field::make('text', 'label', "Name")->set_required(true),
+            Field::make('text', 'price_label', "Price")->set_required(true)->set_help_text("E.G. £10 per month"),
+            Field::make('text', 'description'),
+        ])->set_help_text('Leave blank to use the default plans from the settings page.');
+
         /** @var Block_Container $block_container */
         $block_container = Block::make(__('Join Form Fullscreen Takeover'))
             ->add_fields(array(
-                $joined_page_association
+                $joined_page_association,
+                $custom_membership_plans
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             if (is_multisite()) {
@@ -88,9 +97,12 @@ class Blocks
             }
 
             $successRedirect = get_page_link($fields['joined_page'][0]['id']);
-            $privacyCopy = $fields['privacy_copy'] ?? '';
 
-            $membership_plans = Settings::get("MEMBERSHIP_PLANS") ?? [];
+            $membership_plans = $fields['custom_membership_plans'] ?? [];
+            if (!$membership_plans) {
+                $membership_plans = Settings::get("MEMBERSHIP_PLANS") ?? [];
+            }
+
             $membership_plans_prepared = array_map(function ($plan) {
                 return [
                     "value" => sanitize_title($plan["label"]),
@@ -126,6 +138,7 @@ class Blocks
                     --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
                     --ck-join-form-background-color: <?= Settings::get("THEME_BACKGROUND_COLOR") ?>;
                 }
+
                 <?= Settings::get('custom_css') ?>
             </style>
             <script type="application/json" id="env">
@@ -133,7 +146,7 @@ class Blocks
             </script>
             <script src="https://js.chargebee.com/v2/chargebee.js"></script>
             <div class="ck-join-form mt-4"></div>
-        <?php
+<?php
         });
     }
 }
