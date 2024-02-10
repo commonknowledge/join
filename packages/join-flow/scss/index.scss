@@ -2,19 +2,24 @@
    them to the join block */
 @import "theme";
 
+body {
+    background-color: $background;
+}
+
 // TODO: make this class name specific to the join block
 .ck-join-form {
     @import "bootstrap";
     @import "util.scss";
     @import "typography.scss";
     @import "components/buttons.scss";
+    @import "components/details.scss";
     @import "components/forms.scss";
     @import "components/progress.scss";
     @import "components/page.scss";
 
     max-width: none !important;
 
-    @include media-breakpoint-up(sm) {
+    @include media-breakpoint-up(md) {
         display: flex;
     }
 }

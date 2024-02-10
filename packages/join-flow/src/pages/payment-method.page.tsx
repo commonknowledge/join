@@ -17,7 +17,7 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
       noValidate
       onSubmit={form.handleSubmit(onCompleted)}
     >
-      <div className="p-2 mt-4">
+      <div>
         <Summary data={data} />
       </div>
 

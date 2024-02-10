@@ -3,7 +3,7 @@ import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import isoCountries from "iso-3166";
 
-import { get as getEnv } from '../env';
+import { get as getEnv, getStr as getEnvStr } from '../env';
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
@@ -16,8 +16,9 @@ const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
 });
 
-const passwordPurpose = getEnv('PASSWORD_PURPOSE');
-const privacyCopy = getEnv('PRIVACY_COPY');
+const homeAddressCopy = getEnvStr('HOME_ADDRESS_COPY');
+const passwordPurpose = getEnvStr('PASSWORD_PURPOSE');
+const privacyCopy = getEnvStr('PRIVACY_COPY');
 
 const sortedCountries = isoCountries.sort((a, b) => {
   // Prioritize The United Kingdom
@@ -129,16 +130,14 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Home address</h2>
-        <p className="text-secondary">
-          We’ll use this to connect you with your local group.
-        </p>
+        <p className="text-secondary" dangerouslySetInnerHTML={{__html: homeAddressCopy}}></p>
         <FormItem
           label="Postcode"
           name="postcode"
           form={addressLookupForm}
           required
           after={
-            <Button className="mt-2" onClick={handleLookupPostcode}>
+            <Button className="mt-2" onClick={handleLookupPostcode} variant="secondary">
               Find address
             </Button>
           }
@@ -200,7 +199,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               <Form.Control
                 autoComplete="country"
                 as="select"
-                custom
                 className="form-control"
               >
                 {sortedCountries.map((c) => (
@@ -240,7 +238,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <section className="form-section">
           <h2>Password</h2>
           {passwordPurpose ? (
-            <p className="text-secondary" dangerouslySetInnerHTML={{ __html: String(passwordPurpose) }}></p>
+            <p className="text-secondary" dangerouslySetInnerHTML={{ __html: passwordPurpose }}></p>
           ) : ''}
           <p className="text-secondary">
             Your password should contain at least one number, one uppercase letter

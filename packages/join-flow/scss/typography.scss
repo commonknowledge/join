@@ -91,6 +91,8 @@
 @include text-body();
 
 h2 {
+  padding: 0;
+
   @include text-sm-bold;
 
   @include media-breakpoint-up(sm) {

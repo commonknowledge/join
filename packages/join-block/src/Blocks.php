@@ -32,7 +32,7 @@ class Blocks
             );
 
             wp_enqueue_script(
-                'join-block-js',
+                'ck-join-block-js',
                 "http://localhost:3000/bundle.js",
                 [],
                 false,
@@ -40,13 +40,23 @@ class Blocks
             );
         } else {
             wp_enqueue_script(
-                'join-block-js',
+                'ck-join-block-js',
                 plugins_url($joinFormJavascriptBundleLocation, __DIR__),
                 [],
                 filemtime("$directoryName/$joinFormJavascriptBundleLocation"),
                 true
             );
         }
+
+        add_filter('wp_footer', function () {
+            global $post;
+
+            // Only load the script on a page with the block
+            $content = $post ? $post->post_content : '';
+            if (!str_contains($content, 'join-form-fullscreen-takeover')) {
+                wp_dequeue_script('ck-join-block-js');
+            }
+        });
     }
 
     private static function registerBlocks()
@@ -67,8 +77,6 @@ class Blocks
         /** @var Block_Container $block_container */
         $block_container = Block::make(__('Join Form Fullscreen Takeover'))
             ->add_fields(array(
-                Field::make('rich_text', 'home_address_copy', 'Home Address Copy'),
-                Field::make('rich_text', 'privacy_copy', 'Privacy Copy'),
                 $joined_page_association
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
@@ -101,6 +109,7 @@ class Blocks
                 "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
                 "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
                 "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
+                "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
                 "MEMBERSHIP_PLANS" => $membership_plans_prepared,
                 "ORGANISATION_NAME" => Settings::get("ORGANISATION_NAME"),
                 "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),
@@ -115,6 +124,7 @@ class Blocks
                 :root {
                     --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
                     --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
+                    --ck-join-form-background-color: <?= Settings::get("THEME_BACKGROUND_COLOR") ?>;
                 }
                 <?= Settings::get('custom_css') ?>
             </style>

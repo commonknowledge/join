@@ -53,7 +53,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
         <p>
           On your bank statement the charge will appear as "{organisationBankName}".
         </p>
-        <p className="fineprint">
+        <p>
           You can contact the membership team of {organisationName} at{" "}
           <a href={organisationMailToLink}>{organisationEmailAddress}</a>.
         </p>
@@ -161,7 +161,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
               </div>
             )}
             <Button
-              className="form-section-addon font-family-heading text-uppercase"
+              className="form-section-addon"
               type="submit"
               disabled={requestInFlight}
             >

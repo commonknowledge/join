@@ -19,7 +19,6 @@
     "css-loader": "^6.8.1",
     "date-fns": "^2.16.1",
     "dotenv": "^8.2.0",
-    "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.4",
     "image-webpack-loader": "^8.1.0",
     "iso-3166": "^3.0.1",

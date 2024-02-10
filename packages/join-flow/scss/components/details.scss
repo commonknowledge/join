@@ -1,0 +1,14 @@
+.details-card {
+    border-radius: 0.5rem;
+}
+
+.details-panel {
+    a {
+        color: inherit;
+        text-decoration: underline;
+
+        &:hover,&:focus {
+            text-decoration: none;
+        }
+    }
+}

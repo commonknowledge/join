@@ -17,12 +17,14 @@ export const PlanPage: StagerComponent<FormSchema> = ({
 
   return (
     <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
-      <div className="p-2 mt-4">
+      <div>
         <Summary data={data} />
       </div>
 
       <fieldset className="radio-grid form-section" role="radiogroup">
-        <legend className="text-md">Choose the plan that’s right for you</legend>
+        <legend>
+          <h2>Choose the plan that’s right for you</h2>
+        </legend>
         <p className="text-secondary">
           You can change or cancel whenever you want.
         </p>

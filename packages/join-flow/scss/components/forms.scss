@@ -3,6 +3,14 @@
   @include text-body;
 }
 
+.form-control {
+  border-radius: 0.5rem;
+}
+
+select.form-control {
+  padding: 0 0.5rem;
+}
+
 .radio-grid {
   > *:not(:last-child) {
     margin-bottom: $space-2;
@@ -12,6 +20,7 @@
 .radio-panel {
   display: block;
   background-color: $white;
+  border-radius: 0.5rem;
   cursor: pointer;
   user-select: none;
   padding: $btn-padding-x;
@@ -42,11 +51,16 @@
   @include media-breakpoint-up(sm) {
     margin: 0 auto;
     max-width: calc(585px + 2rem);
-    padding: 0 1rem 1rem;
+    padding: 0 2rem 4rem;
   }
 }
 
 .form-section {
+  > p {
+    margin-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
   &:not(:first-child) {
     margin-top: $space-5;
   }
@@ -70,10 +84,6 @@
   label {
     margin-bottom: $space-1;
   }
-}
-
-.custom-select {
-  border-radius: 0;
 }
 
 .custom-radio {

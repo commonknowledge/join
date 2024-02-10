@@ -52,7 +52,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         onCompleted(data);
       })}
     >
-      <div className="p-2 mt-4">
+      <div>
         <Summary data={data} />
       </div>
 

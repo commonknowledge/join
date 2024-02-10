@@ -8,30 +8,13 @@ interface ContinueButtonProps {
   onClick?(event: React.MouseEvent<HTMLButtonElement>): void;
 }
 
-const ChevronSVG = (
-  <svg
-    width="1em"
-    height="1em"
-    viewBox="0 0 16 16"
-    className="bi bi-chevron-right"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      fillRule="evenodd"
-      d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"
-    />
-  </svg>
-);
-
 export const ContinueButton: FC<ContinueButtonProps> = ({ text, onClick }) => (
   <Button
-    className="form-section-addon d-flex align-items-center text-uppercase font-family-heading"
+    className="form-section-addon d-flex align-items-center text-xxs"
     type="submit"
     onClick={onClick}
   >
     {text || "Continue"}
-    {ChevronSVG}
   </Button>
 );
 
@@ -81,10 +64,10 @@ export const RadioPanel: FC<RadioPanelProps> = ({
             onChange={() => onChange(value)}
           />
           <div className="flex-grow-1">
-            <div className="radio-panel-label">
+            <h3 className="radio-panel-label mb-0">
               {label}
               <span className="float-right">{priceLabel}</span>
-            </div>
+            </h3>
 
             <div className="radio-panel-description">{description}</div>
             {valueMeta && <span className="float-right">{valueMeta}</span>}
@@ -157,7 +140,7 @@ interface DetailPanelProps {
 }
 
 export const DetailsCard: FC = (props) => (
-  <div className="d-table bg-white w-100 px-2" {...props} />
+  <div className="details-card d-table bg-white w-100" {...props} />
 );
 
 export const DetailPanel: FC<DetailPanelProps> = ({
@@ -166,23 +149,24 @@ export const DetailPanel: FC<DetailPanelProps> = ({
   action
 }) => {
   const router = useCurrentRouter();
-  const onRequestChange = () => {
+  const onRequestChange = (e: React.MouseEvent) => {
+    e.preventDefault();
     router.setState({ ...router.state, ...action });
   };
 
   return (
-    <div className="d-table-row text-xs summary-row">
-      <div className="d-table-cell p-2 text-secondary text-nowrap">
+    <div className="details-panel d-table-row text-xs summary-row">
+      <div className="d-table-cell p-2 p-md-3 w-md-25 text-xxs text-nowrap">
         {label.replace(/ /g, " ")}
       </div>
-      <div className="d-table-cell p-2 w-100">{children}</div>
-      <div className="d-table-cell p-2">
-        <button
-          className="p-0 btn text-secondary btn-link"
+      <div className="d-table-cell p-2 p-md-3 w-100 w-md-50 text-xxs">{children}</div>
+      <div className="d-table-cell p-2 p-md-3 w-md-25 text-xxs text-right">
+        <a
           onClick={onRequestChange}
+          href="#"
         >
           Change
-        </button>
+        </a>
       </div>
     </div>
   );

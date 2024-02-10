@@ -44,21 +44,7 @@ module.exports = {
       },
       {
         test: /\.(jpe?g|png|gif|svg|woff2)$/i,
-        use: [
-          "file-loader?hash=sha512&digest=hex&name=img/[hash].[ext]",
-          {
-            loader: "image-webpack-loader",
-            options: {
-              bypassOnDebug: true,
-              optipng: {
-                optimizationLevel: 7
-              },
-              gifsicle: {
-                interlaced: false
-              }
-            }
-          }
-        ]
+        type: 'asset/resource'
       }
     ]
   },

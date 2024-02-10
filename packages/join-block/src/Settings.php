@@ -41,7 +41,9 @@ class Settings
                     ->set_help_text("The color of interactive elements, e.g. buttons"),
                 Field::make('color', 'theme_gray_color', 'Gray Color')
                     ->set_default_value('#dfdcda')
-                    ->set_help_text("The color of background elements"),
+                    ->set_help_text("The color of de-emphasised elements"),
+                Field::make('color', 'theme_background_color', 'Background Color')
+                    ->set_default_value('#f4f1ee'),
                 Field::make('textarea', 'custom_css'),
                 Field::make('separator', 'copy', 'Copy'),
                 Field::make('text', 'organisation_name')->set_help_text("The name that will appear on the member's bank statement")
@@ -52,6 +54,8 @@ class Settings
                     ->set_required(true),
                 Field::make('rich_text', 'password_purpose')
                     ->set_help_text("E.G. Use this password to log in at https://example.com"),
+                Field::make('rich_text', 'home_address_copy')
+                    ->set_help_text("E.G. We'll use this to connect you with your local group.."),
                 Field::make('rich_text', 'privacy_copy')
                     ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
                 Field::make('separator', 'chargebee', 'Chargebee'),

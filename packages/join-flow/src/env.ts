@@ -4,6 +4,7 @@ interface StaticEnv {
     CHARGEBEE_SITE_NAME: string;
     COLLECT_DATE_OF_BIRTH: boolean;
     CREATE_AUTH0_ACCOUNT: boolean;
+    HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
     ORGANISATION_NAME: string;
     ORGANISATION_BANK_NAME: string;
@@ -30,6 +31,7 @@ const staticEnv: StaticEnv = {
     CHARGEBEE_SITE_NAME: process.env.REACT_APP_CHARGEBEE_SITE_NAME || '',
     COLLECT_DATE_OF_BIRTH: parseBooleanEnvVar("REACT_APP_COLLECT_DATE_OF_BIRTH"),
     CREATE_AUTH0_ACCOUNT: parseBooleanEnvVar("REACT_APP_CREATE_AUTH0_ACCOUNT"),
+    HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
     ORGANISATION_NAME: process.env.REACT_APP_ORGANISATION_NAME || '',
     ORGANISATION_BANK_NAME: process.env.REACT_APP_ORGANISATION_BANK_NAME || '',
@@ -46,6 +48,14 @@ const staticEnv: StaticEnv = {
 
 export const get = (envVar: keyof StaticEnv): object[]|boolean|string => {
     return window.process.env[envVar] || staticEnv[envVar] || ''
+}
+
+export const getStr = (envVar: keyof StaticEnv): string => {
+    const val = get(envVar)
+    if (!val) {
+        return ''
+    }
+    return String(val)
 }
 
 export const getPaymentMethods = () => {
