@@ -7,6 +7,7 @@ use Carbon_Fields\Field;
 use Carbon_Fields\Container\Block_Container;
 use Carbon_Fields\Field\Association_Field;
 use Carbon_Fields\Field\Complex_Field;
+use Carbon_Fields\Field\Image_Field;
 
 class Blocks
 {
@@ -53,13 +54,59 @@ class Blocks
 
             // Only load the script on a page with the block
             $content = $post ? $post->post_content : '';
-            if (!str_contains($content, 'join-form-fullscreen-takeover')) {
+            if (!str_contains($content, 'ck-join')) {
                 wp_dequeue_script('ck-join-block-js');
             }
         });
     }
 
     private static function registerBlocks()
+    {
+        self::registerJoinHeaderBlock();
+        self::registerJoinFormBlock();
+        self::registerJoinLinkBlock();
+    }
+
+    private static function registerJoinHeaderBlock()
+    {
+        /** @var Image_Field $image_field */
+        $image_field = Field::make('image', 'image');
+        $image_field->set_value_type('url');
+        /** @var Block_Container $join_header_block */
+        $join_header_block = Block::make(__('CK Join Page Header'))
+            ->add_fields(array(
+                Field::make('text', 'title')->set_help_text('Use e.g. [first_name:member] to insert [url_query_parameter:default]'),
+                $image_field,
+            ));
+        $join_header_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
+            $title = $fields['title'];
+            if (str_contains($title, '[') && str_contains($title, ']')) {
+                preg_match_all('#\[([^:\]]+)(:[^\]]*)?\]#', $title, $matches);
+                for ($i = 0; $i < count($matches[0]); $i++) {
+                    $param = $matches[1][$i];
+                    $default = $matches[2][$i];
+                    if ($default) {
+                        $default = substr($default, 1); // remove leading ':'
+                    }
+                    $value = $_GET[$param] ?? $default;
+                    $to_replace = $matches[0][$i];
+                    $title = str_replace($to_replace, $value, $title);
+                }
+            }
+            self::echoBlockCss();
+        ?>
+            <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
+                <div class="ck-join-flow">
+                    <div class="ck-join-page-header">
+                        <h1><?= $title ?></h1>
+                        <img src="<?= $fields['image'] ?>" alt="<?= $fields['title'] ?>">
+                    </div>
+                </div>
+        <?php
+        });
+    }
+
+    private static function registerJoinFormBlock()
     {
         /** @var Association_Field $joined_page_association */
         $joined_page_association = Field::make(
@@ -82,14 +129,14 @@ class Blocks
             Field::make('text', 'description'),
         ])->set_help_text('Leave blank to use the default plans from the settings page.');
 
-        /** @var Block_Container $block_container */
-        $block_container = Block::make(__('Join Form Fullscreen Takeover'))
+        /** @var Block_Container $join_form_block */
+        $join_form_block = Block::make(__('CK Join Form'))
             ->add_fields(array(
                 $joined_page_association,
-                $custom_membership_plans,
-                Field::make('checkbox', 'ask_for_additional_donation')
+                Field::make('checkbox', 'ask_for_additional_donation'),
+                $custom_membership_plans
             ));
-        $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
+        $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             if (is_multisite()) {
                 $currentBlogId = get_current_blog_id();
                 $homeUrl = get_home_url($currentBlogId);
@@ -132,22 +179,87 @@ class Blocks
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             ];
+            self::echoBlockCss();
 ?>
-            <style>
-                :root {
-                    --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
-                    --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
-                    --ck-join-form-background-color: <?= Settings::get("THEME_BACKGROUND_COLOR") ?>;
-                }
 
-                <?= Settings::get('custom_css') ?>
-            </style>
             <script type="application/json" id="env">
                 <?php echo json_encode($environment); ?>
             </script>
             <script src="https://js.chargebee.com/v2/chargebee.js"></script>
-            <div class="ck-join-form mt-4"></div>
-<?php
+            <div class="ck-join-flow">
+                <div class="ck-join-form mt-4"></div>
+            </div>
+        <?php
         });
+    }
+
+    private static function registerJoinLinkBlock()
+    {
+        /** @var Association_Field $join_page_association */
+        $join_page_association = Field::make(
+            'association',
+            'join_page',
+            __('Join Us Page (with CK Join Form block)')
+        )->set_required(true);
+        $join_page_association->set_types(array(
+            array(
+                'type' => 'post',
+                'post_type' => 'page',
+            ),
+        ))->set_max(1);
+
+        /** @var Block_Container $join_form_block */
+        $join_form_block = Block::make(__('CK Join Form Link'))
+            ->add_fields(array(
+                Field::make('text', 'title'),
+                Field::make('rich_text', 'introduction'),
+                Field::make('checkbox', 'include_email_input'),
+                $join_page_association,
+            ));
+        $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
+            $link = get_page_link($fields['join_page'][0]['id']);
+            self::echoBlockCss();
+        ?>
+            <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
+            <?php if ($fields['include_email_input']) : ?>
+                <div class="ck-join-flow">
+                    <div class="ck-join-form-link">
+                        <h2><?= $fields['title'] ?></h2>
+                        <div class="ck-join-form-link-intro"><?= wpautop($fields['introduction']) ?></div>
+                        <form action="<?= $link ?>" method="get" class="form-group">
+                            <label for="ck-join-flow-email" class="form-label">Your email</label>
+                            <div class="ck-join-form-link-input">
+                                <input type="text" id="ck-join-flow-email" name="email" class="form-control">
+                                <button class="btn btn-primary">Join</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php else : ?>
+                <div class="ck-join-flow">
+                    <div class="ck-join-form-link">
+                        <h2><?= $fields['title'] ?></h2>
+                        <a href="<?= $link ?>"><?= wpautop($fields['introduction']) ?></a>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+        <?php
+        });
+    }
+
+    private static function echoBlockCss()
+    {
+        ?>
+        <style>
+            :root {
+                --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
+                --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
+                --ck-join-form-background-color: <?= Settings::get("THEME_BACKGROUND_COLOR") ?>;
+            }
+
+            <?= Settings::get('custom_css') ?>
+        </style>
+<?php
     }
 }

@@ -1,0 +1,28 @@
+.ck-join-page-header {
+    padding-top: 5.5rem;
+    position: relative;
+
+    h1 {
+        font-size: 4rem;
+        left: 50%;
+        text-align: center;
+        position: absolute;
+        top: 1rem;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        z-index: 1;
+    }
+
+    img {
+        position: relative;
+        z-index: 2;
+    }
+}
+
+@include media-breakpoint-up(md) {
+    .ck-join-page-header {
+        h1 {
+            font-size: 6rem;
+        }
+    }
+}

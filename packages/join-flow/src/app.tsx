@@ -69,7 +69,13 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
-        window.location.href = getEnv('SUCCESS_REDIRECT') as string || "/";
+        let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
+        if (redirectTo.includes('?')) {
+          redirectTo += '&first_name=' + nextData['firstName']
+        } else {
+          redirectTo += '?first_name=' + nextData['firstName']
+        }
+        window.location.href = redirectTo;
       }
 
       if (nextStage === "donation" && !includeDonationPage) {

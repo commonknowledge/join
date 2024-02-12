@@ -1,0 +1,38 @@
+.ck-join-form-link {
+    background-color: $background;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 2rem;
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    p {
+        margin-bottom: 0;
+    }
+
+    a {
+        color: inherit !important;
+        display: block;
+
+        &:focus,
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.ck-join-form-link-intro:not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+.ck-join-form-link-input {
+    display: flex;
+    gap: 1rem;
+
+    .form-control {
+        flex-grow: 1;
+        width: auto;
+    }
+}

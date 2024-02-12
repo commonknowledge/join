@@ -7,23 +7,27 @@ body {
 }
 
 // TODO: make this class name specific to the join block
-.ck-join-form {
+.ck-join-flow {
     @import "bootstrap";
     @import "util.scss";
     @import "typography.scss";
     @import "components/buttons.scss";
     @import "components/details.scss";
     @import "components/forms.scss";
+    @import "components/header.scss";
+    @import "components/join-form-link.scss";
     @import "components/progress.scss";
     @import "components/page.scss";
+}
 
+.ck-join-flow.custom-fonts {
+    @import "fonts.scss";
+}
+
+.ck-join-form {
     max-width: none !important;
 
     @include media-breakpoint-up(md) {
         display: flex;
     }
-}
-
-.ck-join-form.custom-fonts {
-    @import "fonts.scss";
 }
