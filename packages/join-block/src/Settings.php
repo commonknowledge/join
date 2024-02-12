@@ -30,7 +30,6 @@ class Settings
             ->add_fields(array(
                 Field::make('separator', 'features', 'Features'),
                 Field::make('checkbox', 'collect_date_of_birth'),
-                Field::make('checkbox', 'ask_for_additional_donation'),
                 Field::make('checkbox', 'create_auth0_account'),
                 Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
                 Field::make('checkbox', 'use_chargebee'),

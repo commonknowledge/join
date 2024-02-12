@@ -86,7 +86,8 @@ class Blocks
         $block_container = Block::make(__('Join Form Fullscreen Takeover'))
             ->add_fields(array(
                 $joined_page_association,
-                $custom_membership_plans
+                $custom_membership_plans,
+                Field::make('checkbox', 'ask_for_additional_donation')
             ));
         $block_container->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             if (is_multisite()) {
@@ -116,7 +117,7 @@ class Blocks
                 'HOME_URL' => $homeUrl,
                 "WP_REST_API" => get_rest_url(),
                 'SUCCESS_REDIRECT' => $successRedirect,
-                "ASK_FOR_ADDITIONAL_DONATION" => Settings::get("ASK_FOR_ADDITIONAL_DONATION"),
+                "ASK_FOR_ADDITIONAL_DONATION" => $fields['ask_for_additional_donation'] ?? false,
                 'CHARGEBEE_SITE_NAME' => Settings::get('CHARGEBEE_SITE_NAME'),
                 "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
                 "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),

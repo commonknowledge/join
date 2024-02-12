@@ -57,7 +57,9 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       </div>
 
       <div className="form-section">
-        <legend className="text-md">Can you chip in?</legend>
+        <legend className="text-md">
+          <h2>Can you chip in?</h2>
+        </legend>
         <p className="text-secondary">
           We rely on our members' generosity to build our movement, 
           particularly as we look ahead to the next General Election and 

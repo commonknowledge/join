@@ -25,3 +25,7 @@
     width: 30px;
   }
 }
+
+.btn.btn-outline-dark::after {
+  background-image: url('graphics/chevron-inverse.svg');
+}
