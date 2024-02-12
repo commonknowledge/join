@@ -65,6 +65,8 @@ class Settings
                 Field::make('separator', 'gocardless', 'GoCardless'),
                 Field::make('text', 'gc_access_token'),
                 $gc_environment_select,
+                Field::make('separator', 'webhook'),
+                Field::make('text', 'webhook_url'),
                 Field::make('separator', 'auth0', 'Auth0'),
                 Field::make('text', 'auth0_domain')->set_help_text(
                     "The name of the Auth0 site - e.g. example.auth0.com"

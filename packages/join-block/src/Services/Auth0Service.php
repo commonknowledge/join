@@ -74,19 +74,22 @@ class Auth0Service
 
         $fullName = implode(' ', [$data['firstName'], $data['lastName']]);
 
+        $data = [
+            'name' => $fullName,
+            "email" => $data['email'],
+            "password" => $data['password'],
+            'given_name' => $data['firstName'],
+            'family_name' => $data['lastName'],
+            "app_metadata" => [
+                "planId" => $planId,
+                "chargebeeCustomerId" => $customerId,
+                "roles" => $defaultRoles
+            ]
+        ];
+        $data = apply_filters('ck_join_flow_pre_auth0_user_create', $data);
+
         try {
-            $response = $managementApi->users()->create("Username-Password-Authentication", [
-                'name' => $fullName,
-                "email" => $data['email'],
-                "password" => $data['password'],
-                'given_name' => $data['firstName'],
-                'family_name' => $data['lastName'],
-                "app_metadata" => [
-                    "planId" => $planId,
-                    "chargebeeCustomerId" => $customerId,
-                    "roles" => $defaultRoles
-                ]
-            ]);
+            $response = $managementApi->users()->create("Username-Password-Authentication", $data);
             $response = json_decode($response->getBody()->__toString(), true);
             if (in_array('error', $response)) {
                 throw new \Exception($response['message']);

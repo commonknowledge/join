@@ -22,6 +22,21 @@ class JoinService
 
     public static function handleJoin($data)
     {
+        try {
+            $chargebeeCustomer = self::tryHandleJoin($data);
+            do_action('ck_join_flow_success', $data, $chargebeeCustomer);
+        } catch (\Exception $e) {
+            do_action('ck_join_flow_error', $data, $e);
+        }
+        return $chargebeeCustomer;
+    }
+
+    /**
+     * Attempts to send the user data to configured 3rd party services.
+     * Returns the Chargebee customer, if Chargebee is enabled.
+     */
+    private static function tryHandleJoin($data)
+    {
         global $joinBlockLog;
 
         $joinBlockLog->info('Beginning join process');
@@ -65,13 +80,29 @@ class JoinService
         if (Settings::get("CREATE_AUTH0_ACCOUNT")) {
             try {
                 Auth0Service::createAuth0User($data, $subscriptionPlanId, $customer->id);
-            } catch (\Exception $expection) {
-                $joinBlockLog->error('Auth0 user creation failed', ['exception' => $expection]);
-                throw $expection;
+            } catch (\Exception $exception) {
+                $joinBlockLog->error('Auth0 user creation failed', ['exception' => $exception]);
+                throw $exception;
             }
         }
 
-        return $customerResult;
+        $webhookUrl = Settings::get("WEBHOOK_URL");
+        if ($webhookUrl) {
+            $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
+                "headers" => [
+                    'Content-Type' => 'application/json',
+                ],
+                "body" => json_encode($data)
+            ]);
+            $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
+            if ($webhookResponse instanceof \WP_Error) {
+                $error = $webhookResponse->get_error_message();
+                $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
+                throw new \Exception($error);
+            }
+        }
+
+        return $customerResult ? $customerResult->customer() : null;
     }
 
     private static function handleChargebee($data, $billingAddress)
@@ -124,7 +155,6 @@ class JoinService
                 "tokenId" => $data['paymentToken'],
                 "billingAddress" => $billingAddress,
                 "phone" => $data['phoneNumber'],
-                "cf_safeguard_code_of_conduct" => $data['codeOfConductionConfirmed']
             ];
 
             if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
@@ -137,6 +167,7 @@ class JoinService
             }
 
             try {
+                $chargebeeCreditCardPayload = apply_filters('ck_join_flow_pre_chargebee_customer_create', $data);
                 $customerResult = Customer::create($chargebeeCreditCardPayload);
             } catch (InvalidRequestException $exception) {
                 /*
@@ -189,6 +220,7 @@ class JoinService
                 They should rarely occur if at all.
             */
             try {
+                $data = apply_filters('ck_join_flow_pre_gocardless_mandate_create', $data);
                 $mandate = GocardlessService::createCustomerMandate($data);
             } catch (\GoCardlessPro\Core\Exception\ValidationFailedException $exception) {
                 $joinBlockLog->error(
@@ -255,7 +287,6 @@ class JoinService
             ],
             "billingAddress" => $billingAddress,
             "cf_birthdate" => $formattedDateOfBirth,
-            "cf_safeguard_code_of_conduct" => $data['codeOfConductionConfirmed']
         ];
 
         if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
@@ -269,6 +300,7 @@ class JoinService
         }
 
         try {
+            $directDebitChargebeeCustomer = apply_filters('ck_join_flow_pre_chargebee_customer_create', $data);
             $customerResult = Customer::create($directDebitChargebeeCustomer);
         } catch (\Exception $exception) {
             $joinBlockLog->error('Chargebee customer creation failed. Customer attempting charge with direct debit', ['exception' => $exception]);
