@@ -64,6 +64,8 @@ class Settings
                 Field::make('separator', 'gocardless', 'GoCardless'),
                 Field::make('text', 'gc_access_token'),
                 $gc_environment_select,
+                Field::make('separator', 'ideal_postcodes', 'Ideal Postcodes'),
+                Field::make('text', 'postcode_api_key', 'Ideal Postcodes API Key'),
                 Field::make('separator', 'webhook'),
                 Field::make('text', 'webhook_url'),
                 Field::make('separator', 'auth0', 'Auth0'),

@@ -176,6 +176,7 @@ class Blocks
                 "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
                 "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
                 "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
+                "POSTCODE_API_KEY" => Settings::get("POSTCODE_API_KEY"),
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             ];
