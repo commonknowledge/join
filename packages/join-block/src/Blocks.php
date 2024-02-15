@@ -132,9 +132,11 @@ class Blocks
         /** @var Block_Container $join_form_block */
         $join_form_block = Block::make(__('CK Join Form'))
             ->add_fields(array(
+                Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'ask_for_additional_donation'),
-                $custom_membership_plans
+                $custom_membership_plans,
+                Field::make('text', 'custom_webhook_url')->set_help_text('Leave blank to use the default webhook from the settings page.')
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             if (is_multisite()) {
@@ -160,6 +162,12 @@ class Blocks
                 ];
             }, $membership_plans);
 
+            $webhook_url = $fields['custom_webhook_url'] ?? '';
+            if (!$webhook_url) {
+                $webhook_url = Settings::get("WEBHOOK_URL");
+            }
+            $webhook_uuid = Settings::getWebhookUuid($webhook_url);
+
             $environment = [
                 'HOME_URL' => $homeUrl,
                 "WP_REST_API" => get_rest_url(),
@@ -179,6 +187,7 @@ class Blocks
                 "POSTCODE_API_KEY" => Settings::get("POSTCODE_API_KEY"),
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
+                "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
             ];
             self::echoBlockCss();
 ?>
@@ -192,6 +201,18 @@ class Blocks
             </div>
         <?php
         });
+
+        // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
+        // for an explanation.
+        add_action('save_post', function ($_, $post) {
+            $blocks = parse_blocks($post->post_content);
+            foreach ($blocks as $block) {
+                $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
+                if ($custom_webhook_url) {
+                    Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
+                }
+            }
+        }, 10, 2);
     }
 
     private static function registerJoinLinkBlock()

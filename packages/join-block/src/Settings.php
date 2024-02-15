@@ -79,6 +79,15 @@ class Settings
                         "API > Auth0 Management API > Settings page"
                 ),
             ));
+
+        // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
+        // for an explanation.
+        add_filter('carbon_fields_theme_options_container_saved', function ($_, $container) {
+            if ($container && $container->id === 'carbon_fields_container_' . CONTAINER_ID) {
+                $webhook_url = Settings::get('webhook_url');
+                Settings::ensureWebhookUrlIsSaved($webhook_url);
+            }
+        }, 10, 2);
     }
 
     public static function get($key)
@@ -90,5 +99,41 @@ class Settings
         }
         $env_key = strtoupper($key);
         return $_ENV[$env_key] ?? $val;
+    }
+
+    // Webhook URLs are stored in the wp_options table, and associated to a UUID.
+    // The UUID is sent to the front-end instead of the URL, as it should be
+    // kept secret from the user. The below function getWebhookUrl() is used
+    // to retrieve the URL from its UUID.
+    public static function ensureWebhookUrlIsSaved($webhook_url)
+    {
+        // Don't save empty URLs
+        if (!$webhook_url) {
+            return '';
+        }
+        $webhook_uuid = get_option('ck_join_flow_webhook_uuid_' . $webhook_url);
+        if (!$webhook_uuid) {
+            $webhook_uuid = wp_generate_uuid4();
+            // Save options linking both ways for performance reasons (query by option_name is indexed)
+            update_option('ck_join_flow_webhook_uuid_' . $webhook_url, $webhook_uuid);
+            update_option('ck_join_flow_webhook_url_' . $webhook_uuid, $webhook_url);
+        }
+        return $webhook_uuid;
+    }
+
+    // Get the UUID associated with this webhook url to send to the frontend
+    public static function getWebhookUuid($webhook_url)
+    {
+        return self::ensureWebhookUrlIsSaved($webhook_url);
+    }
+
+    // Get the webhook URL from its associated UUID
+    // Used when receiving data from the frontend
+    public static function getWebhookUrl($webhook_uuid)
+    {
+        // Don't fall back to the default Settings::get('webhook_url')
+        // This would allow a user to submit to the default webhook by
+        // malforming the uuid, which should not be allowed
+        return get_option('ck_join_flow_webhook_url_' . $webhook_uuid);
     }
 }

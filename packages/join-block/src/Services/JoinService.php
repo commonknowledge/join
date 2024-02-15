@@ -86,19 +86,22 @@ class JoinService
             }
         }
 
-        $webhookUrl = Settings::get("WEBHOOK_URL");
-        if ($webhookUrl) {
-            $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
-                "headers" => [
-                    'Content-Type' => 'application/json',
-                ],
-                "body" => json_encode($data)
-            ]);
-            $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
-            if ($webhookResponse instanceof \WP_Error) {
-                $error = $webhookResponse->get_error_message();
-                $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
-                throw new \Exception($error);
+        $webhookUuid = $data['webhookUuid'] ?? '';
+        if ($webhookUuid) {
+            $webhookUrl = Settings::getWebhookUrl($webhookUuid);
+            if ($webhookUrl) {
+                $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
+                    "headers" => [
+                        'Content-Type' => 'application/json',
+                    ],
+                    "body" => json_encode($data)
+                ]);
+                $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
+                if ($webhookResponse instanceof \WP_Error) {
+                    $error = $webhookResponse->get_error_message();
+                    $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
+                    throw new \Exception($error);
+                }
             }
         }
 

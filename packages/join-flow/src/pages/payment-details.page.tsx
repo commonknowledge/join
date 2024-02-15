@@ -45,8 +45,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
     },
     resolver: validate(PaymentMethodDDSchema)
   });
-  const organisationName =  getEnv('ORGANISATION_NAME');
-  const organisation = `GC re ${organisationName}`;
+  const organisation = getEnv('ORGANISATION_NAME');
 
   return (
     <form

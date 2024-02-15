@@ -16,6 +16,7 @@ interface StaticEnv {
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
     USE_TEST_DATA: string;
+    WEBHOOK_UUID: string; // Connected to a URL in the wp_options table: `SELECT option_name FROM wp_options where option_value = :uuid`
     WP_REST_API: string;
 }
 
@@ -43,6 +44,7 @@ const staticEnv: StaticEnv = {
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_TEST_DATA: process.env.REACT_APP_POSTCODE_API_KEY || '',
+    WEBHOOK_UUID: process.env.WEBHOOK_UUID || '',
     WP_REST_API: ''
 }
 

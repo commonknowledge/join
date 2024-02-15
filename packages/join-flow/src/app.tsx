@@ -172,7 +172,8 @@ const getInitialState = (): FormSchema => {
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
     ...getSavedState(),
-    ...getProvidedStateFromQueryParams()
+    ...getProvidedStateFromQueryParams(),
+    webhookUuid: getEnv('WEBHOOK_UUID')
   } as any;
 };
 
