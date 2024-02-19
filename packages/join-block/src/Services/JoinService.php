@@ -27,6 +27,7 @@ class JoinService
             do_action('ck_join_flow_success', $data, $chargebeeCustomer);
         } catch (\Exception $e) {
             do_action('ck_join_flow_error', $data, $e);
+            throw $e;
         }
         return $chargebeeCustomer;
     }
