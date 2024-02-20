@@ -131,8 +131,16 @@ class Blocks
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'skip_details', 'Skip Details Step (e.g. for existing members)')
+                    ->set_help_text(
+                        'Check to skip collecting member details (e.g. name, address). If checked, this page must ' .
+                            'be linked to with the email URL search parameter set, e.g. /become-paid-member/?email=someone@example.com. ' .
+                            'This can be achieved by using the CK Join Form Link block on a landing page, and linking to this page.'
+                    ),
                 $custom_membership_plans,
-                Field::make('text', 'custom_webhook_url')->set_help_text('Leave blank to use the default webhook from the settings page.')
+                Field::make('text', 'custom_webhook_url')
+                    ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
+
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             if (is_multisite()) {
@@ -182,6 +190,7 @@ class Blocks
                 "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
                 "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
                 "POSTCODE_API_KEY" => Settings::get("POSTCODE_API_KEY"),
+                "SKIP_DETAILS" => $fields['skip_details'] ?? false,
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
                 "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',

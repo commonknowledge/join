@@ -14,6 +14,7 @@ interface StaticEnv {
     PRIVACY_COPY: string;
     POSTCODE_API_KEY: string;
     SUCCESS_REDIRECT: string;
+    SKIP_DETAILS: boolean; // email must be provided through a URL parameter
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
     USE_TEST_DATA: string;
@@ -43,6 +44,7 @@ const staticEnv: StaticEnv = {
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     POSTCODE_API_KEY: process.env.REACT_APP_POSTCODE_API_KEY || '',
     SUCCESS_REDIRECT: '/',
+    SKIP_DETAILS: parseBooleanEnvVar("REACT_APP_SKIP_DETAILS"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_TEST_DATA: process.env.REACT_APP_POSTCODE_API_KEY || '',

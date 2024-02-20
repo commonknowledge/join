@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import isoCountries from "iso-3166";
 
 import { get as getEnv, getStr as getEnvStr } from '../env';
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { ContinueButton, FormItem } from "../components/atoms";
+import { sortedCountries } from "../constants";
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -19,17 +19,6 @@ const addressLookupFormSchema = yup.object().shape({
 const homeAddressCopy = getEnvStr('HOME_ADDRESS_COPY');
 const passwordPurpose = getEnvStr('PASSWORD_PURPOSE');
 const privacyCopy = getEnvStr('PRIVACY_COPY');
-
-const sortedCountries = isoCountries.sort((a, b) => {
-  // Prioritize The United Kingdom
-  if (a.alpha2 === "GB") {
-    return -1
-  }
-  if (b.alpha2 === "GB") {
-    return 1
-  }
-  return a.name < b.name ? -1 : 1
-})
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,

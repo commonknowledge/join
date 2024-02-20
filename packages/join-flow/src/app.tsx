@@ -8,6 +8,7 @@ import { PaymentPage } from "./pages/payment-method.page";
 import { PlanPage } from "./pages/plan.page";
 import { DonationPage } from "./pages/donation.page";
 import {
+  PageState,
   RouterContext,
   StateRouter,
   stripUrlParams,
@@ -21,7 +22,13 @@ import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 
-const stages = [
+interface Stage {
+  id: PageState["stage"],
+  label: string
+  breadcrumb: boolean
+}
+
+let stages: Stage[] = [
   { id: "enter-details", label: "Your Details", breadcrumb: true },
   { id: "plan", label: "Your Membership", breadcrumb: true },
   { id: "donation", label: "Can you chip in?", breadcrumb: false },
@@ -30,6 +37,10 @@ const stages = [
   { id: "confirm", label: "Confirm", breadcrumb: false }
 ];
 
+if (getEnv('SKIP_DETAILS')) {
+  stages = stages.filter(s => s.id !== 'enter-details')
+}
+
 const SAVED_STATE_KEY = "ck_join_state_flow";
 
 const App = () => {
@@ -37,7 +48,7 @@ const App = () => {
 
   const router = useStateRouter(
     {
-      stage: "enter-details"
+      stage: stages[0].id
     },
     stages
   );
@@ -54,14 +65,13 @@ const App = () => {
         ...change
       } as FormSchema;
 
-      await recordStep(nextData)
-
       const includeDonationPage = getEnv("ASK_FOR_ADDITIONAL_DONATION");
 
       setData(nextData);
       sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(nextData));
 
       let nextStage = router.state.stage
+      let shouldRecordStep = true
 
       if (router.state.stage === "enter-details") {
         nextStage = "plan"
@@ -74,11 +84,15 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
+        // Don't record the final step
+        shouldRecordStep = false
         let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
-        if (redirectTo.includes('?')) {
-          redirectTo += '&first_name=' + nextData['firstName']
-        } else {
-          redirectTo += '?first_name=' + nextData['firstName']
+        if (nextData['firstName']) {
+          if (redirectTo.includes('?')) {
+            redirectTo += '&first_name=' + nextData['firstName']
+          } else {
+            redirectTo += '?first_name=' + nextData['firstName']
+          }
         }
         window.location.href = redirectTo;
       }
@@ -91,6 +105,9 @@ const App = () => {
         nextStage = "payment-details"
       }
 
+      if (shouldRecordStep) {
+        await recordStep(nextData)
+      }
       router.setState({ stage: nextStage });
     },
     [router, data]

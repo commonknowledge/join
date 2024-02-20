@@ -44,18 +44,20 @@ class JoinService
 
         $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
-        $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
-        $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+        if (!empty($data['phoneNumber'] && !empty($data['addressCountry']))) {
+            $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
+            $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+        }
 
         $billingAddress = [
-            "firstName" => $data['firstName'],
-            "lastName" => $data['lastName'],
-            "line1" => $data['addressLine1'],
-            "line2" => $data['addressLine2'],
-            "city" => $data['addressCity'],
-            "state" => $data['addressCounty'],
-            "zip" => $data['addressPostcode'],
-            "country" => $data['addressCountry']
+            "firstName" => $data['firstName'] ?? '',
+            "lastName" => $data['lastName'] ?? '',
+            "line1" => $data['addressLine1'] ?? '',
+            "line2" => $data['addressLine2'] ?? '',
+            "city" => $data['addressCity'] ?? '',
+            "state" => $data['addressCounty'] ?? '',
+            "zip" => $data['addressPostcode'] ?? '',
+            "country" => $data['addressCountry'] ?? ''
         ];
 
         $data['membershipPlan'] = Settings::getMembershipPlan($data['membership'] ?? '');

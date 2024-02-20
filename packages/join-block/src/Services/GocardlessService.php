@@ -39,11 +39,20 @@ class GocardlessService
             }
         }
 
+        if (empty($data['firstName']) && empty($data['lastName'])) {
+            $names = explode(' ', $data['ddAccountHolderName'] ?? '');
+            $lastName = array_pop($names);
+            $firstName = implode(' ', $names);
+        } else {
+            $firstName = $data['firstName'] ?? '';
+            $lastName = $data['firstName'] ?? '';
+        }
+
         $customer = $client->customers()->create([
             "params" => [
                 "email" => $data['email'],
-                "given_name" => $data['firstName'],
-                "family_name" => $data['lastName'],
+                "given_name" => $firstName,
+                "family_name" => $lastName,
                 "country_code" => $data['addressCountry'],
                 "phone_number" => $data['phoneNumber']
             ]
