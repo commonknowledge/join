@@ -6,7 +6,11 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class GocardlessService
 {
-    public static function createCustomerMandate($data)
+    /**
+     * Returns a GoCardless Subscription instance, with
+     * $subscription->links->customer set to the customer ID.
+     */
+    public static function createCustomerSubscription($data)
     {
         global $joinBlockLog;
         $client = self::getClient();
@@ -55,7 +59,7 @@ class GocardlessService
             ]
         ]);
 
-        return $client->mandates()->create([
+        $mandate = $client->mandates()->create([
             "params" => [
                 "scheme" => "bacs",
                 "links" => [
@@ -63,6 +67,20 @@ class GocardlessService
                 ]
             ]
         ]);
+
+        $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
+        $subscriptionParams = [
+            "amount" => $amountInPence,
+            "currency" => $data['membershipPlan']['currency'],
+            "name" => $data['membershipPlan']['label'],
+            "interval_unit" => $data['membershipPlan']['frequency'],
+            "links" => ["mandate" => $mandate->id]
+        ];
+        $subscription = $client->subscriptions()->create([
+            "params" => $subscriptionParams
+        ]);
+        $subscription->links->customer = $customer->id;
+        return $subscription;
     }
 
     private static function getClient()

@@ -94,14 +94,14 @@ class Blocks
                 }
             }
             self::echoBlockCss();
-        ?>
+?>
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
-                <div class="ck-join-flow">
-                    <div class="ck-join-page-header">
-                        <h1><?= $title ?></h1>
-                        <img src="<?= $fields['image'] ?>" alt="<?= $fields['title'] ?>">
-                    </div>
+            <div class="ck-join-flow">
+                <div class="ck-join-page-header">
+                    <h1><?= $title ?></h1>
+                    <img src="<?= $fields['image'] ?>" alt="<?= $fields['title'] ?>">
                 </div>
+            </div>
         <?php
         });
     }
@@ -122,12 +122,8 @@ class Blocks
         ))->set_max(1);
 
         /** @var Complex_Field $custom_membership_plans */
-        $custom_membership_plans = Field::make('complex', 'custom_membership_plans');
-        $custom_membership_plans->add_fields([
-            Field::make('text', 'label', "Name")->set_required(true),
-            Field::make('text', 'price_label', "Price")->set_required(true)->set_help_text("E.G. £10 per month"),
-            Field::make('text', 'description'),
-        ])->set_help_text('Leave blank to use the default plans from the settings page.');
+        $custom_membership_plans = Settings::createMembershipPlansField('custom_membership_plans')
+            ->set_help_text('Leave blank to use the default plans from the settings page.');
 
         /** @var Block_Container $join_form_block */
         $join_form_block = Block::make(__('CK Join Form'))
@@ -157,7 +153,7 @@ class Blocks
                 return [
                     "value" => sanitize_title($plan["label"]),
                     "label" => $plan["label"],
-                    "priceLabel" => $plan["price_label"],
+                    "priceLabel" => Blocks::getMembershipPlanPriceLabel($plan),
                     "description" => $plan["description"]
                 ];
             }, $membership_plans);
@@ -190,7 +186,7 @@ class Blocks
                 "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
             ];
             self::echoBlockCss();
-?>
+        ?>
 
             <script type="application/json" id="env">
                 <?php echo json_encode($environment); ?>
@@ -211,6 +207,8 @@ class Blocks
                 if ($custom_webhook_url) {
                     Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
                 }
+                $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
+                Settings::saveMembershipPlans($custom_membership_plans);
             }
         }, 10, 2);
     }
@@ -283,5 +281,23 @@ class Blocks
             <?= Settings::get('custom_css') ?>
         </style>
 <?php
+    }
+
+    private static function getMembershipPlanPriceLabel($plan)
+    {
+        $currency = '';
+        switch ($plan['currency']) {
+            case 'GBP':
+                $currency = '£';
+                break;
+            case 'EUR':
+                $currency = '€';
+                break;
+            case 'USD':
+                $currency = '$';
+                break;
+            default:
+        }
+        return $currency . $plan['amount'] . ', ' . $plan['frequency'];
     }
 }

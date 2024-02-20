@@ -58,6 +58,13 @@ class JoinService
             "country" => $data['addressCountry']
         ];
 
+        $data['membershipPlan'] = Settings::getMembershipPlan($data['membership'] ?? '');
+        if (!$data['membershipPlan']) {
+            $error = 'Invalid membership plan: ' . $data['membership'];
+            $joinBlockLog->error($error);
+            throw new \Exception($error);
+        }
+
         $customerResult = null;
 
         $useChargebee = Settings::get('USE_CHARGEBEE');
@@ -65,12 +72,16 @@ class JoinService
             $customerResult = self::handleChargebee($data, $billingAddress);
         }
 
+        $subscription = null;
         if (Settings::get('USE_GOCARDLESS')) {
-            $mandate = self::handleGocardless($data);
-            if ($mandate && $useChargebee) {
-                $customerResult = self::createDirectDebitChargebeeCustomer($data, $billingAddress, $mandate);
+            $subscription = self::handleGocardless($data);
+            if ($subscription && $useChargebee) {
+                $customerResult = self::createDirectDebitChargebeeCustomer($data, $billingAddress, $subscription);
             }
         }
+        $data['gocardlessSubscription'] = $subscription ? $subscription->id : null;
+        $data['gocardlessMandate'] = $subscription ? $subscription->links->mandate : null;
+        $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
         $subscriptionPlanId = '';
         if ($useChargebee && $customerResult) {
@@ -207,10 +218,10 @@ class JoinService
     {
         global $joinBlockLog;
 
-        $mandate = null;
+        $subscription = null;
 
         if ($data['paymentMethod'] === 'directDebit') {
-            $joinBlockLog->info('Creating Direct Debit mandate via GoCardless');
+            $joinBlockLog->info('Creating Direct Debit subscription via GoCardless');
 
             /*
                 Handle different GoCardless errors.
@@ -224,55 +235,55 @@ class JoinService
                 They should rarely occur if at all.
             */
             try {
-                $data = apply_filters('ck_join_flow_pre_gocardless_mandate_create', $data);
-                $mandate = GocardlessService::createCustomerMandate($data);
+                $data = apply_filters('ck_join_flow_pre_gocardless_subscription_create', $data);
+                $subscription = GocardlessService::createCustomerSubscription($data);
             } catch (\GoCardlessPro\Core\Exception\ValidationFailedException $exception) {
                 $joinBlockLog->error(
-                    'GoCardless Direct Debit mandate creation failed as account details were invalid: ' .
+                    'GoCardless Direct Debit subscription creation failed as account details were invalid: ' .
                         $exception->getMessage()
                 );
 
                 throw new JoinBlockException(
-                    'GoCardless Direct Debit mandate creation failed due to validation',
+                    'GoCardless Direct Debit subscription creation failed due to validation',
                     3,
                     $exception->getErrors()
                 );
             } catch (\GoCardlessPro\Core\Exception\InvalidApiUsageException $exception) {
                 $joinBlockLog->error(
-                    'GoCardless Direct Debit mandate creation failed due to invalid usage of the API ' .
+                    'GoCardless Direct Debit subscription creation failed due to invalid usage of the API ' .
                         $exception->getMessage()
                 );
 
                 throw new JoinBlockException(
-                    'GoCardless Direct Debit mandate creation failed due to invalid API usage',
+                    'GoCardless Direct Debit subscription creation failed due to invalid API usage',
                     5
                 );
             } catch (\GoCardlessPro\Core\Exception\InvalidStateException $exception) {
                 $joinBlockLog->error(
-                    'GoCardless Direct Debit mandate creation failed due to invalid state ' . $exception->getMessage()
+                    'GoCardless Direct Debit subscription creation failed due to invalid state ' . $exception->getMessage()
                 );
 
                 throw new JoinBlockException(
-                    'GoCardless Direct Debit mandate creation failed due to invalid state - ' .
+                    'GoCardless Direct Debit subscription creation failed due to invalid state - ' .
                         'this usually means a request in flight is in a unclear state',
                     6
                 );
             } catch (\Exception $expection) {
                 $joinBlockLog->error(
-                    'GoCardless Direct Debit mandate creation failed with unknown exception: ' .
+                    'GoCardless Direct Debit subscription creation failed with unknown exception: ' .
                         get_class($expection),
                     ['exception' => $expection]
                 );
-                throw new \Error('GoCardless Direct Debit mandate creation failed');
+                throw new \Error('GoCardless Direct Debit subscription creation failed');
             }
 
-            $joinBlockLog->info('Direct Debit mandate via GoCardless successful');
+            $joinBlockLog->info('Direct Debit subscription via GoCardless successful');
         }
 
-        return $mandate;
+        return $subscription;
     }
 
-    private static function createDirectDebitChargebeeCustomer($data, $billingAddress, $mandate)
+    private static function createDirectDebitChargebeeCustomer($data, $billingAddress, $subscription)
     {
         global $joinBlockLog;
         $joinBlockLog->info('Creating Direct Debit Chargebee Customer');
@@ -287,7 +298,7 @@ class JoinService
             "phone" => $data['phoneNumber'],
             "payment_method" => [
                 "type" => "direct_debit",
-                "reference_id" => $mandate->id,
+                "reference_id" => $subscription->id,
             ],
             "billingAddress" => $billingAddress,
             "cf_birthdate" => $formattedDateOfBirth,

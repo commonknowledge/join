@@ -16,16 +16,10 @@ class Settings
         /** @var Select_Field $gc_environment_select */
         $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment'));
         $gc_environment_select->set_options(array(
-            'Sandbox' => 'sandbox',
-            'Live' => 'live',
+            'sandbox' => 'Sandbox',
+            'live' => 'Live',
         ));
-        /** @var Complex_Field $membership_plans */
-        $membership_plans = Field::make('complex', 'membership_plans');
-        $membership_plans->add_fields([
-            Field::make('text', 'label', "Name")->set_required(true),
-            Field::make('text', 'price_label', "Price")->set_required(true)->set_help_text("E.G. £10 per month"),
-            Field::make('text', 'description'),
-        ])->set_min(1)->set_required(true);
+        $membership_plans = self::createMembershipPlansField('membership_plans');
         Container::make('theme_options', CONTAINER_ID, 'CK Join Block')
             ->add_fields(array(
                 Field::make('separator', 'features', 'Features'),
@@ -81,13 +75,44 @@ class Settings
             ));
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
-        // for an explanation.
+        // for an explanation. Also saves the membership plan amounts.
         add_filter('carbon_fields_theme_options_container_saved', function ($_, $container) {
             if ($container && $container->id === 'carbon_fields_container_' . CONTAINER_ID) {
                 $webhook_url = Settings::get('webhook_url');
                 Settings::ensureWebhookUrlIsSaved($webhook_url);
+                $membership_plans = Settings::get('membership_plans');
+                Settings::saveMembershipPlans($membership_plans);
             }
         }, 10, 2);
+    }
+
+    public static function createMembershipPlansField($name = 'membership_plans')
+    {
+        /** @var Select_Field $payment_frequency_select */
+        $payment_frequency_select = Field::make('select', 'frequency');
+        $payment_frequency_select->set_options(array(
+            'yearly' => 'Yearly',
+            'monthly' => 'Monthly',
+            'weekly' => 'Weekly',
+        ))->set_default_value('monthly');
+        /** @var Select_Field $payment_currency_select */
+        $payment_currency_select = Field::make('select', 'currency');
+        $payment_currency_select->set_options(array(
+            'GBP' => 'GBP (£)',
+            'EUR' => 'EUR (€)',
+            'USD' => 'USD ($)',
+        ))->set_default_value('GBP');
+        /** @var Complex_Field $membership_plans */
+        $membership_plans = Field::make('complex', $name);
+        $membership_plans->add_fields([
+            Field::make('text', 'label', "Name")->set_required(true),
+            Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
+                ->set_help_text("Price without currency, e.g. 10"),
+            $payment_frequency_select,
+            $payment_currency_select,
+            Field::make('text', 'description'),
+        ])->set_min(1)->set_required(true);
+        return $membership_plans;
     }
 
     public static function get($key)
@@ -135,5 +160,17 @@ class Settings
         // This would allow a user to submit to the default webhook by
         // malforming the uuid, which should not be allowed
         return get_option('ck_join_flow_webhook_url_' . $webhook_uuid);
+    }
+
+    public static function saveMembershipPlans($membership_plans)
+    {
+        foreach ($membership_plans as $plan) {
+            update_option('ck_join_flow_membership_plan_' . sanitize_title($plan['label']), $plan);
+        }
+    }
+
+    public static function getMembershipPlan($membership_plan_label)
+    {
+        return get_option('ck_join_flow_membership_plan_' . sanitize_title($membership_plan_label));
     }
 }
