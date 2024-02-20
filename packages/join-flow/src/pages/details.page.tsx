@@ -130,7 +130,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Home address</h2>
-        <p className="text-secondary" dangerouslySetInnerHTML={{__html: homeAddressCopy}}></p>
+        <p className="text-secondary" dangerouslySetInnerHTML={{ __html: homeAddressCopy }}></p>
         <FormItem
           label="Postcode"
           name="postcode"
@@ -223,15 +223,19 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <FormItem label="Phone number" name="phoneNumber" form={form} required>
           <Form.Control autoComplete="tel-national" type="tel" />
         </FormItem>
-        <p className="text-secondary">
-          How would you like us to contact you?
-        </p>
-        <FormItem form={form} name="contactByEmail">
-          <Form.Check label="Email" />
-        </FormItem>
-        <FormItem form={form} name="contactByName">
-          <Form.Check label="Phone" />
-        </FormItem>
+        {getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT') ? (
+          <>
+            <p className="text-secondary">
+              How would you like us to contact you?
+            </p>
+            <FormItem form={form} name="contactByEmail">
+              <Form.Check label="Email" />
+            </FormItem>
+            <FormItem form={form} name="contactByPhone">
+              <Form.Check label="Phone" />
+            </FormItem>
+          </>
+        ) : null}
       </section>
 
       {getEnv('CREATE_AUTH0_ACCOUNT') ? (

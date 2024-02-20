@@ -19,6 +19,7 @@ import { Stager } from "./components/stager";
 import { FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
+import { usePostResource } from "./services/rest-resource.service";
 
 const stages = [
   { id: "enter-details", label: "Your Details", breadcrumb: true },
@@ -43,13 +44,17 @@ const App = () => {
 
   useOnce(stripUrlParams);
 
+  const recordStep = usePostResource<FormSchema>("/step");
+
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
-    (change: FormSchema) => {
+    async (change: FormSchema) => {
       const nextData = {
         ...data,
         ...change
       } as FormSchema;
+
+      await recordStep(nextData)
 
       const includeDonationPage = getEnv("ASK_FOR_ADDITIONAL_DONATION");
 
@@ -141,7 +146,10 @@ const getInitialState = (): FormSchema => {
   const paymentMethods = getPaymentMethods();
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
-    paymentMethod: paymentMethods.length ? paymentMethods[0] : "directDebit"
+    paymentMethod: paymentMethods.length ? paymentMethods[0] : "directDebit",
+    // Default contact flags to true if not collecting consent, otherwise false
+    contactByEmail: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
+    contactByPhone: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
   });
 
   const getSavedState = () => {

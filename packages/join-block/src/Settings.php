@@ -24,6 +24,8 @@ class Settings
             ->add_fields(array(
                 Field::make('separator', 'features', 'Features'),
                 Field::make('checkbox', 'collect_date_of_birth'),
+                Field::make('checkbox', 'collect_phone_and_email_contact_consent')
+                ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
                 Field::make('checkbox', 'create_auth0_account'),
                 Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
                 Field::make('checkbox', 'use_chargebee'),
@@ -61,7 +63,8 @@ class Settings
                 Field::make('separator', 'ideal_postcodes', 'Ideal Postcodes'),
                 Field::make('text', 'postcode_api_key', 'Ideal Postcodes API Key'),
                 Field::make('separator', 'webhook'),
-                Field::make('text', 'webhook_url'),
+                Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
+                Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),
                 Field::make('separator', 'auth0', 'Auth0'),
                 Field::make('text', 'auth0_domain')->set_help_text(
                     "The name of the Auth0 site - e.g. example.auth0.com"

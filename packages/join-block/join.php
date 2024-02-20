@@ -61,7 +61,7 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
-            $joinBlockLog->info('Join process started', ['request' => $request]);
+            $joinBlockLog->info('CK Join process started', ['request' => $request]);
 
             try {
                 JoinService::handleJoin($request->get_json_params());
@@ -93,6 +93,40 @@ add_action('rest_api_init', function () {
                         'fields' => $exception->getFields()
                     ]
                 );
+            }
+
+            return new WP_REST_Response(['status' => 'ok'], 200);
+        },
+    ));
+
+    register_rest_route('join/v1', '/step', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $joinBlockLog->info('Recording CK Join form step', ['request' => $request]);
+
+            try {
+                $data = $request->get_json_params();
+                $stepWebhookUrl = Settings::get('step_webhook_url');
+                if ($stepWebhookUrl) {
+                    $webhookData = apply_filters('ck_join_flow_pre_step_webhook_post', [
+                        "headers" => [
+                            'Content-Type' => 'application/json',
+                        ],
+                        "body" => json_encode($data)
+                    ]);
+                    $webhookResponse = wp_remote_post($stepWebhookUrl, $webhookData);
+                    if ($webhookResponse instanceof \WP_Error) {
+                        $error = $webhookResponse->get_error_message();
+                        $joinBlockLog->error('Step webhook ' . $stepWebhookUrl . ' failed: ' . $error);
+                    }
+                }
+            } catch (\Exception $e) {
+                $joinBlockLog->error('CK Join form step error: ' . $e->getMessage());
             }
 
             return new WP_REST_Response(['status' => 'ok'], 200);

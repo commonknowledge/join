@@ -172,6 +172,7 @@ class Blocks
                 'CHARGEBEE_SITE_NAME' => Settings::get('CHARGEBEE_SITE_NAME'),
                 "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
                 "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
+                "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
                 "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
                 "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
                 "MEMBERSHIP_PLANS" => $membership_plans_prepared,

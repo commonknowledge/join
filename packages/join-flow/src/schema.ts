@@ -43,22 +43,6 @@ function isInPast(value: number | null | undefined | object) {
   );
 }
 
-const passwordSchemaItem = () => {
-  if (!getEnv('CREATE_AUTH0_ACCOUNT')) {
-    return null;
-  }
-  let password = string()
-    .min(8, "Password must be at least 8 characters")
-    .matches(/[0-9]/, "Password must contain a number.")
-    .matches(/[A-Z]/, "Password must contain an uppercase letter.")
-    .matches(
-      /[!@#$%^&*]/,
-      "Password must contain at least one special character, !@#$%^&* are allowed."
-    )
-    .required()
-  return password
-}
-
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
