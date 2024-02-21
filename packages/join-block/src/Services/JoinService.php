@@ -104,22 +104,30 @@ class JoinService
         if ($webhookUuid) {
             $webhookUrl = Settings::getWebhookUrl($webhookUuid);
             if ($webhookUrl) {
-                $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
-                    "headers" => [
-                        'Content-Type' => 'application/json',
-                    ],
-                    "body" => json_encode($data)
-                ]);
-                $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
-                if ($webhookResponse instanceof \WP_Error) {
-                    $error = $webhookResponse->get_error_message();
-                    $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
-                    throw new \Exception($error);
-                }
+                self::sendDataToWebhook($data, $webhookUrl);
             }
         }
 
         return $customerResult ? $customerResult->customer() : null;
+    }
+
+    public static function sendDataToWebhook($data, $webhookUrl)
+    {
+        global $joinBlockLog;
+
+        $data = self::addPostcodesIOData($data);
+        $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
+            "headers" => [
+                'Content-Type' => 'application/json',
+            ],
+            "body" => json_encode($data)
+        ]);
+        $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
+        if ($webhookResponse instanceof \WP_Error) {
+            $error = $webhookResponse->get_error_message();
+            $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
+            throw new \Exception($error);
+        }
     }
 
     private static function handleChargebee($data, $billingAddress)
@@ -422,5 +430,35 @@ class JoinService
 
         $joinBlockLog->info('Chargebee subscription successful');
         return $chargebeeSubscriptionPayload['planId'] ?? '';
+    }
+
+    private static function addPostcodesIOData($data)
+    {
+        global $joinBlockLog;
+
+        $postcode = $data['addressPostcode'] ?? '';
+        if (!$postcode) {
+            return $data;
+        }
+        // Remove whitespace
+        $postcode = preg_replace('#\s+#', '', $postcode);
+        $response = @file_get_contents("https://api.postcodes.io/postcodes/$postcode");
+        $error = null;
+        $postcodeData = null;
+        try {
+            $postcodeData = json_decode($response, true);
+        } catch (\Exception $e) {
+            $error = $e;
+        }
+
+        if (empty($postcodeData['result']) || true) {
+            $message = 'Error getting PostcodesIO data for postcode ' . $postcode . '. Response: ' . $response;
+            $errMessage = $error ? $error->getMessage() : 'Unknown error';
+            $message .= '. Error: ' . $errMessage;
+            $joinBlockLog->error($message);
+        }
+
+        $data['postcodesIOData'] = $postcodeData['result'] ?? null;
+        return $data;
     }
 }

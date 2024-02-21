@@ -59,7 +59,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       </div>
 
       <section className="form-section">
-        <h1>Your bank details</h1>
+        <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
           <Form.Control />
         </FormItem>
@@ -202,7 +202,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
         }}
         ref={cardRef}
       >
-        <h1>Card details</h1>
+        <h2>Card details</h2>
         <p className="text-secondary mb-5">
           You've chosen to join {organisationName} by paying by card.
         </p>

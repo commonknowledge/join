@@ -113,17 +113,7 @@ add_action('rest_api_init', function () {
                 $data = $request->get_json_params();
                 $stepWebhookUrl = Settings::get('step_webhook_url');
                 if ($stepWebhookUrl) {
-                    $webhookData = apply_filters('ck_join_flow_pre_step_webhook_post', [
-                        "headers" => [
-                            'Content-Type' => 'application/json',
-                        ],
-                        "body" => json_encode($data)
-                    ]);
-                    $webhookResponse = wp_remote_post($stepWebhookUrl, $webhookData);
-                    if ($webhookResponse instanceof \WP_Error) {
-                        $error = $webhookResponse->get_error_message();
-                        $joinBlockLog->error('Step webhook ' . $stepWebhookUrl . ' failed: ' . $error);
-                    }
+                    JoinService::sendDataToWebhook($data, $stepWebhookUrl);
                 }
             } catch (\Exception $e) {
                 $joinBlockLog->error('CK Join form step error: ' . $e->getMessage());

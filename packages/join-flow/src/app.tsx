@@ -55,7 +55,7 @@ const App = () => {
 
   useOnce(stripUrlParams);
 
-  const recordStep = usePostResource<FormSchema>("/step");
+  const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
@@ -71,10 +71,11 @@ const App = () => {
       sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(nextData));
 
       let nextStage = router.state.stage
-      let shouldRecordStep = true
 
       if (router.state.stage === "enter-details") {
         nextStage = "plan"
+        // Send initial details to catch drop off
+        await recordStep({ ...nextData, stage: 'enter-details' });
       } else if (router.state.stage === "plan") {
         nextStage = "donation"
       } else if (router.state.stage === "donation") {
@@ -84,8 +85,6 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
-        // Don't record the final step
-        shouldRecordStep = false
         let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
         if (nextData['firstName']) {
           if (redirectTo.includes('?')) {
@@ -105,9 +104,6 @@ const App = () => {
         nextStage = "payment-details"
       }
 
-      if (shouldRecordStep) {
-        await recordStep(nextData)
-      }
       router.setState({ stage: nextStage });
     },
     [router, data]

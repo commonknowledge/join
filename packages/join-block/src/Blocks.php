@@ -259,7 +259,7 @@ class Blocks
                         <form action="<?= $link ?>" method="get" class="form-group">
                             <label for="ck-join-flow-email" class="form-label">Your email</label>
                             <div class="ck-join-form-link-input">
-                                <input type="text" id="ck-join-flow-email" name="email" class="form-control">
+                                <input type="text" id="ck-join-flow-email" name="email" class="form-control" required>
                                 <button class="btn btn-primary">Join</button>
                             </div>
                         </form>
@@ -268,8 +268,10 @@ class Blocks
             <?php else : ?>
                 <div class="ck-join-flow">
                     <div class="ck-join-form-link">
-                        <h2><?= $fields['title'] ?></h2>
-                        <a href="<?= $link ?>"><?= wpautop($fields['introduction']) ?></a>
+                        <a href="<?= $link ?>">
+                            <h2><?= $fields['title'] ?></h2>
+                            <?= wpautop($fields['introduction']) ?>
+                        </a>
                     </div>
                 </div>
             <?php endif; ?>
