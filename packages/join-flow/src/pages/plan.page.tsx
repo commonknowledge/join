@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema } from "../schema";
+import { FormSchema, currencyCodeToSymbol } from "../schema";
 import { get as getEnv } from "../env"
 
 export const PlanPage: StagerComponent<FormSchema> = ({
@@ -34,7 +34,10 @@ export const PlanPage: StagerComponent<FormSchema> = ({
             name="membership"
             value={plan.value}
             label={plan.label}
-            priceLabel={plan.priceLabel}
+            allowCustomAmount={plan.allowCustomAmount}
+            currencySymbol={currencyCodeToSymbol(plan.currency)}
+            amount={plan.amount}
+            frequency={plan.frequency}
             description={plan.description}
             form={form}
           />

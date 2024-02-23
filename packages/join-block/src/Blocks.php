@@ -157,14 +157,18 @@ class Blocks
                 $membership_plans = Settings::get("MEMBERSHIP_PLANS") ?? [];
             }
 
-            $membership_plans_prepared = array_map(function ($plan) {
-                return [
+            $membership_plans_prepared = [];
+            foreach ($membership_plans as $plan) {
+                $membership_plans_prepared[] = [
                     "value" => sanitize_title($plan["label"]),
                     "label" => $plan["label"],
-                    "priceLabel" => Blocks::getMembershipPlanPriceLabel($plan),
+                    "allowCustomAmount" => $plan["allow_custom_amount"] ?? false,
+                    "amount" => $plan["amount"],
+                    "currency" => $plan["currency"],
+                    "frequency" => $plan["frequency"],
                     "description" => $plan["description"]
                 ];
-            }, $membership_plans);
+            }
 
             $webhook_url = $fields['custom_webhook_url'] ?? '';
             if (!$webhook_url) {
@@ -203,6 +207,7 @@ class Blocks
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
                 "USE_POSTCODE_LOOKUP" => $use_postcode_lookup,
+                "USE_VARIABLE_MEMBERSHIP_PLAN" => $fields['use_variable_membership_plan'] ?? false,
                 "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
             ];
             self::echoBlockCss();
@@ -303,23 +308,5 @@ class Blocks
             <?= Settings::get('custom_css') ?>
         </style>
 <?php
-    }
-
-    private static function getMembershipPlanPriceLabel($plan)
-    {
-        $currency = '';
-        switch ($plan['currency']) {
-            case 'GBP':
-                $currency = '£';
-                break;
-            case 'EUR':
-                $currency = '€';
-                break;
-            case 'USD':
-                $currency = '$';
-                break;
-            default:
-        }
-        return $currency . $plan['amount'] . ', ' . $plan['frequency'];
     }
 }

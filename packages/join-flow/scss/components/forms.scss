@@ -99,6 +99,16 @@ select.form-control {
   }
 }
 
+.radio-panel-custom-amount {
+  align-items: center;
+  display: flex;
+  gap: 0.25rem;
+
+  .form-group {
+    margin-bottom: 0;
+  }
+}
+
 legend {
   margin: 0;
 }

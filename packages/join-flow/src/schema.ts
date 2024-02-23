@@ -115,7 +115,8 @@ export const PlanSchema = object({
       "student",
       "suggested"
     ])
-    .required()
+    .required(),
+  customMembershipAmount: number()
 }).required();
 
 const ucwords = (str: string) => {
@@ -124,22 +125,47 @@ const ucwords = (str: string) => {
   }).join(' ')
 }
 
-export const renderPaymentPlan = ({ membership }: FormSchema) => {
+export const currencyCodeToSymbol = (code: string): string => {
+  switch(code) {
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    case 'USD':
+      return '$';
+  }
+  return '£';
+}
+
+export const getPaymentPlan = (name: string | undefined) => {
+  const plans = getEnv('MEMBERSHIP_PLANS')
+  return (plans as any[]).filter(p => p.value === name).pop()
+}
+
+export const renderPaymentPlan = ({ membership, customMembershipAmount }: FormSchema) => {
   if (!membership) {
     return "None";
   }
 
-  return ucwords(membership)
+  const plan = getPaymentPlan(membership)
+
+  if (!plan || !plan.allowCustomAmount) {
+    return ucwords(membership)
+  }
+
+  const amount = `${currencyCodeToSymbol(plan.currency)}${customMembershipAmount}`
+  const parts = [ucwords(membership), amount, plan.frequency]
+  return parts.join(', ')
 };
 
 const PaymentMethodSchema = object({
   paymentMethod: string().oneOf(["directDebit", "creditCard"]).required()
 }).required();
 
-export const membershipIsAnnual = (membership: string): boolean =>
-  membership === "lowWaged" ||
-  membership === "student" ||
-  membership === "unwaged";
+export const getPaymentFrequency = (membership: string | undefined) => {
+  const plan = getPaymentPlan(membership)
+  return plan?.frequency || ''
+}
 
 export const renderPaymentMethod = ({
   paymentMethod,
@@ -155,10 +181,13 @@ export const renderPaymentMethod = ({
     paymentFormat = "Direct Debit";
   }
 
-  const paymentFrequency =
-    membership && membershipIsAnnual(membership) ? "Yearly" : "Monthly";
+  const frequency = getPaymentFrequency(membership);
 
-  return `${paymentFrequency} ${paymentFormat}`;
+  if (frequency) {
+    return `${paymentFormat}, ${frequency}`
+  }
+
+  return paymentFormat;
 };
 
 export const PaymentMethodDDSchema = object({

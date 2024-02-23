@@ -122,6 +122,8 @@ class Settings
             Field::make('text', 'label', "Name")->set_required(true),
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
+            Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')
+                ->set_attribute('This ignores the above price and requires users to choose the amount to pay'),
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
