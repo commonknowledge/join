@@ -67,6 +67,17 @@ class JoinService
             throw new \Exception($error);
         }
 
+        $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
+        if ($data['membershipPlan']['allow_custom_amount']) {
+            $membershipAmount = $data['customMembershipAmount'];
+        }
+
+        if ($membershipAmount < 1 || $membershipAmount > 1000) {
+            $error = 'Invalid membership amount: ' . $membershipAmount;
+            $joinBlockLog->error($error);
+            throw new \Exception($error);
+        }
+
         $customerResult = null;
 
         $useChargebee = Settings::get('USE_CHARGEBEE');

@@ -3,7 +3,7 @@ import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema, membershipIsAnnual } from "../schema";
+import { FormSchema, getPaymentFrequency } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
@@ -40,14 +40,14 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   let directDebitDetailsMessage = null;
 
   if (data.paymentMethod === "directDebit" && data.membership) {
+    const frequency = getPaymentFrequency(data.membership)
     directDebitDetailsMessage = (
       <section className="form-section mb-3">
         <p>
           You are paying for your membership of {organisationName} by Direct Debit.
         </p>
         <p>
-          This will be charged every{" "}
-          {membershipIsAnnual(data.membership) ? "year" : "month"} from your
+          This will be charged {frequency ? frequency + ' ' : ''}from your
           bank account.
         </p>
         <p>

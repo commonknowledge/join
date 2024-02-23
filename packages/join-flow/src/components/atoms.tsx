@@ -20,10 +20,13 @@ export const ContinueButton: FC<ContinueButtonProps> = ({ text, onClick }) => (
 
 interface RadioPanelProps {
   value: string;
-  form?: UseFormMethods<any>;
+  form: UseFormMethods<any>;
   name: string;
   label: string;
-  priceLabel?: string;
+  allowCustomAmount?: boolean;
+  amount?: number;
+  currencySymbol?: string;
+  frequency?: string;
   description?: string;
   valueMeta?: string;
   className?: string;
@@ -33,7 +36,10 @@ export const RadioPanel: FC<RadioPanelProps> = ({
   value,
   valueMeta,
   description,
-  priceLabel,
+  amount,
+  currencySymbol,
+  frequency,
+  allowCustomAmount,
   form,
   name,
   label,
@@ -45,6 +51,8 @@ export const RadioPanel: FC<RadioPanelProps> = ({
     render={({ onChange }) => {
       const currentValue = form?.watch(name);
       const checked = value === currentValue;
+      const customValue = form?.watch('customMembershipAmount')
+      const priceLabel = `${currencySymbol}${amount}, ${frequency}`
 
       return (
         <Form.Label
@@ -66,8 +74,17 @@ export const RadioPanel: FC<RadioPanelProps> = ({
           <div className="flex-grow-1">
             <h3 className="radio-panel-label mb-0">
               {label}
-              <span className="float-right">{priceLabel}</span>
+              {!allowCustomAmount ? <span className="float-right">{priceLabel}</span> : null}
             </h3>
+            {allowCustomAmount ? (
+              <div className="radio-panel-custom-amount">
+                {currencySymbol}
+                <FormItem name="customMembershipAmount" form={form} required={checked}>
+                  <Form.Control type="number" min="1" max="1000" value={customValue} />
+                </FormItem>
+                {frequency}
+              </div>
+            ) : null}
 
             <div className="radio-panel-description">{description}</div>
             {valueMeta && <span className="float-right">{valueMeta}</span>}
