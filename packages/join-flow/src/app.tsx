@@ -21,6 +21,7 @@ import { FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
+import { snakeCase } from "lodash-es";
 
 interface Stage {
   id: PageState["stage"],
@@ -57,6 +58,23 @@ const App = () => {
 
   const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
 
+  /**
+   * Gets the value of key in the data object, and appends it to the URL
+   * as a query parameter. The key is also converted into snake_case to be
+   * more URL-ish.
+   */
+  const addQueryParameter = (url: string, data: any, key: string) => {
+    const name = snakeCase(key)
+    if (data[key]) {
+      if (url.includes('?')) {
+        url += `&${name}=` + data[key]
+      } else {
+        url += `?${name}=` + data[key]
+      }
+    }
+    return url
+  }
+
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
     async (change: FormSchema) => {
@@ -86,13 +104,9 @@ const App = () => {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
         let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
-        if (nextData['firstName']) {
-          if (redirectTo.includes('?')) {
-            redirectTo += '&first_name=' + nextData['firstName']
-          } else {
-            redirectTo += '?first_name=' + nextData['firstName']
-          }
-        }
+        redirectTo = addQueryParameter(redirectTo, data, 'firstName')
+        redirectTo = addQueryParameter(redirectTo, data, 'email')
+        redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
         window.location.href = redirectTo;
       }
 
@@ -173,6 +187,9 @@ const getInitialState = (): FormSchema => {
       const isMembershipValid = membershipPlans.filter(p => p.value === membership).length > 0
       if (!isMembershipValid) {
         state.membership = membershipPlans.length ? membershipPlans[0].value : "standard";
+      }
+      if (!state.customMembershipAmount) {
+        delete state.customMembershipAmount
       }
       return FormSchema.cast(state, {
         strict: true
