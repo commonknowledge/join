@@ -11,6 +11,9 @@ const CONTAINER_ID = 'ck_join_flow';
 
 class Settings
 {
+    public const GET_ADDRESS_IO = 'get_address_io';
+    public const IDEAL_POSTCODES = 'ideal_postcodes';
+
     public static function init()
     {
         /** @var Select_Field $gc_environment_select */
@@ -19,13 +22,19 @@ class Settings
             'sandbox' => 'Sandbox',
             'live' => 'Live',
         ));
+        /** @var Select_Field $postcode_provider_select */
+        $postcode_provider_select = Field::make('select', 'postcode_address_provider');
+        $postcode_provider_select->set_options(array(
+            self::GET_ADDRESS_IO => 'getAddress.io',
+            self::IDEAL_POSTCODES => 'ideal-postcodes.co.uk'
+        ));
         $membership_plans = self::createMembershipPlansField('membership_plans');
         Container::make('theme_options', CONTAINER_ID, 'CK Join Block')
             ->add_fields(array(
                 Field::make('separator', 'features', 'Features'),
                 Field::make('checkbox', 'collect_date_of_birth'),
                 Field::make('checkbox', 'collect_phone_and_email_contact_consent')
-                ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
+                    ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
                 Field::make('checkbox', 'create_auth0_account'),
                 Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
                 Field::make('checkbox', 'use_chargebee'),
@@ -60,8 +69,10 @@ class Settings
                 Field::make('separator', 'gocardless', 'GoCardless'),
                 Field::make('text', 'gc_access_token'),
                 $gc_environment_select,
-                Field::make('separator', 'ideal_postcodes', 'Ideal Postcodes'),
-                Field::make('text', 'postcode_api_key', 'Ideal Postcodes API Key'),
+                Field::make('separator', 'postcodes', 'Postcode Address Providers'),
+                $postcode_provider_select,
+                Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
+                Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
                 Field::make('separator', 'webhook'),
                 Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
                 Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),

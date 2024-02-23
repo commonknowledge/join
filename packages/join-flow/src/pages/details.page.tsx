@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import isoCountries from "iso-3166";
 
 import { get as getEnv, getStr as getEnvStr } from '../env';
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { ContinueButton, FormItem } from "../components/atoms";
+import { sortedCountries } from "../constants";
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -20,17 +20,6 @@ const homeAddressCopy = getEnvStr('HOME_ADDRESS_COPY');
 const passwordPurpose = getEnvStr('PASSWORD_PURPOSE');
 const privacyCopy = getEnvStr('PRIVACY_COPY');
 
-const sortedCountries = isoCountries.sort((a, b) => {
-  // Prioritize The United Kingdom
-  if (a.alpha2 === "GB") {
-    return -1
-  }
-  if (b.alpha2 === "GB") {
-    return 1
-  }
-  return a.name < b.name ? -1 : 1
-})
-
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
@@ -40,6 +29,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     resolver: validate(DetailsSchema)
   });
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
+  const usePostcodeLookup = getEnv('USE_POSTCODE_LOOKUP')
 
   const addressLookupForm = useForm({
     resolver: yupResolver(addressLookupFormSchema)
@@ -131,69 +121,72 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       <section className="form-section">
         <h2>Home address</h2>
         <p className="text-secondary" dangerouslySetInnerHTML={{ __html: homeAddressCopy }}></p>
-        <FormItem
-          label="Postcode"
-          name="postcode"
-          form={addressLookupForm}
-          required
-          after={
-            <Button className="mt-2" onClick={handleLookupPostcode} variant="secondary">
-              Find address
-            </Button>
-          }
-        >
-          <Form.Control className="mb-2" autoComplete="postal-code" />
-        </FormItem>
-
-        <p className="text-secondary">
-          <a
-            className="text-secondary text-decoration-underline cursor-pointer"
-            onClick={() =>
-              setAddressManuallyOpen((manuallyOpen) => !manuallyOpen)
-            }
-          >
-            If you can't find your address, you can enter it manually.
-          </a>
-        </p>
-
-        <Collapse in={!!addressLookup.options}>
-          <Form.Group>
-            <Form.Label>Select Address</Form.Label>
-            <Form.Control
-              as="select"
-              custom
-              className="form-control"
-              onChange={(e) => addressLookup.setAddress(e.currentTarget.value)}
+        {usePostcodeLookup ? (
+          <>
+            <FormItem
+              label="Postcode"
+              name="postcode"
+              form={addressLookupForm}
+              required
+              after={
+                <Button className="mt-2" onClick={handleLookupPostcode} variant="secondary">
+                  Find address
+                </Button>
+              }
             >
-              <option>Choose your address</option>
+              <Form.Control className="mb-2" autoComplete="postal-code" />
+            </FormItem>
 
-              {addressLookup.options?.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.toString()}
-                </option>
-              ))}
-            </Form.Control>
-          </Form.Group>
-        </Collapse>
+            <p className="text-secondary">
+              <a
+                className="text-secondary text-decoration-underline cursor-pointer"
+                onClick={() =>
+                  setAddressManuallyOpen((manuallyOpen) => !manuallyOpen)
+                }
+              >
+                If you can't find your address, you can enter it manually.
+              </a>
+            </p>
 
+            <Collapse in={!!addressLookup.options}>
+              <Form.Group>
+                <Form.Label>Select Address</Form.Label>
+                <Form.Control
+                  as="select"
+                  custom
+                  className="form-control"
+                  onChange={(e) => addressLookup.setAddress(e.currentTarget.value)}
+                >
+                  <option>Choose your address</option>
+
+                  {addressLookup.options?.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.toString()}
+                    </option>
+                  ))}
+                </Form.Control>
+              </Form.Group>
+            </Collapse>
+          </>
+        ) : null}
         <Collapse
-          in={!!addressLookup.address || !!data.addressLine1 || manuallyOpen}
+          in={!!addressLookup.address || !!data.addressLine1 || manuallyOpen || !usePostcodeLookup}
         >
           <div>
             <FormItem label="Address line 1" name="addressLine1" form={form}>
-              <Form.Control autoComplete="address-line-1" />
+              <Form.Control autoComplete="address-line-1" disabled={addressLookup.loading} />
             </FormItem>
             <FormItem label="Address line 2" name="addressLine2" form={form}>
-              <Form.Control autoComplete="address-line-2" />
+              <Form.Control autoComplete="address-line-2" disabled={addressLookup.loading} />
             </FormItem>
             <FormItem label="City" name="addressCity" form={form}>
-              <Form.Control autoComplete="address-level1" />
+              <Form.Control autoComplete="address-level1" disabled={addressLookup.loading} />
             </FormItem>
             <FormItem label="County" name="addressCounty" form={form}>
-              <Form.Control />
+              <Form.Control disabled={addressLookup.loading} />
             </FormItem>
             <FormItem label="Postcode" name="addressPostcode" form={form}>
-              <Form.Control />
+              <Form.Control disabled={addressLookup.loading} />
             </FormItem>
             <FormItem label="Country" form={form} name="addressCountry">
               <Form.Control

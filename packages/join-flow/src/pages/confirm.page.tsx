@@ -21,7 +21,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const form = useForm();
 
-  const join = usePostResource<FormSchema>("/join");
+  const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
   const [requestInFlight, setRequestInFlight] = useState(false);
   const [joinError, setJoinError] = useState<ReactElement | string | boolean>(
@@ -63,7 +63,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const onSubmit = async () => {
     setRequestInFlight(true);
-    join(data).then(
+    join({ ...data, stage: 'confirm' }).then(
       () => {
         onCompleted(data);
       },
@@ -140,7 +140,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       onSubmit={form.handleSubmit(onSubmit)}
     >
       <section className="form-section mb-3">
-        <h1>Confirm your details</h1>
+        <h2>Confirm your details</h2>
         {requestInFlight ? (
           joiningSpinner
         ) : (

@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
+import { sortedCountries } from "../constants";
 import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
@@ -58,7 +59,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       </div>
 
       <section className="form-section">
-        <h1>Your bank details</h1>
+        <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
           <Form.Control />
         </FormItem>
@@ -71,6 +72,21 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
         <FormItem form={form} name="ddConfirmAccountHolder">
           <Form.Check label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account." />
         </FormItem>
+        {getEnv('SKIP_DETAILS') ? (
+          <FormItem label="Country" form={form} name="addressCountry">
+              <Form.Control
+                autoComplete="country"
+                as="select"
+                className="form-control"
+              >
+                {sortedCountries.map((c) => (
+                  <option key={c.numeric} value={c.alpha2}>
+                    {c.name}
+                  </option>
+                ))}
+              </Form.Control>
+            </FormItem>
+        ) : null}
       </section>
 
       <section className="form-section">
@@ -186,7 +202,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
         }}
         ref={cardRef}
       >
-        <h1>Card details</h1>
+        <h2>Card details</h2>
         <p className="text-secondary mb-5">
           You've chosen to join {organisationName} by paying by card.
         </p>
