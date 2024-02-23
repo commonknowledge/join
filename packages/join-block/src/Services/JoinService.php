@@ -451,7 +451,7 @@ class JoinService
             $error = $e;
         }
 
-        if (empty($postcodeData['result']) || true) {
+        if (empty($postcodeData['result'])) {
             $message = 'Error getting PostcodesIO data for postcode ' . $postcode . '. Response: ' . $response;
             $errMessage = $error ? $error->getMessage() : 'Unknown error';
             $message .= '. Error: ' . $errMessage;

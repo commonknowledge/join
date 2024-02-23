@@ -172,6 +172,16 @@ class Blocks
             }
             $webhook_uuid = Settings::getWebhookUuid($webhook_url);
 
+            $use_postcode_lookup = false;
+            $postcode_provider = Settings::get('POSTCODE_ADDRESS_PROVIDER');
+            if ($postcode_provider === Settings::GET_ADDRESS_IO) {
+                $apiKey = Settings::get(Settings::GET_ADDRESS_IO . '_api_key');
+                $use_postcode_lookup = (bool) $apiKey;
+            } else {
+                $apiKey = Settings::get(Settings::IDEAL_POSTCODES . '_api_key');
+                $use_postcode_lookup = (bool) $apiKey;
+            }
+
             $environment = [
                 'HOME_URL' => $homeUrl,
                 "WP_REST_API" => get_rest_url(),
@@ -189,10 +199,10 @@ class Blocks
                 "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
                 "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
                 "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
-                "POSTCODE_API_KEY" => Settings::get("POSTCODE_API_KEY"),
                 "SKIP_DETAILS" => $fields['skip_details'] ?? false,
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
+                "USE_POSTCODE_LOOKUP" => $use_postcode_lookup,
                 "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
             ];
             self::echoBlockCss();

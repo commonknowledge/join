@@ -122,6 +122,92 @@ add_action('rest_api_init', function () {
             return new WP_REST_Response(['status' => 'ok'], 200);
         },
     ));
+
+    register_rest_route('join/v1', '/postcode', array(
+        'methods' => 'GET',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $postcode = $request->get_query_params()['postcode'] ?? '';
+            # remove whitespace
+            $postcode = preg_replace('#\s+#', '', $postcode);
+            if (!$postcode) {
+                return new WP_REST_Response(['status' => 'invalid request'], 400);
+            }
+
+            try {
+                $provider = Settings::get('POSTCODE_ADDRESS_PROVIDER');
+                if ($provider === Settings::GET_ADDRESS_IO) {
+                    $url = "https://api.getaddress.io/autocomplete/$postcode";
+                    $apiKey = Settings::get(Settings::GET_ADDRESS_IO . '_api_key');
+                    $url .= "?api-key=$apiKey";
+                } else {
+                    $url = "https://api.ideal-postcodes.co.uk/v1/postcodes/$postcode";
+                    $apiKey = Settings::get(Settings::IDEAL_POSTCODES . '_api_key');
+                    $url .= "?api_key=$apiKey";
+                }
+                if (!$apiKey) {
+                    throw new \Exception('Error: missing API key for ' . $provider);
+                }
+                $response = @file_get_contents($url);
+                $data = json_decode($response, true);
+                if ($provider === Settings::GET_ADDRESS_IO) {
+                    $addresses = $data['suggestions'] ?? [];
+                } else {
+                    $addresses = $data['result'] ?? [];
+                }
+                return new WP_REST_Response(['status' => 'ok', 'data' => $addresses], 200);
+            } catch (\Exception $e) {
+                $joinBlockLog->error('CK Join form postcode address search error: ' . $e->getMessage());
+            }
+
+            return new WP_REST_Response(['status' => 'internal server error'], 500);
+        },
+    ));
+
+    register_rest_route('join/v1', '/address', array(
+        'methods' => 'GET',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $addressId = $request->get_query_params()['id'] ?? '';
+            if (!$addressId) {
+                return new WP_REST_Response(['status' => 'invalid request'], 400);
+            }
+
+            try {
+                $url = "https://api.getaddress.io/get/$addressId";
+                $apiKey = Settings::get(Settings::GET_ADDRESS_IO . '_api_key');
+                $url .= "?api-key=$apiKey";
+                if (!$apiKey) {
+                    throw new \Exception('Error: missing API key for getAddress.io');
+                }
+
+                $response = @file_get_contents($url);
+                $data = json_decode($response, true) ?? [];
+
+                // Match ideal postcodes output
+                $address = [
+                    'line_1' => $data['line_1'],
+                    'line_2' => $data['line_2'],
+                    'post_town' => $data['town_or_city'],
+                    'county' => $data['county'],
+                    'postcode' => $data['postcode'] ?? ''
+                ];
+                return new WP_REST_Response(['status' => 'ok', 'data' => $address], 200);
+            } catch (\Exception $e) {
+                $joinBlockLog->error('CK Join form postcode address search error: ' . $e->getMessage());
+            }
+
+            return new WP_REST_Response(['status' => 'internal server error'], 500);
+        },
+    ));
 });
 
 // Happens after carbon_fields_register_fields
