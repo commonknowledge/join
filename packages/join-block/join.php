@@ -28,8 +28,6 @@ $joinBlockLog->pushHandler(new ErrorLogHandler());
 $joinBlockLog->pushHandler(new StreamHandler($joinBlockLogLocation, Logger::INFO));
 $joinBlockLog->pushProcessor(new WebProcessor());
 
-$joinBlockLog->error('Test');
-
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 
 try {

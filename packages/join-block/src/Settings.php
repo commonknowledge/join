@@ -29,7 +29,7 @@ class Settings
             self::GET_ADDRESS_IO => 'getAddress.io',
             self::IDEAL_POSTCODES => 'ideal-postcodes.co.uk'
         ));
-        $membership_plans = self::createMembershipPlansField('membership_plans');
+        $membership_plans = self::createMembershipPlansField('membership_plans')->set_required(true);
 
         $fields = [
             Field::make('separator', 'features', 'Features'),
@@ -99,7 +99,7 @@ class Settings
             if (!$log) {
                 $log = 'Could not load error log. Please contact Common Knowledge support.';
             }
-            return "<pre>$log</pre>";
+            return "<pre style=\"max-width:150ch\">$log</pre>";
         });
         $fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
         $fields[] = $logField;
@@ -145,7 +145,7 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
-        ])->set_min(1)->set_required(true);
+        ])->set_min(1);
         return $membership_plans;
     }
 
