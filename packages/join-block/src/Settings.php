@@ -5,6 +5,7 @@ namespace CommonKnowledge\JoinBlock;
 use Carbon_Fields\Container;
 use Carbon_Fields\Field;
 use Carbon_Fields\Field\Complex_Field;
+use Carbon_Fields\Field\Html_Field;
 use Carbon_Fields\Field\Select_Field;
 
 const CONTAINER_ID = 'ck_join_flow';
@@ -29,64 +30,81 @@ class Settings
             self::IDEAL_POSTCODES => 'ideal-postcodes.co.uk'
         ));
         $membership_plans = self::createMembershipPlansField('membership_plans');
-        Container::make('theme_options', CONTAINER_ID, 'CK Join Block')
-            ->add_fields(array(
-                Field::make('separator', 'features', 'Features'),
-                Field::make('checkbox', 'collect_date_of_birth'),
-                Field::make('checkbox', 'collect_phone_and_email_contact_consent')
-                    ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
-                Field::make('checkbox', 'create_auth0_account'),
-                Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
-                Field::make('checkbox', 'use_chargebee'),
-                Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
-                $membership_plans,
-                Field::make('separator', 'theme', 'Theme'),
-                Field::make('color', 'theme_primary_color', 'Primary Color')
-                    ->set_help_text("The color of interactive elements, e.g. buttons"),
-                Field::make('color', 'theme_gray_color', 'Gray Color')
-                    ->set_default_value('#dfdcda')
-                    ->set_help_text("The color of de-emphasised elements"),
-                Field::make('color', 'theme_background_color', 'Background Color')
-                    ->set_default_value('#f4f1ee'),
-                Field::make('textarea', 'custom_css'),
-                Field::make('separator', 'copy', 'Copy'),
-                Field::make('text', 'organisation_name')->set_help_text("The name that will appear on the member's bank statement")
-                    ->set_required(true),
-                Field::make('text', 'organisation_bank_name')->set_help_text("The name that will appear on the member's bank statement")
-                    ->set_required(true),
-                Field::make('text', 'organisation_email_address')->set_help_text("The support email for members")
-                    ->set_required(true),
-                Field::make('rich_text', 'password_purpose')
-                    ->set_help_text("E.G. Use this password to log in at https://example.com"),
-                Field::make('rich_text', 'home_address_copy')
-                    ->set_help_text("E.G. We'll use this to connect you with your local group.."),
-                Field::make('rich_text', 'privacy_copy')
-                    ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
-                Field::make('separator', 'chargebee', 'Chargebee'),
-                Field::make('text', 'chargebee_site_name'),
-                Field::make('text', 'chargebee_api_key'),
-                Field::make('text', 'chargebee_api_publishable_key'),
-                Field::make('separator', 'gocardless', 'GoCardless'),
-                Field::make('text', 'gc_access_token'),
-                $gc_environment_select,
-                Field::make('separator', 'postcodes', 'Postcode Address Providers'),
-                $postcode_provider_select,
-                Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
-                Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
-                Field::make('separator', 'webhook'),
-                Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
-                Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),
-                Field::make('separator', 'auth0', 'Auth0'),
-                Field::make('text', 'auth0_domain')->set_help_text(
-                    "The name of the Auth0 site - e.g. example.auth0.com"
-                ),
-                Field::make('text', 'auth0_client_id')->set_help_text("Machine to machine credentials"),
-                Field::make('text', 'auth0_client_secret')->set_help_text("Machine to machine secret"),
-                Field::make('text', 'auth0_management_audience')->set_help_text(
-                    "Auth0 Management API audience, labelled as Identifier on the " .
-                        "API > Auth0 Management API > Settings page"
-                ),
-            ));
+
+        $fields = [
+            Field::make('separator', 'features', 'Features'),
+            Field::make('checkbox', 'collect_date_of_birth'),
+            Field::make('checkbox', 'collect_phone_and_email_contact_consent')
+                ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
+            Field::make('checkbox', 'create_auth0_account'),
+            Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
+            Field::make('checkbox', 'use_chargebee'),
+            Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
+            $membership_plans,
+            Field::make('separator', 'theme', 'Theme'),
+            Field::make('color', 'theme_primary_color', 'Primary Color')
+                ->set_help_text("The color of interactive elements, e.g. buttons"),
+            Field::make('color', 'theme_gray_color', 'Gray Color')
+                ->set_default_value('#dfdcda')
+                ->set_help_text("The color of de-emphasised elements"),
+            Field::make('color', 'theme_background_color', 'Background Color')
+                ->set_default_value('#f4f1ee'),
+            Field::make('textarea', 'custom_css'),
+            Field::make('separator', 'copy', 'Copy'),
+            Field::make('text', 'organisation_name')->set_help_text("The name that will appear on the member's bank statement")
+                ->set_required(true),
+            Field::make('text', 'organisation_bank_name')->set_help_text("The name that will appear on the member's bank statement")
+                ->set_required(true),
+            Field::make('text', 'organisation_email_address')->set_help_text("The support email for members")
+                ->set_required(true),
+            Field::make('rich_text', 'password_purpose')
+                ->set_help_text("E.G. Use this password to log in at https://example.com"),
+            Field::make('rich_text', 'home_address_copy')
+                ->set_help_text("E.G. We'll use this to connect you with your local group.."),
+            Field::make('rich_text', 'privacy_copy')
+                ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
+            Field::make('separator', 'chargebee', 'Chargebee'),
+            Field::make('text', 'chargebee_site_name'),
+            Field::make('text', 'chargebee_api_key'),
+            Field::make('text', 'chargebee_api_publishable_key'),
+            Field::make('separator', 'gocardless', 'GoCardless'),
+            Field::make('text', 'gc_access_token'),
+            $gc_environment_select,
+            Field::make('separator', 'postcodes', 'Postcode Address Providers'),
+            $postcode_provider_select,
+            Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
+            Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
+            Field::make('separator', 'webhook'),
+            Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
+            Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),
+            Field::make('separator', 'auth0', 'Auth0'),
+            Field::make('text', 'auth0_domain')->set_help_text(
+                "The name of the Auth0 site - e.g. example.auth0.com"
+            ),
+            Field::make('text', 'auth0_client_id')->set_help_text("Machine to machine credentials"),
+            Field::make('text', 'auth0_client_secret')->set_help_text("Machine to machine secret"),
+            Field::make('text', 'auth0_management_audience')->set_help_text(
+                "Auth0 Management API audience, labelled as Identifier on the " .
+                    "API > Auth0 Management API > Settings page"
+            ),
+        ];
+
+        $fields = apply_filters('ck_join_flow_settings_fields', $fields);
+
+        /** @var Html_Field $logField */
+        $logField = Field::make('html', 'ck_join_flow_log_contents');
+        $logField->set_html(function () {
+            global $joinBlockLogLocation;
+            $log = @file_get_contents($joinBlockLogLocation);
+            if (!$log) {
+                $log = 'Could not load error log. Please contact Common Knowledge support.';
+            }
+            return "<pre>$log</pre>";
+        });
+        $fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
+        $fields[] = $logField;
+
+        Container::make('theme_options', CONTAINER_ID, 'CK Join Block')->add_fields($fields);
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
         // for an explanation. Also saves the membership plan amounts.
@@ -123,7 +141,7 @@ class Settings
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
             Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')
-                ->set_attribute('This ignores the above price and requires users to choose the amount to pay'),
+                ->set_help_text('This ignores the above price and requires users to choose the amount to pay.'),
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),

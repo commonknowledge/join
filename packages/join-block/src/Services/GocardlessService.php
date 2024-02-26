@@ -92,6 +92,19 @@ class GocardlessService
         return $subscription;
     }
 
+    public static function deleteCustomerSubscription($id)
+    {
+        global $joinBlockLog;
+        $client = self::getClient();
+
+        try {
+            $client->subscriptions()->cancel($id);
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Failed to delete customer subscription $id: " . $e->getMessage());
+        }
+    }
+
+
     private static function getClient()
     {
         global $joinBlockLog;

@@ -5,7 +5,7 @@
  * Description:     Common Knowledge join flow plugin.
  * Version:         1.0.6
  * Author:          Common Knowledge <hello@commonknowledge.coop>
- * Text Domain:     uk-greens
+ * Text Domain:     ck
  */
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
@@ -16,12 +16,19 @@ use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
+use Monolog\Handler\StreamHandler;
 use Monolog\Processor\WebProcessor;
 use GuzzleHttp\Exception\ClientException;
 
+global $joinBlockLog;
+global $joinBlockLogLocation;
+$joinBlockLogLocation = __DIR__ . '/logs/debug.log';
 $joinBlockLog = new Logger('join-block');
 $joinBlockLog->pushHandler(new ErrorLogHandler());
+$joinBlockLog->pushHandler(new StreamHandler($joinBlockLogLocation, Logger::INFO));
 $joinBlockLog->pushProcessor(new WebProcessor());
+
+$joinBlockLog->error('Test');
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 
