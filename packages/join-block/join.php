@@ -148,7 +148,7 @@ add_action('rest_api_init', function () {
                 if ($provider === Settings::GET_ADDRESS_IO) {
                     $url = "https://api.getaddress.io/autocomplete/$postcode";
                     $apiKey = Settings::get(Settings::GET_ADDRESS_IO . '_api_key');
-                    $url .= "?api-key=$apiKey";
+                    $url .= "?api-key=$apiKey&all=true";
                 } else {
                     $url = "https://api.ideal-postcodes.co.uk/v1/postcodes/$postcode";
                     $apiKey = Settings::get(Settings::IDEAL_POSTCODES . '_api_key');
