@@ -29,53 +29,67 @@ class GocardlessService
             }
         }
 
-        if ($existingCustomer) {
+        $customer = apply_filters("ck_join_flow_find_gocardless_customer", $existingCustomer, $data);
+        $mandate = null;
+
+        if ($customer) {
             $mandates = $client->mandates()->list([
                 "params" => ["customer" => $customer->id]
             ]);
             if (count($mandates->records) > 0) {
                 $joinBlockLog->info("Found existing mandate for " . $data['email']);
-                return $mandates->records[0];
+                $mandate = $mandates->records[0];
             }
         }
 
-        if (empty($data['firstName']) && empty($data['lastName'])) {
-            $names = explode(' ', $data['ddAccountHolderName'] ?? '');
-            $lastName = array_pop($names);
-            $firstName = implode(' ', $names);
-        } else {
-            $firstName = $data['firstName'] ?? '';
-            $lastName = $data['firstName'] ?? '';
+        if (!$customer) {
+            if (empty($data['firstName']) && empty($data['lastName'])) {
+                $names = explode(' ', $data['ddAccountHolderName'] ?? '');
+                $lastName = array_pop($names);
+                $firstName = implode(' ', $names);
+            } else {
+                $firstName = $data['firstName'] ?? '';
+                $lastName = $data['lastName'] ?? '';
+            }
+
+            $customer = $client->customers()->create([
+                "params" => [
+                    "email" => $data['email'],
+                    "given_name" => $firstName,
+                    "family_name" => $lastName,
+                    "country_code" => $data['addressCountry'],
+                    "phone_number" => $data['phoneNumber']
+                ]
+            ]);
+
+            $account = $client->customerBankAccounts()->create([
+                "params" => [
+                    "account_number" => $data["ddAccountNumber"],
+                    "branch_code" => $data["ddSortCode"],
+                    "account_holder_name" => $data["ddAccountHolderName"],
+                    "country_code" => $data["addressCountry"],
+                    "links" => ["customer" => $customer->id]
+                ]
+            ]);
         }
 
-        $customer = $client->customers()->create([
-            "params" => [
-                "email" => $data['email'],
-                "given_name" => $firstName,
-                "family_name" => $lastName,
-                "country_code" => $data['addressCountry'],
-                "phone_number" => $data['phoneNumber']
-            ]
-        ]);
-
-        $account = $client->customerBankAccounts()->create([
-            "params" => [
-                "account_number" => $data["ddAccountNumber"],
-                "branch_code" => $data["ddSortCode"],
-                "account_holder_name" => $data["ddAccountHolderName"],
-                "country_code" => $data["addressCountry"],
-                "links" => ["customer" => $customer->id]
-            ]
-        ]);
-
-        $mandate = $client->mandates()->create([
-            "params" => [
-                "scheme" => "bacs",
-                "links" => [
-                    "customer_bank_account" => $account->id
+        if (!$mandate) {
+            $mandate = $client->mandates()->create([
+                "params" => [
+                    "scheme" => "bacs",
+                    "links" => [
+                        "customer_bank_account" => $account->id
+                    ]
                 ]
-            ]
+            ]);
+        }
+
+        $subscriptions = $client->subscriptions()->list([
+            "params" => ["mandate" => $mandate->id]
         ]);
+        foreach ($subscriptions->records as $subscription) {
+            self::deleteCustomerSubscription($subscription->id);
+        }
 
         $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
         $subscriptionParams = [
@@ -122,5 +136,12 @@ class GocardlessService
         ]);
 
         return $client;
+    }
+
+    public static function getCustomerById($customerId)
+    {
+        $client = self::getClient();
+        $customer = $client->customers()->get($customerId);
+        return $customer;
     }
 }
