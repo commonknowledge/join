@@ -86,7 +86,7 @@ export const DetailsSchema = object({
   addressLine1: string().required(),
   addressLine2: string(),
   addressCity: string().required(),
-  addressCounty: string().required(),
+  addressCounty: getEnv('COLLECT_COUNTY') ? string().required() : string(),
   addressPostcode: string().required(),
   addressCountry: string().required(),
   password: getEnv('CREATE_AUTH0_ACCOUNT') ? string()

@@ -182,9 +182,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             <FormItem label="City" name="addressCity" form={form}>
               <Form.Control autoComplete="address-level1" disabled={addressLookup.loading} />
             </FormItem>
-            <FormItem label="County" name="addressCounty" form={form}>
-              <Form.Control disabled={addressLookup.loading} />
-            </FormItem>
+            {getEnv('COLLECT_COUNTY') ? (
+              <FormItem label="County" name="addressCounty" form={form}>
+                <Form.Control disabled={addressLookup.loading} />
+              </FormItem>
+            ) : null}
+
             <FormItem label="Postcode" name="addressPostcode" form={form}>
               <Form.Control disabled={addressLookup.loading} />
             </FormItem>

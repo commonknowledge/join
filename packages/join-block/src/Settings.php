@@ -34,6 +34,7 @@ class Settings
         $fields = [
             Field::make('separator', 'features', 'Features'),
             Field::make('checkbox', 'collect_date_of_birth'),
+            Field::make('checkbox', 'collect_county'),
             Field::make('checkbox', 'collect_phone_and_email_contact_consent')
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
             Field::make('checkbox', 'create_auth0_account'),
