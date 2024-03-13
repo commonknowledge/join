@@ -1,4 +1,5 @@
 import { parse } from "querystring";
+import Cookies from "js-cookie";
 
 import * as uuid from "uuid";
 import React, { FC, useCallback, useState } from "react";
@@ -44,6 +45,9 @@ if (getEnv('SKIP_DETAILS')) {
 
 const SAVED_STATE_KEY = "ck_join_state_flow";
 
+const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
+let shouldRedirectToConfirm = Boolean(GC_CUSTOMER_ID);
+
 const App = () => {
   const [data, setData] = useState(getInitialState);
 
@@ -53,6 +57,14 @@ const App = () => {
     },
     stages
   );
+
+  // Redirect to confirm page if GC_CUSTOMER_ID exists
+  // because that is a redirect from GoCardless
+  if (shouldRedirectToConfirm) {
+    setData({ ...data, gcCustomerId: GC_CUSTOMER_ID })
+    router.setState({ stage: "confirm" });
+    shouldRedirectToConfirm = false;
+  }
 
   useOnce(stripUrlParams);
 
@@ -116,6 +128,18 @@ const App = () => {
 
       if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
         nextStage = "payment-details"
+      }
+
+      // Go to external GoCardless pages if not using the GoCardless API
+      if (nextStage === "payment-details" &&
+        data.paymentMethod === "directDebit" &&
+        !getEnv("USE_GOCARDLESS_API")) {
+          // Undo the transition to prevent flicker
+          nextStage = router.state.stage
+          // Redirect to GoCardless
+          const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, '')
+          const redirectUrl = encodeURI(window.location.href)
+          window.location.href = `${baseUrl}/join/v1/gocardless/auth?redirect_url=${redirectUrl}`
       }
 
       router.setState({ stage: nextStage });

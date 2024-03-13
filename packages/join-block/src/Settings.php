@@ -39,6 +39,8 @@ class Settings
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
             Field::make('checkbox', 'create_auth0_account'),
             Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
+            Field::make('checkbox', 'use_gocardless_api', 'Use GoCardless Custom Pages')
+                ->set_help_text('Requires a GoCardless Pro account with the custom pages addon'),
             Field::make('checkbox', 'use_chargebee'),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,

@@ -15,17 +15,24 @@ class GocardlessService
         global $joinBlockLog;
         $client = self::getClient();
 
-        // Catch case when the user has managed to submit twice in succession
-        // (should be impossible but you never know)
-        $fiveMinsAgo = gmdate('Y-m-d\TH:i:s\Z', strtotime('-5 minutes'));
-        $customers = $client->customers()->list([
-            "params" => ["created_at[gt]" => $fiveMinsAgo]
-        ]);
-
         $existingCustomer = null;
-        foreach ($customers->records as $customer) {
-            if ($customer->email === $data["email"]) {
-                $existingCustomer = $customer;
+
+        $savedCustomerId = $data['gcCustomerId'] ?? null;
+        if ($savedCustomerId) {
+            $existingCustomer = $client->customers()->get($savedCustomerId);
+        }
+
+        if (!$existingCustomer) {
+            // Catch case when the user has managed to submit twice in succession
+            // (should be impossible but you never know)
+            $fiveMinsAgo = gmdate('Y-m-d\TH:i:s\Z', strtotime('-5 minutes'));
+            $customers = $client->customers()->list([
+                "params" => ["created_at[gt]" => $fiveMinsAgo]
+            ]);
+            foreach ($customers->records as $customer) {
+                if ($customer->email === $data["email"]) {
+                    $existingCustomer = $customer;
+                }
             }
         }
 
@@ -118,6 +125,59 @@ class GocardlessService
         }
     }
 
+    public static function getCustomerById($customerId)
+    {
+        $client = self::getClient();
+        $customer = $client->customers()->get($customerId);
+        return $customer;
+    }
+
+    /**
+     * Create a Billing Request for a user to create a mandate on the
+     * GoCardless website. Returns a GoCardless URL to redirect the
+     * user to, and the Billing Request ID, which can be used
+     * to get the Customer and Mandate IDs after the user has
+     * completed the flow. This Billing Request ID could be
+     * e.g. stored in a cookie to allow fetching the
+     * Customer details on subsequent requests.
+     */
+    public static function getBillingRequestIdAndUrl($redirectUri, $exitUri)
+    {
+        $client = self::getClient();
+        $billingRequest = $client->billingRequests()->create([
+            "params" => [
+                "mandate_request" => [
+                    "scheme" => "bacs"
+                ]
+            ]
+        ]);
+        $billingRequestFlow = $client->billingRequestFlows()->create([
+            "params" => [
+                "redirect_uri" => $redirectUri,
+                "exit_uri" => $exitUri,
+                "links" => [
+                    "billing_request" => $billingRequest->id
+                ]
+            ]
+        ]);
+        return [
+            "id" => $billingRequest->id,
+            "url" => $billingRequestFlow->authorisation_url
+        ];
+    }
+
+    public static function getCustomerIdByBillingRequest($billingRequestId)
+    {
+        global $joinBlockLog;
+        $client = self::getClient();
+
+        try {
+            $billingRequest = $client->billingRequests()->get($billingRequestId);
+            return $billingRequest ? $billingRequest->links->customer : null;
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Failed to get customer from billing request $billingRequestId: " . $e->getMessage());
+        }
+    }
 
     private static function getClient()
     {
@@ -136,12 +196,5 @@ class GocardlessService
         ]);
 
         return $client;
-    }
-
-    public static function getCustomerById($customerId)
-    {
-        $client = self::getClient();
-        $customer = $client->customers()->get($customerId);
-        return $customer;
     }
 }

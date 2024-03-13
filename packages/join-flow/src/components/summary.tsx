@@ -18,6 +18,10 @@ export const Summary: FC<SummaryProps> = ({ data }) => {
     if (stage === "payment-method") {
       return getPaymentMethods().length > 1
     }
+    if (stage === "payment-details") {
+      // Don't show the payment details page if external GoCardless pages were used
+      return getEnv("USE_GOCARDLESS_API") || data.paymentMethod !== "directDebit";
+    }
     return true
   })
   const stages = takeWhile(
