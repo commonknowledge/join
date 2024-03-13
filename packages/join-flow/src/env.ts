@@ -17,6 +17,7 @@ interface StaticEnv {
     SKIP_DETAILS: boolean; // email must be provided through a URL parameter
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
+    USE_GOCARDLESS_API: boolean;
     USE_POSTCODE_LOOKUP: boolean;
     USE_TEST_DATA: boolean;
     WEBHOOK_UUID: string; // Connected to a URL in the wp_options table: `SELECT option_name FROM wp_options where option_value = :uuid`
@@ -48,6 +49,7 @@ const staticEnv: StaticEnv = {
     SKIP_DETAILS: parseBooleanEnvVar("REACT_APP_SKIP_DETAILS"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
+    USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),
     USE_POSTCODE_LOOKUP: parseBooleanEnvVar("REACT_APP_USE_POSTCODE_LOOKUP"),
     USE_TEST_DATA: parseBooleanEnvVar("REACT_APP_USE_TEST_DATA"),
     WEBHOOK_UUID: process.env.WEBHOOK_UUID || '',

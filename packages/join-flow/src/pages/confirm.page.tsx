@@ -1,6 +1,7 @@
-import React, { useState, ReactElement } from "react";
+import React, { useState, ReactElement, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
+import Cookies from "js-cookie";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema, getPaymentFrequency } from "../schema";
@@ -9,21 +10,25 @@ import { upperFirst } from "lodash-es";
 
 import { get as getEnv } from '../env';
 
+const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
+
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  const organisationName =  getEnv('ORGANISATION_NAME');
-  const organisationBankName =  getEnv('ORGANISATION_BANK_NAME');
+  const organisationName = getEnv('ORGANISATION_NAME');
+  const organisationBankName = getEnv('ORGANISATION_BANK_NAME');
   const organisationEmailAddress = getEnv('ORGANISATION_EMAIL_ADDRESS');
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
-  const chargebeeSiteName =  getEnv('CHARGEBEE_SITE_NAME');
+  const chargebeeSiteName = getEnv('CHARGEBEE_SITE_NAME');
 
   const form = useForm();
 
   const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
-  const [requestInFlight, setRequestInFlight] = useState(false);
+  // Default "requestInFlight" to true if GC_CUSTOMER_ID is set, as the request is sent
+  // immediately through useEffect() below
+  const [requestInFlight, setRequestInFlight] = useState(Boolean(GC_CUSTOMER_ID));
   const [joinError, setJoinError] = useState<ReactElement | string | boolean>(
     false
   );
@@ -65,6 +70,8 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
     setRequestInFlight(true);
     join({ ...data, stage: 'confirm' }).then(
       () => {
+        Cookies.remove("GC_BILLING_REQUEST_ID");
+        Cookies.remove("GC_CUSTOMER_ID");
         onCompleted(data);
       },
       (error) => {
@@ -132,6 +139,12 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       }
     );
   };
+
+  useEffect(() => {
+    if (GC_CUSTOMER_ID) {
+      onSubmit()
+    }
+  }, [])
 
   return (
     <form

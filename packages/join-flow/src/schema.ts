@@ -220,6 +220,10 @@ const DonationSchema = object({
   recurDonation: boolean().default(false)
 }).required();
 
+const CustomGoCardlessSchema = object({
+  gcCustomerId: string()
+})
+
 export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(Prerequesites)
   .concat(DetailsSchema)
@@ -227,6 +231,7 @@ export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(DonationSchema)
   .concat(PaymentMethodSchema)
   .concat(PaymentDetailsSchema)
+  .concat(CustomGoCardlessSchema)
   .required();
 
 export type FormSchema = Partial<
@@ -239,7 +244,8 @@ export type FormSchema = Partial<
     | InferType<typeof PaymentMethodDDSchema>
     | InferType<typeof PaymentMethodCardSchema>
   ) &
-  InferType<typeof PaymentDetailsSchema>
+  InferType<typeof PaymentDetailsSchema> &
+  InferType<typeof CustomGoCardlessSchema>
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {

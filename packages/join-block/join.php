@@ -13,6 +13,7 @@ require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 use ChargeBee\ChargeBee\Environment;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
+use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
@@ -212,6 +213,21 @@ add_action('rest_api_init', function () {
 
             return new WP_REST_Response(['status' => 'internal server error'], 500);
         },
+    ));
+
+    register_rest_route('join/v1', '/gocardless/auth', array(
+        'methods' => 'GET',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            $redirectUrl = $request->get_query_params()['redirect_url'] ?? '';
+            $billingRequest = GocardlessService::getBillingRequestIdAndUrl($redirectUrl, $redirectUrl);
+            $authLink = $billingRequest['url'];
+            setcookie("GC_BILLING_REQUEST_ID", $billingRequest["id"], 0, "/");
+            wp_redirect($authLink);
+            exit();
+        }
     ));
 });
 

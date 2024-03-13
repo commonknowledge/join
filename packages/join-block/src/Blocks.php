@@ -8,6 +8,7 @@ use Carbon_Fields\Container\Block_Container;
 use Carbon_Fields\Field\Association_Field;
 use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Image_Field;
+use CommonKnowledge\JoinBlock\Services\GocardlessService;
 
 class Blocks
 {
@@ -186,6 +187,14 @@ class Blocks
                 $use_postcode_lookup = (bool) $apiKey;
             }
 
+            // On redirect to this form, get the customer ID if the billing request was approved
+            $customerId = null;
+            $billingRequestId = $_COOKIE["GC_BILLING_REQUEST_ID"] ?? "";
+            if ($billingRequestId) {
+                $customerId = GocardlessService::getCustomerIdByBillingRequest($billingRequestId);
+                setcookie("GC_CUSTOMER_ID", $customerId, 0, "/");
+            }
+
             $environment = [
                 'HOME_URL' => $homeUrl,
                 "WP_REST_API" => get_rest_url(),
@@ -207,6 +216,7 @@ class Blocks
                 "SKIP_DETAILS" => $fields['skip_details'] ?? false,
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
+                "USE_GOCARDLESS_API" => Settings::get("USE_GOCARDLESS_API"),
                 "USE_POSTCODE_LOOKUP" => $use_postcode_lookup,
                 "USE_VARIABLE_MEMBERSHIP_PLAN" => $fields['use_variable_membership_plan'] ?? false,
                 "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
