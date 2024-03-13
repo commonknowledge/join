@@ -23,7 +23,7 @@
     "image-webpack-loader": "^8.1.0",
     "iso-3166": "^3.0.1",
     "js-cookie": "^3.0.5",
-    "lodash-es": "^4.17.15",
+    "lodash-es": "^4.17.21",
     "node-sass": "^9.0.0",
     "querystring-es3": "^0.2.1",
     "react": "^16.13.1",
