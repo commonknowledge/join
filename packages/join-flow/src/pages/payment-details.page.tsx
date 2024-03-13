@@ -72,7 +72,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
         <FormItem form={form} name="ddConfirmAccountHolder">
           <Form.Check label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account." />
         </FormItem>
-        {getEnv('SKIP_DETAILS') ? (
+        {getEnv('IS_UPDATE_FLOW') ? (
           <FormItem label="Country" form={form} name="addressCountry">
               <Form.Control
                 autoComplete="country"

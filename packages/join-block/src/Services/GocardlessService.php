@@ -15,28 +15,30 @@ class GocardlessService
         global $joinBlockLog;
         $client = self::getClient();
 
-        $existingCustomer = null;
+        $customer = null;
 
+        // From cookie set when user returns from external GoCardless page
         $savedCustomerId = $data['gcCustomerId'] ?? null;
         if ($savedCustomerId) {
-            $existingCustomer = $client->customers()->get($savedCustomerId);
+            $customer = $client->customers()->get($savedCustomerId);
         }
 
-        if (!$existingCustomer) {
+        if (!$customer) {
             // Catch case when the user has managed to submit twice in succession
             // (should be impossible but you never know)
             $fiveMinsAgo = gmdate('Y-m-d\TH:i:s\Z', strtotime('-5 minutes'));
             $customers = $client->customers()->list([
                 "params" => ["created_at[gt]" => $fiveMinsAgo]
             ]);
-            foreach ($customers->records as $customer) {
-                if ($customer->email === $data["email"]) {
-                    $existingCustomer = $customer;
+            foreach ($customers->records as $c) {
+                if ($c->email === $data["email"]) {
+                    $customer = $c;
                 }
             }
         }
 
-        $customer = apply_filters("ck_join_flow_find_gocardless_customer", $existingCustomer, $data);
+        do_action("ck_join_flow_delete_existing_gocardless_customer", $data);
+
         $mandate = null;
 
         if ($customer) {
@@ -125,11 +127,31 @@ class GocardlessService
         }
     }
 
-    public static function getCustomerById($customerId)
+    public static function removeCustomerById($customerId)
     {
+        global $joinBlockLog;
         $client = self::getClient();
-        $customer = $client->customers()->get($customerId);
-        return $customer;
+        try {
+            $client->customers()->remove($customerId);
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Failed to delete customer $customerId: " . $e->getMessage());
+        }
+    }
+
+    public static function removeCustomerMandates($customerId)
+    {
+        global $joinBlockLog;
+        $client = self::getClient();
+        $mandates = $client->mandates()->list([
+            "params" => ["customer" => $customerId]
+        ]);
+        foreach ($mandates->records as $mandate) {
+            try {
+                $client->mandates()->cancel($mandate->id);
+            } catch (\Exception $e) {
+                $joinBlockLog->error("Failed to delete customer mandate {$mandate->id}: " . $e->getMessage());
+            }
+        }
     }
 
     /**
