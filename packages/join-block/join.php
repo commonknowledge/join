@@ -77,13 +77,6 @@ add_action('rest_api_init', function () {
                     'Join process failed at Auth0 user creation, but customer created in Chargebee.',
                     ['error' => $error]
                 );
-            } catch (Error $error) {
-                $joinBlockLog->error('Join process failed', ['error' => $error]);
-                return new WP_Error(
-                    'join_failed',
-                    'Join process failed',
-                    ['status' => 500, 'error_code' => $error->getCode(), 'error_message' => $error->getMessage()]
-                );
             } catch (\CommonKnowledge\JoinBlock\Exceptions\JoinBlockException $exception) {
                 $joinBlockLog->error(
                     'Join process failed',
@@ -98,6 +91,13 @@ add_action('rest_api_init', function () {
                         'error_message' => $exception->getMessage(),
                         'fields' => $exception->getFields()
                     ]
+                );
+            } catch (\Exception $error) {
+                $joinBlockLog->error('Join process failed', ['error' => $error]);
+                return new WP_Error(
+                    'join_failed',
+                    'Join process failed',
+                    ['status' => 500, 'error_code' => $error->getCode(), 'error_message' => $error->getMessage()]
                 );
             }
 

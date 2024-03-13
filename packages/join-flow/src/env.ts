@@ -14,7 +14,7 @@ interface StaticEnv {
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
     SUCCESS_REDIRECT: string;
-    SKIP_DETAILS: boolean; // email must be provided through a URL parameter
+    IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
     USE_GOCARDLESS_API: boolean;
@@ -46,7 +46,7 @@ const staticEnv: StaticEnv = {
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     SUCCESS_REDIRECT: '/',
-    SKIP_DETAILS: parseBooleanEnvVar("REACT_APP_SKIP_DETAILS"),
+    IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),

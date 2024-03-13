@@ -9,6 +9,7 @@ import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
 import { get as getEnv } from '../env';
+import { useCurrentRouter } from "../services/router.service";
 
 const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
 
@@ -23,6 +24,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const chargebeeSiteName = getEnv('CHARGEBEE_SITE_NAME');
 
   const form = useForm();
+  const router = useCurrentRouter();
 
   const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
@@ -131,6 +133,17 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
                 </p>
                 <p>Thanks for being a member already!</p>
               </>
+            );
+            break;
+          case 101:
+            message = (
+              <p>
+                <span>Could not find your details. Please check your email address or{" "}</span>
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  router.setState({ ...router.state, stage: 'enter-details' });
+                }}>sign up as a new member</a>.
+              </p>
             );
             break;
         }

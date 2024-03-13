@@ -39,7 +39,7 @@ let stages: Stage[] = [
   { id: "confirm", label: "Confirm", breadcrumb: false }
 ];
 
-if (getEnv('SKIP_DETAILS')) {
+if (getEnv('IS_UPDATE_FLOW')) {
   stages = stages.filter(s => s.id !== 'enter-details')
 }
 
@@ -235,6 +235,7 @@ const getInitialState = (): FormSchema => {
     ...getDefaultState(),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams(),
+    isUpdateFlow: getEnv('IS_UPDATE_FLOW'),
     webhookUuid: getEnv('WEBHOOK_UUID')
   } as any;
 };

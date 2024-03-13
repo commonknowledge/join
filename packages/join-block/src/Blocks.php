@@ -132,7 +132,7 @@ class Blocks
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'ask_for_additional_donation'),
-                Field::make('checkbox', 'skip_details', 'Skip Details Step (e.g. for existing members)')
+                Field::make('checkbox', 'is_update_flow', 'Is Update Flow (e.g. for existing members)')
                     ->set_help_text(
                         'Check to skip collecting member details (e.g. name, address). If checked, this page must ' .
                             'be linked to with the email URL search parameter set, e.g. /become-paid-member/?email=someone@example.com. ' .
@@ -207,13 +207,13 @@ class Blocks
                 "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
                 "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
                 "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
+                "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
                 "MEMBERSHIP_PLANS" => $membership_plans_prepared,
                 "ORGANISATION_NAME" => Settings::get("ORGANISATION_NAME"),
                 "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),
                 "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
                 "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
                 "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
-                "SKIP_DETAILS" => $fields['skip_details'] ?? false,
                 "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
                 "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
                 "USE_GOCARDLESS_API" => Settings::get("USE_GOCARDLESS_API"),

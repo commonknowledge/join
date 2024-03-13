@@ -69,7 +69,7 @@ class JoinService
 
         $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
         if ($data['membershipPlan']['allow_custom_amount']) {
-            $membershipAmount = $data['customMembershipAmount'];
+            $data['membershipPlan']['amount'] = $data['customMembershipAmount'] ?? 1;
         }
 
         if ($membershipAmount < 1 || $membershipAmount > 1000) {
@@ -289,13 +289,13 @@ class JoinService
                         'this usually means a request in flight is in a unclear state',
                     6
                 );
-            } catch (\Exception $expection) {
+            } catch (\Exception $exception) {
                 $joinBlockLog->error(
                     'GoCardless Direct Debit subscription creation failed with unknown exception: ' .
-                        get_class($expection),
-                    ['exception' => $expection]
+                        get_class($exception),
+                    ['exception' => $exception]
                 );
-                throw new \Error('GoCardless Direct Debit subscription creation failed');
+                throw new \Exception('GoCardless Direct Debit subscription creation failed', $exception->getCode());
             }
 
             $joinBlockLog->info('Direct Debit subscription via GoCardless successful');
