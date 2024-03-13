@@ -126,6 +126,12 @@ class JoinService
     {
         global $joinBlockLog;
 
+        $excludedFields = ["ddAccountNumber", "ddSortCode", "paymentToken"];
+    
+        foreach ($excludedFields as $excludedField) {
+            unset($data[$excludedField]);
+        }
+
         $data = self::addPostcodesIOData($data);
         $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
             "headers" => [
