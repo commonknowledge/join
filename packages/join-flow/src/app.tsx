@@ -2,7 +2,7 @@ import { parse } from "querystring";
 import Cookies from "js-cookie";
 
 import * as uuid from "uuid";
-import React, { FC, useCallback, useState } from "react";
+import React, { FC, useCallback, useState, useEffect } from "react";
 
 import { DetailsPage } from "./pages/details.page";
 import { PaymentPage } from "./pages/payment-method.page";
@@ -57,6 +57,14 @@ const App = () => {
     },
     stages
   );
+
+  useEffect(function routerAnalytics() {
+    try {
+      // @ts-ignore
+      // In case there is a posthog install in the parent website
+      posthog?.capture("join flow navigation", { stage: router.state.stage })
+    } catch (e) {}
+  }, [router])
 
   // Redirect to confirm page if GC_CUSTOMER_ID exists
   // because that is a redirect from GoCardless
