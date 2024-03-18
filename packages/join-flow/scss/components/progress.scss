@@ -88,6 +88,23 @@ li.progress-step {
   z-index: 0;
 }
 
+.progress-steps__secure {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  div {
+    display: flex;
+    gap: 0.5rem;
+  }
+  p {
+    margin-bottom: 0.25rem;
+  }
+  br {
+    display: none;
+  }
+}
+
 @include media-breakpoint-up(md) {
   .progress-steps {
     align-self: flex-start;
@@ -129,5 +146,16 @@ li.progress-step {
     left: 9px;
     top: calc(4px - 100%);
     width: 2px;
+  }
+
+  .progress-steps__secure {
+    flex-direction: column;
+
+    p {
+      margin-bottom: 0;
+    }
+    br {
+      display: inline;
+    }
   }
 }

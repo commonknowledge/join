@@ -23,6 +23,8 @@ import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import { snakeCase } from "lodash-es";
+import gocardless from "./images/gocardless.svg";
+import chargebee from "./images/chargebee.png";
 
 interface Stage {
   id: PageState["stage"],
@@ -142,12 +144,12 @@ const App = () => {
       if (nextStage === "payment-details" &&
         data.paymentMethod === "directDebit" &&
         !getEnv("USE_GOCARDLESS_API")) {
-          // Undo the transition to prevent flicker
-          nextStage = router.state.stage
-          // Redirect to GoCardless
-          const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, '')
-          const redirectUrl = encodeURI(window.location.href)
-          window.location.href = `${baseUrl}/join/v1/gocardless/auth?redirect_url=${redirectUrl}`
+        // Undo the transition to prevent flicker
+        nextStage = router.state.stage
+        // Redirect to GoCardless
+        const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, '')
+        const redirectUrl = encodeURI(window.location.href)
+        window.location.href = `${baseUrl}/join/v1/gocardless/auth?redirect_url=${redirectUrl}`
       }
 
       router.setState({ stage: nextStage });
@@ -155,10 +157,23 @@ const App = () => {
     [router, data]
   );
 
+  const paymentProviderLogos = getPaymentMethods().map((method) => {
+    return method === "directDebit" ?
+      <a href="https://gocardless.com" target="_blank">
+        <img key={method} alt="GoCardless" src={gocardless} width="100px" />
+      </a> :
+      <a href="https://chargebee.com" target="_blank">
+        <img key={method} alt="Chargebee" src={chargebee} width="100px" />
+      </a>
+  })
+
   return (
     <RouterContext.Provider value={router}>
       <div className="progress-steps">
         <h6>Join Us</h6>
+        <div className="progress-steps__secure">
+          <p>🔒 Secure payment with<br/>{paymentProviderLogos}</p>
+        </div>
         <ul className="p-0 list-unstyled">
           {stages.map(
             (stage, i) =>
