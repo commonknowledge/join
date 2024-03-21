@@ -132,6 +132,11 @@ class Blocks
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'include_skip_payment_button')
+                    ->set_help_text(
+                        'Check to include an additional button on the first page to skip to the thank you page ' .
+                        '(which could include a form for additional questions)'
+                    ),
                 Field::make('checkbox', 'is_update_flow', 'Is Update Flow (e.g. for existing members)')
                     ->set_help_text(
                         'Check to skip collecting member details (e.g. name, address). If checked, this page must ' .
@@ -208,6 +213,7 @@ class Blocks
                 "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
                 "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
                 "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
+                "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
                 "MEMBERSHIP_PLANS" => $membership_plans_prepared,
                 "ORGANISATION_NAME" => Settings::get("ORGANISATION_NAME"),
                 "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),

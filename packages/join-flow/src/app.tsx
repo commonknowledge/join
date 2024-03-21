@@ -12,6 +12,7 @@ import {
   PageState,
   RouterContext,
   StateRouter,
+  redirectToSuccess,
   stripUrlParams,
   useStateRouter
 } from "./services/router.service";
@@ -22,7 +23,6 @@ import { FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
-import { snakeCase } from "lodash-es";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
 
@@ -80,23 +80,6 @@ const App = () => {
 
   const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
 
-  /**
-   * Gets the value of key in the data object, and appends it to the URL
-   * as a query parameter. The key is also converted into snake_case to be
-   * more URL-ish.
-   */
-  const addQueryParameter = (url: string, data: any, key: string) => {
-    const name = snakeCase(key)
-    if (data[key]) {
-      if (url.includes('?')) {
-        url += `&${name}=` + data[key]
-      } else {
-        url += `?${name}=` + data[key]
-      }
-    }
-    return url
-  }
-
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
     async (change: FormSchema) => {
@@ -125,11 +108,7 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
-        let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
-        redirectTo = addQueryParameter(redirectTo, data, 'firstName')
-        redirectTo = addQueryParameter(redirectTo, data, 'email')
-        redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
-        window.location.href = redirectTo;
+        redirectToSuccess(data)
       }
 
       if (nextStage === "donation" && !includeDonationPage) {

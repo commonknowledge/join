@@ -11,6 +11,8 @@ import { sortedCountries } from "../constants";
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { redirectToSuccess } from "../services/router.service";
+import { usePostResource } from "../services/rest-resource.service";
 
 const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
@@ -29,6 +31,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     resolver: validate(DetailsSchema)
   });
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
+  const [skippingPayment, setSkippingPayment] = useState(false)
   const usePostcodeLookup = getEnv('USE_POSTCODE_LOOKUP')
 
   const addressLookupForm = useForm({
@@ -54,6 +57,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       addressLookupForm.clearErrors("postcode");
     }
   }, [form.errors]);
+
+  const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
+  const skipPayment = async () => {
+    setSkippingPayment(true)
+    await recordStep({ ...data, stage: 'enter-details' });
+    redirectToSuccess(data)
+  }
 
   return (
     <form
@@ -271,6 +281,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       </section>
 
       <ContinueButton />
+      {getEnv("INCLUDE_SKIP_PAYMENT_BUTTON") ? (
+        <button type="button" className="mt-2 btn btn-secondary" onClick={skipPayment}>Skip payment</button>
+      ) : null}
     </form>
   );
 };

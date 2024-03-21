@@ -5,15 +5,18 @@ import {
   useEffect,
   useState
 } from "react";
+import { snakeCase } from "lodash-es";
+import { get as getEnv } from "../env";
+import { FormSchema } from "../schema";
 
 export interface PageState {
   stage:
-    | "enter-details"
-    | "plan"
-    | "donation"
-    | "payment-method"
-    | "payment-details"
-    | "confirm";
+  | "enter-details"
+  | "plan"
+  | "donation"
+  | "payment-method"
+  | "payment-details"
+  | "confirm";
 }
 
 export interface StateRouter {
@@ -90,3 +93,28 @@ export const stripUrlParams = () => {
     window.location.href.replace(/\?.*/, "")
   );
 };
+
+/**
+ * Gets the value of key in the data object, and appends it to the URL
+ * as a query parameter. The key is also converted into snake_case to be
+ * more URL-ish.
+ */
+const addQueryParameter = (url: string, data: any, key: string) => {
+  const name = snakeCase(key)
+  if (data[key]) {
+    if (url.includes('?')) {
+      url += `&${name}=` + data[key]
+    } else {
+      url += `?${name}=` + data[key]
+    }
+  }
+  return url
+}
+
+export const redirectToSuccess = (data: FormSchema) => {
+  let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
+  redirectTo = addQueryParameter(redirectTo, data, 'firstName')
+  redirectTo = addQueryParameter(redirectTo, data, 'email')
+  redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
+  window.location.href = redirectTo;
+}

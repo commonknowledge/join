@@ -15,6 +15,7 @@ interface StaticEnv {
     PRIVACY_COPY: string;
     SUCCESS_REDIRECT: string;
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
+    INCLUDE_SKIP_PAYMENT_BUTTON: boolean;
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
     USE_GOCARDLESS_API: boolean;
@@ -47,6 +48,7 @@ const staticEnv: StaticEnv = {
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
+    INCLUDE_SKIP_PAYMENT_BUTTON: parseBooleanEnvVar("REACT_APP_INCLUDE_SKIP_PAYMENT_BUTTON"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),

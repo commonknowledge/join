@@ -138,11 +138,18 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
           case 101:
             message = (
               <p>
-                <span>Could not find your details. Please check your email address or{" "}</span>
+                <span>
+                  We didn't find you in our members database.
+                  Make sure you're using the same email address that you've used for your membership
+                  before now. If you're trying to join up as a new member, use the{" "}
+                </span>
                 <a href="#" onClick={(e) => {
                   e.preventDefault();
                   router.setState({ ...router.state, stage: 'enter-details' });
-                }}>sign up as a new member</a>.
+                }}>Join</a>
+                <span>
+                  {" "}page instead.
+                </span>
               </p>
             );
             break;
