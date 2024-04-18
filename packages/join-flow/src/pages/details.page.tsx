@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 
-import { get as getEnv, getStr as getEnvStr } from '../env';
+import { get as getEnv, getStr as getEnvStr } from "../env";
 import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
@@ -18,9 +18,9 @@ const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
 });
 
-const homeAddressCopy = getEnvStr('HOME_ADDRESS_COPY');
-const passwordPurpose = getEnvStr('PASSWORD_PURPOSE');
-const privacyCopy = getEnvStr('PRIVACY_COPY');
+const homeAddressCopy = getEnvStr("HOME_ADDRESS_COPY");
+const passwordPurpose = getEnvStr("PASSWORD_PURPOSE");
+const privacyCopy = getEnvStr("PRIVACY_COPY");
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -31,8 +31,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     resolver: validate(DetailsSchema)
   });
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
-  const [skippingPayment, setSkippingPayment] = useState(false)
-  const usePostcodeLookup = getEnv('USE_POSTCODE_LOOKUP')
+  const [skippingPayment, setSkippingPayment] = useState(false);
+  const usePostcodeLookup = getEnv("USE_POSTCODE_LOOKUP");
 
   const addressLookupForm = useForm({
     resolver: yupResolver(addressLookupFormSchema)
@@ -58,12 +58,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     }
   }, [form.errors]);
 
-  const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
+  const recordStep =
+    usePostResource<Partial<FormSchema & { stage: string }>>("/step");
   const skipPayment = async () => {
-    setSkippingPayment(true)
-    await recordStep({ ...data, stage: 'enter-details' });
-    redirectToSuccess(data)
-  }
+    setSkippingPayment(true);
+    await recordStep({ ...data, stage: "enter-details" });
+    redirectToSuccess(data);
+  };
 
   return (
     <form
@@ -84,7 +85,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </FormItem>
       </section>
 
-      {getEnv('COLLECT_DATE_OF_BIRTH') ? (
+      {getEnv("COLLECT_DATE_OF_BIRTH") ? (
         <section className="form-section">
           <fieldset>
             <legend>
@@ -92,8 +93,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             </legend>
 
             <p className="text-secondary">
-              We collect every member's date of birth because our membership types
-              are based on age.
+              We collect every member's date of birth because our membership
+              types are based on age.
             </p>
             <Row>
               <Col>
@@ -130,7 +131,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <section className="form-section">
         <h2>Home address</h2>
-        <p className="text-secondary" dangerouslySetInnerHTML={{ __html: homeAddressCopy }}></p>
+        {getEnv("HIDE_HOME_ADDRESS_COPY") ? (
+          <div
+            className="text-secondary"
+            dangerouslySetInnerHTML={{ __html: homeAddressCopy }}
+          ></div>
+        ) : null}
         {usePostcodeLookup ? (
           <>
             <FormItem
@@ -139,7 +145,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               form={addressLookupForm}
               required
               after={
-                <Button className="mt-2" onClick={handleLookupPostcode} variant="secondary">
+                <Button
+                  className="mt-2"
+                  onClick={handleLookupPostcode}
+                  variant="secondary"
+                >
                   Find address
                 </Button>
               }
@@ -165,7 +175,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
                   as="select"
                   custom
                   className="form-control"
-                  onChange={(e) => addressLookup.setAddress(e.currentTarget.value)}
+                  onChange={(e) =>
+                    addressLookup.setAddress(e.currentTarget.value)
+                  }
                 >
                   <option>Choose your address</option>
 
@@ -180,19 +192,33 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           </>
         ) : null}
         <Collapse
-          in={!!addressLookup.address || !!data.addressLine1 || manuallyOpen || !usePostcodeLookup}
+          in={
+            !!addressLookup.address ||
+            !!data.addressLine1 ||
+            manuallyOpen ||
+            !usePostcodeLookup
+          }
         >
           <div>
             <FormItem label="Address line 1" name="addressLine1" form={form}>
-              <Form.Control autoComplete="address-line-1" disabled={addressLookup.loading} />
+              <Form.Control
+                autoComplete="address-line-1"
+                disabled={addressLookup.loading}
+              />
             </FormItem>
             <FormItem label="Address line 2" name="addressLine2" form={form}>
-              <Form.Control autoComplete="address-line-2" disabled={addressLookup.loading} />
+              <Form.Control
+                autoComplete="address-line-2"
+                disabled={addressLookup.loading}
+              />
             </FormItem>
             <FormItem label="City" name="addressCity" form={form}>
-              <Form.Control autoComplete="address-level1" disabled={addressLookup.loading} />
+              <Form.Control
+                autoComplete="address-level1"
+                disabled={addressLookup.loading}
+              />
             </FormItem>
-            {getEnv('COLLECT_COUNTY') ? (
+            {getEnv("COLLECT_COUNTY") ? (
               <FormItem label="County" name="addressCounty" form={form}>
                 <Form.Control disabled={addressLookup.loading} />
               </FormItem>
@@ -229,7 +255,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <FormItem label="Phone number" name="phoneNumber" form={form} required>
           <Form.Control autoComplete="tel-national" type="tel" />
         </FormItem>
-        {getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT') ? (
+        {getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ? (
           <>
             <p className="text-secondary">
               How would you like us to contact you?
@@ -244,15 +270,21 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         ) : null}
       </section>
 
-      {getEnv('CREATE_AUTH0_ACCOUNT') ? (
+      {getEnv("CREATE_AUTH0_ACCOUNT") ? (
         <section className="form-section">
           <h2>Password</h2>
           {passwordPurpose ? (
-            <p className="text-secondary" dangerouslySetInnerHTML={{ __html: passwordPurpose }}></p>
-          ) : ''}
+            <div
+              className="text-secondary"
+              dangerouslySetInnerHTML={{ __html: passwordPurpose }}
+            ></div>
+          ) : (
+            ""
+          )}
           <p className="text-secondary">
-            Your password should contain at least one number, one uppercase letter
-            and one special character. It must be at least 8 characters long.
+            Your password should contain at least one number, one uppercase
+            letter and one special character. It must be at least 8 characters
+            long.
           </p>
           <FormItem label="Password" name="password" form={form} required>
             <Form.Control type="password" />
@@ -282,7 +314,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       <ContinueButton />
       {getEnv("INCLUDE_SKIP_PAYMENT_BUTTON") ? (
-        <button type="button" className="mt-2 btn btn-secondary" onClick={skipPayment}>Skip payment</button>
+        <button
+          type="button"
+          className="mt-2 btn btn-secondary"
+          onClick={skipPayment}
+        >
+          Skip payment
+        </button>
       ) : null}
     </form>
   );

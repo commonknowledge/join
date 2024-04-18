@@ -80,7 +80,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
               <div className="radio-panel-custom-amount">
                 {currencySymbol}
                 <FormItem name="customMembershipAmount" form={form} required={checked}>
-                  <Form.Control type="number" min="1" max="1000" value={customValue} />
+                  <Form.Control type="number" min={amount || 1} max="1000" value={customValue} />
                 </FormItem>
                 {frequency}
               </div>

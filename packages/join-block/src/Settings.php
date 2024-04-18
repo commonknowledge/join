@@ -66,6 +66,8 @@ class Settings
                 ->set_help_text("E.G. We'll use this to connect you with your local group.."),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
+            Field::make('rich_text', 'membership_tiers_copy')
+                ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
             Field::make('separator', 'chargebee', 'Chargebee'),
             Field::make('text', 'chargebee_site_name'),
             Field::make('text', 'chargebee_api_key'),
@@ -144,7 +146,7 @@ class Settings
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
             Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')
-                ->set_help_text('This ignores the above price and requires users to choose the amount to pay.'),
+                ->set_help_text('This makes the above price a minimum.'),
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),

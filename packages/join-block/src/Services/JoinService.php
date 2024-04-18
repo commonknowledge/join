@@ -69,13 +69,14 @@ class JoinService
 
         $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
         if ($data['membershipPlan']['allow_custom_amount']) {
-            $data['membershipPlan']['amount'] = $data['customMembershipAmount'] ?? 1;
-        }
-
-        if ($membershipAmount < 1 || $membershipAmount > 1000) {
-            $error = 'Invalid membership amount: ' . $membershipAmount;
-            $joinBlockLog->error($error);
-            throw new \Exception($error);
+            $minimumAmount = $membershipAmount;
+            $membershipAmount = $data['customMembershipAmount'] ?? 1;
+            if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
+                $error = 'Invalid membership amount: ' . $membershipAmount;
+                $joinBlockLog->error($error);
+                throw new \Exception($error);
+            }
+            $data['membershipPlan']['amount'] = $membershipAmount;
         }
 
         $customerResult = null;

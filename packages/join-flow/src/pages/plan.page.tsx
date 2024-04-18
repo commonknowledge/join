@@ -4,7 +4,9 @@ import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema, currencyCodeToSymbol } from "../schema";
-import { get as getEnv } from "../env"
+import { get as getEnv, getStr as getEnvStr } from "../env";
+
+const membershipTiersCopy = getEnvStr("MEMBERSHIP_TIERS_COPY") || "You can change or cancel whenever you want.";
 
 export const PlanPage: StagerComponent<FormSchema> = ({
   data,
@@ -24,11 +26,9 @@ export const PlanPage: StagerComponent<FormSchema> = ({
         <legend>
           <h2>Choose the plan that’s right for you</h2>
         </legend>
-        <p className="text-secondary">
-          You can change or cancel whenever you want.
-        </p>
+        <div className="text-secondary" dangerouslySetInnerHTML={{ __html: membershipTiersCopy }}></div>
 
-        {(getEnv('MEMBERSHIP_PLANS') as any[]).map((plan) => (
+        {(getEnv("MEMBERSHIP_PLANS") as any[]).map((plan) => (
           <RadioPanel
             key={plan.value}
             name="membership"

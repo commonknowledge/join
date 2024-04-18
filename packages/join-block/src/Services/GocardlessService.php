@@ -201,6 +201,23 @@ class GocardlessService
         }
     }
 
+    public static function getCustomerIdByPayment($paymentId)
+    {
+        global $joinBlockLog;
+        $client = self::getClient();
+
+        try {
+            $payment = $client->payments()->get($paymentId);
+            if (!$payment) {
+                return null;
+            }
+            $mandate = $client->mandates()->get($payment->links->mandate);
+            return $mandate ? $mandate->links->customer : null;
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Failed to get mandate from payment $paymentId: " . $e->getMessage());
+        }
+    }
+
     private static function getClient()
     {
         global $joinBlockLog;

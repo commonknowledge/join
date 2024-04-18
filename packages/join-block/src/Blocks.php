@@ -132,10 +132,12 @@ class Blocks
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'hide_home_address_copy')
+                    ->set_help_text('Check to hide the copy that explains why the address is collected.'),
                 Field::make('checkbox', 'include_skip_payment_button')
                     ->set_help_text(
                         'Check to include an additional button on the first page to skip to the thank you page ' .
-                        '(which could include a form for additional questions)'
+                            '(which could include a form for additional questions)'
                     ),
                 Field::make('checkbox', 'is_update_flow', 'Is Update Flow (e.g. for existing members)')
                     ->set_help_text(
@@ -212,6 +214,7 @@ class Blocks
                 "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
                 "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
                 "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
+                "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
                 "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
                 "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
                 "MEMBERSHIP_PLANS" => $membership_plans_prepared,
