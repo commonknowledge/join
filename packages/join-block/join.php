@@ -119,6 +119,11 @@ add_action('rest_api_init', function () {
                 $data = $request->get_json_params();
                 $stepWebhookUrl = Settings::get('step_webhook_url');
                 if ($stepWebhookUrl) {
+                    $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+                    if (!empty($data['phoneNumber'] && !empty($data['addressCountry']))) {
+                        $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
+                        $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+                    }
                     JoinService::sendDataToWebhook($data, $stepWebhookUrl);
                 }
             } catch (\Exception $e) {
