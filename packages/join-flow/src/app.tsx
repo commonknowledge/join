@@ -14,7 +14,8 @@ import {
   StateRouter,
   redirectToSuccess,
   stripUrlParams,
-  useStateRouter
+  useStateRouter,
+  SAVED_STATE_KEY
 } from "./services/router.service";
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/payment-details.page";
@@ -44,8 +45,6 @@ let stages: Stage[] = [
 if (getEnv('IS_UPDATE_FLOW')) {
   stages = stages.filter(s => s.id !== 'enter-details')
 }
-
-const SAVED_STATE_KEY = "ck_join_state_flow";
 
 const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
 let shouldRedirectToConfirm = Boolean(GC_CUSTOMER_ID);

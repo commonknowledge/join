@@ -111,10 +111,13 @@ const addQueryParameter = (url: string, data: any, key: string) => {
   return url
 }
 
+export const SAVED_STATE_KEY = "ck_join_state_flow";
+
 export const redirectToSuccess = (data: FormSchema) => {
   let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
   redirectTo = addQueryParameter(redirectTo, data, 'firstName')
   redirectTo = addQueryParameter(redirectTo, data, 'email')
   redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
+  sessionStorage.removeItem(SAVED_STATE_KEY);
   window.location.href = redirectTo;
 }
