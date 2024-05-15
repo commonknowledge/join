@@ -16,17 +16,15 @@ use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
-use Monolog\Handler\ErrorLogHandler;
-use Monolog\Handler\StreamHandler;
 use Monolog\Processor\WebProcessor;
 use GuzzleHttp\Exception\ClientException;
+use Monolog\Handler\RotatingFileHandler;
 
 global $joinBlockLog;
 global $joinBlockLogLocation;
-$joinBlockLogLocation = __DIR__ . '/logs/debug.log';
+$joinBlockLogLocation = __DIR__ . '/logs';
 $joinBlockLog = new Logger('join-block');
-$joinBlockLog->pushHandler(new ErrorLogHandler());
-$joinBlockLog->pushHandler(new StreamHandler($joinBlockLogLocation, Logger::INFO));
+$joinBlockLog->pushHandler(new RotatingFileHandler($joinBlockLogLocation . '/debug.log', 10, Logger::INFO));
 $joinBlockLog->pushProcessor(new WebProcessor());
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -220,6 +218,10 @@ add_action('rest_api_init', function () {
         },
     ));
 
+    // Get the link to the GoCardless sign up flow, and redirect the user to it.
+    // Also set the Billing Request ID as a cookie, as it is used later to get
+    // the new Customer ID when the user is redirected back to the Join Form
+    // (see $_COOKIE["GC_BILLING_REQUEST_ID"] in Blocks.php)
     register_rest_route('join/v1', '/gocardless/auth', array(
         'methods' => 'GET',
         'permission_callback' => function ($req) {

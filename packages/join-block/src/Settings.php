@@ -100,7 +100,8 @@ class Settings
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
             global $joinBlockLogLocation;
-            $log = @file_get_contents($joinBlockLogLocation);
+            $logfiles = scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING);
+            $log = $logfiles ? @file_get_contents($joinBlockLogLocation . '/' . $logfiles[0]) : "";
             if (!$log) {
                 $log = 'Could not load error log. Please contact Common Knowledge support.';
             }
