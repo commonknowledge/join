@@ -11,7 +11,10 @@ import { upperFirst } from "lodash-es";
 import { get as getEnv } from '../env';
 import { useCurrentRouter } from "../services/router.service";
 
-const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
+const GC_BILLING_REQUEST_ID = Cookies.get("GC_BILLING_REQUEST_ID");
+const JOIN_FLOW_REDIRECT_TO_CONFIRM = Cookies.get("JOIN_FLOW_REDIRECT_TO_CONFIRM");
+
+const autoSubmit = Boolean(GC_BILLING_REQUEST_ID) && JOIN_FLOW_REDIRECT_TO_CONFIRM === "true";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
@@ -28,9 +31,9 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
-  // Default "requestInFlight" to true if GC_CUSTOMER_ID is set, as the request is sent
+  // Default "requestInFlight" to true if autoSubmit is set, as the request is sent
   // immediately through useEffect() below
-  const [requestInFlight, setRequestInFlight] = useState(Boolean(GC_CUSTOMER_ID));
+  const [requestInFlight, setRequestInFlight] = useState(autoSubmit);
   const [joinError, setJoinError] = useState<ReactElement | string | boolean>(
     false
   );
@@ -70,10 +73,10 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const onSubmit = async () => {
     setRequestInFlight(true);
-    join({ ...data, stage: 'confirm' }).then(
+    join({ ...data, stage: 'confirm', gcBillingRequestId: GC_BILLING_REQUEST_ID }).then(
       () => {
         Cookies.remove("GC_BILLING_REQUEST_ID");
-        Cookies.remove("GC_CUSTOMER_ID");
+        Cookies.remove("JOIN_FLOW_REDIRECT_TO_CONFIRM");
         onCompleted(data);
       },
       (error) => {
@@ -161,7 +164,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   };
 
   useEffect(() => {
-    if (GC_CUSTOMER_ID) {
+    if (autoSubmit) {
       onSubmit()
     }
   }, [])

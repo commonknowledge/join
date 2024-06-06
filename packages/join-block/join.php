@@ -223,17 +223,25 @@ add_action('rest_api_init', function () {
     // the new Customer ID when the user is redirected back to the Join Form
     // (see $_COOKIE["GC_BILLING_REQUEST_ID"] in Blocks.php)
     register_rest_route('join/v1', '/gocardless/auth', array(
-        'methods' => 'GET',
+        'methods' => 'POST',
         'permission_callback' => function ($req) {
             return true;
         },
         'callback' => function (WP_REST_Request $request) {
-            $redirectUrl = $request->get_query_params()['redirect_url'] ?? '';
+            $data = json_decode($request->get_body(), true);
+            $redirectUrl = $data['redirectUrl'];
+
             $billingRequest = GocardlessService::getBillingRequestIdAndUrl($redirectUrl, $redirectUrl);
             $authLink = $billingRequest['url'];
+            $data['gcBillingRequestId'] = $billingRequest["id"];
             setcookie("GC_BILLING_REQUEST_ID", $billingRequest["id"], 0, "/");
-            wp_redirect($authLink);
-            exit();
+
+            // Save this data in the database so if the user doesn't set up the subscription it can be
+            // done when we receive a GoCardless webhook
+            $sessionToken = $data['sessionToken'];
+            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$sessionToken}", json_encode($data));
+
+            return ["href" => $authLink];
         }
     ));
 });

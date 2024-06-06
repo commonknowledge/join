@@ -18,9 +18,12 @@ class GocardlessService
         $customer = null;
 
         // From cookie set when user returns from external GoCardless page
-        $savedCustomerId = $data['gcCustomerId'] ?? null;
-        if ($savedCustomerId) {
-            $customer = $client->customers()->get($savedCustomerId);
+        $billingRequestId = $data['gcBillingRequestId'] ?? null;
+        if ($billingRequestId) {
+            $customerId = self::getCustomerIdByCompletedBillingRequest($billingRequestId);
+            if ($customerId) {
+                $customer = $client->customers()->get($customerId);
+            }
         }
 
         if (!$customer) {
@@ -112,6 +115,11 @@ class GocardlessService
             "params" => $subscriptionParams
         ]);
         $subscription->links->customer = $customer->id;
+
+        // Remove this session from the uncompleted list
+        // (which is processed when GoCardless sends a webhook)
+        delete_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$data['sessionToken']}");
+
         return $subscription;
     }
 
@@ -188,14 +196,17 @@ class GocardlessService
         ];
     }
 
-    public static function getCustomerIdByBillingRequest($billingRequestId)
+    public static function getCustomerIdByCompletedBillingRequest($billingRequestId)
     {
         global $joinBlockLog;
         $client = self::getClient();
 
         try {
             $billingRequest = $client->billingRequests()->get($billingRequestId);
-            return $billingRequest ? $billingRequest->links->customer : null;
+            if (empty($billingRequest->links->mandate_request_mandate)) {
+                return null;
+            }
+            return $billingRequest->links->customer;
         } catch (\Exception $e) {
             $joinBlockLog->error("Failed to get customer from billing request $billingRequestId: " . $e->getMessage());
         }

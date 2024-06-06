@@ -194,12 +194,19 @@ class Blocks
                 $use_postcode_lookup = (bool) $apiKey;
             }
 
-            // On redirect to this form, get the customer ID if the billing request was approved
+            // Detect GoCardless redirect back to this form, after user sign up,
+            // by checking if the customer exists.
+            // If so, redirect them to the Confirm page
             $customerId = null;
             $billingRequestId = $_COOKIE["GC_BILLING_REQUEST_ID"] ?? "";
             if ($billingRequestId) {
-                $customerId = GocardlessService::getCustomerIdByBillingRequest($billingRequestId);
-                setcookie("GC_CUSTOMER_ID", $customerId, 0, "/");
+                $customerId = GocardlessService::getCustomerIdByCompletedBillingRequest($billingRequestId);
+                if ($customerId) {
+                    setcookie("JOIN_FLOW_REDIRECT_TO_CONFIRM", "true", 0, "/");
+                }
+            }
+            if (!$customerId) {
+                setcookie("JOIN_FLOW_REDIRECT_TO_CONFIRM", "false", 0, "/");
             }
 
             $environment = [

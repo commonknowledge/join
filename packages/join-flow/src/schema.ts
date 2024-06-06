@@ -221,7 +221,7 @@ const DonationSchema = object({
 }).required();
 
 const CustomGoCardlessSchema = object({
-  gcCustomerId: string()
+  gcBillingRequestId: string()
 })
 
 export const FormSchema: ObjectSchema<FormSchema> = object()

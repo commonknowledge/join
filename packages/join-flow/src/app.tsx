@@ -46,8 +46,10 @@ if (getEnv('IS_UPDATE_FLOW')) {
   stages = stages.filter(s => s.id !== 'enter-details')
 }
 
-const GC_CUSTOMER_ID = Cookies.get("GC_CUSTOMER_ID");
-let shouldRedirectToConfirm = Boolean(GC_CUSTOMER_ID);
+// Redirect to confirm page if JOIN_FLOW_REDIRECT_TO_CONFIRM === "true"
+// because that is a redirect from GoCardless
+const JOIN_FLOW_REDIRECT_TO_CONFIRM = Cookies.get("JOIN_FLOW_REDIRECT_TO_CONFIRM");
+let shouldRedirectToConfirm = JOIN_FLOW_REDIRECT_TO_CONFIRM === "true";
 
 const App = () => {
   const [data, setData] = useState(getInitialState);
@@ -67,10 +69,7 @@ const App = () => {
     } catch (e) {}
   }, [router])
 
-  // Redirect to confirm page if GC_CUSTOMER_ID exists
-  // because that is a redirect from GoCardless
   if (shouldRedirectToConfirm) {
-    setData({ ...data, gcCustomerId: GC_CUSTOMER_ID })
     router.setState({ stage: "confirm" });
     shouldRedirectToConfirm = false;
   }
@@ -78,6 +77,7 @@ const App = () => {
   useOnce(stripUrlParams);
 
   const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
+  const getGoCardlessRedirect = usePostResource<Partial<FormSchema & { redirectUrl: string }>>("/gocardless/auth");
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
@@ -119,15 +119,25 @@ const App = () => {
       }
 
       // Go to external GoCardless pages if not using the GoCardless API
-      if (nextStage === "payment-details" &&
-        data.paymentMethod === "directDebit" &&
-        !getEnv("USE_GOCARDLESS_API")) {
+      if (
+        nextStage === "payment-details" &&
+        nextData.paymentMethod === "directDebit" &&
+        getEnv("USE_GOCARDLESS") &&
+        !getEnv("USE_GOCARDLESS_API")
+      ) {
         // Undo the transition to prevent flicker
-        nextStage = router.state.stage
+        nextStage = router.state.stage;
+        // Record the data
+        await recordStep({ ...nextData, stage: "payment-details" });
         // Redirect to GoCardless
-        const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, '')
-        const redirectUrl = encodeURI(window.location.href)
-        window.location.href = `${baseUrl}/join/v1/gocardless/auth?redirect_url=${redirectUrl}`
+        const baseUrl = (getEnv("WP_REST_API") as string).replace(/\/$/, "");
+        const redirectUrl = encodeURI(window.location.href);
+
+        const goCardlessHrefResponse: any = await getGoCardlessRedirect({
+          ...nextData,
+          redirectUrl
+        });
+        window.location.href = goCardlessHrefResponse.href;
       }
 
       router.setState({ stage: nextStage });
@@ -230,7 +240,7 @@ const getInitialState = (): FormSchema => {
     }
   };
 
-  return {
+  const state = {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
@@ -239,6 +249,8 @@ const getInitialState = (): FormSchema => {
     isUpdateFlow: getEnv('IS_UPDATE_FLOW'),
     webhookUuid: getEnv('WEBHOOK_UUID')
   } as any;
+  console.log('initial state is', state)
+  return state;
 };
 
 const Fail: FC<{ router: StateRouter }> = ({ router }) => {

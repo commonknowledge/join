@@ -44,6 +44,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
   useEffect(() => {
     // Check if all we haven't touched the postcode at all or manually entered something, then give an error.
+    if (form.errors && Object.keys(form.errors).length > 0) {
+      setAddressManuallyOpen(true)
+    }
     if (
       Object.keys(form.errors).filter((error) => error.includes("address"))
         .length === 4
