@@ -41,8 +41,6 @@ class GocardlessService
             }
         }
 
-        do_action("ck_join_flow_delete_existing_gocardless_customer", $data);
-
         $mandate = null;
 
         if ($customer) {
@@ -84,6 +82,11 @@ class GocardlessService
                     "links" => ["customer" => $customer->id]
                 ]
             ]);
+        }
+
+        if ($customer) {
+            $data["gcCustomerId"] = $customer->id;
+            do_action("ck_join_flow_delete_existing_gocardless_customer", $data);
         }
 
         if (!$mandate) {
