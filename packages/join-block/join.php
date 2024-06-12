@@ -231,20 +231,20 @@ add_action('rest_api_init', function () {
             global $joinBlockLog;
             $data = json_decode($request->get_body(), true);
             $redirectUrl = $data['redirectUrl'];
+            $successUrl = add_query_arg('gocardless_success', 'true', $redirectUrl);
 
-            $billingRequest = GocardlessService::getBillingRequestIdAndUrl($redirectUrl, $redirectUrl);
+            $billingRequest = GocardlessService::getBillingRequestIdAndUrl($successUrl, $redirectUrl);
             $authLink = $billingRequest['url'];
             $data['gcBillingRequestId'] = $billingRequest["id"];
 
-            $joinBlockLog->info("Setting billing request ID cookie {$billingRequest['id']} for {$data['email']}");
-            setcookie("GC_BILLING_REQUEST_ID", $billingRequest["id"], 0, "/");
+            $joinBlockLog->info("Got billing request ID {$billingRequest['id']} for {$data['email']}");
 
             // Save this data in the database so if the user doesn't set up the subscription it can be
             // done when we receive a GoCardless webhook
             $sessionToken = $data['sessionToken'];
             update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$sessionToken}", json_encode($data));
 
-            return ["href" => $authLink];
+            return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
         }
     ));
 });

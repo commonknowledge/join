@@ -1,7 +1,6 @@
 import React, { useState, ReactElement, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import Cookies from "js-cookie";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema, getPaymentFrequency } from "../schema";
@@ -10,11 +9,6 @@ import { upperFirst } from "lodash-es";
 
 import { get as getEnv } from '../env';
 import { useCurrentRouter } from "../services/router.service";
-
-const GC_BILLING_REQUEST_ID = Cookies.get("GC_BILLING_REQUEST_ID");
-const JOIN_FLOW_REDIRECT_TO_CONFIRM = Cookies.get("JOIN_FLOW_REDIRECT_TO_CONFIRM");
-
-const autoSubmit = Boolean(GC_BILLING_REQUEST_ID) && JOIN_FLOW_REDIRECT_TO_CONFIRM === "true";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
@@ -30,6 +24,8 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const router = useCurrentRouter();
 
   const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
+
+  const autoSubmit = Boolean(data.gcBillingRequestId);
 
   // Default "requestInFlight" to true if autoSubmit is set, as the request is sent
   // immediately through useEffect() below
@@ -73,10 +69,8 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const onSubmit = async () => {
     setRequestInFlight(true);
-    join({ ...data, stage: 'confirm', gcBillingRequestId: GC_BILLING_REQUEST_ID }).then(
+    join({ ...data, stage: 'confirm' }).then(
       () => {
-        Cookies.remove("GC_BILLING_REQUEST_ID");
-        Cookies.remove("JOIN_FLOW_REDIRECT_TO_CONFIRM");
         onCompleted(data);
       },
       (error) => {

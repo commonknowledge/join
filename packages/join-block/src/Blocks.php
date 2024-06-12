@@ -153,10 +153,6 @@ class Blocks
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             global $joinBlockLog;
 
-            # Don't cache the join block because it sets cookies
-            setcookie("wordpress_no_cache", "no-cache");
-            header("x_tfsp_override: BYPASS");
-
             if (is_multisite()) {
                 $currentBlogId = get_current_blog_id();
                 $homeUrl = get_home_url($currentBlogId);
@@ -198,22 +194,6 @@ class Blocks
             } else {
                 $apiKey = Settings::get(Settings::IDEAL_POSTCODES . '_api_key');
                 $use_postcode_lookup = (bool) $apiKey;
-            }
-
-            // Detect GoCardless redirect back to this form, after user sign up,
-            // by checking if the customer exists.
-            // If so, redirect them to the Confirm page
-            $customerId = null;
-            $billingRequestId = $_COOKIE["GC_BILLING_REQUEST_ID"] ?? "";
-            if ($billingRequestId) {
-                $customerId = GocardlessService::getCustomerIdByCompletedBillingRequest($billingRequestId);
-                if ($customerId) {
-                    $joinBlockLog->info("Setting redirect cookie for billing request {$billingRequestId} and customer {$customerId}");
-                    setcookie("JOIN_FLOW_REDIRECT_TO_CONFIRM", "true", 0, "/");
-                }
-            }
-            if (!$customerId) {
-                setcookie("JOIN_FLOW_REDIRECT_TO_CONFIRM", "false", 0, "/");
             }
 
             $environment = [

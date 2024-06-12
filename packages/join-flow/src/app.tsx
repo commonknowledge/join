@@ -1,5 +1,4 @@
 import { parse } from "querystring";
-import Cookies from "js-cookie";
 
 import * as uuid from "uuid";
 import React, { FC, useCallback, useState, useEffect } from "react";
@@ -46,12 +45,14 @@ if (getEnv('IS_UPDATE_FLOW')) {
   stages = stages.filter(s => s.id !== 'enter-details')
 }
 
-// Redirect to confirm page if JOIN_FLOW_REDIRECT_TO_CONFIRM === "true"
+// Redirect to confirm page if ?gocardless_success === "true"
 // because that is a redirect from GoCardless
-// Also require a session to be present.
-const JOIN_FLOW_REDIRECT_TO_CONFIRM = Cookies.get("JOIN_FLOW_REDIRECT_TO_CONFIRM");
-let shouldRedirectToConfirm = JOIN_FLOW_REDIRECT_TO_CONFIRM === "true" && sessionStorage.getItem(SAVED_STATE_KEY);
-console.log('should redirect', JOIN_FLOW_REDIRECT_TO_CONFIRM, sessionStorage.getItem(SAVED_STATE_KEY), shouldRedirectToConfirm);
+// Also require a billing request ID to be present.
+const searchParams = new URLSearchParams(window.location.search)
+const gcRedirect = searchParams.get("gocardless_success") === "true"
+const savedSession = JSON.parse(sessionStorage.getItem(SAVED_STATE_KEY) || "{}")
+const gcBillingRequestId = savedSession['gcBillingRequestId']
+let shouldRedirectToConfirm = gcRedirect && gcBillingRequestId
 
 const App = () => {
   const [data, setData] = useState(getInitialState);
@@ -73,6 +74,7 @@ const App = () => {
 
   if (shouldRedirectToConfirm) {
     router.setState({ stage: "confirm" });
+    // Prevent infinite loop
     shouldRedirectToConfirm = false;
   }
 
@@ -109,6 +111,9 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
+        router.setState({
+          stage: stages[0].id
+        })
         redirectToSuccess(data)
       }
 
@@ -132,13 +137,16 @@ const App = () => {
         // Record the data
         await recordStep({ ...nextData, stage: "payment-details" });
         // Redirect to GoCardless
-        const baseUrl = (getEnv("WP_REST_API") as string).replace(/\/$/, "");
         const redirectUrl = encodeURI(window.location.href);
 
         const goCardlessHrefResponse: any = await getGoCardlessRedirect({
           ...nextData,
           redirectUrl
         });
+        sessionStorage.setItem(
+          SAVED_STATE_KEY,
+          JSON.stringify({ ...nextData, gcBillingRequestId: goCardlessHrefResponse.gcBillingRequestId })
+        );
         window.location.href = goCardlessHrefResponse.href;
       }
 
