@@ -48,8 +48,10 @@ if (getEnv('IS_UPDATE_FLOW')) {
 
 // Redirect to confirm page if JOIN_FLOW_REDIRECT_TO_CONFIRM === "true"
 // because that is a redirect from GoCardless
+// Also require a session to be present.
 const JOIN_FLOW_REDIRECT_TO_CONFIRM = Cookies.get("JOIN_FLOW_REDIRECT_TO_CONFIRM");
-let shouldRedirectToConfirm = JOIN_FLOW_REDIRECT_TO_CONFIRM === "true";
+let shouldRedirectToConfirm = JOIN_FLOW_REDIRECT_TO_CONFIRM === "true" && sessionStorage.getItem(SAVED_STATE_KEY);
+console.log('should redirect', JOIN_FLOW_REDIRECT_TO_CONFIRM, sessionStorage.getItem(SAVED_STATE_KEY), shouldRedirectToConfirm);
 
 const App = () => {
   const [data, setData] = useState(getInitialState);

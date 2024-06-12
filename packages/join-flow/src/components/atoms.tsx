@@ -54,6 +54,13 @@ export const RadioPanel: FC<RadioPanelProps> = ({
       const customValue = form?.watch('customMembershipAmount')
       const priceLabel = `${currencySymbol}${amount}, ${frequency}`
 
+      const onChangeClearCustom = () => {
+        if (!allowCustomAmount) {
+          form?.setValue("customMembershipAmount", "")
+        }
+        onChange(value)
+      }
+
       return (
         <Form.Label
           className={
@@ -69,7 +76,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
             type="radio"
             checked={checked}
             className={checked ? "checked" : undefined}
-            onChange={() => onChange(value)}
+            onChange={() => onChangeClearCustom()}
           />
           <div className="flex-grow-1">
             <h3 className="radio-panel-label mb-0">
@@ -80,7 +87,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
               <div className="radio-panel-custom-amount">
                 {currencySymbol}
                 <FormItem name="customMembershipAmount" form={form} required={checked}>
-                  <Form.Control type="number" min={amount || 1} max="1000" value={customValue} />
+                  <Form.Control type="number" min={amount || 1} max="1000" value={customValue} onChange={() => onChange(value)} />
                 </FormItem>
                 {frequency}
               </div>
