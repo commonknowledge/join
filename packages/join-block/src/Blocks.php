@@ -153,6 +153,10 @@ class Blocks
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             global $joinBlockLog;
 
+            # Don't cache the join block because it sets cookies
+            # TODO: Make the join block not use cookies
+            nocache_headers();
+
             if (is_multisite()) {
                 $currentBlogId = get_current_blog_id();
                 $homeUrl = get_home_url($currentBlogId);
