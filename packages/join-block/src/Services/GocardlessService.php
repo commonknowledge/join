@@ -23,6 +23,7 @@ class GocardlessService
             $customerId = self::getCustomerIdByCompletedBillingRequest($billingRequestId);
             if ($customerId) {
                 $customer = $client->customers()->get($customerId);
+                $joinBlockLog->info("Got customer {$customer->id} from billing request {$billingRequestId}");
             }
         }
 
@@ -49,8 +50,8 @@ class GocardlessService
                 "params" => ["customer" => $customer->id]
             ]);
             if (count($mandates->records) > 0) {
-                $joinBlockLog->info("Found existing mandate for " . $data['email']);
                 $mandate = $mandates->records[0];
+                $joinBlockLog->info("Found existing mandate for " . $data['email'] . " {$customer->id} {$mandate->id}");
             }
         }
 
@@ -111,6 +112,7 @@ class GocardlessService
             "interval_unit" => $data['membershipPlan']['frequency'],
             "links" => ["mandate" => $mandate->id]
         ];
+        $joinBlockLog->info("Creating subscription for " . $data['email'] . ", customer {$customer->id}, params: " . json_encode($subscriptionParams));
         $subscription = $client->subscriptions()->create([
             "params" => $subscriptionParams
         ]);

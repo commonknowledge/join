@@ -151,6 +151,8 @@ class Blocks
 
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
+            global $joinBlockLog;
+
             if (is_multisite()) {
                 $currentBlogId = get_current_blog_id();
                 $homeUrl = get_home_url($currentBlogId);
@@ -202,6 +204,7 @@ class Blocks
             if ($billingRequestId) {
                 $customerId = GocardlessService::getCustomerIdByCompletedBillingRequest($billingRequestId);
                 if ($customerId) {
+                    $joinBlockLog->info("Setting redirect cookie for billing request {$billingRequestId} and customer {$customerId}");
                     setcookie("JOIN_FLOW_REDIRECT_TO_CONFIRM", "true", 0, "/");
                 }
             }

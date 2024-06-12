@@ -40,7 +40,7 @@ class JoinService
     {
         global $joinBlockLog;
 
-        $joinBlockLog->info('Beginning join process');
+        $joinBlockLog->info('Beginning join process: ' . json_encode($data));
 
         $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
@@ -249,7 +249,7 @@ class JoinService
         $subscription = null;
 
         if ($data['paymentMethod'] === 'directDebit') {
-            $joinBlockLog->info('Creating Direct Debit subscription via GoCardless');
+            $joinBlockLog->info('Creating Direct Debit subscription via GoCardless: ' . json_encode($data));
 
             /*
                 Handle different GoCardless errors.
@@ -279,7 +279,7 @@ class JoinService
             } catch (\GoCardlessPro\Core\Exception\InvalidApiUsageException $exception) {
                 $joinBlockLog->error(
                     'GoCardless Direct Debit subscription creation failed due to invalid usage of the API ' .
-                        $exception->getMessage()
+                        $exception->getMessage() . " " . $exception->getTraceAsString()
                 );
 
                 throw new JoinBlockException(

@@ -228,12 +228,15 @@ add_action('rest_api_init', function () {
             return true;
         },
         'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
             $data = json_decode($request->get_body(), true);
             $redirectUrl = $data['redirectUrl'];
 
             $billingRequest = GocardlessService::getBillingRequestIdAndUrl($redirectUrl, $redirectUrl);
             $authLink = $billingRequest['url'];
             $data['gcBillingRequestId'] = $billingRequest["id"];
+
+            $joinBlockLog->info("Setting billing request ID cookie {$billingRequest['id']} for {$data['email']}");
             setcookie("GC_BILLING_REQUEST_ID", $billingRequest["id"], 0, "/");
 
             // Save this data in the database so if the user doesn't set up the subscription it can be
