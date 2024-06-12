@@ -154,8 +154,8 @@ class Blocks
             global $joinBlockLog;
 
             # Don't cache the join block because it sets cookies
-            # TODO: Make the join block not use cookies
-            nocache_headers();
+            setcookie("wordpress_no_cache", "no-cache");
+            header("x_tfsp_override: BYPASS");
 
             if (is_multisite()) {
                 $currentBlogId = get_current_blog_id();
