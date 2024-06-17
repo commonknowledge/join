@@ -134,6 +134,9 @@ class JoinService
         }
 
         $data = self::addPostcodesIOData($data);
+        // Set this as some users reuse the same tab for multiple form submissions,
+        // which prevents sessionToken being unique for each user journey
+        $data["userSessionToken"] = $data["email"] . ':' . $data["sessionToken"];
         $webhookData = apply_filters('ck_join_flow_pre_webhook_post', [
             "headers" => [
                 'Content-Type' => 'application/json',
