@@ -241,8 +241,8 @@ add_action('rest_api_init', function () {
 
             // Save this data in the database so if the user doesn't set up the subscription it can be
             // done when we receive a GoCardless webhook
-            $sessionToken = $data['sessionToken'];
-            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$sessionToken}", json_encode($data));
+            $data['createdAt'] = time();
+            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", json_encode($data));
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
         }

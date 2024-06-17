@@ -123,7 +123,7 @@ class GocardlessService
 
         // Remove this session from the uncompleted list
         // (which is processed when GoCardless sends a webhook)
-        delete_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$data['sessionToken']}");
+        delete_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequestId}");
 
         return $subscription;
     }
