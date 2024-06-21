@@ -9,6 +9,7 @@ use ChargeBee\ChargeBee\Exceptions\PaymentException;
 use ChargeBee\ChargeBee\Models\Customer;
 use ChargeBee\ChargeBee\Models\Subscription;
 use CommonKnowledge\JoinBlock\Exceptions\JoinBlockException;
+use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Settings;
 
 class JoinService
@@ -299,6 +300,8 @@ class JoinService
                         'this usually means a request in flight is in a unclear state',
                     6
                 );
+            } catch (SubscriptionExistsException $e) {
+                throw $e;
             } catch (\Exception $exception) {
                 $joinBlockLog->error(
                     'GoCardless Direct Debit subscription creation failed with unknown exception: ' .

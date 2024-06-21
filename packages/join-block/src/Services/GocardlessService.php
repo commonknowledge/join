@@ -2,6 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
+use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Settings;
 
 class GocardlessService
@@ -99,15 +100,27 @@ class GocardlessService
                 ]
             ]);
         }
+        $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
 
         $subscriptions = $client->subscriptions()->list([
             "params" => ["mandate" => $mandate->id]
         ]);
+        $subscriptionExists = false;
         foreach ($subscriptions->records as $subscription) {
-            self::deleteCustomerSubscription($subscription->id);
+            if ($subscription->amount != $amountInPence) {
+                self::deleteCustomerSubscription($subscription->id);
+            } else {
+                $subscriptionExists = true;
+            }
+        }
+        if ($subscriptionExists) {
+            $joinBlockLog->info("Subscription exists for " . $data['email'] . ", customer {$customer->id}");
+            $optionName = "JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequestId}";
+            $joinBlockLog->info("Subscription exists, deleting option {$optionName}");
+            delete_option($optionName);
+            throw new SubscriptionExistsException();
         }
 
-        $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
         $subscriptionParams = [
             "amount" => $amountInPence,
             "currency" => $data['membershipPlan']['currency'],
@@ -123,7 +136,9 @@ class GocardlessService
 
         // Remove this session from the uncompleted list
         // (which is processed when GoCardless sends a webhook)
-        delete_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequestId}");
+        $optionName = "JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequestId}";
+        $joinBlockLog->info("Subscription created, deleting option {$optionName}");
+        delete_option($optionName);
 
         return $subscription;
     }

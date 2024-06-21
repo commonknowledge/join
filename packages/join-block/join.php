@@ -13,6 +13,7 @@ require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 use ChargeBee\ChargeBee\Environment;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
+use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
@@ -70,6 +71,11 @@ add_action('rest_api_init', function () {
             try {
                 JoinService::handleJoin($request->get_json_params());
                 $joinBlockLog->info('Join process successful');
+            } catch (SubscriptionExistsException $error) {
+                $joinBlockLog->info(
+                    'Join process failed as subscription already exists',
+                    ['error' => $error]
+                );
             } catch (ClientException $error) {
                 $joinBlockLog->error(
                     'Join process failed at Auth0 user creation, but customer created in Chargebee.',
