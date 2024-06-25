@@ -134,8 +134,6 @@ const App = () => {
       ) {
         // Undo the transition to prevent flicker
         nextStage = router.state.stage;
-        // Record the data
-        await recordStep({ ...nextData, stage: "payment-details" });
         // Redirect to GoCardless
         const redirectUrl = encodeURI(window.location.href);
 
