@@ -66,7 +66,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   const skipPayment = async () => {
     setSkippingPayment(true);
     await recordStep({ ...data, stage: "enter-details" });
-    redirectToSuccess(data);
+    await redirectToSuccess(data);
   };
 
   return (

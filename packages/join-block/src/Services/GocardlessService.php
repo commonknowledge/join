@@ -107,10 +107,10 @@ class GocardlessService
         ]);
         $subscriptionExists = false;
         foreach ($subscriptions->records as $subscription) {
-            if ($subscription->amount != $amountInPence) {
-                self::deleteCustomerSubscription($subscription->id);
-            } else {
+            if ($subscription->amount == $amountInPence && $subscription->status === "active") {
                 $subscriptionExists = true;
+            } else {
+                self::deleteCustomerSubscription($subscription->id);
             }
         }
         if ($subscriptionExists) {

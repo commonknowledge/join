@@ -22,6 +22,7 @@ export interface PageState {
 export interface StateRouter {
   state: PageState;
   setState: (state: PageState) => void;
+  reset: () => void;
 }
 
 /**
@@ -62,9 +63,14 @@ export const useStateRouter = (
     [setStateValue]
   );
 
+  const reset = () => {
+    window.history.pushState(null, "")
+  }
+
   return {
     state,
-    setState
+    setState,
+    reset
   };
 };
 
@@ -114,10 +120,14 @@ const addQueryParameter = (url: string, data: any, key: string) => {
 export const SAVED_STATE_KEY = "ck_join_state_flow";
 
 export const redirectToSuccess = (data: FormSchema) => {
-  let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
-  redirectTo = addQueryParameter(redirectTo, data, 'firstName')
-  redirectTo = addQueryParameter(redirectTo, data, 'email')
-  redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
-  sessionStorage.removeItem(SAVED_STATE_KEY);
-  window.location.href = redirectTo;
+  // This promise never resolves. This is correct because code should not continue to run
+  // after the href is assigned to.
+  return new Promise<void>((resolve, reject) => {
+    let redirectTo = getEnv('SUCCESS_REDIRECT') as string || "/"
+    redirectTo = addQueryParameter(redirectTo, data, 'firstName')
+    redirectTo = addQueryParameter(redirectTo, data, 'email')
+    redirectTo = addQueryParameter(redirectTo, data, 'phoneNumber')
+    sessionStorage.removeItem(SAVED_STATE_KEY);
+    window.location.href = redirectTo;
+  })
 }

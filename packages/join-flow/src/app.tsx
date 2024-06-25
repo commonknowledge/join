@@ -111,10 +111,8 @@ const App = () => {
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm"
       } else if (router.state.stage === "confirm") {
-        router.setState({
-          stage: stages[0].id
-        })
-        redirectToSuccess(data)
+        router.reset()
+        await redirectToSuccess(data)
       }
 
       if (nextStage === "donation" && !includeDonationPage) {
@@ -257,7 +255,6 @@ const getInitialState = (): FormSchema => {
     isUpdateFlow: getEnv('IS_UPDATE_FLOW'),
     webhookUuid: getEnv('WEBHOOK_UUID')
   } as any;
-  console.log('initial state is', state)
   return state;
 };
 
