@@ -86,8 +86,8 @@ class GocardlessService
         }
 
         if ($customer) {
-            $data["gcCustomerId"] = $customer->id;
-            do_action("ck_join_flow_delete_existing_gocardless_customer", $data);
+            $mandateId = $mandate ? $mandate->id : null;
+            do_action("ck_join_flow_delete_existing_gocardless_customer", $data['email'], $customer->id, $mandateId);
         }
 
         if (!$mandate) {
@@ -105,16 +105,16 @@ class GocardlessService
         $subscriptions = $client->subscriptions()->list([
             "params" => ["mandate" => $mandate->id]
         ]);
-        $subscriptionExists = false;
+        $existingSubscriptionId = null;
         foreach ($subscriptions->records as $subscription) {
             if ($subscription->amount == $amountInPence && $subscription->status === "active") {
-                $subscriptionExists = true;
+                $existingSubscriptionId = $subscription->id;
             } else {
                 self::deleteCustomerSubscription($subscription->id);
             }
         }
-        if ($subscriptionExists) {
-            $joinBlockLog->info("Subscription exists for " . $data['email'] . ", customer {$customer->id}");
+        if ($existingSubscriptionId) {
+            $joinBlockLog->info("Subscription exists for " . $data['email'] . ", customer {$customer->id}: $existingSubscriptionId");
             $optionName = "JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequestId}";
             $joinBlockLog->info("Subscription exists, deleting option {$optionName}");
             delete_option($optionName);
@@ -133,6 +133,7 @@ class GocardlessService
             "params" => $subscriptionParams
         ]);
         $subscription->links->customer = $customer->id;
+        $joinBlockLog->info("Created subscription for " . $data['email'] . ", customer {$customer->id}: " . $subscription->id);
 
         // Remove this session from the uncompleted list
         // (which is processed when GoCardless sends a webhook)
@@ -158,9 +159,11 @@ class GocardlessService
     public static function removeCustomerById($customerId)
     {
         global $joinBlockLog;
+        $joinBlockLog->info("Removing existing customer {$customerId}");
         $client = self::getClient();
         try {
             $client->customers()->remove($customerId);
+            $joinBlockLog->info("Removed existing customer {$customerId}");
         } catch (\Exception $e) {
             $joinBlockLog->error("Failed to delete customer $customerId: " . $e->getMessage());
         }
@@ -169,13 +172,16 @@ class GocardlessService
     public static function removeCustomerMandates($customerId)
     {
         global $joinBlockLog;
+        $joinBlockLog->info("Removing existing mandates for customer {$customerId}");
         $client = self::getClient();
         $mandates = $client->mandates()->list([
             "params" => ["customer" => $customerId]
         ]);
         foreach ($mandates->records as $mandate) {
             try {
+                $joinBlockLog->info("Removing existing mandate for customer " . $mandate->id);
                 $client->mandates()->cancel($mandate->id);
+                $joinBlockLog->info("Removed existing mandate for customer " . $mandate->id);
             } catch (\Exception $e) {
                 $joinBlockLog->error("Failed to delete customer mandate {$mandate->id}: " . $e->getMessage());
             }
