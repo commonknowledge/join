@@ -23,10 +23,7 @@ use Monolog\Handler\RotatingFileHandler;
 
 global $joinBlockLog;
 global $joinBlockLogLocation;
-$joinBlockLogLocation = __DIR__ . '/logs';
 $joinBlockLog = new Logger('join-block');
-$joinBlockLog->pushHandler(new RotatingFileHandler($joinBlockLogLocation . '/debug.log', 10, Logger::INFO));
-$joinBlockLog->pushProcessor(new WebProcessor());
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 
@@ -37,6 +34,10 @@ try {
     // plugin settings page
     $joinBlockLog->debug("Could not load environment variables from .env file: " . $e->getMessage());
 }
+
+$joinBlockLogLocation = $_ENV['JOIN_BLOCK_LOG_LOCATION'] ?? __DIR__ . '/logs';
+$joinBlockLog->pushHandler(new RotatingFileHandler($joinBlockLogLocation . '/debug.log', 10, Logger::INFO));
+$joinBlockLog->pushProcessor(new WebProcessor());
 
 add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
