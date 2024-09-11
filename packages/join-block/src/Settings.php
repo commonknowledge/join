@@ -41,6 +41,8 @@ class Settings
             Field::make('checkbox', 'use_gocardless_api', 'Use GoCardless Custom Pages')
                 ->set_help_text('Requires a GoCardless Pro account with the custom pages addon'),
             Field::make('checkbox', 'use_chargebee'),
+            Field::make('checkbox', 'use_stripe', 'Use Stripe')
+                ->set_help_text('Use Stripe as a payment provider')
         ];
 
         $membership_plans_fields = [
@@ -86,6 +88,10 @@ class Settings
             Field::make('text', 'gc_access_token'),
             $gc_environment_select,
 
+            Field::make('separator', 'stripe', 'Stripe'),
+            Field::make('text', 'stripe_publishable_key', 'Stripe publishable key'),
+            Field::make('text', 'stripe_secret_key', 'Stripe secret key'),
+
             Field::make('separator', 'postcodes', 'Postcode Address Providers'),
             $postcode_provider_select,
             Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
@@ -107,7 +113,7 @@ class Settings
             ),
         ];
 
-        // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable
+        // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable.
         // This feels like it would file under integrations.
         //
         // Here maintain this compatability, but do not rename the filter to align more precisely for the moment.
