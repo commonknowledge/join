@@ -25,6 +25,8 @@ interface StaticEnv {
     USE_TEST_DATA: boolean;
     WEBHOOK_UUID: string; // Connected to a URL in the wp_options table: `SELECT option_name FROM wp_options where option_value = :uuid`
     WP_REST_API: string;
+    MINIMAL_JOIN_FORM: boolean;
+    STRIPE_PUBLISHABLE_KEY: string;
 }
 
 const parseBooleanEnvVar = (name: string): boolean => {
@@ -59,7 +61,9 @@ const staticEnv: StaticEnv = {
     USE_POSTCODE_LOOKUP: parseBooleanEnvVar("REACT_APP_USE_POSTCODE_LOOKUP"),
     USE_TEST_DATA: parseBooleanEnvVar("REACT_APP_USE_TEST_DATA"),
     WEBHOOK_UUID: process.env.WEBHOOK_UUID || '',
-    WP_REST_API: ''
+    WP_REST_API: '',
+    MINIMAL_JOIN_FORM: parseBooleanEnvVar("MINIMAL_JOIN_FORM"),
+    STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || ''
 }
 
 export const get = (envVar: keyof StaticEnv): object[]|boolean|string => {
