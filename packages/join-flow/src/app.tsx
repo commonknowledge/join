@@ -339,19 +339,7 @@ const MinimalJoinForm = () => {
 
     // Create the ConfirmationToken using the details collected by the Payment Element
     const { error, confirmationToken } = await stripe.createConfirmationToken({
-      elements,
-      params: {
-        shipping: {
-          name: 'Jenny Rosen',
-          address: {
-            line1: '1234 Main Street',
-            city: 'San Francisco',
-            state: 'CA',
-            country: 'US',
-            postal_code: '94111',
-          },
-        }
-      }
+      elements
     });
 
     if (error) {
@@ -363,6 +351,22 @@ const MinimalJoinForm = () => {
     }
 
     console.log(confirmationToken);
+
+    const APIEndpoint = getEnv('WP_REST_API') + 'join/v1/stripe/create-confirm-subscription';
+
+    // Pass the confirmation token back to the server
+
+    const res = await fetch(APIEndpoint, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        confirmationTokenId: confirmationToken.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    console.log(data);
 
     // Now that you have a ConfirmationToken, you can use it in the following steps to render a confirmation page or run additional validations on the server
     // return fetchAndRenderSummary(confirmationToken)
@@ -382,9 +386,15 @@ const MinimalJoinForm = () => {
         <input type="range" min="4" max="40" step="10"></input>
         <div>Custom amount</div>
         <input type="number"></input>
-        <PaymentElement />
-        <button type="submit" disabled={!stripe || loading}>Pay Now</button>
-        {errorMessage && <div>{errorMessage}</div>}
+        <div>
+          <h2>Pay by card</h2>
+          <p>You can cancel any time</p>
+          <label for="email">Email</label>
+          <input type="email" name="email"></input>
+          <PaymentElement />
+          <button type="submit" disabled={!stripe || loading}>Pay Now</button>
+          {errorMessage && <div>{errorMessage}</div>}
+        </div>
       </form>
     </div>
   );
