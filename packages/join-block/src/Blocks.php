@@ -424,7 +424,7 @@ class Blocks
                 <?php echo json_encode($environment); ?>
             </script>
             <div class="ck-minimalist-join-flow ck-join-form">
-                <div class="ck-minimalist-join-form bg-success">Hello I am the minimalist form</div>
+                <div class="ck-minimalist-join-form"><!-- Minimalist Join Form attaches here --></div>
             </div>
         <?php
         });
