@@ -31,8 +31,7 @@ class Settings
         ));
         $membership_plans = self::createMembershipPlansField('membership_plans')->set_required(true);
 
-        $fields = [
-            Field::make('separator', 'features', 'Features'),
+        $feature_fields = [
             Field::make('checkbox', 'collect_date_of_birth'),
             Field::make('checkbox', 'collect_county'),
             Field::make('checkbox', 'collect_phone_and_email_contact_consent')
@@ -42,9 +41,14 @@ class Settings
             Field::make('checkbox', 'use_gocardless_api', 'Use GoCardless Custom Pages')
                 ->set_help_text('Requires a GoCardless Pro account with the custom pages addon'),
             Field::make('checkbox', 'use_chargebee'),
+        ];
+
+        $membership_plans_fields = [
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
-            Field::make('separator', 'theme', 'Theme'),
+        ];
+
+        $theme_fields = [
             Field::make('color', 'theme_primary_color', 'Primary Color')
                 ->set_help_text("The color of interactive elements, e.g. buttons"),
             Field::make('color', 'theme_gray_color', 'Gray Color')
@@ -53,7 +57,9 @@ class Settings
             Field::make('color', 'theme_background_color', 'Background Color')
                 ->set_default_value('#f4f1ee'),
             Field::make('textarea', 'custom_css'),
-            Field::make('separator', 'copy', 'Copy'),
+        ];
+
+        $copy_fields = [
             Field::make('text', 'organisation_name')->set_help_text("The name that will appear on the member's bank statement")
                 ->set_required(true),
             Field::make('text', 'organisation_bank_name')->set_help_text("The name that will appear on the member's bank statement")
@@ -68,20 +74,27 @@ class Settings
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
+        ];
+
+        $integration_fields = [
             Field::make('separator', 'chargebee', 'Chargebee'),
             Field::make('text', 'chargebee_site_name'),
             Field::make('text', 'chargebee_api_key'),
             Field::make('text', 'chargebee_api_publishable_key'),
+
             Field::make('separator', 'gocardless', 'GoCardless'),
             Field::make('text', 'gc_access_token'),
             $gc_environment_select,
+
             Field::make('separator', 'postcodes', 'Postcode Address Providers'),
             $postcode_provider_select,
             Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
             Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
+
             Field::make('separator', 'webhook'),
             Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
             Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),
+
             Field::make('separator', 'auth0', 'Auth0'),
             Field::make('text', 'auth0_domain')->set_help_text(
                 "The name of the Auth0 site - e.g. example.auth0.com"
@@ -94,8 +107,13 @@ class Settings
             ),
         ];
 
-        $fields = apply_filters('ck_join_flow_settings_fields', $fields);
+        // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable
+        // This feels like it would file under integrations.
+        //
+        // Here maintain this compatability, but do not rename the filter to align more precisely for the moment.
+        $integration_fields = apply_filters('ck_join_flow_settings_fields', $integration_fields);
 
+        $logging_fields = [];
         /** @var Html_Field $logField */
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
@@ -107,10 +125,16 @@ class Settings
             }
             return "<pre style=\"max-width:150ch\">$log</pre>";
         });
-        $fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
-        $fields[] = $logField;
+        $logging_fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
+        $logging_fields[] = $logField;
 
-        Container::make('theme_options', CONTAINER_ID, 'CK Join Block')->add_fields($fields);
+        Container::make('theme_options', CONTAINER_ID, 'Join')
+            ->add_tab('Features', $feature_fields)
+            ->add_tab('Membership Plans', $membership_plans_fields)
+            ->add_tab('Theme', $theme_fields)
+            ->add_tab('Copy', $copy_fields)
+            ->add_tab('Integrations', $integration_fields)
+            ->add_tab('Logging', $logging_fields);
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
         // for an explanation. Also saves the membership plan amounts.
