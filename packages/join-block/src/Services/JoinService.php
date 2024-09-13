@@ -23,14 +23,67 @@ class JoinService
 
     public static function handleJoin($data)
     {
+        $lockFile = null;
         try {
+            $sessionToken = $data['sessionToken'] ?? null;
+            $lockFile = self::lockSession($sessionToken);
             $chargebeeCustomer = self::tryHandleJoin($data);
             do_action('ck_join_flow_success', $data, $chargebeeCustomer);
         } catch (\Exception $e) {
             do_action('ck_join_flow_error', $data, $e);
             throw $e;
+        } finally {
+            self::unlockSession($lockFile);
         }
         return $chargebeeCustomer;
+    }
+
+    /**
+     * This is a BLOCKING lock, which means threads will sleep
+     * until they can get the lock. This forces sequential execution,
+     * which means no race conditions.
+     *
+     * We still need to handle duplicate join requests, by
+     * e.g. making sure the code doesn't create a subscription
+     * if one already exists.
+     */
+    public static function lockSession($sessionToken)
+    {
+        global $joinBlockLog;
+
+        if (!$sessionToken) {
+            throw new \Exception("Unable to lock session: no token provided");
+        }
+
+        $joinBlockLog->info("Locking session $sessionToken");
+
+        $lockFilepath = sys_get_temp_dir() . '/' . $sessionToken;
+        $lockFile = fopen($lockFilepath, 'w');
+
+        if (!$lockFile) {
+            $joinBlockLog->info("Could not use lockfile for session $sessionToken");
+            throw new \Exception("Unable to open lock file: $lockFilepath");
+        }
+
+        if (!flock($lockFile, LOCK_EX)) {
+            fclose($lockFile);
+            $joinBlockLog->info("Could not lock session $sessionToken");
+            throw new \Exception("Unable to lock session: $sessionToken");
+        }
+
+        $joinBlockLog->info("Locked session $sessionToken");
+
+        // Lock acquired
+        return $lockFile;
+    }
+
+    public static function unlockSession($lockFile)
+    {
+        if (!$lockFile) {
+            return;
+        }
+        flock($lockFile, LOCK_UN);
+        fclose($lockFile);
     }
 
     /**
