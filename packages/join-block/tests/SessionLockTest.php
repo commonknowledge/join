@@ -31,16 +31,14 @@ class SessionLockTest extends TestCase
 
         sleep(3);
 
-        // Ensure that after 3 seconds, only one script has completed
         $logs = file_get_contents($logFile);
-        preg_match_all("#Unlocked(.*)$sessionId#", $logs, $matches);
-        $this->assertEquals(1, count($matches[0]), "Should have unlocked only once if < 4 seconds elapsed");
-
-        sleep(2);
-
-        // Ensure that after 5 seconds, both scripts have completed
-        $logs = file_get_contents($logFile);
-        preg_match_all("#Unlocked(.*)$sessionId#", $logs, $matches);
-        $this->assertEquals(2, count($matches[0]), "Should have unlocked twice if > 4 seconds elapsed");
+        # Ensure that logs print:
+        #    WORKING -> DONE -> Unlocked ... $sessionId -> WORKING -> DONE -> Unlocked ... $sessionId
+        # Proving sequential execution
+        $matched = preg_match(
+            "#WORKING.*DONE.*Unlocked.*$sessionId.*WORKING.*DONE.*Unlocked.*$sessionId#s",
+            $logs
+        );
+        $this->assertTrue((bool) $matched, "Should have expected sequence of logs");
     }
 }
