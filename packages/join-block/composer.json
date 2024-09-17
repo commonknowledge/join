@@ -8,7 +8,7 @@
     "monolog/monolog": "^2.1",
     "cmdisp/monolog-microsoft-teams": "^1.1",
     "nesbot/carbon": "^2.55",
-    "auth0/auth0-php": "^8.10",
+    "auth0/auth0-php": "^8.3.1",
     "http-interop/http-factory-guzzle": "^1.2",
     "chargebee/chargebee-php": "^3.23"
   },
@@ -16,7 +16,7 @@
     "squizlabs/php_codesniffer": "^3.5",
     "phpstan/phpstan": "^1.10",
     "roots/wordpress": "^6.4",
-    "phpunit/phpunit": "^10"
+    "phpunit/phpunit": "^9"
   },
   "autoload": {
     "psr-4": {
