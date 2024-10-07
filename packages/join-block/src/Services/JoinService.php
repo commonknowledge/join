@@ -23,14 +23,91 @@ class JoinService
 
     public static function handleJoin($data)
     {
+        $lockFile = null;
         try {
+            $sessionToken = $data['sessionToken'] ?? null;
+            $lockFile = self::lockSession($sessionToken);
             $chargebeeCustomer = self::tryHandleJoin($data);
             do_action('ck_join_flow_success', $data, $chargebeeCustomer);
         } catch (\Exception $e) {
             do_action('ck_join_flow_error', $data, $e);
             throw $e;
+        } finally {
+            self::unlockSession($lockFile);
         }
         return $chargebeeCustomer;
+    }
+
+    /**
+     * This is a BLOCKING lock, which means threads will sleep
+     * until they can get the lock. This forces sequential execution,
+     * which means no race conditions.
+     *
+     * We still need to handle duplicate join requests, by
+     * e.g. making sure the code doesn't create a subscription
+     * if one already exists.
+     * 
+     * @return resource The file handle of the lock file
+     */
+    public static function lockSession($sessionToken)
+    {
+        global $joinBlockLog;
+
+        if (!$sessionToken) {
+            throw new \Exception("Unable to lock session: no token provided");
+        }
+
+        $joinBlockLog->info("Locking session $sessionToken");
+
+        // Use WordPress get_temp_dir() as lock directory, this must be writable
+        // otherwise many WordPress features do not work (e.g. file uploads)
+        $lockFilepath = get_temp_dir() . '/' . $sessionToken;
+        $lockFile = fopen($lockFilepath, 'w');
+
+        if (!$lockFile) {
+            $joinBlockLog->error("Could not use lockfile for session $sessionToken");
+            throw new \Exception("Unable to open lock file: $lockFilepath");
+        }
+
+        // Try to get exclusive access to this file. Will block (sleep) if
+        // another process has locked the file, and wake when the other
+        // process releases the lock.
+        $lockSuccess = flock($lockFile, LOCK_EX);
+
+        if (!$lockSuccess) {
+            fclose($lockFile);
+            $joinBlockLog->error("Could not lock session $sessionToken");
+            throw new \Exception("Unable to lock session: $sessionToken");
+        }
+
+        $joinBlockLog->info("Locked session $sessionToken");
+
+        // Lock acquired
+        return $lockFile;
+    }
+
+    /**
+     * @param resource $lockFile The file handle of the lock file
+     */
+    public static function unlockSession($lockFile)
+    {
+        global $joinBlockLog;
+
+        if (!$lockFile) {
+            return;
+        }
+
+        // Release the file lock
+        flock($lockFile, LOCK_UN);
+
+        $fileInfo = stream_get_meta_data($lockFile);
+        fclose($lockFile);
+        // Remove the file. Other threads that are waiting for the lock
+        // will not be affected, because the lock operates on the file
+        // descriptor (which will still be valid), not on the file itself.
+        // See: https://www.man7.org/linux/man-pages/man2/flock.2.html
+        @unlink($fileInfo['uri']);
+        $joinBlockLog->info("Unlocked session {$fileInfo['uri']}");
     }
 
     /**
