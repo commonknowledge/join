@@ -311,12 +311,12 @@ const MinimalJoinForm = () => {
   const [errorMessage, setErrorMessage] = useState();
   const [loading, setLoading] = useState(false);
 
-  const handleError = (error) => {
+  const handleError = (error: { message: string }) => {
     setLoading(false);
     setErrorMessage(error.message);
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     console.log('Making payment');
@@ -330,7 +330,7 @@ const MinimalJoinForm = () => {
     setLoading(true);
 
     // Trigger form validation and wallet collection
-    const { error: submitError } = await elements.submit();
+    const { error: submitError } = await elements!.submit();
 
     if (submitError) {
       handleError(submitError);
@@ -338,8 +338,8 @@ const MinimalJoinForm = () => {
     }
 
     // Create the ConfirmationToken using the details collected by the Payment Element
-    const { error, confirmationToken } = await stripe.createConfirmationToken({
-      elements
+    const { error, confirmationToken } = await stripe!.createConfirmationToken({
+      elements!
     });
 
     if (error) {
