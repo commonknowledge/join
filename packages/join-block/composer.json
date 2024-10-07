@@ -10,7 +10,8 @@
     "nesbot/carbon": "^2.55",
     "auth0/auth0-php": "^8.3.1",
     "http-interop/http-factory-guzzle": "^1.2",
-    "chargebee/chargebee-php": "^3.23"
+    "chargebee/chargebee-php": "^3.23",
+    "stripe/stripe-php": "^15.8"
   },
   "require-dev": {
     "squizlabs/php_codesniffer": "^3.5",

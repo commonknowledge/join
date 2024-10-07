@@ -26,6 +26,9 @@ import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
 
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
 interface Stage {
   id: PageState["stage"],
   label: string
@@ -54,6 +57,9 @@ const savedSession = JSON.parse(sessionStorage.getItem(SAVED_STATE_KEY) || "{}")
 const gcBillingRequestId = savedSession['gcBillingRequestId']
 let shouldRedirectToConfirm = gcRedirect && gcBillingRequestId
 
+// @ts-ignore
+const stripePromise = loadStripe(getEnv('STRIPE_PUBLISHABLE_KEY'));
+
 const App = () => {
   const [data, setData] = useState(getInitialState);
 
@@ -69,7 +75,7 @@ const App = () => {
       // @ts-ignore
       // In case there is a posthog install in the parent website
       posthog?.capture("join flow navigation", { stage: router.state.stage })
-    } catch (e) {}
+    } catch (e) { }
   }, [router])
 
   if (shouldRedirectToConfirm) {
@@ -161,12 +167,34 @@ const App = () => {
       </a>
   })
 
-  return (
+  // mode is going to have to be payment
+
+  const options = {
+    mode: 'subscription',
+    amount: 1000,
+    currency: 'gbp',
+    paymentMethodCreation: 'manual',
+    // Fully customizable with appearance API.
+    appearance: {/*...*/ },
+  };
+
+  /*
+  Start £4 a month, end at £40 a month
+
+  Donations start at £10 and end at £100
+  */
+
+  // @ts-ignore
+  const minimalJoinForm = <Elements stripe={stripePromise} options={options}>
+    <MinimalJoinForm />
+  </Elements>;
+
+  const fullJoinForm = <>
     <RouterContext.Provider value={router}>
       <div className="progress-steps">
         <h6>Join Us</h6>
         <div className="progress-steps__secure">
-          <p>🔒 Secure payment with<br/>{paymentProviderLogos}</p>
+          <p>🔒 Secure payment with<br />{paymentProviderLogos}</p>
         </div>
         <ul className="p-0 list-unstyled">
           {stages.map(
@@ -204,7 +232,16 @@ const App = () => {
         fallback={<Fail router={router} />}
       />
     </RouterContext.Provider>
-  );
+  </>
+
+
+  let form = fullJoinForm;
+
+  if (getEnv('MINIMAL_JOIN_FORM')) {
+    form = minimalJoinForm;
+  }
+
+  return form;
 };
 
 const getInitialState = (): FormSchema => {
@@ -266,5 +303,101 @@ const Fail: FC<{ router: StateRouter }> = ({ router }) => {
 
   return null;
 };
+
+const MinimalJoinForm = () => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [errorMessage, setErrorMessage] = useState();
+  const [loading, setLoading] = useState(false);
+
+  const handleError = (error) => {
+    setLoading(false);
+    setErrorMessage(error.message);
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    console.log('Making payment');
+
+    if (!stripe) {
+      // Stripe.js hasn't yet loaded.
+      // Make sure to disable form submission until Stripe.js has loaded.
+      return;
+    }
+
+    setLoading(true);
+
+    // Trigger form validation and wallet collection
+    const { error: submitError } = await elements.submit();
+
+    if (submitError) {
+      handleError(submitError);
+      return;
+    }
+
+    // Create the ConfirmationToken using the details collected by the Payment Element
+    const { error, confirmationToken } = await stripe.createConfirmationToken({
+      elements
+    });
+
+    if (error) {
+      // This point is only reached if there's an immediate error when
+      // creating the ConfirmationToken. Show the error to your customer (for example, payment details incomplete)
+      console.log(error);
+      handleError(error);
+      return;
+    }
+
+    console.log(confirmationToken);
+
+    const APIEndpoint = getEnv('WP_REST_API') + 'join/v1/stripe/create-confirm-subscription';
+
+    // Pass the confirmation token back to the server
+
+    const res = await fetch(APIEndpoint, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        confirmationTokenId: confirmationToken.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    console.log(data);
+
+    // Now that you have a ConfirmationToken, you can use it in the following steps to render a confirmation page or run additional validations on the server
+    // return fetchAndRenderSummary(confirmationToken)
+    console.log('We made it!');
+    return true;
+  };
+
+  return (
+    <div>
+      <h1>Support Us</h1>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <button>Monthly</button>
+          <button>One-off</button>
+        </div>
+        <div>Some random Pelican House copy</div>
+        <input type="range" min="4" max="40" step="10"></input>
+        <div>Custom amount</div>
+        <input type="number"></input>
+        <div>
+          <h2>Pay by card</h2>
+          <p>You can cancel any time</p>
+          <label for="email">Email</label>
+          <input type="email" name="email"></input>
+          <PaymentElement />
+          <button type="submit" disabled={!stripe || loading}>Pay Now</button>
+          {errorMessage && <div>{errorMessage}</div>}
+        </div>
+      </form>
+    </div>
+  );
+}
 
 export default App;
