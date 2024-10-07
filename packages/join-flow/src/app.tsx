@@ -389,7 +389,7 @@ const MinimalJoinForm = () => {
         <div>
           <h2>Pay by card</h2>
           <p>You can cancel any time</p>
-          <label for="email">Email</label>
+          <label htmlFor="email">Email</label>
           <input type="email" name="email"></input>
           <PaymentElement />
           <button type="submit" disabled={!stripe || loading}>Pay Now</button>
