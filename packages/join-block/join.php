@@ -291,66 +291,20 @@ add_action('rest_api_init', function () {
 
             $joinBlockLog->info('Processing Stripe subscription creation request');
 
-            // This should be handled in the Stripe class, not here, but for now let's do it here
-            Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
-
             $email = $data['email'];
 
-            $customers = Customer::all([
-                'email' => $email,
-                'limit' => 1 // We just need the first match
-            ]);
+            [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $newCustomer = false;
+            $subscription = StripeService::createSubscription($customer);
 
-            if (count($customers->data) > 0) {
-                $customer = $customers->data[0];
-            } else {
-                $newCustomer = true;
-
-                $customer = Customer::create([
-                    'email' => $email
-                ]);
-
-                $joinBlockLog->info('Customer created successfully! Customer ID: ' . $customer->id);
-            }
-
-            $data = json_decode($request->get_body(), true);
-
-            $joinBlockLog->info('Here is your Stripe data dump', $data);
-
-            $subscription = Subscription::create([
-                'customer' => $customer->id,
-                'items' => [
-                    [
-                        'price' => 'price_1PyB84ISmeoaI3mwaI1At8af',
-                    ],
-                ],
-                'payment_behavior'=> 'default_incomplete',
-                'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
-                'expand' => ['latest_invoice.payment_intent'],
-            ]);
-
-            $paymentIntentId = $subscription->latest_invoice->payment_intent->id;
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
-
-            $confirmedPaymentIntent = $paymentIntent->confirm([
-                'confirmation_token' => $data['confirmationTokenId'],
-            ]);
+            $confirmedPaymentIntent = StripeService::confirmSubscription($subscription, $data['confirmationTokenId']);
 
             $status = $confirmedPaymentIntent->status;
 
             $paymentMethodId = $subscription->latest_invoice->payment_intent->payment_method;
 
-            Customer::update(
-                $customer->id,
-                [
-                    'invoice_settings' => [
-                        'default_payment_method' => $paymentMethodId,
-                    ],
-                ]
-            );
-            
+            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $paymentMethodId);
+
             return [
                 "status" => $status,
                 "new_customer" => $newCustomer,
