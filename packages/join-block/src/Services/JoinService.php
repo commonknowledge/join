@@ -190,6 +190,15 @@ class JoinService
             }
         }
 
+        if (Settings::get("USE_MAILCHIMP")) {
+            try {
+                MailchimpService::signup($data['email']);
+            } catch (\Exception $exception) {
+                $joinBlockLog->error('Mailchimp error: ' . $exception->getMessage());
+                throw $exception;
+            }
+        }
+
         $webhookUuid = $data['webhookUuid'] ?? '';
         if ($webhookUuid) {
             $webhookUrl = Settings::getWebhookUrl($webhookUuid);
