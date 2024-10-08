@@ -361,7 +361,7 @@ const MinimalJoinForm = () => {
 
     const res = await fetch(APIEndpoint, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         confirmationTokenId: confirmationToken.id,
       }),
@@ -379,7 +379,7 @@ const MinimalJoinForm = () => {
 
   const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);;
-    
+
     setSelectedPlan(plans[value]);
   };
 
@@ -394,27 +394,20 @@ const MinimalJoinForm = () => {
     setSelectedPlan(medianPlan);
     setPlans(sortedPlans);
   }, []);
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <button>Monthly</button>
-        <button>One-off</button>
+        {selectedPlan && `${selectedPlan.amount} ${selectedPlan.currency} ${selectedPlan.frequency}`}
       </div>
-      <div>
-      {selectedPlan && `${selectedPlan.amount} ${selectedPlan.currency} ${selectedPlan.frequency}`}
-      </div>
-      <div>Some random Pelican House copy</div>
-        <input 
-          type="range" 
-          min={0} 
-          max={plans.length - 1} 
-          step="1" 
-          onChange={handleRangeChange}
-          value={plans.findIndex(plan => plan === selectedPlan)}
-        />
-        <div>Custom amount</div>
-        <input type="number"></input>
+      <input
+        type="range"
+        min={0}
+        max={plans.length - 1}
+        step="1"
+        onChange={handleRangeChange}
+        value={plans.findIndex(plan => plan === selectedPlan)}
+      />
       <div>
         <label htmlFor="email">Email</label>
         <input type="email" name="email"></input>
