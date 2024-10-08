@@ -15,6 +15,7 @@ use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
+use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
 use Monolog\Processor\WebProcessor;
@@ -301,7 +302,7 @@ add_action('rest_api_init', function () {
 
             $data = json_decode($request->get_body(), true);
 
-            $joinBlockLog->info('Here is your data dump', $data);
+            $joinBlockLog->info('Here is your Stripe data dump', $data);
 
             /* Try catch around this */
             $subscription = Subscription::create([
@@ -345,6 +346,36 @@ add_action('rest_api_init', function () {
                 "customer" => $customer->toArray(),
                 "subscription" => $subscription->toArray()
             ];
+        }
+    ));
+
+    register_rest_route('join/v1', '/mailchimp', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $data = json_decode($request->get_body(), true);
+
+            if (empty($data['email'])) {
+                $joinBlockLog->error('Email missing in Mailchimp join request');
+                return new WP_REST_Response(['status' => 'invalid request'], 400);
+            }
+
+            $email = $data['email'];
+            $joinBlockLog->info("Processing Mailchimp signup request for $email");
+
+            try {
+                MailchimpService::signup($email);
+            } catch (\Exception $e) {
+                $joinBlockLog->error("Mailchimp error for email $email: " . $e->getMessage());
+                return new WP_REST_Response(['status' => 'internal server error'], 500);
+            }
+
+            $joinBlockLog->info("Completed Mailchimp signup request for $email");
+            return new WP_REST_Response(['status' => 'ok'], 200);
         }
     ));
 });

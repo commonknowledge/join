@@ -42,7 +42,9 @@ class Settings
                 ->set_help_text('Requires a GoCardless Pro account with the custom pages addon'),
             Field::make('checkbox', 'use_chargebee'),
             Field::make('checkbox', 'use_stripe', 'Use Stripe')
-                ->set_help_text('Use Stripe as a payment provider')
+                ->set_help_text('Use Stripe as a payment provider'),
+            Field::make('checkbox', 'use_mailchimp', 'Use Mailchimp')
+                ->set_help_text('Save responses in Mailchimp')
         ];
 
         $membership_plans_fields = [
@@ -97,6 +99,10 @@ class Settings
             Field::make('text', self::IDEAL_POSTCODES . '_api_key', 'Ideal Postcodes API Key'),
             Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
 
+            Field::make('separator', 'mailchimp', 'Mailchimp'),
+            Field::make('text', 'mailchimp_api_key', 'Mailchimp API key')->set_help_text('Instructions here under "Generate an API key": https://eepurl.com/dyijVH'),
+            Field::make('text', 'mailchimp_audience_id', 'Mailchimp audience ID')->set_help_text('Instructions here under "Find Your Audience ID": https://eepurl.com/dyilJL'),
+
             Field::make('separator', 'webhook'),
             Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
             Field::make('text', 'webhook_url', 'Join Complete Webhook URL')->set_help_text('Webhook called after the join process is complete'),
@@ -135,8 +141,8 @@ class Settings
         $logging_fields[] = $logField;
 
         Container::make('theme_options', CONTAINER_ID, 'Join')
-            ->add_tab('Features', $feature_fields)
             ->add_tab('Membership Plans', $membership_plans_fields)
+            ->add_tab('Features', $feature_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)

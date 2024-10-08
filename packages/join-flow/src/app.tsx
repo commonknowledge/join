@@ -310,6 +310,7 @@ const MinimalJoinForm = () => {
 
   const [errorMessage, setErrorMessage] = useState();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
 
   const handleError = (error) => {
     setLoading(false);
@@ -364,9 +365,35 @@ const MinimalJoinForm = () => {
       }),
     });
 
-    const data = await res.json();
+    try {
+      const data = await res.json();
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+      handleError("Unknown payment error, please try again or contact us.");
+      return;
+    }
 
-    console.log(data);
+    // Send to Mailchimp if enabled
+
+    if (getEnv('USE_MAILCHIMP')) {
+      const mailchimpRes = await fetch(getEnv('WP_REST_API') + 'join/v1/mailchimp', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          email
+        }),
+      });
+
+      try {
+        const data = await mailchimpRes.json();
+        console.log(data);
+      } catch (error) {
+        console.log(error);
+        handleError("Unknown Mailchimp error, please try again or contact us.");
+        return;
+      }
+    }
 
     // Now that you have a ConfirmationToken, you can use it in the following steps to render a confirmation page or run additional validations on the server
     // return fetchAndRenderSummary(confirmationToken)
@@ -389,8 +416,8 @@ const MinimalJoinForm = () => {
         <div>
           <h2>Pay by card</h2>
           <p>You can cancel any time</p>
-          <label for="email">Email</label>
-          <input type="email" name="email"></input>
+          <label htmlFor="email">Email</label>
+          <input type="email" name="email" value={email} onChange={e => setEmail(e.target.value)}></input>
           <PaymentElement />
           <button type="submit" disabled={!stripe || loading}>Pay Now</button>
           {errorMessage && <div>{errorMessage}</div>}

@@ -52,16 +52,14 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: resolve(__dirname, "../public/index.html")
     }),
-    new webpack.DefinePlugin(
-      Object.assign(
-        { "process.env": JSON.stringify({}) },
-        ...Object.keys(process.env)
-          .filter((x) => x.startsWith("REACT_APP_"))
-          .map((key) => ({
-            [`process.env.${key}`]: JSON.stringify(process.env[key])
-          }))
-      )
-    )
+    new webpack.DefinePlugin({
+        "process.env": Object.keys(process.env).reduce((env, key) => {
+          if (key.startsWith("REACT_APP_")) {
+            env[key] = process.env[key]
+          }
+          return env
+        }, {})
+      })
   ],
   performance: {
     hints: "warning"
