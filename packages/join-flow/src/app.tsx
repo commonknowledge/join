@@ -309,10 +309,12 @@ const MinimalJoinForm = () => {
   const elements = useElements();
 
   const [errorMessage, setErrorMessage] = useState();
+  const [otherMessage, setOtherMessage] = useState();
   const [loading, setLoading] = useState(false);
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [email, setEmail] = useState('');
 
   const handleError = (error: { message: string }) => {
     setLoading(false);
@@ -322,17 +324,12 @@ const MinimalJoinForm = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log('Making payment');
-
     if (!stripe) {
-      // Stripe.js hasn't yet loaded.
-      // Make sure to disable form submission until Stripe.js has loaded.
       return;
     }
 
     setLoading(true);
 
-    // Trigger form validation and wallet collection
     const { error: submitError } = await elements!.submit();
 
     if (submitError) {
@@ -340,41 +337,37 @@ const MinimalJoinForm = () => {
       return;
     }
 
-    // Create the ConfirmationToken using the details collected by the Payment Element
     const { error, confirmationToken } = await stripe!.createConfirmationToken({
       elements
     });
 
+    // This point is only reached if there's an immediate error when
+    // creating the ConfirmationToken. Show the error to your customer (for example, payment details incomplete)
     if (error) {
-      // This point is only reached if there's an immediate error when
-      // creating the ConfirmationToken. Show the error to your customer (for example, payment details incomplete)
-      console.log(error);
       handleError(error);
       return;
     }
 
-    console.log(confirmationToken);
-
+    // Pass the confirmation token to the server to create a subscription
     const APIEndpoint = getEnv('WP_REST_API') + 'join/v1/stripe/create-confirm-subscription';
-
-    // Pass the confirmation token back to the server
 
     const res = await fetch(APIEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         confirmationTokenId: confirmationToken.id,
+        email,
+        selectedPlan
       }),
     });
 
     const data = await res.json();
 
-    console.log(data);
+    if (data.status !== 'succeeded') {
+      setErrorMessage('Connection to payment provider failed, please try again');
+    }
 
-    // Now that you have a ConfirmationToken, you can use it in the following steps to render a confirmation page or run additional validations on the server
-    // return fetchAndRenderSummary(confirmationToken)
-    console.log('We made it!');
-    return true;
+    setOtherMessage('Payment successful, welcome');
   };
 
   const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -395,7 +388,9 @@ const MinimalJoinForm = () => {
     setPlans(sortedPlans);
   }, []);
 
-
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -412,10 +407,11 @@ const MinimalJoinForm = () => {
       />
       <div>
         <label htmlFor="email">Email</label>
-        <input type="email" name="email"></input>
+        <input type="email" name="email" value={email} onChange={handleEmailChange}></input>
         <PaymentElement />
         <button type="submit" disabled={!stripe || loading}>Pay Now</button>
         {errorMessage && <div>{errorMessage}</div>}
+        {otherMessage && <div>{otherMessage}</div>}
       </div>
     </form>
   );

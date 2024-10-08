@@ -271,13 +271,30 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
+            $data = json_decode($request->get_body(), true);
+
+            $selectedPlan = $data['selectedPlan'];
+
+            $plans = Settings::get('MEMBERSHIP_PLANS');
+
+            $joinBlockLog->info('Attempting to find a matching plan in the list of plans', $selectedPlan);
+
+            $planExists = array_filter($plans, function($plan) use ($selectedPlan) {
+                return $plan['frequency'] === $selectedPlan['frequency'] && $plan['amount'] === $selectedPlan['amount'] && $plan['currency'] === $selectedPlan['currency'];
+            });
+
+            if (!$planExists) {
+                throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
+            } else {
+                $joinBlockLog->info('Found a matching plan in the list of plans', $planExists);
+            }
+
             $joinBlockLog->info('Processing Stripe subscription creation request');
 
             // This should be handled in the Stripe class, not here, but for now let's do it here
             Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
 
-            $name = 'Giuseppe Pinot-Gallizio';
-            $email = 'giuseppe.pinot-gallizio@situationalism.com';
+            $email = $data['email'];
 
             $customers = Customer::all([
                 'email' => $email,
@@ -292,8 +309,7 @@ add_action('rest_api_init', function () {
                 $newCustomer = true;
 
                 $customer = Customer::create([
-                    'email' => $email,
-                    'name' => $name
+                    'email' => $email
                 ]);
 
                 $joinBlockLog->info('Customer created successfully! Customer ID: ' . $customer->id);
@@ -301,9 +317,8 @@ add_action('rest_api_init', function () {
 
             $data = json_decode($request->get_body(), true);
 
-            $joinBlockLog->info('Here is your data dump', $data);
+            $joinBlockLog->info('Here is your Stripe data dump', $data);
 
-            /* Try catch around this */
             $subscription = Subscription::create([
                 'customer' => $customer->id,
                 'items' => [
@@ -316,11 +331,9 @@ add_action('rest_api_init', function () {
                 'expand' => ['latest_invoice.payment_intent'],
             ]);
 
-            // Need to handle this payment intent stuff???
             $paymentIntentId = $subscription->latest_invoice->payment_intent->id;
             $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
-            /* Try catch around this */
             $confirmedPaymentIntent = $paymentIntent->confirm([
                 'confirmation_token' => $data['confirmationTokenId'],
             ]);
@@ -329,7 +342,6 @@ add_action('rest_api_init', function () {
 
             $paymentMethodId = $subscription->latest_invoice->payment_intent->payment_method;
 
-            /* Try catch around this */
             Customer::update(
                 $customer->id,
                 [
@@ -342,8 +354,8 @@ add_action('rest_api_init', function () {
             return [
                 "status" => $status,
                 "new_customer" => $newCustomer,
-                "customer" => $customer->toArray(),
-                "subscription" => $subscription->toArray()
+                "stripe_customer" => $customer->toArray(),
+                "stripe_subscription" => $subscription->toArray()
             ];
         }
     ));
