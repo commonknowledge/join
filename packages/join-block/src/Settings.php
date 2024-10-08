@@ -235,6 +235,7 @@ class Settings
     public static function saveMembershipPlans($membership_plans)
     {
         foreach ($membership_plans as $plan) {
+            do_action('ck_join_flow_membership_plan_saved', $plan);
             update_option('ck_join_flow_membership_plan_' . sanitize_title($plan['label']), $plan);
         }
     }
