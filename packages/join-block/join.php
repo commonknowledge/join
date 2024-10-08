@@ -357,23 +357,24 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
-            $joinBlockLog->info('Processing Mailchimp signup request');
-
             $data = json_decode($request->get_body(), true);
 
             if (empty($data['email'])) {
+                $joinBlockLog->error('Email missing in Mailchimp join request');
                 return new WP_REST_Response(['status' => 'invalid request'], 400);
             }
 
             $email = $data['email'];
+            $joinBlockLog->info("Processing Mailchimp signup request for $email");
 
             try {
                 MailchimpService::signup($email);
             } catch (\Exception $e) {
-                $joinBlockLog->error('Mailchimp error: ' . $e->getMessage());
+                $joinBlockLog->error("Mailchimp error for email $email: " . $e->getMessage());
                 return new WP_REST_Response(['status' => 'internal server error'], 500);
             }
 
+            $joinBlockLog->info("Completed Mailchimp signup request for $email");
             return new WP_REST_Response(['status' => 'ok'], 200);
         }
     ));

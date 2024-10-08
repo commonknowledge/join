@@ -11,6 +11,8 @@ class MailchimpService
     {
         global $joinBlockLog;
 
+        $joinBlockLog->info("Adding $email to Mailchimp");
+
         $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
         # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)

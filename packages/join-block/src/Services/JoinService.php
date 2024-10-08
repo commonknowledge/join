@@ -191,10 +191,13 @@ class JoinService
         }
 
         if (Settings::get("USE_MAILCHIMP")) {
+            $email = $data['email'];
+            $joinBlockLog->info("Processing Mailchimp signup request for $email");
             try {
-                MailchimpService::signup($data['email']);
+                MailchimpService::signup($email);
+                $joinBlockLog->info("Completed Mailchimp signup request for $email");
             } catch (\Exception $exception) {
-                $joinBlockLog->error('Mailchimp error: ' . $exception->getMessage());
+                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
                 throw $exception;
             }
         }
