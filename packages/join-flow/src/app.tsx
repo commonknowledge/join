@@ -390,7 +390,7 @@ const MinimalJoinForm = () => {
         console.log(data);
       } catch (error) {
         console.log(error);
-        handleError("Unknown mailchimp error, please try again or contact us.");
+        handleError("Unknown Mailchimp error, please try again or contact us.");
         return;
       }
     }

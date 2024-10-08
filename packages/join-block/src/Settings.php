@@ -100,8 +100,8 @@ class Settings
             Field::make('text', self::GET_ADDRESS_IO . '_api_key', 'getAddress.io API Key'),
 
             Field::make('separator', 'mailchimp', 'Mailchimp'),
-            Field::make('text', 'mailchimp_api_key', 'Mailchimp API key'),
-            Field::make('text', 'mailchimp_audience_id', 'Mailchimp audience ID'),
+            Field::make('text', 'mailchimp_api_key', 'Mailchimp API key')->set_help_text('Instructions here under "Generate an API key": https://eepurl.com/dyijVH'),
+            Field::make('text', 'mailchimp_audience_id', 'Mailchimp audience ID')->set_help_text('Instructions here under "Find Your Audience ID": https://eepurl.com/dyilJL'),
 
             Field::make('separator', 'webhook'),
             Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),
