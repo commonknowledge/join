@@ -278,6 +278,7 @@ add_action('rest_api_init', function () {
 
             $plans = Settings::get('MEMBERSHIP_PLANS');
 
+            // TODO: Just do this on ID of the plan, not matching the whole array
             $joinBlockLog->info('Attempting to find a matching plan in the list of plans', $selectedPlan);
 
             $planExists = array_filter($plans, function($plan) use ($selectedPlan) {
@@ -295,21 +296,17 @@ add_action('rest_api_init', function () {
             $email = $data['email'];
 
             StripeService::initialise();
-
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $subscription = StripeService::createSubscription($customer);
+            $plan = Settings::getMembershipPlan($selectedPlan['label']);
+            $subscription = StripeService::createSubscription($customer, $plan);
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
 
-            $status = $confirmedPaymentIntent->status;
-
-            $paymentMethodId = $subscription->latest_invoice->payment_intent->payment_method;
-
-            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $paymentMethodId);
+            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $subscription->latest_invoice->payment_intent->payment_method);
 
             return [
-                "status" => $status,
+                "status" => $confirmedPaymentIntent->status,
                 "new_customer" => $newCustomer,
                 "stripe_customer" => $customer->toArray(),
                 "stripe_subscription" => $subscription->toArray()

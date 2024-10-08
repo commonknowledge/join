@@ -179,6 +179,12 @@ class Settings
             update_option('ck_join_flow_membership_plan_' . $membershipPlanID, $membershipPlan);
 
             $joinBlockLog->info("Membership plan {$membershipPlanID} saved");
+
+            $joinBlockLog->info('Membership plan retrieved from options', self::getMembershipPlan($membershipPlanID));
+
+            wp_cache_delete('ck_join_flow_membership_plan_' . $membershipPlanID, 'options');
+            wp_cache_delete('alloptions', 'options');
+            wp_cache_flush();
         });
     }
 
@@ -263,8 +269,9 @@ class Settings
     public static function saveMembershipPlans($membership_plans)
     {
         foreach ($membership_plans as $plan) {
-            do_action('ck_join_flow_membership_plan_saved', $plan);
             update_option('ck_join_flow_membership_plan_' . sanitize_title($plan['label']), $plan);
+
+            do_action('ck_join_flow_membership_plan_saved', $plan);
         }
     }
 

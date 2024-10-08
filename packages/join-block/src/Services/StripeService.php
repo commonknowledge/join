@@ -42,13 +42,13 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer)
+    public static function createSubscription($customer, $plan)
     {
         $subscription = Subscription::create([
             'customer' => $customer->id,
             'items' => [
                 [
-                    'price' => 'price_1PyB84ISmeoaI3mwaI1At8af',
+                    'price' => $plan['stripe_price_id'],
                 ],
             ],
             'payment_behavior'=> 'default_incomplete',
