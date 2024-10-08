@@ -8,6 +8,8 @@ use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Html_Field;
 use Carbon_Fields\Field\Select_Field;
 
+use CommonKnowledge\JoinBlock\Services\StripeService;
+
 const CONTAINER_ID = 'ck_join_flow';
 
 class Settings
@@ -152,6 +154,32 @@ class Settings
                 Settings::saveMembershipPlans($membership_plans);
             }
         }, 10, 2);
+
+        add_action('ck_join_flow_membership_plan_saved', function($membershipPlan) {
+            global $joinBlockLog;
+            
+            if (!Settings::get('USE_STRIPE')) {
+                return;
+            }
+
+            $joinBlockLog->info('Creating or retrieving membership plan in Stripe', $membershipPlan);
+
+            StripeService::initialise();
+            [$newOrExistingProduct, $newOrExistingPrice] = StripeService::createMembershipPlanIfItDoesNotExist($membershipPlan);
+
+            $joinBlockLog->info('Membership plan created or retrieved from Stripe', [
+                'product' => $newOrExistingProduct->id,
+                'price' => $newOrExistingPrice->id,
+            ]);
+
+            $membershipPlan['stripe_product_id'] = $newOrExistingProduct->id;
+            $membershipPlan['stripe_price_id'] = $newOrExistingPrice->id;
+
+            $membershipPlanID = sanitize_title($membershipPlan['label']);
+            update_option('ck_join_flow_membership_plan_' . $membershipPlanID, $membershipPlan);
+
+            $joinBlockLog->info("Membership plan {$membershipPlanID} saved");
+        });
     }
 
     public static function createMembershipPlansField($name = 'membership_plans')

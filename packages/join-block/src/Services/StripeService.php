@@ -82,4 +82,131 @@ class StripeService
             ]
         );
     }
+
+    public static function convertFrequencyToStripeInterval($frequency)
+    {
+        switch ($frequency) {
+            case 'monthly':
+                return 'month';
+            case 'yearly':
+                return 'year';
+            case 'weekly':
+                return 'week';
+            case 'daily':
+                return 'day';
+        }
+    }
+
+    public static function createMembershipPlanIfItDoesNotExist($membershipPlan)
+    {
+        global $joinBlockLog;
+
+        $newOrExistingProduct = self::getOrCreateProductForMembershipTier($membershipPlan);
+        $newOrExistingPrice = self::getOrCreatePriceForProduct($newOrExistingProduct, $membershipPlan['amount'], $membershipPlan['currency'], self::convertFrequencyToStripeInterval($membershipPlan['frequency']));
+
+        return [$newOrExistingProduct, $newOrExistingPrice];
+    }
+
+    public static function getOrCreateProductForMembershipTier($membershipPlan)
+    {
+        global $joinBlockLog;
+
+        $tierID = sanitize_title($membershipPlan['label']);
+
+        $tierDescription = $membershipPlan['description'];
+
+        try {
+            $joinBlockLog->info("Searching for existing Stripe product for membership tier '{$tierID}'");
+
+            $existingProducts = \Stripe\Product::search([
+                'query' => "active:'true' AND metadata['membership_plan']:'{$tierID}'",
+            ]);
+
+            if (count($existingProducts->data) > 0) {
+                $existingProduct = $existingProducts->data[0];
+                $joinBlockLog->info("Product for membership tier '{$tierID}' already exists, with Stripe ID {$existingProduct->id}");
+
+                // Check if the product needs to be updated
+                $needsUpdate = false;
+                $updateData = [];
+
+                if ($existingProduct->name !== "Membership: {$membershipPlan['label']}") {
+                    $joinBlockLog->info("Name changed, updating existing product for membership tier '{$tierID}'");
+
+                    $updateData['name'] = "Membership: {$membershipPlan['label']}";
+                    $needsUpdate = true;
+                }
+
+                if ($existingProduct->description !== $tierDescription) {
+                    $joinBlockLog->info("Description changed, updating existing product for membership tier '{$tierID}'");
+
+                    $updateData['description'] = $tierDescription;
+                    $needsUpdate = true;
+                }
+
+                if ($needsUpdate) {
+                    $updatedProduct = \Stripe\Product::update($existingProduct->id, $updateData);
+                    $joinBlockLog->info("Product updated for membership tier '{$tierID}', with Stripe ID {$updatedProduct->id}");
+                    return $updatedProduct;
+                }
+
+                return $existingProduct;
+            }
+
+            $joinBlockLog->info("No existing product found for membership tier '{$tierID}', creating new product");
+
+            $stripeProduct = [
+                'name' => "Membership: {$membershipPlan['label']}",
+                'type' => 'service',
+                'metadata' => ['membership_plan' => $tierID],
+            ];
+
+            if ($tierDescription) {
+                $stripeProduct['description'] = $tierDescription;
+            }
+
+            $newProduct = \Stripe\Product::create($stripeProduct);
+
+            $joinBlockLog->info("New Stripe product created for membership tier '{$tierID}'. Stripe Product ID {$newProduct->id}");
+
+            return $newProduct;
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            $joinBlockLog->error("Error creating/retrieving product: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public static function getOrCreatePriceForProduct($product, $amount, $currency, $interval)
+    {
+        global $joinBlockLog;
+
+        try {
+            $joinBlockLog->info("Searching for existing Stripe price for recurring product '{$product->id}' with currency '{$currency}'");
+
+            $existingPrices = \Stripe\Price::search([
+                'query' => "active:'true' AND product:'{$product->id}' AND type:'recurring' AND currency:'{$currency}'",
+            ]);
+
+            if (count($existingPrices->data) > 0) {
+                $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' already exists.");
+                return $existingPrices->data[0];
+            }
+
+            $joinBlockLog->info("No existing price found for product '{$product->id}' with currency '{$currency}', creating new price");
+
+            $newPrice = \Stripe\Price::create([
+                'product' => $product->id,
+                'unit_amount' => $amount,
+                'currency' => $currency,
+                'recurring' => ['interval' => $interval],
+            ]);
+
+            $joinBlockLog->info("New Stripe price created for product '{$product->id}'. Stripe Price ID {$newPrice->id}");
+
+            return $newPrice;
+        } catch (ApiErrorException $e) {
+            $joinBlockLog->error("Error creating/retrieving price: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
