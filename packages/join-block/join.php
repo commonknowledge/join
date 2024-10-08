@@ -294,7 +294,7 @@ add_action('rest_api_init', function () {
 
             $email = $data['email'];
 
-            StripeService.initialise();
+            StripeService::initialise();
 
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
