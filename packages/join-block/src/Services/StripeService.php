@@ -11,11 +11,14 @@ use Stripe\Exception\ApiErrorException;
 
 class StripeService
 {
+    public static function initialise()
+    {
+        Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
+    }
+
     public static function upsertCustomer($email)
     {
         global $joinBlockLog;
-
-        Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
 
         $customers = Customer::all([
             'email' => $email,
@@ -56,7 +59,7 @@ class StripeService
         return $subscription;
     }
 
-    public static function confirmSubscription($subscription, $confirmationTokenId)
+    public static function confirmSubscriptionPaymentIntent($subscription, $confirmationTokenId)
     {
         $paymentIntentId = $subscription->latest_invoice->payment_intent->id;
         $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
@@ -66,5 +69,17 @@ class StripeService
         ]);
 
         return $confirmedPaymentIntent;
+    }
+
+    public static function updateCustomerDefaultPaymentMethod($customerId, $paymentMethodId)
+    {
+        Customer::update(
+            $customerId,
+            [
+                'invoice_settings' => [
+                    'default_payment_method' => $paymentMethodId,
+                ],
+            ]
+        );
     }
 }

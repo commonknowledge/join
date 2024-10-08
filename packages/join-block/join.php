@@ -294,11 +294,13 @@ add_action('rest_api_init', function () {
 
             $email = $data['email'];
 
+            StripeService.initialise();
+
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
             $subscription = StripeService::createSubscription($customer);
 
-            $confirmedPaymentIntent = StripeService::confirmSubscription($subscription, $data['confirmationTokenId']);
+            $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
 
             $status = $confirmedPaymentIntent->status;
 
