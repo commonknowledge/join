@@ -311,6 +311,9 @@ const MinimalJoinForm = () => {
   const [errorMessage, setErrorMessage] = useState();
   const [loading, setLoading] = useState(false);
 
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [plans, setPlans] = useState([]);
+
   const handleError = (error: { message: string }) => {
     setLoading(false);
     setErrorMessage(error.message);
@@ -339,7 +342,7 @@ const MinimalJoinForm = () => {
 
     // Create the ConfirmationToken using the details collected by the Payment Element
     const { error, confirmationToken } = await stripe!.createConfirmationToken({
-      elements!
+      elements
     });
 
     if (error) {
@@ -374,29 +377,52 @@ const MinimalJoinForm = () => {
     return true;
   };
 
+  const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);;
+    
+    setSelectedPlan(plans[value]);
+  };
+
+  useEffect(() => {
+    const plans = getEnv("MEMBERSHIP_PLANS");
+
+    const permissableMembershipPlans = plans.filter((plan) => !plan.allowCustomAmount);
+    const sortedPlans = permissableMembershipPlans.sort((a, b) => a.amount - b.amount);
+    const medianIndex = Math.floor(sortedPlans.length / 2);
+    const medianPlan = sortedPlans[medianIndex];
+
+    setSelectedPlan(medianPlan);
+    setPlans(sortedPlans);
+  }, []);
+  
   return (
-    <div>
-      <h1>Support Us</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <button>Monthly</button>
-          <button>One-off</button>
-        </div>
-        <div>Some random Pelican House copy</div>
-        <input type="range" min="4" max="40" step="10"></input>
+    <form onSubmit={handleSubmit}>
+      <div>
+        <button>Monthly</button>
+        <button>One-off</button>
+      </div>
+      <div>
+      {selectedPlan && `${selectedPlan.amount} ${selectedPlan.currency} ${selectedPlan.frequency}`}
+      </div>
+      <div>Some random Pelican House copy</div>
+        <input 
+          type="range" 
+          min={0} 
+          max={plans.length - 1} 
+          step="1" 
+          onChange={handleRangeChange}
+          value={plans.findIndex(plan => plan === selectedPlan)}
+        />
         <div>Custom amount</div>
         <input type="number"></input>
-        <div>
-          <h2>Pay by card</h2>
-          <p>You can cancel any time</p>
-          <label htmlFor="email">Email</label>
-          <input type="email" name="email"></input>
-          <PaymentElement />
-          <button type="submit" disabled={!stripe || loading}>Pay Now</button>
-          {errorMessage && <div>{errorMessage}</div>}
-        </div>
-      </form>
-    </div>
+      <div>
+        <label htmlFor="email">Email</label>
+        <input type="email" name="email"></input>
+        <PaymentElement />
+        <button type="submit" disabled={!stripe || loading}>Pay Now</button>
+        {errorMessage && <div>{errorMessage}</div>}
+      </div>
+    </form>
   );
 }
 
