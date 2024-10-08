@@ -61,6 +61,15 @@ class StripeService
 
     public static function confirmSubscriptionPaymentIntent($subscription, $confirmationTokenId)
     {
+        global $joinBlockLog;
+
+        $joinBlockLog->info('Confirming payment intent for subscription', $subscription->toArray());
+        
+        if (!$subscription->latest_invoice || !$subscription->latest_invoice->payment_intent) {
+            $joinBlockLog->info('No payment intent found for this subscription. It might be a free trial or zero-amount invoice');
+            return null;
+        }
+
         $paymentIntentId = $subscription->latest_invoice->payment_intent->id;
         $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
