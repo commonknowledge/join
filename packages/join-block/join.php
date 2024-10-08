@@ -15,6 +15,7 @@ use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
+use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
 use Monolog\Processor\WebProcessor;
