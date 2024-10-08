@@ -19,7 +19,7 @@ import {
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
-import { FormSchema, getTestDataIfEnabled } from "./schema";
+import { currencyCodeToSymbol, FormSchema, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
@@ -395,10 +395,12 @@ const MinimalJoinForm = () => {
     setPlans(sortedPlans);
   }, []);
 
+
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        {selectedPlan && `${selectedPlan.amount} ${selectedPlan.currency} ${selectedPlan.frequency}`}
+        {selectedPlan && `${currencyCodeToSymbol(selectedPlan.currency)}${selectedPlan.amount} ${selectedPlan.frequency}`}
       </div>
       <input
         type="range"
