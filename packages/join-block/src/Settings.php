@@ -183,8 +183,6 @@ class Settings
             $joinBlockLog->info('Membership plan retrieved from options', self::getMembershipPlan($membershipPlanID));
 
             wp_cache_delete('ck_join_flow_membership_plan_' . $membershipPlanID, 'options');
-            wp_cache_delete('alloptions', 'options');
-            wp_cache_flush();
         });
     }
 
