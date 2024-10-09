@@ -13,28 +13,32 @@ interface StaticEnv {
     ORGANISATION_NAME: string;
     ORGANISATION_BANK_NAME: string;
     ORGANISATION_EMAIL_ADDRESS: string;
+    MINIMAL_JOIN_FORM: boolean;
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
+    STRIPE_PUBLISHABLE_KEY: string;
     SUCCESS_REDIRECT: string;
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
     INCLUDE_SKIP_PAYMENT_BUTTON: boolean;
     USE_CHARGEBEE: boolean;
     USE_GOCARDLESS: boolean;
     USE_GOCARDLESS_API: boolean;
+    USE_MAILCHIMP: boolean;
     USE_POSTCODE_LOOKUP: boolean;
     USE_TEST_DATA: boolean;
     WEBHOOK_UUID: string; // Connected to a URL in the wp_options table: `SELECT option_name FROM wp_options where option_value = :uuid`
     WP_REST_API: string;
-    MINIMAL_JOIN_FORM: boolean;
-    STRIPE_PUBLISHABLE_KEY: string;
 }
 
 const parseBooleanEnvVar = (name: string): boolean => {
     return Boolean(
-        process.env[`REACT_APP_${name}`] && process.env[`REACT_APP_${name}`] !== "false"
+        process.env[name] && process.env[name] !== "false"
     )
 }
 
+// This object holds the values that are in the .env file on disk.
+// Dynamic values from the WordPress settings page are available in window.process.env.
+// The get() function below checks the dynamic values first, and falls back to this object.
 const staticEnv: StaticEnv = {
     ASK_FOR_ADDITIONAL_DONATION: parseBooleanEnvVar("REACT_APP_ASK_FOR_ADDITIONAL_DONATION"),
     CHARGEBEE_API_PUBLISHABLE_KEY: process.env.REACT_APP_CHARGEBEE_API_PUBLISHABLE_KEY || '',
@@ -47,23 +51,24 @@ const staticEnv: StaticEnv = {
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
     MEMBERSHIP_TIERS_COPY: process.env.REACT_APP_MEMBERSHIP_TIERS_COPY || '',
+    MINIMAL_JOIN_FORM: parseBooleanEnvVar("REACT_APP_MINIMAL_JOIN_FORM"),
     ORGANISATION_NAME: process.env.REACT_APP_ORGANISATION_NAME || '',
     ORGANISATION_BANK_NAME: process.env.REACT_APP_ORGANISATION_BANK_NAME || '',
     ORGANISATION_EMAIL_ADDRESS: process.env.REACT_APP_ORGANISATION_EMAIL_ADDRESS || '',
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
+    STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
     INCLUDE_SKIP_PAYMENT_BUTTON: parseBooleanEnvVar("REACT_APP_INCLUDE_SKIP_PAYMENT_BUTTON"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),
+    USE_MAILCHIMP: parseBooleanEnvVar("REACT_APP_USE_MAILCHIMP"),
     USE_POSTCODE_LOOKUP: parseBooleanEnvVar("REACT_APP_USE_POSTCODE_LOOKUP"),
     USE_TEST_DATA: parseBooleanEnvVar("REACT_APP_USE_TEST_DATA"),
     WEBHOOK_UUID: process.env.WEBHOOK_UUID || '',
     WP_REST_API: '',
-    MINIMAL_JOIN_FORM: parseBooleanEnvVar("MINIMAL_JOIN_FORM"),
-    STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || ''
 }
 
 export const get = (envVar: keyof StaticEnv): object[]|boolean|string => {
