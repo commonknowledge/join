@@ -56,9 +56,9 @@ class Blocks
             // Only load the script on a page with the block
             $content = $post ? $post->post_content : '';
             
-            // if (!str_contains($content, 'ck-join')) {
-            //     wp_dequeue_script('ck-join-block-js');
-            // }
+            if (!str_contains($content, 'ck-join')) {
+                wp_dequeue_script('ck-join-block-js');
+            }
         });
     }
 
