@@ -26,7 +26,8 @@ import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
 
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import MinimalJoinForm from "./components/minimal-join-flow";
 import { loadStripe } from '@stripe/stripe-js';
 
 interface Stage {
@@ -167,22 +168,12 @@ const App = () => {
       </a>
   })
 
-  // mode is going to have to be payment
-
   const options = {
-    mode: 'subscription',
-    amount: 1000,
-    currency: 'gbp',
     paymentMethodCreation: 'manual',
-    // Fully customizable with appearance API.
-    appearance: {/*...*/ },
+    mode: 'subscription',
+    amount: 100,
+    currency: 'gbp'
   };
-
-  /*
-  Start £4 a month, end at £40 a month
-
-  Donations start at £10 and end at £100
-  */
 
   // @ts-ignore
   const minimalJoinForm = <Elements stripe={stripePromise} options={options}>
@@ -303,128 +294,5 @@ const Fail: FC<{ router: StateRouter }> = ({ router }) => {
 
   return null;
 };
-
-const MinimalJoinForm = () => {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const [errorMessage, setErrorMessage] = useState();
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-
-  const handleError = (error) => {
-    setLoading(false);
-    setErrorMessage(error.message);
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    console.log('Making payment');
-
-    if (!stripe) {
-      // Stripe.js hasn't yet loaded.
-      // Make sure to disable form submission until Stripe.js has loaded.
-      return;
-    }
-
-    setLoading(true);
-
-    // Trigger form validation and wallet collection
-    const { error: submitError } = await elements.submit();
-
-    if (submitError) {
-      handleError(submitError);
-      return;
-    }
-
-    // Create the ConfirmationToken using the details collected by the Payment Element
-    const { error, confirmationToken } = await stripe.createConfirmationToken({
-      elements
-    });
-
-    if (error) {
-      // This point is only reached if there's an immediate error when
-      // creating the ConfirmationToken. Show the error to your customer (for example, payment details incomplete)
-      console.log(error);
-      handleError(error);
-      return;
-    }
-
-    console.log(confirmationToken);
-
-    const APIEndpoint = getEnv('WP_REST_API') + 'join/v1/stripe/create-confirm-subscription';
-
-    // Pass the confirmation token back to the server
-
-    const res = await fetch(APIEndpoint, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        confirmationTokenId: confirmationToken.id,
-      }),
-    });
-
-    try {
-      const data = await res.json();
-      console.log(data);
-    } catch (error) {
-      console.log(error);
-      handleError("Unknown payment error, please try again or contact us.");
-      return;
-    }
-
-    // Send to Mailchimp if enabled
-
-    if (getEnv('USE_MAILCHIMP')) {
-      const mailchimpRes = await fetch(getEnv('WP_REST_API') + 'join/v1/mailchimp', {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          email
-        }),
-      });
-
-      try {
-        const data = await mailchimpRes.json();
-        console.log(data);
-      } catch (error) {
-        console.log(error);
-        handleError("Unknown Mailchimp error, please try again or contact us.");
-        return;
-      }
-    }
-
-    // Now that you have a ConfirmationToken, you can use it in the following steps to render a confirmation page or run additional validations on the server
-    // return fetchAndRenderSummary(confirmationToken)
-    console.log('We made it!');
-    return true;
-  };
-
-  return (
-    <div>
-      <h1>Support Us</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <button>Monthly</button>
-          <button>One-off</button>
-        </div>
-        <div>Some random Pelican House copy</div>
-        <input type="range" min="4" max="40" step="10"></input>
-        <div>Custom amount</div>
-        <input type="number"></input>
-        <div>
-          <h2>Pay by card</h2>
-          <p>You can cancel any time</p>
-          <label htmlFor="email">Email</label>
-          <input type="email" name="email" value={email} onChange={e => setEmail(e.target.value)}></input>
-          <PaymentElement />
-          <button type="submit" disabled={!stripe || loading}>Pay Now</button>
-          {errorMessage && <div>{errorMessage}</div>}
-        </div>
-      </form>
-    </div>
-  );
-}
 
 export default App;

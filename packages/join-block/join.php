@@ -15,6 +15,7 @@ use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
+use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Settings;
 use Monolog\Logger;
@@ -272,79 +273,38 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
-            $joinBlockLog->info('Processing Stripe subscription creation request');
-
-            // This should be handled in the Stripe class, not here, but for now let's do it here
-            Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
-
-            $name = 'Giuseppe Pinot-Gallizio';
-            $email = 'giuseppe.pinot-gallizio@situationalism.com';
-
-            $customers = Customer::all([
-                'email' => $email,
-                'limit' => 1 // We just need the first match
-            ]);
-
-            $newCustomer = false;
-
-            if (count($customers->data) > 0) {
-                $customer = $customers->data[0];
-            } else {
-                $newCustomer = true;
-
-                $customer = Customer::create([
-                    'email' => $email,
-                    'name' => $name
-                ]);
-
-                $joinBlockLog->info('Customer created successfully! Customer ID: ' . $customer->id);
-            }
-
             $data = json_decode($request->get_body(), true);
 
-            $joinBlockLog->info('Here is your Stripe data dump', $data);
+            $selectedPlanLabel = $data['membership'];
 
-            /* Try catch around this */
-            $subscription = Subscription::create([
-                'customer' => $customer->id,
-                'items' => [
-                    [
-                        'price' => 'price_1PyB84ISmeoaI3mwaI1At8af',
-                    ],
-                ],
-                'payment_behavior'=> 'default_incomplete',
-                'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
-                'expand' => ['latest_invoice.payment_intent'],
-            ]);
+            $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
 
-            // Need to handle this payment intent stuff???
-            $paymentIntentId = $subscription->latest_invoice->payment_intent->id;
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+            $plan = Settings::getMembershipPlan($selectedPlanLabel);
 
-            /* Try catch around this */
-            $confirmedPaymentIntent = $paymentIntent->confirm([
-                'confirmation_token' => $data['confirmationTokenId'],
-            ]);
+            if (!$plan) {
+                throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
+            } else {
+                $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
+            }
 
-            $status = $confirmedPaymentIntent->status;
+            $joinBlockLog->info('Processing Stripe subscription creation request');
 
-            $paymentMethodId = $subscription->latest_invoice->payment_intent->payment_method;
+            $email = $data['email'];
 
-            /* Try catch around this */
-            Customer::update(
-                $customer->id,
-                [
-                    'invoice_settings' => [
-                        'default_payment_method' => $paymentMethodId,
-                    ],
-                ]
-            );
-            
+            StripeService::initialise();
+            [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+
+            $subscription = StripeService::createSubscription($customer, $plan);
+
+            $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
+
+            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $subscription->latest_invoice->payment_intent->payment_method);
+
             return [
-                "status" => $status,
+                "status" => $confirmedPaymentIntent->status,
                 "new_customer" => $newCustomer,
-                "customer" => $customer->toArray(),
-                "subscription" => $subscription->toArray()
+                "stripe_customer" => $customer->toArray(),
+                "stripe_subscription" => $subscription->toArray()
             ];
         }
     ));
