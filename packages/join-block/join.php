@@ -274,21 +274,16 @@ add_action('rest_api_init', function () {
 
             $data = json_decode($request->get_body(), true);
 
-            $selectedPlan = $data['selectedPlan'];
+            $selectedPlanLabel = $data['membership'];
 
-            $plans = Settings::get('MEMBERSHIP_PLANS');
+            $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
 
-            // TODO: Just do this on ID of the plan, not matching the whole array
-            $joinBlockLog->info('Attempting to find a matching plan in the list of plans', $selectedPlan);
+            $plan = Settings::getMembershipPlan($selectedPlanLabel);
 
-            $planExists = array_filter($plans, function($plan) use ($selectedPlan) {
-                return $plan['frequency'] === $selectedPlan['frequency'] && $plan['amount'] === $selectedPlan['amount'] && $plan['currency'] === $selectedPlan['currency'];
-            });
-
-            if (!$planExists) {
+            if (!$plan) {
                 throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
             } else {
-                $joinBlockLog->info('Found a matching plan in the list of plans', $planExists);
+                $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
             }
 
             $joinBlockLog->info('Processing Stripe subscription creation request');
@@ -298,7 +293,6 @@ add_action('rest_api_init', function () {
             StripeService::initialise();
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $plan = Settings::getMembershipPlan($selectedPlan['label']);
             $subscription = StripeService::createSubscription($customer, $plan);
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);

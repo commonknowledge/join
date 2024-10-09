@@ -357,7 +357,7 @@ const MinimalJoinForm = () => {
       body: JSON.stringify({
         confirmationTokenId: confirmationToken.id,
         email,
-        selectedPlan
+        membership: selectedPlan?.label
       }),
     });
 
