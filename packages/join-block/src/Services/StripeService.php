@@ -189,6 +189,11 @@ class StripeService
     {
         global $joinBlockLog;
 
+        // Stripe requires the price in lowest denomination of the currency. E.G. cents for USD, pence for GBP.
+        // So we multiply the amount by 100 to get the price in this format.
+        // We store the amount in whole units of the currency, e.g. dollars for USD, pounds for GBP.
+        $stripePrice = $amount * 100;
+
         try {
             $joinBlockLog->info("Searching for existing Stripe price for recurring product '{$product->id}' with currency '{$currency}'");
 
@@ -205,7 +210,7 @@ class StripeService
 
             $newPrice = \Stripe\Price::create([
                 'product' => $product->id,
-                'unit_amount' => $amount,
+                'unit_amount' => $stripePrice,
                 'currency' => $currency,
                 'recurring' => ['interval' => $interval],
             ]);
