@@ -170,6 +170,9 @@ const App = () => {
 
   const options = {
     paymentMethodCreation: 'manual',
+    mode: 'subscription',
+    amount: 100,
+    currency: 'gbp'
   };
 
   // @ts-ignore
