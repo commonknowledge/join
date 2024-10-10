@@ -25,6 +25,7 @@ interface StaticEnv {
     USE_GOCARDLESS_API: boolean;
     USE_MAILCHIMP: boolean;
     USE_POSTCODE_LOOKUP: boolean;
+    USE_STRIPE: boolean;
     USE_TEST_DATA: boolean;
     WEBHOOK_UUID: string; // Connected to a URL in the wp_options table: `SELECT option_name FROM wp_options where option_value = :uuid`
     WP_REST_API: string;
@@ -66,6 +67,7 @@ const staticEnv: StaticEnv = {
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),
     USE_MAILCHIMP: parseBooleanEnvVar("REACT_APP_USE_MAILCHIMP"),
     USE_POSTCODE_LOOKUP: parseBooleanEnvVar("REACT_APP_USE_POSTCODE_LOOKUP"),
+    USE_STRIPE: parseBooleanEnvVar("REACT_APP_USE_STRIPE"),
     USE_TEST_DATA: parseBooleanEnvVar("REACT_APP_USE_TEST_DATA"),
     WEBHOOK_UUID: process.env.WEBHOOK_UUID || '',
     WP_REST_API: '',
@@ -88,7 +90,7 @@ export const getPaymentMethods = () => {
     if (get("USE_GOCARDLESS")) {
         paymentMethods.push("directDebit")
     }
-    if (get("USE_CHARGEBEE")) {
+    if (get("USE_CHARGEBEE") || get("USE_STRIPE")) {
         paymentMethods.push("creditCard")
     }
     return paymentMethods
