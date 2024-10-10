@@ -41,7 +41,7 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
       }
       return <p>Error: no payment providers available. Please contact us.</p>;
     }
-  }
+  };
 
   return (
     <div className="ml-4">
@@ -257,12 +257,27 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
   data
 }) => {
-  const stripePromise = loadStripe(getEnv('STRIPE_PUBLISHABLE_KEY') as string);
-  const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(plan => plan.value === data.membership)
-  const amount = plan.amount ? plan.amount * 100 : 100
-  const currency = plan.currency.toLowerCase() || "gbp"
+  const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY") as string);
+  const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
+    (plan) => plan.value === data.membership
+  );
+  const amount = plan.amount ? plan.amount * 100 : 100;
+  const currency = plan.currency.toLowerCase() || "gbp";
+  const paymentMethodTypes = ['card']
+  if (currency === 'gbp') {
+    paymentMethodTypes.push('bacs_debit')
+  }
   return (
-    <Elements stripe={stripePromise} options={{ paymentMethodCreation: "manual", mode: "subscription", amount, currency }}>
+    <Elements
+      stripe={stripePromise}
+      options={{
+        paymentMethodCreation: "manual",
+        mode: "subscription",
+        amount,
+        currency,
+        paymentMethodTypes
+      }}
+    >
       <StripeForm onCompleted={onCompleted} />
     </Elements>
   );
