@@ -175,6 +175,32 @@ class JoinService
         $data['gocardlessMandate'] = $subscription ? $subscription->links->mandate : null;
         $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
+        if (Settings::get("USE_STRIPE")) {
+            $joinBlockLog->info('Subscribing with Stripe', [
+                "email" => $data['email'],
+                "membershipPlan" => $data['membershipPlan'],
+                "paymentToken" => $data['paymentToken']
+            ]);
+
+            StripeService::initialise();
+            [$customer, $newCustomer] = StripeService::upsertCustomer($data['email']);
+            $subscription = StripeService::createSubscription($customer, $data['membershipPlan']);
+            $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['paymentToken']);
+            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $subscription->latest_invoice->payment_intent->payment_method);
+
+            $data['stripeStatus'] = $confirmedPaymentIntent->status;
+            $data['stripeNewCustomer'] = $newCustomer;
+            $data['stripeCustomer'] = $customer->toArray();
+            $data['stripeSubscription'] = $subscription->toArray();
+
+            $joinBlockLog->info("Subscribed with Stripe", [
+                "email" => $data['email'],
+                "customer" => $data['stripeCustomer'],
+                "newCustomer" => $data['stripeNewCustomer'],
+                "subscription" => $data['stripeSubscription']
+            ]);
+        }
+
         $subscriptionPlanId = '';
         if ($useChargebee && $customerResult) {
             $customer = $customerResult->customer();

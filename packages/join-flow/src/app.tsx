@@ -25,6 +25,7 @@ import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
+import stripe from "./images/stripe.png";
 
 import { Elements } from '@stripe/react-stripe-js';
 import MinimalJoinForm from "./components/minimal-join-flow";
@@ -160,12 +161,15 @@ const App = () => {
 
   const paymentProviderLogos = getPaymentMethods().map((method) => {
     return method === "directDebit" ?
-      <a href="https://gocardless.com" target="_blank">
-        <img key={method} alt="GoCardless" src={gocardless} width="100px" />
-      </a> :
-      <a href="https://chargebee.com" target="_blank">
-        <img key={method} alt="Chargebee" src={chargebee} width="100px" />
-      </a>
+      <a key={method} href="https://gocardless.com" target="_blank">
+        <img alt="GoCardless" src={gocardless} width="100px" />
+      </a> : getEnv("USE_CHARGEBEE") ?
+      <a key={method} href="https://chargebee.com" target="_blank">
+        <img alt="Chargebee" src={chargebee} width="100px" />
+      </a> : getEnv("USE_STRIPE") ?
+      <a key={method} href="https://stripe.com" target="_blank">
+        <img alt="Stripe" src={stripe} width="100px" />
+      </a> : null
   })
 
   const options = {

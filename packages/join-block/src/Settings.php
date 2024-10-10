@@ -215,7 +215,7 @@ class Settings
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
             Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')
-                ->set_help_text('This makes the above price a minimum.'),
+                ->set_help_text('This makes the above price a minimum. Not compatible with Stripe.'),
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
