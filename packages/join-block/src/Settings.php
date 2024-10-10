@@ -56,6 +56,7 @@ class Settings
 
         $theme_fields = [
             Field::make('color', 'theme_primary_color', 'Primary Color')
+                ->set_default_value('#007bff')
                 ->set_help_text("The color of interactive elements, e.g. buttons"),
             Field::make('color', 'theme_gray_color', 'Gray Color')
                 ->set_default_value('#dfdcda')

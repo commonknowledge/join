@@ -28,22 +28,27 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  if (data.paymentMethod === "directDebit") {
-    return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
-  }
-  if (data.paymentMethod === "creditCard") {
-    if (getEnv("USE_CHARGEBEE")) {
-      return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
+  const renderForm = () => {
+    if (data.paymentMethod === "directDebit") {
+      return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
     }
-    if (getEnv("USE_STRIPE")) {
-      return <StripePaymentPage data={data} onCompleted={onCompleted} />;
+    if (data.paymentMethod === "creditCard") {
+      if (getEnv("USE_CHARGEBEE")) {
+        return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
+      }
+      if (getEnv("USE_STRIPE")) {
+        return <StripePaymentPage data={data} onCompleted={onCompleted} />;
+      }
+      return <p>Error: no payment providers available. Please contact us.</p>;
     }
-    return <p>Error: no payment providers available. Please contact us.</p>;
   }
 
   return (
-    <div className="form-content">
-      <Spinner animation="grow" variant="primary" />
+    <div className="ml-4">
+      <div className="mb-4">
+        <Summary data={data} />
+      </div>
+      {renderForm()}
     </div>
   );
 };
@@ -67,10 +72,6 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(onCompleted)}
     >
-      <div>
-        <Summary data={data} />
-      </div>
-
       <section className="form-section">
         <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
@@ -203,10 +204,6 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(handleCompleted)}
     >
-      <div>
-        <Summary data={data} />
-      </div>
-
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
