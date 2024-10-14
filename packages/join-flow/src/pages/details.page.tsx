@@ -205,19 +205,19 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           <div>
             <FormItem label="Address line 1" name="addressLine1" form={form}>
               <Form.Control
-                autoComplete="address-line-1"
+                autoComplete="address-line1"
                 disabled={addressLookup.loading}
               />
             </FormItem>
             <FormItem label="Address line 2" name="addressLine2" form={form}>
               <Form.Control
-                autoComplete="address-line-2"
+                autoComplete="address-line2"
                 disabled={addressLookup.loading}
               />
             </FormItem>
             <FormItem label="City" name="addressCity" form={form}>
               <Form.Control
-                autoComplete="address-level1"
+                autoComplete="address-level2"
                 disabled={addressLookup.loading}
               />
             </FormItem>

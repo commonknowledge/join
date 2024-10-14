@@ -27,7 +27,6 @@ export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
           name="paymentMethod"
           value="directDebit"
           label="Direct Debit"
-          description="Best for the party!"
           form={form}
         />
         <RadioPanel
