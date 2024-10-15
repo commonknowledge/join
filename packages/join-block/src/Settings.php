@@ -45,8 +45,10 @@ class Settings
             Field::make('checkbox', 'use_chargebee'),
             Field::make('checkbox', 'use_stripe', 'Use Stripe')
                 ->set_help_text('Use Stripe as a payment provider'),
+            Field::make('checkbox', 'use_action_network', 'Use Action Network')
+                ->set_help_text('Save sign-ups in Action Network'),
             Field::make('checkbox', 'use_mailchimp', 'Use Mailchimp')
-                ->set_help_text('Save responses in Mailchimp')
+                ->set_help_text('Save sign-ups in Mailchimp')
         ];
 
         $membership_plans_fields = [
@@ -105,6 +107,9 @@ class Settings
             Field::make('separator', 'mailchimp', 'Mailchimp'),
             Field::make('text', 'mailchimp_api_key', 'Mailchimp API key')->set_help_text('Instructions here under "Generate an API key": https://eepurl.com/dyijVH'),
             Field::make('text', 'mailchimp_audience_id', 'Mailchimp audience ID')->set_help_text('Instructions here under "Find Your Audience ID": https://eepurl.com/dyilJL'),
+
+            Field::make('separator', 'action_network', 'Action Network'),
+            Field::make('text', 'action_network_api_key', 'Action Network API key')->set_help_text('Instructions here: https://help.actionnetwork.org/hc/en-us/articles/203853205-Does-the-Action-Network-have-an-API-and-how-do-I-access-it'),
 
             Field::make('separator', 'webhook'),
             Field::make('text', 'step_webhook_url')->set_help_text('Webhook called after each step of the form'),

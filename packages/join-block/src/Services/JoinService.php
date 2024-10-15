@@ -220,10 +220,22 @@ class JoinService
             $email = $data['email'];
             $joinBlockLog->info("Processing Mailchimp signup request for $email");
             try {
-                MailchimpService::signup($email);
+                MailchimpService::signup($data);
                 $joinBlockLog->info("Completed Mailchimp signup request for $email");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
+                throw $exception;
+            }
+        }
+
+        if (Settings::get("USE_ACTION_NETWORK")) {
+            $email = $data['email'];
+            $joinBlockLog->info("Processing Action Network signup request for $email");
+            try {
+                ActionNetworkService::signup($data);
+                $joinBlockLog->info("Completed Action Network signup request for $email");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
                 throw $exception;
             }
         }
