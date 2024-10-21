@@ -4,15 +4,17 @@ import { Controller, UseFormMethods } from "react-hook-form";
 import { PageState, useCurrentRouter } from "../services/router.service";
 
 interface ContinueButtonProps {
+  disabled?: boolean;
   text?: string;
   onClick?(event: React.MouseEvent<HTMLButtonElement>): void;
 }
 
-export const ContinueButton: FC<ContinueButtonProps> = ({ text, onClick }) => (
+export const ContinueButton: FC<ContinueButtonProps> = ({ disabled, text, onClick }) => (
   <Button
     className="form-section-addon d-flex align-items-center text-xxs"
     type="submit"
     onClick={onClick}
+    disabled={disabled}
   >
     {text || "Continue"}
   </Button>

@@ -1,10 +1,16 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   CardComponent,
   CardCVV,
   CardExpiry,
   CardNumber
 } from "@chargebee/chargebee-js-react-wrapper";
+import {
+  PaymentElement,
+  useStripe,
+  useElements,
+  Elements
+} from "@stripe/react-stripe-js";
 import { Form, FormGroup, Spinner } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
@@ -15,22 +21,34 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
-import { get as getEnv } from '../env';
+import { get as getEnv } from "../env";
+import { loadStripe } from "@stripe/stripe-js";
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  if (data.paymentMethod === "directDebit") {
-    return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
-  }
-  if (data.paymentMethod === "creditCard") {
-    return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
-  }
+  const renderForm = () => {
+    if (data.paymentMethod === "directDebit") {
+      return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
+    }
+    if (data.paymentMethod === "creditCard") {
+      if (getEnv("USE_CHARGEBEE")) {
+        return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
+      }
+      if (getEnv("USE_STRIPE")) {
+        return <StripePaymentPage data={data} onCompleted={onCompleted} />;
+      }
+      return <p>Error: no payment providers available. Please contact us.</p>;
+    }
+  };
 
   return (
-    <div className="form-content">
-      <Spinner animation="grow" variant="primary" />
+    <div className="ml-4">
+      <div className="mb-4">
+        <Summary data={data} />
+      </div>
+      {renderForm()}
     </div>
   );
 };
@@ -46,7 +64,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
     },
     resolver: validate(PaymentMethodDDSchema)
   });
-  const organisation = getEnv('ORGANISATION_NAME');
+  const organisation = getEnv("ORGANISATION_NAME");
 
   return (
     <form
@@ -54,10 +72,6 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(onCompleted)}
     >
-      <div>
-        <Summary data={data} />
-      </div>
-
       <section className="form-section">
         <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
@@ -72,20 +86,20 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
         <FormItem form={form} name="ddConfirmAccountHolder">
           <Form.Check label="I confirm that I am the account holder and am authorised to set up Direct Debit payments on this account." />
         </FormItem>
-        {getEnv('IS_UPDATE_FLOW') ? (
+        {getEnv("IS_UPDATE_FLOW") ? (
           <FormItem label="Country" form={form} name="addressCountry">
-              <Form.Control
-                autoComplete="country"
-                as="select"
-                className="form-control"
-              >
-                {sortedCountries.map((c) => (
-                  <option key={c.numeric} value={c.alpha2}>
-                    {c.name}
-                  </option>
-                ))}
-              </Form.Control>
-            </FormItem>
+            <Form.Control
+              autoComplete="country"
+              as="select"
+              className="form-control"
+            >
+              {sortedCountries.map((c) => (
+                <option key={c.numeric} value={c.alpha2}>
+                  {c.name}
+                </option>
+              ))}
+            </Form.Control>
+          </FormItem>
         ) : null}
       </section>
 
@@ -149,7 +163,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
   data
 }) => {
-  const organisationName =  getEnv('ORGANISATION_NAME');
+  const organisationName = getEnv("ORGANISATION_NAME");
 
   const cardRef = useRef<any>();
   const form = useForm();
@@ -190,10 +204,6 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(handleCompleted)}
     >
-      <div>
-        <Summary data={data} />
-      </div>
-
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
@@ -239,6 +249,95 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
       </CardComponent>
 
       <ContinueButton />
+    </form>
+  );
+};
+
+const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100
+
+const StripePaymentPage: StagerComponent<FormSchema> = ({
+  onCompleted,
+  data
+}) => {
+  const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY") as string);
+  const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
+    (plan) => plan.value === data.membership
+  );
+  const amount = plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100;
+  const currency = plan.currency.toLowerCase() || "gbp";
+  const paymentMethodTypes = ['card']
+  // Add direct debit payment method for GBP only, as it is a UK only feature
+  if (currency === 'gbp') {
+    paymentMethodTypes.push('bacs_debit')
+  }
+  return (
+    <Elements
+      stripe={stripePromise}
+      options={{
+        paymentMethodCreation: "manual",
+        mode: "subscription",
+        amount,
+        currency,
+        paymentMethodTypes
+      }}
+    >
+      <StripeForm onCompleted={onCompleted} />
+    </Elements>
+  );
+};
+
+const StripeForm = ({
+  onCompleted
+}: {
+  onCompleted: (data: FormSchema) => void;
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleError = (error: { message?: string }) => {
+    setLoading(false);
+    setErrorMessage(error.message);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setLoading(true);
+
+    const { error: submitError } = await elements.submit();
+
+    if (submitError) {
+      handleError(submitError);
+      return;
+    }
+
+    const { error, confirmationToken } = await stripe.createConfirmationToken({
+      elements
+    });
+
+    // Display error if the confirmation token cannot be obtained
+    if (error) {
+      handleError(error);
+      return;
+    }
+
+    onCompleted({ paymentToken: confirmationToken.id });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <PaymentElement />
+        <ContinueButton disabled={loading} />
+        {errorMessage && <div>{errorMessage}</div>}
+      </div>
     </form>
   );
 };
