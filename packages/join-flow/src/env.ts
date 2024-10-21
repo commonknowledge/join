@@ -87,6 +87,9 @@ export const getStr = (envVar: keyof StaticEnv): string => {
 
 export const getPaymentMethods = () => {
     const paymentMethods = []
+    // TODO: refactor paymentMethods to be ["gocardless", "chargebee", "stripe"]
+    // Originally gocardless => directDebit, and chargebee => creditCard, but
+    // stripe does direct debit and credit card, so this distinction is wrong.
     if (get("USE_GOCARDLESS")) {
         paymentMethods.push("directDebit")
     }

@@ -253,6 +253,8 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   );
 };
 
+const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100
+
 const StripePaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
   data
@@ -261,9 +263,10 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
   const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
     (plan) => plan.value === data.membership
   );
-  const amount = plan.amount ? plan.amount * 100 : 100;
+  const amount = plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100;
   const currency = plan.currency.toLowerCase() || "gbp";
   const paymentMethodTypes = ['card']
+  // Add direct debit payment method for GBP only, as it is a UK only feature
   if (currency === 'gbp') {
     paymentMethodTypes.push('bacs_debit')
   }
@@ -319,8 +322,7 @@ const StripeForm = ({
       elements
     });
 
-    // This point is only reached if there's an immediate error when
-    // creating the ConfirmationToken. Show the error to your customer (for example, payment details incomplete)
+    // Display error if the confirmation token cannot be obtained
     if (error) {
       handleError(error);
       return;
