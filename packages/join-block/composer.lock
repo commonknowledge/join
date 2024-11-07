@@ -163,16 +163,16 @@
         },
         {
             "name": "chargebee/chargebee-php",
-            "version": "v3.33.0",
+            "version": "v3.35.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chargebee/chargebee-php.git",
-                "reference": "9423e1bbf8d1f8c48e40347fb1dfe711b817dbf0"
+                "reference": "56b695d701ed1e03b0600ff8a8b5be9813b9ceea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chargebee/chargebee-php/zipball/9423e1bbf8d1f8c48e40347fb1dfe711b817dbf0",
-                "reference": "9423e1bbf8d1f8c48e40347fb1dfe711b817dbf0",
+                "url": "https://api.github.com/repos/chargebee/chargebee-php/zipball/56b695d701ed1e03b0600ff8a8b5be9813b9ceea",
+                "reference": "56b695d701ed1e03b0600ff8a8b5be9813b9ceea",
                 "shasum": ""
             },
             "require": {
@@ -206,9 +206,9 @@
             ],
             "support": {
                 "issues": "https://github.com/chargebee/chargebee-php/issues",
-                "source": "https://github.com/chargebee/chargebee-php/tree/v3.33.0"
+                "source": "https://github.com/chargebee/chargebee-php/tree/v3.35.0"
             },
-            "time": "2024-08-29T06:59:27+00:00"
+            "time": "2024-10-17T07:17:04+00:00"
         },
         {
             "name": "cmdisp/monolog-microsoft-teams",
@@ -4697,10 +4697,10 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

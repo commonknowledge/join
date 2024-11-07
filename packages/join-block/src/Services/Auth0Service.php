@@ -60,7 +60,7 @@ class Auth0Service
         if (count($users) > 0) {
             $joinBlockLog->info(
                 'User already exists in Auth0, skipping',
-                ['count' => count($users), 'query' => $q, 'response' => json_encode($users)]
+                ['count' => count($users), 'query' => $q, 'response' => wp_json_encode($users)]
             );
             return;
         }

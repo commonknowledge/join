@@ -20,7 +20,7 @@ class Settings
     public static function init()
     {
         /** @var Select_Field $gc_environment_select */
-        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment'));
+        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment', 'ck-join-block'));
         $gc_environment_select->set_options(array(
             'sandbox' => 'Sandbox',
             'live' => 'Live',
@@ -139,6 +139,8 @@ class Settings
         $logField->set_html(function () {
             global $joinBlockLogLocation;
             $logfiles = scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING);
+            // Ignore file_get_contents error because this will always be a local file
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
             $log = $logfiles ? @file_get_contents($joinBlockLogLocation . '/' . $logfiles[0]) : "";
             if (!$log) {
                 $log = 'Could not load error log. Please contact Common Knowledge support.';
@@ -237,6 +239,9 @@ class Settings
             return $val;
         }
         $env_key = strtoupper($key);
+        // Ignore sanitization error as this could break provided environment variables
+        // If the environment is compromised, there are bigger problems!
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         return $_ENV[$env_key] ?? $val;
     }
 

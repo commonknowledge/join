@@ -1,11 +1,12 @@
 <?php
 
 /**
- * Plugin Name:     Common Knowledge Join Plugin
+ * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.0.6
+ * Version:         1.1.0
  * Author:          Common Knowledge <hello@commonknowledge.coop>
- * Text Domain:     ck
+ * Text Domain:     ck-join-block
+ * License: GPLv2 or later
  */
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
@@ -42,6 +43,9 @@ try {
     $joinBlockLog->debug("Could not load environment variables from .env file: " . $e->getMessage());
 }
 
+// Ignore sanitization error as this could break provided environment variables
+// If the environment is compromised, there are bigger problems!
+// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 $joinBlockLogLocation = $_ENV['JOIN_BLOCK_LOG_LOCATION'] ?? __DIR__ . '/logs';
 $joinBlockLog->pushHandler(new RotatingFileHandler($joinBlockLogLocation . '/debug.log', 10, Logger::INFO));
 $joinBlockLog->pushProcessor(new WebProcessor());
@@ -55,6 +59,9 @@ add_action('carbon_fields_register_fields', function () {
     Blocks::init();
 });
 
+// Ignore sanitization error as this could break provided environment variables
+// If the environment is compromised, there are bigger problems!
+// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 $teamsWebhook = $_ENV['MICROSOFT_TEAMS_INCOMING_WEBHOOK'] ?? null;
 if ($teamsWebhook) {
     $joinBlockLog->pushHandler(
@@ -175,8 +182,9 @@ add_action('rest_api_init', function () {
                 if (!$apiKey) {
                     throw new \Exception('Error: missing API key for ' . $provider);
                 }
-                $response = @file_get_contents($url);
-                $data = json_decode($response, true);
+                $response = wp_remote_get($url);
+                $body = wp_remote_retrieve_body($response);
+                $data = json_decode($body, true);
                 if ($provider === Settings::GET_ADDRESS_IO) {
                     $addresses = $data['suggestions'] ?? [];
                 } else {
@@ -212,8 +220,9 @@ add_action('rest_api_init', function () {
                     throw new \Exception('Error: missing API key for getAddress.io');
                 }
 
-                $response = @file_get_contents($url);
-                $data = json_decode($response, true) ?? [];
+                $response = wp_remote_get($url);
+                $body = wp_remote_retrieve_body($response);
+                $data = json_decode($body, true) ?? [];
 
                 // Match ideal postcodes output
                 $address = [
@@ -259,7 +268,7 @@ add_action('rest_api_init', function () {
             // Make stage = "confirm" to match the normal flow
             // (the user is redirected back from GoCardless and submits their data to the /join endpoint)
             $data['stage'] = "confirm";
-            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", json_encode($data));
+            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", wp_json_encode($data));
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
         }
@@ -346,3 +355,49 @@ add_action('init', function () {
     $chargebee_api_key = Settings::get('CHARGEBEE_API_KEY');
     Environment::configure($chargebee_site_name, $chargebee_api_key);
 });
+
+add_action('ck_join_block_gocardless_cron_hook', function () {
+    global $wpdb;
+    global $joinBlockLog;
+
+    $joinBlockLog->info("Running ensureSubscriptionsCreated");
+
+    $sql = "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE 'JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_%'";
+    // Ignore DB lint error as this is a safe query
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
+    $results = $wpdb->get_results($sql);
+    foreach ($results as $result) {
+        $joinBlockLog->info("ensureSubscriptionsCreated: processing {$result->option_name}: {$result->option_value}");
+        try {
+            $data = json_decode($result->option_value, true);
+            $createdAt = $data['createdAt'] ?? 0;
+
+            $customer = GocardlessService::getCustomerIdByCompletedBillingRequest($data['gcBillingRequestId']);
+            if (!$customer) {
+                $joinBlockLog->error("ensureSubscriptionsCreated: could not process {$result->option_name}: user did not set up mandate.");
+                // Try for one day
+                $day = 24 * 60 * 60;
+
+                $joinBlockLog->info("ensureSubscriptionsCreated: checking if should delete {$result->option_name}, created at {$createdAt}");
+
+                if ((time() - $createdAt) > $day) {
+                    $joinBlockLog->info("ensureSubscriptionsCreated: deleting unprocessable {$result->option_name}");
+                    delete_option($result->option_name);
+                } else {
+                    $joinBlockLog->info("ensureSubscriptionsCreated: will retry {$result->option_name}");
+                }
+                continue;
+            }
+
+            JoinService::handleJoin($data);
+            delete_option($result->option_name);
+            $joinBlockLog->info("ensureSubscriptionsCreated: success, deleting option {$result->option_name}");
+        } catch (\Exception $e) {
+            $joinBlockLog->error("ensureSubscriptionsCreated: could not process {$result->option_value}: {$e->getMessage()}");
+        }
+    }
+});
+
+if (!wp_next_scheduled('ck_join_block_gocardless_cron_hook')) {
+    wp_schedule_event(time(), 'hourly', 'ck_join_block_gocardless_cron_hook');
+}

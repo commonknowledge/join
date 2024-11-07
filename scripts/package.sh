@@ -12,17 +12,22 @@ mkdir -p dist
 
 echo "Building front end"
 cd packages/join-flow
-npm i && npm run build
+NODE_ENV=production && npm i && npm run build
+cd ../..
+
+echo "Installing dependencies"
+cd packages/join-block
+composer install
 cd ../..
 
 echo "Copying WordPress plugin files"
 cp -r packages/join-block/ dist/join-block
 cd dist/join-block
-rm .env
-rm -rf node_modules
+rm .env .env.example
+rm -rf logs node_modules wordpress
 
-echo "Zipping"
+echo -n "Zipping..."
 cd ..
-zip -r -q ck-join-plugin join-block
-mv ck-join-plugin.zip ..
-echo "Done"
+zip -r -q ck-join-block join-block
+mv ck-join-block.zip ..
+echo "done"

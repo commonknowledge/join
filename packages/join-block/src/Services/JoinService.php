@@ -62,11 +62,13 @@ class JoinService
         // Use WordPress get_temp_dir() as lock directory, this must be writable
         // otherwise many WordPress features do not work (e.g. file uploads)
         $lockFilepath = get_temp_dir() . '/' . $sessionToken;
+        // Ignore fopen() error, as it is necessary for flock()
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
         $lockFile = fopen($lockFilepath, 'w');
 
         if (!$lockFile) {
             $joinBlockLog->error("Could not use lockfile for session $sessionToken");
-            throw new \Exception("Unable to open lock file: $lockFilepath");
+            throw new \Exception("Unable to open lock file: " . esc_html($lockFilepath));
         }
 
         // Try to get exclusive access to this file. Will block (sleep) if
@@ -75,9 +77,10 @@ class JoinService
         $lockSuccess = flock($lockFile, LOCK_EX);
 
         if (!$lockSuccess) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
             fclose($lockFile);
             $joinBlockLog->error("Could not lock session $sessionToken");
-            throw new \Exception("Unable to lock session: $sessionToken");
+            throw new \Exception("Unable to lock session: " . esc_html($sessionToken));
         }
 
         $joinBlockLog->info("Locked session $sessionToken");
@@ -101,11 +104,13 @@ class JoinService
         flock($lockFile, LOCK_UN);
 
         $fileInfo = stream_get_meta_data($lockFile);
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         fclose($lockFile);
         // Remove the file. Other threads that are waiting for the lock
         // will not be affected, because the lock operates on the file
         // descriptor (which will still be valid), not on the file itself.
         // See: https://www.man7.org/linux/man-pages/man2/flock.2.html
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
         @unlink($fileInfo['uri']);
         $joinBlockLog->info("Unlocked session {$fileInfo['uri']}");
     }
@@ -118,7 +123,7 @@ class JoinService
     {
         global $joinBlockLog;
 
-        $joinBlockLog->info('Beginning join process: ' . json_encode($data));
+        $joinBlockLog->info('Beginning join process: ' . wp_json_encode($data));
 
         $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
@@ -142,7 +147,7 @@ class JoinService
         if (!$data['membershipPlan']) {
             $error = 'Invalid membership plan: ' . $data['membership'];
             $joinBlockLog->error($error);
-            throw new \Exception($error);
+            throw new \Exception(esc_html($error));
         }
 
         $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
@@ -152,7 +157,7 @@ class JoinService
             if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
                 $error = 'Invalid membership amount: ' . $membershipAmount;
                 $joinBlockLog->error($error);
-                throw new \Exception($error);
+                throw new \Exception(esc_html($error));
             }
             $data['membershipPlan']['amount'] = $membershipAmount;
         }
@@ -269,13 +274,13 @@ class JoinService
             "headers" => [
                 'Content-Type' => 'application/json',
             ],
-            "body" => json_encode($data)
+            "body" => wp_json_encode($data)
         ]);
         $webhookResponse = wp_remote_post($webhookUrl, $webhookData);
         if ($webhookResponse instanceof \WP_Error) {
             $error = $webhookResponse->get_error_message();
             $joinBlockLog->error('Webhook ' . $webhookUrl . ' failed: ' . $error);
-            throw new \Exception($error);
+            throw new \Exception(esc_html($error));
         }
     }
 
@@ -299,8 +304,7 @@ class JoinService
         foreach ($existingCustomers as $existingCustomer) {
             $all = Subscription::all(array(
                 "customerId[is]" => $existingCustomer->customer()->id,
-                "status[is]" => "active",
-                "planId[startsWith]" => "membership"
+                "status[is]" => "active"
             ));
 
             if (count($all) > 0) {
@@ -312,7 +316,7 @@ class JoinService
                     );
                 }
 
-                throw new \Error('Current customer has an existing and active membership subscription', 25);
+                throw new \Exception('Current customer has an existing and active membership subscription', 25);
             }
         }
 
@@ -321,13 +325,13 @@ class JoinService
             $joinBlockLog->info('Creating customer with credit or debit card via Chargebee');
 
             $chargebeeCreditCardPayload = [
-                "firstName" => $data['firstName'],
-                "lastName" => $data['lastName'],
+                "first_name" => $data['firstName'],
+                "last_name" => $data['lastName'],
                 "email" => $data['email'],
                 "allow_direct_debit" => true,
                 "locale" => "en-GB",
-                "tokenId" => $data['paymentToken'],
-                "billingAddress" => $billingAddress,
+                "token_id" => $data['paymentToken'],
+                "billing_address" => $billingAddress,
                 "phone" => $data['phoneNumber'],
             ];
 
@@ -341,7 +345,7 @@ class JoinService
             }
 
             try {
-                $chargebeeCreditCardPayload = apply_filters('ck_join_flow_pre_chargebee_customer_create', $data);
+                $chargebeeCreditCardPayload = apply_filters('ck_join_flow_pre_chargebee_customer_create', $chargebeeCreditCardPayload);
                 $customerResult = Customer::create($chargebeeCreditCardPayload);
             } catch (InvalidRequestException $exception) {
                 /*
@@ -357,7 +361,7 @@ class JoinService
                     ['json' => $exception->getJsonObject()]
                 );
 
-                throw new \Error('Chargebee token expired', 1);
+                throw new \Exception('Chargebee token expired', 1);
             } catch (\Exception $exception) {
                 $joinBlockLog->error(
                     'Chargebee customer creation failed with unknown exception. ' .
@@ -365,7 +369,7 @@ class JoinService
                     ['exception' => $exception]
                 );
 
-                throw new \Error('Unknown exception', 11);
+                throw new \Exception('Unknown exception', 11);
             }
 
             $joinBlockLog->info('Credit or debit card customer creation via Chargebee successful');
@@ -380,7 +384,7 @@ class JoinService
         $subscription = null;
 
         if ($data['paymentMethod'] === 'directDebit') {
-            $joinBlockLog->info('Creating Direct Debit subscription via GoCardless: ' . json_encode($data));
+            $joinBlockLog->info('Creating Direct Debit subscription via GoCardless: ' . wp_json_encode($data));
 
             /*
                 Handle different GoCardless errors.
@@ -405,6 +409,9 @@ class JoinService
                 throw new JoinBlockException(
                     'GoCardless Direct Debit subscription creation failed due to validation',
                     3,
+                    // Ignore sanitization error as this could break error handling.
+                    // The data comes directly from the GoCardless API, so can be trusted
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
                     $exception->getErrors()
                 );
             } catch (\GoCardlessPro\Core\Exception\InvalidApiUsageException $exception) {
@@ -435,7 +442,7 @@ class JoinService
                         get_class($exception),
                     ['exception' => $exception]
                 );
-                throw new \Exception('GoCardless Direct Debit subscription creation failed', $exception->getCode());
+                throw new \Exception('GoCardless Direct Debit subscription creation failed', esc_html($exception->getCode()));
             }
 
             $joinBlockLog->info('Direct Debit subscription via GoCardless successful');
@@ -480,7 +487,7 @@ class JoinService
             $customerResult = Customer::create($directDebitChargebeeCustomer);
         } catch (\Exception $exception) {
             $joinBlockLog->error('Chargebee customer creation failed. Customer attempting charge with direct debit', ['exception' => $exception]);
-            throw new \Error('Chargebee customer creation failed');
+            throw new \Exception('Chargebee customer creation failed');
         }
 
         return $customerResult;
@@ -494,52 +501,47 @@ class JoinService
     {
         global $joinBlockLog;
 
-        $chargebeeSubscriptionPayload = [];
-        $chargebeeSubscriptionPayload['addons'] = [];
+        $chargebeeSubscriptionPayload = [
+            "subscription_items" => []
+        ];
 
-        // "Suggested Member Contribution" has two components in Chargebee and therefore a special treatment.
-        // - A monthly recurring donation of £3 a month, the standard plan called "membership_monthly_individual"
-        // - An additional donation, in Chargebee an add-on callled "suggested_contribution_month"
-        if ($data['planId'] === 'suggested') {
-            $joinBlockLog->info('Setting up Suggested Membership Contribution');
-            $chargebeeSubscriptionPayload['planId'] = "membership_monthly_individual";
-
-            $chargebeeSubscriptionPayload['addons'][] = [
-                "id" => "suggested_contribution_month"
-            ];
-        } else {
-            $chargebeeSubscriptionPayload['planId'] =  $data['planId'];
-        }
+        $planId = sanitize_title($data['membership']);
+        $chargebeeSubscriptionPayload["subscription_items"] = [
+            [
+                "item_price_id" => $planId
+            ]
+        ];
 
         // Handle donation amount, which is sent to us in GBP but Chargebee requires in pence
         $joinBlockLog->info('Handling donation');
 
         // Non-recurring donation
-        if ($data['donationAmount'] !== '0' && $data['recurDonation'] === false) {
+        $hasDonation = ((int)$data['donationAmount']) > 0;
+        if ($hasDonation && $data['recurDonation'] === false) {
             $joinBlockLog->info('Setting up non-recurring donation');
-            $chargebeeSubscriptionPayload['addons'][] = [
-                "id" => "additional_donation_single",
-                "unitPrice" => (int)$data['donationAmount'] * 100
+            $chargebeeSubscriptionPayload["subscription_items"][] = [
+                "item_price_id" => "additional_donation_single",
+                "unit_price" => (int)$data['donationAmount'] * 100
             ];
         }
 
         // Recurring donation
-        if ($data['donationAmount'] !== '0' && $data['recurDonation'] === true) {
+        if ($hasDonation && $data['recurDonation'] === true) {
             $joinBlockLog->info('Setting up recurring donation');
-            $chargebeeSubscriptionPayload['addons'][] = [
-                "id" => "additional_donation_month",
-                "unitPrice" => (int)$data['donationAmount'] * 100
+            $chargebeeSubscriptionPayload["subscription_items"][] = [
+                "item_price_id" => "additional_donation_monthly",
+                "unit_price" => (int)$data['donationAmount'] * 100
             ];
         }
 
         $joinBlockLog->info('Creating subscription in Chargebee');
         $joinBlockLog->info(
             "Chargebee subcription payload is:\n" .
-                json_encode($chargebeeSubscriptionPayload)
+                wp_json_encode($chargebeeSubscriptionPayload)
         );
 
         try {
-            $subscriptionResult = Subscription::createForCustomer(
+            $subscriptionResult = Subscription::createWithItems(
                 $customer->id,
                 $chargebeeSubscriptionPayload
             );
@@ -553,11 +555,11 @@ class JoinService
                 See https://apidocs.chargebee.com/docs/api?lang=php#error_codes_list for further details.
             */
             if (strpos($exception->getMessage(), 'Error message: (3001) Insufficient funds.') !== false) {
-                throw new \Error('Chargebee subscription failed. Insufficient funds on charging account', 2);
+                throw new \Exception('Chargebee subscription failed. Insufficient funds on charging account', 2);
             }
 
             if (strpos($exception->getMessage(), 'Error message: (3005) Expired Card.') !== false) {
-                throw new \Error('Chargebee subscription failed. Card has expired', 4);
+                throw new \Exception('Chargebee subscription failed. Card has expired', 4);
             }
 
             $joinBlockLog->error(
@@ -566,7 +568,7 @@ class JoinService
                 ['data' => $exception->getJsonObject()]
             );
 
-            throw new \Error('Chargebee subscription failed');
+            throw new \Exception('Chargebee subscription failed');
         } catch (\Exception $exception) {
             if ($exception instanceof APIError) {
                 $joinBlockLog->error('Chargebee subscription failed', ['data' => $exception->getJsonObject()]);
@@ -576,7 +578,7 @@ class JoinService
 
             $joinBlockLog->error('Chargebee reports back unknown exception of type ' . get_class($exception));
 
-            throw new \Error('Chargebee subscription failed');
+            throw new \Exception('Chargebee subscription failed');
         }
 
         $joinBlockLog->info('Chargebee subscription successful');
@@ -593,11 +595,12 @@ class JoinService
         }
         // Remove whitespace
         $postcode = preg_replace('#\s+#', '', $postcode);
-        $response = @file_get_contents("https://api.postcodes.io/postcodes/$postcode");
+        $response = wp_remote_get("https://api.postcodes.io/postcodes/$postcode");
+        $body = wp_remote_retrieve_body($response);
         $error = null;
         $postcodeData = null;
         try {
-            $postcodeData = json_decode($response, true);
+            $postcodeData = json_decode($body, true);
         } catch (\Exception $e) {
             $error = $e;
         }

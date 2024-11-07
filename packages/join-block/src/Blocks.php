@@ -29,6 +29,9 @@ class Blocks
 
         $joinFormJavascriptBundleLocation = 'build/join-flow/bundle.js';
 
+        // Ignore sanitization error as this could break provided environment variables
+        // If the environment is compromised, there are bigger problems!
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $debug = ($_ENV['DEBUG_JOIN_FLOW'] ?? 'false') === 'true';
         if ($debug) {
             $joinBlockLog->warning(
@@ -40,7 +43,7 @@ class Blocks
                 'ck-join-block-js',
                 "http://localhost:3000/bundle.js",
                 [],
-                false,
+                time(),
                 true
             );
         } else {
@@ -79,7 +82,7 @@ class Blocks
         $image_field = Field::make('image', 'image');
         $image_field->set_value_type('url');
         /** @var Block_Container $join_header_block */
-        $join_header_block = Block::make(__('CK Join Page Header'))
+        $join_header_block = Block::make(__('CK Join Page Header', 'ck-join-block'))
             ->add_fields(array(
                 Field::make('text', 'title')->set_help_text('Use e.g. [first_name:member] to insert [url_query_parameter:default]'),
                 $image_field,
@@ -87,6 +90,7 @@ class Blocks
         $join_header_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             $title = $fields['title'];
             if (str_contains($title, '[') && str_contains($title, ']')) {
+                // Find and replace all "[value:default]" template markers using query params
                 preg_match_all('#\[([^:\]]+)(:[^\]]*)?\]#', $title, $matches);
                 for ($i = 0; $i < count($matches[0]); $i++) {
                     $param = $matches[1][$i];
@@ -94,7 +98,13 @@ class Blocks
                     if ($default) {
                         $default = substr($default, 1); // remove leading ':'
                     }
-                    $value = $_GET[$param] ?? $default;
+
+                    // Ignore checks that assume $_GET use is form processing, which it is not
+                    // (it is only used to complete the title template, which just requires sanitization to be safe)
+
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+                    $value = sanitize_text_field($_GET[$param] ?? $default);
+
                     $to_replace = $matches[0][$i];
                     $title = str_replace($to_replace, $value, $title);
                 }
@@ -104,8 +114,8 @@ class Blocks
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
             <div class="ck-join-flow">
                 <div class="ck-join-page-header">
-                    <h1><?= $title ?></h1>
-                    <img src="<?= $fields['image'] ?>" alt="<?= $fields['title'] ?>">
+                    <h1><?php echo esc_html($title) ?></h1>
+                    <img src="<?php echo esc_url($fields['image']) ?>" alt="<?php echo esc_attr($fields['title']) ?>">
                 </div>
             </div>
         <?php
@@ -118,7 +128,7 @@ class Blocks
         $joined_page_association = Field::make(
             'association',
             'joined_page',
-            __('Page to redirect to after joining')
+            __('Page to redirect to after joining', 'ck-join-block')
         )->set_required(true);
         $joined_page_association->set_types(array(
             array(
@@ -132,7 +142,7 @@ class Blocks
             ->set_help_text('Leave blank to use the default plans from the settings page.');
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('CK Join Form'))
+        $join_form_block = Block::make(__('CK Join Form', 'ck-join-block'))
             ->add_fields(array(
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
@@ -158,8 +168,10 @@ class Blocks
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             self::echoBlockCss();
             self::echoEnvironment($fields, self::NORMAL_BLOCK_MODE);
+            if (Settings::get("USE_CHARGEBEE")) {
+                wp_enqueue_script("chargebee", "https://js.chargebee.com/v2/chargebee.js", [], "v2", ["in_footer" => false]);
+            }
             ?>
-            <script src="https://js.chargebee.com/v2/chargebee.js"></script>
             <div class="ck-join-flow">
                 <div class="ck-join-form mt-4"></div>
             </div>
@@ -187,7 +199,7 @@ class Blocks
         $join_page_association = Field::make(
             'association',
             'join_page',
-            __('Join Us Page (with CK Join Form block)')
+            __('Join Us Page (with CK Join Form block)', 'ck-join-block')
         )->set_required(true);
         $join_page_association->set_types(array(
             array(
@@ -197,7 +209,7 @@ class Blocks
         ))->set_max(1);
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('CK Join Form Link'))
+        $join_form_block = Block::make(__('CK Join Form Link', 'ck-join-block'))
             ->add_fields(array(
                 Field::make('text', 'title'),
                 Field::make('rich_text', 'introduction'),
@@ -212,9 +224,11 @@ class Blocks
             <?php if ($fields['include_email_input']) : ?>
                 <div class="ck-join-flow">
                     <div class="ck-join-form-link">
-                        <h2><?= $fields['title'] ?></h2>
-                        <div class="ck-join-form-link-intro"><?= wpautop($fields['introduction']) ?></div>
-                        <form action="<?= $link ?>" method="get" class="form-group">
+                        <h2><?php echo esc_html($fields['title']) ?></h2>
+                        <div class="ck-join-form-link-intro">
+                            <?php echo wp_kses_post(wpautop($fields['introduction'])) ?>
+                        </div>
+                        <form action="<?php echo esc_url($link) ?>" method="get" class="form-group">
                             <label for="ck-join-flow-email" class="form-label">Your email</label>
                             <div class="ck-join-form-link-input">
                                 <input type="text" id="ck-join-flow-email" name="email" class="form-control" required>
@@ -226,9 +240,9 @@ class Blocks
             <?php else : ?>
                 <div class="ck-join-flow">
                     <div class="ck-join-form-link">
-                        <a href="<?= $link ?>">
-                            <h2><?= $fields['title'] ?></h2>
-                            <?= wpautop($fields['introduction']) ?>
+                        <a href="<?php echo esc_url($link) ?>">
+                            <h2><?php echo esc_html($fields['title']) ?></h2>
+                            <?php echo wp_kses_post(wpautop($fields['introduction'])) ?>
                         </a>
                     </div>
                 </div>
@@ -244,7 +258,7 @@ class Blocks
         $joined_page_association = Field::make(
             'association',
             'joined_page',
-            __('Page to redirect to after joining')
+            __('Page to redirect to after joining', 'ck-join-block')
         )->set_required(true);
         $joined_page_association->set_types(array(
             array(
@@ -258,7 +272,7 @@ class Blocks
             ->set_help_text('Leave blank to use the default plans from the settings page.');
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('Minimalist Join Form'))
+        $join_form_block = Block::make(__('Minimalist Join Form', 'ck-join-block'))
             ->add_fields(array(
                 Field::make('separator', 'ck_join_form', 'Minimalist Join Form'),
                 $joined_page_association,
@@ -378,7 +392,7 @@ class Blocks
         ];
         ?>
         <script type="application/json" id="env">
-            <?php echo json_encode($environment); ?>
+            <?php echo wp_json_encode($environment); ?>
         </script>
         <?php
     }
@@ -388,12 +402,12 @@ class Blocks
         ?>
         <style>
             :root {
-                --ck-join-form-primary-color: <?= Settings::get("THEME_PRIMARY_COLOR") ?>;
-                --ck-join-form-gray-color: <?= Settings::get("THEME_GRAY_COLOR") ?>;
-                --ck-join-form-background-color: <?= Settings::get("THEME_BACKGROUND_COLOR") ?>;
+                --ck-join-form-primary-color: <?php echo esc_attr(Settings::get("THEME_PRIMARY_COLOR")) ?>;
+                --ck-join-form-gray-color: <?php echo esc_attr(Settings::get("THEME_GRAY_COLOR")) ?>;
+                --ck-join-form-background-color: <?php echo esc_attr(Settings::get("THEME_BACKGROUND_COLOR")) ?>;
             }
 
-            <?= Settings::get('custom_css') ?>
+            <?php echo esc_attr(Settings::get('custom_css')) ?>
         </style>
 <?php
     }

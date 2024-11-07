@@ -128,7 +128,7 @@ class GocardlessService
             "interval_unit" => $data['membershipPlan']['frequency'],
             "links" => ["mandate" => $mandate->id]
         ];
-        $joinBlockLog->info("Creating subscription for " . $data['email'] . ", customer {$customer->id}, params: " . json_encode($subscriptionParams));
+        $joinBlockLog->info("Creating subscription for " . $data['email'] . ", customer {$customer->id}, params: " . wp_json_encode($subscriptionParams));
         $subscription = $client->subscriptions()->create([
             "params" => $subscriptionParams
         ]);

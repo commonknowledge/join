@@ -23,6 +23,7 @@ use Monolog\Logger;
 global $joinBlockLog;
 $joinBlockLog = new Logger('join-block-test');
 $joinBlockLogLocation = __DIR__ . '/../logs/tests.log';
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 $joinBlockLogFile = fopen($joinBlockLogLocation, 'a');
 $joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, 10, Logger::INFO));
 
