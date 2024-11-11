@@ -60,6 +60,10 @@ In order to deploy this work, you need to create a WordPress plugin and add it t
 2. Run `sh scripts/package.sh` on linux this can be run as `./scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
 3. Upload them to a WordPress site and activate both.
 
+Note: the deployment script deletes this directory: `vendor/giggsey/libphonenumber-for-php/src/geocoding` because it is too large.
+If someday we want to use the libphonenumber-for-php geocoding feature, we will need to restore the directory, and find
+another way to reduce the size of the plugin zip (max 10MB).
+
 ## Developer quickstart
 
 ### Running the whole system as a WordPress site

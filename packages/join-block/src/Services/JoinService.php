@@ -18,7 +18,10 @@ class JoinService
     // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
     private static function formatDateForChargebee($day, $month, $year)
     {
-        return Carbon::createFromDate($year, $month, $day)->toDateString();
+        # Create date at 12pm UTC to avoid timezone issues changing the printed date
+        $date = new \DateTime('1970-01-01T12:00:00Z');
+        $date->setDate($year, $month, $day);
+        return $date->format('Y-m-d');
     }
 
     public static function handleJoin($data)
@@ -335,6 +338,11 @@ class JoinService
                 "phone" => $data['phoneNumber'],
             ];
 
+            if (!empty($data['dobDay'])) {
+                $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
+                $chargebeeCreditCardPayload["cf_birthdate"] = $formattedDateOfBirth;
+            }
+
             if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
                 $joinBlockLog->info(
                     'Customer has given how did you hear about us details: ' . $data['howDidYouHearAboutUs']
@@ -456,7 +464,6 @@ class JoinService
         global $joinBlockLog;
         $joinBlockLog->info('Creating Direct Debit Chargebee Customer');
 
-        $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
         $directDebitChargebeeCustomer = [
             "firstName" => $data['firstName'],
             "lastName" => $data['lastName'],
@@ -469,8 +476,12 @@ class JoinService
                 "reference_id" => $subscription->id,
             ],
             "billingAddress" => $billingAddress,
-            "cf_birthdate" => $formattedDateOfBirth,
         ];
+
+        if (!empty($data['dobDay'])) {
+            $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
+            $directDebitChargebeeCustomer["cf_birthdate"] = $formattedDateOfBirth;
+        }
 
         if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
             $directDebitChargebeeCustomer['cf_how_did_you_hear_about_us'] = $data['howDidYouHearAboutUs'];

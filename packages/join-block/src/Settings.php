@@ -20,7 +20,7 @@ class Settings
     public static function init()
     {
         /** @var Select_Field $gc_environment_select */
-        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment', 'ck-join-block'));
+        $gc_environment_select = Field::make('select', 'gc_environment', __('GoCardless Environment', 'common-knowledge-join-flow'));
         $gc_environment_select->set_options(array(
             'sandbox' => 'Sandbox',
             'live' => 'Live',

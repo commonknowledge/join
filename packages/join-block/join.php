@@ -5,7 +5,7 @@
  * Description:     Common Knowledge join flow plugin.
  * Version:         1.1.0
  * Author:          Common Knowledge <hello@commonknowledge.coop>
- * Text Domain:     ck-join-block
+ * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
  */
 
@@ -23,9 +23,9 @@ use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Exception\ClientException;
 
 Logging::init();
+global $joinBlockLog;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-
 try {
     $dotenv->load();
 } catch (\Throwable $e) {

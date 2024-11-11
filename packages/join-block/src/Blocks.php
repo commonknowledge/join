@@ -40,7 +40,7 @@ class Blocks
             );
 
             wp_enqueue_script(
-                'ck-join-block-js',
+                'common-knowledge-join-flow-js',
                 "http://localhost:3000/bundle.js",
                 [],
                 time(),
@@ -48,7 +48,7 @@ class Blocks
             );
         } else {
             wp_enqueue_script(
-                'ck-join-block-js',
+                'common-knowledge-join-flow-js',
                 plugins_url($joinFormJavascriptBundleLocation, __DIR__),
                 [],
                 filemtime("$directoryName/$joinFormJavascriptBundleLocation"),
@@ -63,7 +63,7 @@ class Blocks
             $content = $post ? apply_filters('the_content', $post->post_content) : '';
             
             if (!str_contains($content, 'ck-join')) {
-                wp_dequeue_script('ck-join-block-js');
+                wp_dequeue_script('common-knowledge-join-flow-js');
             }
         });
     }
@@ -82,7 +82,7 @@ class Blocks
         $image_field = Field::make('image', 'image');
         $image_field->set_value_type('url');
         /** @var Block_Container $join_header_block */
-        $join_header_block = Block::make(__('CK Join Page Header', 'ck-join-block'))
+        $join_header_block = Block::make(__('CK Join Page Header', 'common-knowledge-join-flow'))
             ->add_fields(array(
                 Field::make('text', 'title')->set_help_text('Use e.g. [first_name:member] to insert [url_query_parameter:default]'),
                 $image_field,
@@ -128,7 +128,7 @@ class Blocks
         $joined_page_association = Field::make(
             'association',
             'joined_page',
-            __('Page to redirect to after joining', 'ck-join-block')
+            __('Page to redirect to after joining', 'common-knowledge-join-flow')
         )->set_required(true);
         $joined_page_association->set_types(array(
             array(
@@ -142,7 +142,7 @@ class Blocks
             ->set_help_text('Leave blank to use the default plans from the settings page.');
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('CK Join Form', 'ck-join-block'))
+        $join_form_block = Block::make(__('CK Join Form', 'common-knowledge-join-flow'))
             ->add_fields(array(
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
@@ -199,7 +199,7 @@ class Blocks
         $join_page_association = Field::make(
             'association',
             'join_page',
-            __('Join Us Page (with CK Join Form block)', 'ck-join-block')
+            __('Join Us Page (with CK Join Form block)', 'common-knowledge-join-flow')
         )->set_required(true);
         $join_page_association->set_types(array(
             array(
@@ -209,7 +209,7 @@ class Blocks
         ))->set_max(1);
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('CK Join Form Link', 'ck-join-block'))
+        $join_form_block = Block::make(__('CK Join Form Link', 'common-knowledge-join-flow'))
             ->add_fields(array(
                 Field::make('text', 'title'),
                 Field::make('rich_text', 'introduction'),
@@ -258,7 +258,7 @@ class Blocks
         $joined_page_association = Field::make(
             'association',
             'joined_page',
-            __('Page to redirect to after joining', 'ck-join-block')
+            __('Page to redirect to after joining', 'common-knowledge-join-flow')
         )->set_required(true);
         $joined_page_association->set_types(array(
             array(
@@ -272,7 +272,7 @@ class Blocks
             ->set_help_text('Leave blank to use the default plans from the settings page.');
 
         /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('Minimalist Join Form', 'ck-join-block'))
+        $join_form_block = Block::make(__('Minimalist Join Form', 'common-knowledge-join-flow'))
             ->add_fields(array(
                 Field::make('separator', 'ck_join_form', 'Minimalist Join Form'),
                 $joined_page_association,
