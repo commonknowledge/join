@@ -30,6 +30,26 @@ Features:
     2. Mailchimp
     3. Action Network
 
+== ChargeBee setup ==
+
+To use ChargeBee, you must configure the payment plan names in the Join Flow settings
+to match the price IDs in the ChargeBee back-end.
+
+Currently, this requires logging in to the ChargeBee dashboard, creating a
+subscription, and setting a price for the desired currency. The price details
+for the selected currency will have an ID. Copy and paste this ID into the
+name of the membership plan in the Join Flow backend.
+
+To support an additional donation in ChargeBee, create two more products:
+- an addon called "Additional Donation", with a price in the desired
+  currency called "additional_donation_monthly".
+- a charge called "Additional Donation", with a price in the desired
+  currency called "additional_donation_single".
+
+== Contact Us ==
+
+Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowledge.coop).
+
 == Changelog ==
 
 = 1.0 =

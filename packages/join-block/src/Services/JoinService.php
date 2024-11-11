@@ -508,7 +508,8 @@ class JoinService
         $planId = sanitize_title($data['membership']);
         $chargebeeSubscriptionPayload["subscription_items"] = [
             [
-                "item_price_id" => $planId
+                "item_price_id" => $planId,
+                "unit_price" => (int)$data['membershipPlan']['amount'] * 100
             ]
         ];
 
