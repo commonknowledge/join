@@ -15,23 +15,14 @@ use ChargeBee\ChargeBee\Environment;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
+use CommonKnowledge\JoinBlock\Logging;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Settings;
-use Monolog\Logger;
-use Monolog\Processor\WebProcessor;
 use GuzzleHttp\Exception\ClientException;
-use Monolog\Handler\RotatingFileHandler;
 
-use Stripe\Stripe;
-use Stripe\Customer;
-use Stripe\Subscription;
-use Stripe\Exception\ApiErrorException;
-
-global $joinBlockLog;
-global $joinBlockLogLocation;
-$joinBlockLog = new Logger('join-block');
+Logging::init();
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 
@@ -42,13 +33,6 @@ try {
     // plugin settings page
     $joinBlockLog->debug("Could not load environment variables from .env file: " . $e->getMessage());
 }
-
-// Ignore sanitization error as this could break provided environment variables
-// If the environment is compromised, there are bigger problems!
-// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-$joinBlockLogLocation = $_ENV['JOIN_BLOCK_LOG_LOCATION'] ?? __DIR__ . '/logs';
-$joinBlockLog->pushHandler(new RotatingFileHandler($joinBlockLogLocation . '/debug.log', 10, Logger::INFO));
-$joinBlockLog->pushProcessor(new WebProcessor());
 
 add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
