@@ -3,11 +3,12 @@
 namespace CommonKnowledge\JoinBlock;
 
 use Carbon_Fields\Container;
+use Carbon_Fields\Datastore\Empty_Datastore;
 use Carbon_Fields\Field;
 use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Html_Field;
 use Carbon_Fields\Field\Select_Field;
-
+use Carbon_Fields\Helper\Helper;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 
 const CONTAINER_ID = 'ck_join_flow';
@@ -28,10 +29,14 @@ class Settings
         /** @var Select_Field $postcode_provider_select */
         $postcode_provider_select = Field::make('select', 'postcode_address_provider');
         $postcode_provider_select->set_options(array(
+            "" => "None",
             self::GET_ADDRESS_IO => 'getAddress.io',
             self::IDEAL_POSTCODES => 'ideal-postcodes.co.uk'
         ));
-        $membership_plans = self::createMembershipPlansField('membership_plans')->set_required(true);
+
+        // set_required(true) is not applied so that this error can be handled by the custom
+        // error handler below, resulting in a more helpful message to the user.
+        $membership_plans = self::createMembershipPlansField('membership_plans');
 
         $feature_fields = [
             Field::make('checkbox', 'collect_date_of_birth'),
@@ -150,13 +155,131 @@ class Settings
         $logging_fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
         $logging_fields[] = $logField;
 
-        Container::make('theme_options', CONTAINER_ID, 'Join')
-            ->add_tab('Membership Plans', $membership_plans_fields)
+        CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')
             ->add_tab('Features', $feature_fields)
+            ->add_tab('Membership Plans', $membership_plans_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)
             ->add_tab('Logging', $logging_fields);
+
+        add_filter('carbon_fields_container_is_valid_save', function ($valid, $container) {
+            if (!$valid) {
+                return false;
+            }
+
+            if (!($container instanceof CK_Theme_Options_Container)) {
+                return;
+            }
+
+            $errors = [];
+
+            $input = Helper::input();
+
+            // Update field values from input before cross-validation
+            foreach ($container->get_fields() as $field) {
+                $field->set_value_from_input($input);
+            }
+
+            //
+            $required_credentials = [
+                "create_auth0_account" => [
+                    "label" => "Auth0",
+                    "credentials_fields" => [
+                        "auth0_client_id",
+                        "auth0_client_secret",
+                        "auth0_management_audience"
+                    ]
+                ],
+                "use_gocardless" => [
+                    "label" => "GoCardless",
+                    "credentials_fields" => [
+                        "gc_access_token"
+                    ]
+                ],
+                "use_stripe" => [
+                    "label" => "Stripe",
+                    "credentials_fields" => [
+                        "stripe_publishable_key",
+                        "stripe_secret_key"
+                    ]
+                ],
+                "use_chargebee" => [
+                    "label" => "ChargeBee",
+                    "credentials_fields" => [
+                        "chargebee_site_name",
+                        "chargebee_api_key",
+                        "chargebee_api_publishable_key"
+                    ]
+                ],
+                "use_action_network" => [
+                    "label" => "Action Network",
+                    "credentials_fields" => [
+                        "action_network_api_key"
+                    ]
+                ],
+                "use_mailchimp" => [
+                    "label" => "MailChimp",
+                    "credentials_fields" => [
+                        "mailchimp_audience_id",
+                        "mailchimp_api_key"
+                    ]
+                ]
+            ];
+
+            // Cross-validate fields
+            foreach ($container->get_fields() as $field) {
+                $base_name = $field->get_base_name();
+                $value = $field->get_value();
+
+                if ($field->get_base_name() === "membership_plans") {
+                    if (!$value) {
+                        $errors[] = "You must add at least one membership plan.";
+                    }
+                }
+
+                if (array_key_exists($base_name, $required_credentials) && $value === "yes") {
+                    $validation_config = $required_credentials[$base_name];
+                    $credentials_field_names = $validation_config["credentials_fields"];
+                    foreach ($credentials_field_names as $credentials_field_name) {
+                        $credentials_field = $container->get_field_by_name($credentials_field_name);
+                        if (!$credentials_field->get_value()) {
+                            $errors[] = $validation_config["label"] . " credentials are missing (see Integrations tab).";
+                            break;
+                        }
+                    }
+                }
+
+                if ($base_name === "use_gocardless_api" && $value === "yes") {
+                    $use_gocardless_field = $container->get_field_by_name("use_gocardless");
+                    if ($use_gocardless_field->get_value() !== "yes") {
+                        $errors[] = "Must select Use GoCardless to use GoCardless Custom Pages.";
+                    }
+                }
+
+                if ($base_name === "postcode_address_provider") {
+                    if ($value === self::GET_ADDRESS_IO) {
+                        $get_address_io_field = $container->get_field_by_name(self::GET_ADDRESS_IO . '_api_key');
+                        if (!$get_address_io_field->get_value()) {
+                            $errors[] = "Missing getAddress.io API key.";
+                        }
+                    }
+                    if ($value === self::IDEAL_POSTCODES) {
+                        $ideal_postcodes_field = $container->get_field_by_name(self::IDEAL_POSTCODES . '_api_key');
+                        if (!$ideal_postcodes_field->get_value()) {
+                            $errors[] = "Missing Ideal Postcodes key.";
+                        }
+                    }
+                }
+            }
+
+            if (!$errors) {
+                return true;
+            }
+
+            $container->add_errors($errors);
+            return false;
+        }, 10, 2);
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
         // for an explanation. Also saves the membership plan amounts.
@@ -169,9 +292,9 @@ class Settings
             }
         }, 10, 2);
 
-        add_action('ck_join_flow_membership_plan_saved', function($membershipPlan) {
+        add_action('ck_join_flow_membership_plan_saved', function ($membershipPlan) {
             global $joinBlockLog;
-            
+
             if (!Settings::get('USE_STRIPE')) {
                 return;
             }
