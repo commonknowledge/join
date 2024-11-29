@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use Carbon\Carbon;
 use ChargeBee\ChargeBee\Exceptions\APIError;
 use ChargeBee\ChargeBee\Exceptions\InvalidRequestException;

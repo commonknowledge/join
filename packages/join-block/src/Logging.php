@@ -2,9 +2,12 @@
 
 namespace CommonKnowledge\JoinBlock;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use Monolog\Logger;
 use Monolog\Processor\WebProcessor;
 use Monolog\Handler\RotatingFileHandler;
+use Monolog\Level;
 
 class Logging
 {
@@ -26,7 +29,7 @@ class Logging
             $logFilenameHash = bin2hex(random_bytes(18));
         }
         $logFilename = "debug-$logFilenameHash.log";
-        $joinBlockLog->pushHandler(new RotatingFileHandler("$logLocation/$logFilename", 10, Logger::INFO));
+        $joinBlockLog->pushHandler(new RotatingFileHandler("$logLocation/$logFilename", 10, Level::Info));
         $joinBlockLog->pushProcessor(new WebProcessor());
     }
 }

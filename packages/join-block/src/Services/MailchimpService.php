@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use MailchimpMarketing\ApiClient;
 use CommonKnowledge\JoinBlock\Settings;
 

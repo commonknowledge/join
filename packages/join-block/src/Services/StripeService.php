@@ -2,8 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-use CommonKnowledge\JoinBlock\Settings;
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
+use CommonKnowledge\JoinBlock\Settings;
 use Stripe\Stripe;
 use Stripe\Customer;
 use Stripe\Subscription;

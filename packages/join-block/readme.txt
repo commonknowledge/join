@@ -3,7 +3,7 @@ Donate link: https://commonknowledge.coop/
 Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
-Tested up to: 6.6
+Tested up to: 6.7
 Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -45,6 +45,56 @@ To support an additional donation in ChargeBee, create two more products:
   currency called "additional_donation_monthly".
 - a charge called "Additional Donation", with a price in the desired
   currency called "additional_donation_single".
+
+== External Services ==
+
+The following is a list of all the external services used by the plugin.
+Each service is marked as optional or required.
+
+- getAddress()
+Domain: [getaddress.io](https://getaddress.io)
+Used for: converting a UK postcode to a full address.
+Data received: the postcode provided by the user.
+
+- Ideal Postcodes
+Domain: [ideal-postcodes.co.uk](https://ideal-postcodes.co.uk/)
+Used for: converting a UK postcode to a full address.
+Data received: the postcode provided by the user.
+
+- postcodes.io
+Domain: [postcodes.io](https://postcodes.io)
+Used for: fetching useful data about a postcode that is then sent to your organisation's membership list.
+Data received: the postcode provided by the user.
+
+- ChargeBee
+Domain: [chargebee.com](https://www.chargebee.com/)
+Used for: managing user payments and subscriptions.
+Data received: user payment information, i.e. credit/debit card details or bank account details.
+
+- Stripe
+Domain: [stripe.com](https://stripe.com/)
+Used for: managing user payments and subscriptions.
+Data received: user payment information, i.e. credit/debit card details or bank account details.
+
+- GoCardless
+Domain: [gocardless.com](https://gocardless.com/)
+Used for: managing user direct debit subscriptions.
+Data received: user bank account details.
+
+- Action Network
+Domain: [actionnetwork.org](https://actionnetwork.org/)
+Used for: storing user membership details.
+Data received: all data provided by the user.
+
+- Mailchimp
+Domain: [mailchimp.com](https://mailchimp.com/)
+Used for: storing user membership details.
+Data received: all data provided by the user.
+
+- Auth0
+Domain: [auth0.com](https://auth0.com/)
+Used for: giving users the ability to modify their data.
+Data received: the user's name, email, password and payment subscription ID.
 
 == Contact Us ==
 

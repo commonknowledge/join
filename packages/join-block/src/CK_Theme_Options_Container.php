@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use Carbon_Fields\Carbon_Fields;
 use Carbon_Fields\Container\Theme_Options_Container;
 use Carbon_Fields\Exception\Incorrect_Syntax_Exception;

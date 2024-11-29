@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use Carbon_Fields\Container;
 use Carbon_Fields\Datastore\Empty_Datastore;
 use Carbon_Fields\Field;

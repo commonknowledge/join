@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use Carbon_Fields\Block;
 use Carbon_Fields\Field;
 use Carbon_Fields\Container\Block_Container;
@@ -24,6 +26,10 @@ class Blocks
     private static function registerScripts()
     {
         global $joinBlockLog;
+
+        if (is_admin()) {
+            return;
+        }
 
         $directoryName = dirname(__FILE__, 2);
 
@@ -109,7 +115,7 @@ class Blocks
                     $title = str_replace($to_replace, $value, $title);
                 }
             }
-            self::echoBlockCss();
+            self::enqueueBlockCss();
 ?>
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
             <div class="ck-join-flow">
@@ -166,7 +172,7 @@ class Blocks
 
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
-            self::echoBlockCss();
+            self::enqueueBlockCss();
             self::echoEnvironment($fields, self::NORMAL_BLOCK_MODE);
             if (Settings::get("USE_CHARGEBEE")) {
                 wp_enqueue_script("chargebee", "https://js.chargebee.com/v2/chargebee.js", [], "v2", ["in_footer" => false]);
@@ -218,7 +224,7 @@ class Blocks
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             $link = get_page_link($fields['join_page'][0]['id']);
-            self::echoBlockCss();
+            self::enqueueBlockCss();
         ?>
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
             <?php if ($fields['include_email_input']) : ?>
@@ -397,18 +403,27 @@ class Blocks
         <?php
     }
 
-    private static function echoBlockCss()
+    private static function enqueueBlockCss()
     {
-        ?>
-        <style>
-            :root {
-                --ck-join-form-primary-color: <?php echo esc_attr(Settings::get("THEME_PRIMARY_COLOR")) ?>;
-                --ck-join-form-gray-color: <?php echo esc_attr(Settings::get("THEME_GRAY_COLOR")) ?>;
-                --ck-join-form-background-color: <?php echo esc_attr(Settings::get("THEME_BACKGROUND_COLOR")) ?>;
-            }
+        // Dynamic inline CSS cannot have a fixed version
+        wp_register_style("common-knowledge-join-flow-block-css", false, [], time());
+        wp_enqueue_style("common-knowledge-join-flow-block-css");
 
-            <?php echo esc_attr(Settings::get('custom_css')) ?>
-        </style>
-<?php
+        $inline_style = ":root {\n";
+        $primary_color = Settings::get("THEME_PRIMARY_COLOR");
+        $gray_color = Settings::get("THEME_GRAY_COLOR");
+        $background_color = Settings::get("THEME_BACKGROUND_COLOR");
+        if ($primary_color) {
+            $inline_style .= "    --ck-join-form-primary-color: $primary_color;\n";
+        }
+        if ($gray_color) {
+            $inline_style .= "    --ck-join-form-gray-color: $gray_color;\n";
+        }
+        if ($background_color) {
+            $inline_style .= "    --ck-join-form-background-color: $background_color;\n";
+        }
+        $inline_style .= "}\n " . Settings::get('custom_css');
+
+        wp_add_inline_style("common-knowledge-join-flow-block-css", $inline_style);
     }
 }

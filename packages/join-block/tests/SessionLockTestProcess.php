@@ -10,6 +10,7 @@ require_once(__DIR__ . "/../wordpress/wp-includes/functions.php");
 
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 
 /**
@@ -25,7 +26,7 @@ $joinBlockLog = new Logger('join-block-test');
 $joinBlockLogLocation = __DIR__ . '/../logs/tests.log';
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 $joinBlockLogFile = fopen($joinBlockLogLocation, 'a');
-$joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, 10, Logger::INFO));
+$joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, Level::Info));
 
 $sessionId = $argv[1];
 

@@ -2,6 +2,8 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
 

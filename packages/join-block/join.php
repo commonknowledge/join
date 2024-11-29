@@ -9,6 +9,8 @@
  * License: GPLv2 or later
  */
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
 use ChargeBee\ChargeBee\Environment;
@@ -51,7 +53,7 @@ if ($teamsWebhook) {
     $joinBlockLog->pushHandler(
         new \CMDISP\MonologMicrosoftTeams\TeamsLogHandler(
             $teamsWebhook,
-            \Monolog\Logger::ERROR
+            \Monolog\Level::Error
         )
     );
 }
