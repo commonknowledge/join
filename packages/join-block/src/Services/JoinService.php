@@ -130,6 +130,10 @@ class JoinService
 
         $joinBlockLog->info('Beginning join process: ' . wp_json_encode($data));
 
+        if (!empty($data["isUpdateFlow"])) {
+            do_action("ck_join_flow_update_flow_ensure_customer_exists", $data['email']);
+        }
+
         $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
         if (!empty($data['phoneNumber'] && !empty($data['addressCountry']))) {
