@@ -289,6 +289,46 @@ class JoinService
         }
     }
 
+    public static function ensureGoCardlessSubscriptionsCreated() {
+        global $wpdb;
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Running ensureSubscriptionsCreated");
+
+        $sql = "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE 'JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_%'";
+        $results = $wpdb->get_results($sql);
+        foreach ($results as $result) {
+            $joinBlockLog->info("ensureSubscriptionsCreated: processing {$result->option_name}: {$result->option_value}");
+            try {
+                $data = json_decode($result->option_value, true);
+                $createdAt = $data['createdAt'] ?? 0;
+
+                $customer = GocardlessService::getCustomerIdByCompletedBillingRequest($data['gcBillingRequestId']);
+                if (!$customer) {
+                    $joinBlockLog->error("ensureSubscriptionsCreated: could not process {$result->option_name}: user did not set up mandate.");
+                    // Try for one day
+                    $day = 24 * 60 * 60;
+
+                    $joinBlockLog->info("ensureSubscriptionsCreated: checking if should delete {$result->option_name}, created at {$createdAt}");
+
+                    if ((time() - $createdAt) > $day) {
+                        $joinBlockLog->info("ensureSubscriptionsCreated: deleting unprocessable {$result->option_name}");
+                        delete_option($result->option_name);
+                    } else {
+                        $joinBlockLog->info("ensureSubscriptionsCreated: will retry {$result->option_name}");
+                    }
+                    continue;
+                }
+
+                JoinService::handleJoin($data);
+                delete_option($result->option_name);
+                $joinBlockLog->info("ensureSubscriptionsCreated: success, deleting option {$result->option_name}");
+            } catch (\Exception $e) {
+                $joinBlockLog->error("ensureSubscriptionsCreated: could not process {$result->option_value}: {$e->getMessage()}");
+            }
+        }
+    }
+
     private static function handleChargebee($data, $billingAddress)
     {
         global $joinBlockLog;
