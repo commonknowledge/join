@@ -246,7 +246,7 @@ const getInitialState = (): FormSchema => {
   const paymentMethods = getPaymentMethods();
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
-    paymentMethod: paymentMethods.length ? paymentMethods[0] : null,
+    paymentMethod: paymentMethods.length ? paymentMethods[0] : "creditCard",
     // Default contact flags to true if not collecting consent, otherwise false
     contactByEmail: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
     contactByPhone: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),

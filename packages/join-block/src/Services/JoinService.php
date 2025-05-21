@@ -222,7 +222,7 @@ class JoinService
                 Auth0Service::createAuth0User($data, $subscriptionPlanId, $customer->id);
             } catch (\Exception $exception) {
                 $joinBlockLog->error('Auth0 user creation failed', ['exception' => $exception]);
-                throw $exception;
+                throw new JoinBlockException('Auth0 user creation failed', 7);
             }
         }
 
@@ -246,6 +246,18 @@ class JoinService
                 $joinBlockLog->info("Completed Action Network signup request for $email");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
+                throw $exception;
+            }
+        }
+
+        if (Settings::get("USE_ZETKIN")) {
+            $email = $data['email'];
+            $joinBlockLog->info("Processing Zetkin signup request for $email");
+            try {
+                ZetkinService::signup($data);
+                $joinBlockLog->info("Completed Zetkin signup request for $email");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
                 throw $exception;
             }
         }

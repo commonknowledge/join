@@ -328,7 +328,11 @@ class Blocks
             $homeUrl = home_url();
         }
 
-        $successRedirect = get_page_link($fields['joined_page'][0]['id']);
+        if (!empty($fields['joined_page'][0]['id'])) {
+            $successRedirect = get_page_link($fields['joined_page'][0]['id']);
+        } else {
+            $successRedirect = $homeUrl;
+        }
 
         $membership_plans = $fields['custom_membership_plans'] ?? [];
         if (!$membership_plans) {

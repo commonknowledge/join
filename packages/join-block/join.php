@@ -77,26 +77,28 @@ add_action('rest_api_init', function () {
                     'Join process failed as subscription already exists',
                     ['error' => $error]
                 );
-            } catch (ClientException $error) {
-                $joinBlockLog->error(
-                    'Join process failed at Auth0 user creation, but customer created in Chargebee.',
-                    ['error' => $error]
-                );
             } catch (\CommonKnowledge\JoinBlock\Exceptions\JoinBlockException $exception) {
-                $joinBlockLog->error(
-                    'Join process failed',
-                    ['error' => $exception, 'fields' => $exception->getFields()]
-                );
-                return new WP_Error(
-                    'join_failed',
-                    'Join process failed',
-                    [
-                        'status' => 500,
-                        'error_code' => $exception->getCode(),
-                        'error_message' => $exception->getMessage(),
-                        'fields' => $exception->getFields()
-                    ]
-                );
+                if ($exception->getCode() === 7) {
+                    $joinBlockLog->error(
+                        'Join process failed at Auth0 user creation, but customer created in Chargebee.',
+                        ['error' => $exception]
+                    );
+                } else {
+                    $joinBlockLog->error(
+                        'Join process failed',
+                        ['error' => $exception, 'fields' => $exception->getFields()]
+                    );
+                    return new WP_Error(
+                        'join_failed',
+                        'Join process failed',
+                        [
+                            'status' => 500,
+                            'error_code' => $exception->getCode(),
+                            'error_message' => $exception->getMessage(),
+                            'fields' => $exception->getFields()
+                        ]
+                    );
+                }
             } catch (\Exception $error) {
                 $joinBlockLog->error('Join process failed', ['error' => $error]);
                 return new WP_Error(
