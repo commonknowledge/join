@@ -28,6 +28,12 @@ class Settings
             'sandbox' => 'Sandbox',
             'live' => 'Live',
         ));
+        /** @var Select_Field $zetkin_environment_select */
+        $zetkin_environment_select = Field::make('select', 'zetkin_environment', __('Zetkin Environment', 'common-knowledge-join-flow'));
+        $zetkin_environment_select->set_options(array(
+            'sandbox' => 'Sandbox',
+            'live' => 'Live',
+        ));
         /** @var Select_Field $postcode_provider_select */
         $postcode_provider_select = Field::make('select', 'postcode_address_provider');
         $postcode_provider_select->set_options(array(
@@ -46,6 +52,7 @@ class Settings
             Field::make('checkbox', 'collect_phone_and_email_contact_consent')
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
             Field::make('checkbox', 'create_auth0_account'),
+            Field::make('checkbox', 'use_zetkin', 'Use Zetkin'),
             Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
             Field::make('checkbox', 'use_gocardless_api', 'Use GoCardless Custom Pages')
                 ->set_help_text('Requires a GoCardless Pro account with the custom pages addon'),
@@ -93,6 +100,13 @@ class Settings
         ];
 
         $integration_fields = [
+            Field::make('separator', 'zetkin', 'Zetkin'),
+            Field::make('text', 'zetkin_organisation_id', 'Zetkin Organisation ID')->set_attribute('type', 'number'),
+            Field::make('text', 'zetkin_join_form_id', 'Zetkin Join Form ID'),
+            Field::make('text', 'zetkin_join_form_submit_token', 'Zetkin Join Form Submission Token'),
+            Field::make('text', 'zetkin_membership_custom_field', 'Zetkin Membership Tier Custom Field'),
+            $zetkin_environment_select,
+
             Field::make('separator', 'chargebee', 'Chargebee'),
             Field::make('text', 'chargebee_site_name'),
             Field::make('text', 'chargebee_api_key'),
@@ -191,6 +205,14 @@ class Settings
                         "auth0_client_id",
                         "auth0_client_secret",
                         "auth0_management_audience"
+                    ]
+                ],
+                "use_zetkin" => [
+                    "label" => "Zetkin",
+                    "credentials_fields" => [
+                        "zetkin_organisation_id",
+                        "zetkin_join_form_id",
+                        "zetkin_join_form_submit_token",
                     ]
                 ],
                 "use_gocardless" => [
