@@ -230,9 +230,9 @@ add_action('rest_api_init', function () {
     ));
 
     // Get the link to the GoCardless sign up flow, and redirect the user to it.
-    // Also set the Billing Request ID as a cookie, as it is used later to get
-    // the new Customer ID when the user is redirected back to the Join Form
-    // (see $_COOKIE["GC_BILLING_REQUEST_ID"] in Blocks.php)
+    // Also return the Billing Request ID, as it is saved in the session data
+    // and used later to get the new Customer ID when the user is redirected
+    // back to the Join Form
     register_rest_route('join/v1', '/gocardless/auth', array(
         'methods' => 'POST',
         'permission_callback' => function ($req) {
@@ -333,6 +333,18 @@ add_action('rest_api_init', function () {
 
             $joinBlockLog->info("Completed Mailchimp signup request for $email");
             return new WP_REST_Response(['status' => 'ok'], 200);
+        }
+    ));
+
+    register_rest_route('join/v1', '/gocardless/webhook', array(
+        'methods' => ['GET', 'POST'],
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+            $joinBlockLog->info("Received GoCardless webhook: " . $request->get_body());
+            JoinService::ensureGoCardlessSubscriptionsCreated();
         }
     ));
 });
