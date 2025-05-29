@@ -3,8 +3,8 @@ Donate link: https://commonknowledge.coop/
 Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
-Tested up to: 6.7
-Stable tag: 1.1.0
+Tested up to: 6.8
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -96,11 +96,23 @@ Domain: [auth0.com](https://auth0.com/)
 Used for: giving users the ability to modify their data.
 Data received: the user's name, email, password and payment subscription ID.
 
+- Zetkin
+Domain: [zetkin.org](https://zetkin.org/)
+Used for: storing user membership details.
+Data received: all data provided by the user.
+
 == Contact Us ==
 
 Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowledge.coop).
 
 == Changelog ==
+
+= 1.2 =
+* Added Zetkin join form integration.
+
+= 1.1 =
+* Added GoCardless webhook endpoint to handle users who did not allow the redirect back
+  to the WordPress site to complete.
 
 = 1.0 =
 * First release

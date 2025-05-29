@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use Carbon\Carbon;
 use ChargeBee\ChargeBee\Exceptions\APIError;
@@ -282,7 +282,7 @@ class JoinService
         global $joinBlockLog;
 
         $excludedFields = ["ddAccountNumber", "ddSortCode", "paymentToken"];
-    
+
         foreach ($excludedFields as $excludedField) {
             unset($data[$excludedField]);
         }
@@ -305,14 +305,19 @@ class JoinService
         }
     }
 
-    public static function ensureGoCardlessSubscriptionsCreated() {
+    public static function ensureGoCardlessSubscriptionsCreated()
+    {
         global $wpdb;
         global $joinBlockLog;
 
         $joinBlockLog->info("Running ensureSubscriptionsCreated");
 
-        $sql = "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE 'JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_%'";
-        $results = $wpdb->get_results($sql);
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE %s",
+                'JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_%'
+            )
+        );
         foreach ($results as $result) {
             $joinBlockLog->info("ensureSubscriptionsCreated: processing {$result->option_name}: {$result->option_value}");
             try {
