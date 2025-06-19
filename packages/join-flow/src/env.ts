@@ -6,6 +6,7 @@ interface StaticEnv {
     COLLECT_DATE_OF_BIRTH: boolean;
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: boolean;
     CREATE_AUTH0_ACCOUNT: boolean;
+    CUSTOM_FIELDS: object[];
     HIDE_HOME_ADDRESS_COPY: boolean;
     HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
@@ -48,6 +49,7 @@ const staticEnv: StaticEnv = {
     COLLECT_DATE_OF_BIRTH: parseBooleanEnvVar("REACT_APP_COLLECT_DATE_OF_BIRTH"),
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: parseBooleanEnvVar("REACT_APP_COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
     CREATE_AUTH0_ACCOUNT: parseBooleanEnvVar("REACT_APP_CREATE_AUTH0_ACCOUNT"),
+    CUSTOM_FIELDS: JSON.parse(process.env.REACT_APP_CUSTOM_FIELDS || '[]') as object[],
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],

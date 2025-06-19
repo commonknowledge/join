@@ -45,7 +45,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   useEffect(() => {
     // Check if all we haven't touched the postcode at all or manually entered something, then give an error.
     if (form.errors && Object.keys(form.errors).length > 0) {
-      setAddressManuallyOpen(true)
+      setAddressManuallyOpen(true);
     }
     if (
       Object.keys(form.errors).filter((error) => error.includes("address"))
@@ -68,6 +68,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     await recordStep({ ...data, stage: "enter-details" });
     await redirectToSuccess(data);
   };
+
+  const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
 
   return (
     <form
@@ -246,6 +248,30 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           </div>
         </Collapse>
       </section>
+
+      {customFields.length ? (
+        <section className="form-section">
+          <h2>Custom fields</h2>
+          {customFields.map((field) =>
+            field.field_type === "checkbox" ? (
+              <FormItem name={field.id} form={form}>
+                <Form.Check label={field.label} />
+              </FormItem>
+            ) : (
+              <FormItem
+                label={field.label}
+                name={field.id}
+                form={form}
+              >
+                <Form.Control
+                  autoComplete={field.id}
+                  type={field.field_type}
+                />
+              </FormItem>
+            )
+          )}
+        </section>
+      ) : null}
 
       <section className="form-section">
         <h2>Contact details</h2>

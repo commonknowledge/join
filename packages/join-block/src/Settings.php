@@ -70,6 +70,11 @@ class Settings
             $membership_plans,
         ];
 
+        $custom_fields = [
+            Field::make('separator', 'custom_fields_sep', 'Custom Fields (Action Network only)'),
+            self::createCustomFieldsField()
+        ];
+
         $theme_fields = [
             Field::make('color', 'theme_primary_color', 'Primary Color')
                 ->set_default_value('#007bff')
@@ -174,6 +179,7 @@ class Settings
         CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')
             ->add_tab('Features', $feature_fields)
             ->add_tab('Membership Plans', $membership_plans_fields)
+            ->add_tab('Custom Fields', $custom_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)
@@ -374,8 +380,29 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
+            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network."),
+            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network.")
         ])->set_min(1);
         return $membership_plans;
+    }
+
+    public static function createCustomFieldsField($name = 'custom_fields')
+    {
+        /** @var Select_Field $field_type */
+        $field_type = Field::make('select', 'field_type');
+        $field_type->set_options(array(
+            'checkbox' => 'Checkbox',
+            'number' => 'Number',
+            'text' => 'Text',
+        ))->set_default_value('GBP');
+        /** @var Complex_Field $custom_fields */
+        $custom_fields = Field::make('complex', $name);
+        $custom_fields->add_fields([
+            Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
+            Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
+            $field_type,
+        ]);
+        return $custom_fields;
     }
 
     public static function get($key)

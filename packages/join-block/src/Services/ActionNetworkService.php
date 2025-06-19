@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
@@ -15,6 +15,23 @@ class ActionNetworkService
 
         $joinBlockLog->info("Adding {$data['email']} to Mailchimp");
 
+        $addTags = $data["membershipPlan"]["add_tags"] ?? "";
+        $removeTags = $data["membershipPlan"]["remove_tags"] ?? "";
+
+        $addTags = array_map(function ($tag) {
+            return trim($tag);
+        }, explode(",", $addTags));
+
+        $removeTags = array_map(function ($tag) {
+            return trim($tag);
+        }, explode(",", $removeTags));
+
+        $customFields = Settings::get("CUSTOM_FIELDS");
+        $customFieldValues = [];
+        foreach ($customFields as $customField) {
+            $customFieldValues[$customField["id"]] = $data[$customField["id"]] ?? "";
+        }
+
         if ($data['isUpdateFlow']) {
             $anData = [
                 "person" => [
@@ -22,8 +39,10 @@ class ActionNetworkService
                         "address" => $data["email"],
                         "primary" => true,
                         "status" => $data["contactByEmail"] ? "subscribed" : "unsubscribed"
-                    ]
-                ]
+                    ],
+                ],
+                "add_tags" => $addTags,
+                "remove_tags" => $removeTags,
             ];
         } else {
             $anData = [
@@ -49,8 +68,11 @@ class ActionNetworkService
                         "locality" => $data["addressCity"],
                         "postal_code" => $data["addressPostcode"],
                         "country" => $data["addressCountry"]
-                    ]]
-                ]
+                    ]],
+                    "custom_fields" => $customFieldValues,
+                ],
+                "add_tags" => $addTags,
+                "remove_tags" => $removeTags,
             ];
         }
 
