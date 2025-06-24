@@ -10,9 +10,9 @@
     "stripe/stripe-php": "^16.1",
     "mailchimp/marketing": "^3.0",
     "guzzlehttp/guzzle": "^7.9",
-    "gocardless/gocardless-pro": "^6.0",
-    "monolog/monolog": "3.8.0",
-    "cmdisp/monolog-microsoft-teams": "^2.0"
+    "gocardless/gocardless-pro": "^4.0",
+    "monolog/monolog": "^2.1",
+    "cmdisp/monolog-microsoft-teams": "^1.1"
   },
   "require-dev": {
     "squizlabs/php_codesniffer": "^3.5",
