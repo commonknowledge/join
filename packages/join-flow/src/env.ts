@@ -17,6 +17,7 @@ interface StaticEnv {
     MINIMAL_JOIN_FORM: boolean;
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
+    STRIPE_DIRECT_DEBIT: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
     SUCCESS_REDIRECT: string;
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
@@ -60,6 +61,7 @@ const staticEnv: StaticEnv = {
     ORGANISATION_EMAIL_ADDRESS: process.env.REACT_APP_ORGANISATION_EMAIL_ADDRESS || '',
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
+    STRIPE_DIRECT_DEBIT: parseBooleanEnvVar(process.env.REACT_APP_STRIPE_DIRECT_DEBIT || ''),
     STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),

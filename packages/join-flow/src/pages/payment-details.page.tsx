@@ -267,7 +267,7 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
   const currency = plan.currency.toLowerCase() || "gbp";
   const paymentMethodTypes = ['card']
   // Add direct debit payment method for GBP only, as it is a UK only feature
-  if (currency === 'gbp') {
+  if (currency === 'gbp' && getEnv("STRIPE_DIRECT_DEBIT")) {
     paymentMethodTypes.push('bacs_debit')
   }
   return (

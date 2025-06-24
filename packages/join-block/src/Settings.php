@@ -124,6 +124,7 @@ class Settings
             Field::make('separator', 'stripe', 'Stripe'),
             Field::make('text', 'stripe_publishable_key', 'Stripe publishable key'),
             Field::make('text', 'stripe_secret_key', 'Stripe secret key'),
+            Field::make('checkbox', 'stripe_direct_debit', 'Enable direct debit through Stripe (must be enabled in your Stripe account)'),
 
             Field::make('separator', 'postcodes', 'Postcode Address Providers'),
             $postcode_provider_select,
