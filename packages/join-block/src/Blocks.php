@@ -380,6 +380,8 @@ class Blocks
             "COLLECT_COUNTY" => Settings::get("COLLECT_COUNTY"),
             "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
+            "CONTACT_DETAILS_COPY" => wpautop(Settings::get("CONTACT_DETAILS_COPY")),
+            "CONTACT_DETAILS_HEADING" => Settings::get("CONTACT_DETAILS_HEADING"),
             "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
             "CUSTOM_FIELDS" => Settings::get("CUSTOM_FIELDS"),
             "CUSTOM_FIELDS_HEADING" => Settings::get("CUSTOM_FIELDS_HEADING"),

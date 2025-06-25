@@ -71,6 +71,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
   const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING")
   const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY")
+  const contactDetailsHeading = getEnvStr("CONTACT_DETAILS_HEADING")
+  const contactDetailsCopy = getEnvStr("CONTACT_DETAILS_COPY")
   const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING")
   const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY")
   const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
@@ -273,10 +275,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       ) : null}
 
       <section className="form-section">
-        <h2>Contact details</h2>
-        <p className="text-secondary">
-          We’ll use this to keep in touch about things that matter to you.
-        </p>
+        <h2>{contactDetailsHeading}</h2>
+        <div className="text-secondary" dangerouslySetInnerHTML={{ __html: contactDetailsCopy }}></div>
         <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control autoComplete="email" type="email" />
         </FormItem>
