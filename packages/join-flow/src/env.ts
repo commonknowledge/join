@@ -1,4 +1,6 @@
 interface StaticEnv {
+    ABOUT_YOU_COPY: string;
+    ABOUT_YOU_HEADING: string;
     ASK_FOR_ADDITIONAL_DONATION: boolean;
     CHARGEBEE_API_PUBLISHABLE_KEY: string;
     CHARGEBEE_SITE_NAME: string;
@@ -8,6 +10,8 @@ interface StaticEnv {
     CREATE_AUTH0_ACCOUNT: boolean;
     CUSTOM_FIELDS: object[];
     CUSTOM_FIELDS_HEADING: string;
+    DATE_OF_BIRTH_COPY: string;
+    DATE_OF_BIRTH_HEADING: string;
     HIDE_HOME_ADDRESS_COPY: boolean;
     HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
@@ -44,6 +48,8 @@ const parseBooleanEnvVar = (name: string): boolean => {
 // Dynamic values from the WordPress settings page are available in window.process.env.
 // The get() function below checks the dynamic values first, and falls back to this object.
 const staticEnv: StaticEnv = {
+    ABOUT_YOU_COPY: process.env.REACT_APP_ABOUT_YOU_COPY || '',
+    ABOUT_YOU_HEADING: process.env.REACT_APP_ABOUT_YOU_HEADING || '',
     ASK_FOR_ADDITIONAL_DONATION: parseBooleanEnvVar("REACT_APP_ASK_FOR_ADDITIONAL_DONATION"),
     CHARGEBEE_API_PUBLISHABLE_KEY: process.env.REACT_APP_CHARGEBEE_API_PUBLISHABLE_KEY || '',
     CHARGEBEE_SITE_NAME: process.env.REACT_APP_CHARGEBEE_SITE_NAME || '',
@@ -53,6 +59,8 @@ const staticEnv: StaticEnv = {
     CREATE_AUTH0_ACCOUNT: parseBooleanEnvVar("REACT_APP_CREATE_AUTH0_ACCOUNT"),
     CUSTOM_FIELDS: JSON.parse(process.env.REACT_APP_CUSTOM_FIELDS || '[]') as object[],
     CUSTOM_FIELDS_HEADING: process.env.REACT_APP_CUSTOM_FIELDS_HEADING || '',
+    DATE_OF_BIRTH_COPY: process.env.REACT_APP_DATE_OF_BIRTH_COPY || '',
+    DATE_OF_BIRTH_HEADING: process.env.REACT_APP_DATE_OF_BIRTH_HEADING || '',
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],

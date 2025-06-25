@@ -69,6 +69,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     await redirectToSuccess(data);
   };
 
+  const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING")
+  const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY")
+  const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING")
+  const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY")
   const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
   const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING")
 
@@ -79,10 +83,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       onSubmit={form.handleSubmit(onCompleted)}
     >
       <section className="form-section">
-        <h2>Tell us more about you</h2>
-        <p className="text-secondary">
-          All fields marked with an asterisk (*) are required.
-        </p>
+        <h2>{aboutYouHeading}</h2>
+        <div className="text-secondary" dangerouslySetInnerHTML={{ __html: aboutYouCopy }}></div>
         <FormItem label="First Name" name="firstName" form={form} required>
           <Form.Control autoComplete="given-name" />
         </FormItem>
@@ -95,13 +97,9 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <section className="form-section">
           <fieldset>
             <legend>
-              <h2>Date of birth</h2>
+              <h2>{dateOfBirthHeading}</h2>
             </legend>
-
-            <p className="text-secondary">
-              We collect every member's date of birth because our membership
-              types are based on age.
-            </p>
+            <div className="text-secondary" dangerouslySetInnerHTML={{ __html: dateOfBirthCopy }}></div>
             <Row>
               <Col>
                 <FormItem label="Day" name="dobDay" form={form} required>

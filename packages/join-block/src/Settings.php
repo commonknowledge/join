@@ -95,10 +95,18 @@ class Settings
                 ->set_required(true),
             Field::make('text', 'organisation_email_address')->set_help_text("The support email for members")
                 ->set_required(true),
+            Field::make('text', 'about_you_heading')
+                ->set_default_value("Tell us about you"),
+            Field::make('rich_text', 'about_you_copy')
+                ->set_default_value("All fields marked with an asterisk (*) are required."),
+            Field::make('text', 'date_of_birth_heading')
+                ->set_default_value("Date of birth"),
+            Field::make('rich_text', 'date_of_birth_copy')
+                ->set_default_value("We collect every member's date of birth because our membership types are based on age."),
             Field::make('rich_text', 'password_purpose')
                 ->set_help_text("E.G. Use this password to log in at https://example.com"),
             Field::make('rich_text', 'home_address_copy')
-                ->set_help_text("E.G. We'll use this to connect you with your local group.."),
+                ->set_help_text("E.G. We'll use this to connect you with your local group."),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('rich_text', 'membership_tiers_copy')
