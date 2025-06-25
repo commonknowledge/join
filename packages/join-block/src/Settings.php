@@ -72,6 +72,7 @@ class Settings
 
         $custom_fields = [
             Field::make('separator', 'custom_fields_sep', 'Custom Fields (Action Network only)'),
+            Field::make('text', 'custom_fields_heading', 'Form section heading (leave blank for no heading)')->set_default_value("More about you"),
             self::createCustomFieldsField()
         ];
 

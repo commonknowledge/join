@@ -70,6 +70,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   };
 
   const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
+  const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING")
 
   return (
     <form
@@ -251,7 +252,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       {customFields.length ? (
         <section className="form-section">
-          <h2>Custom fields</h2>
+          {customFieldsHeading ? <h2>{customFieldsHeading}</h2> : null}
           {customFields.map((field) =>
             field.field_type === "checkbox" ? (
               <FormItem name={field.id} form={form}>

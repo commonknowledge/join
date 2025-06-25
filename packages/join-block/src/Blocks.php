@@ -380,6 +380,7 @@ class Blocks
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
             "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
             "CUSTOM_FIELDS" => Settings::get("CUSTOM_FIELDS"),
+            "CUSTOM_FIELDS_HEADING" => Settings::get("CUSTOM_FIELDS_HEADING"),
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
             "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,

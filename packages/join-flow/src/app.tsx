@@ -55,9 +55,11 @@ if (getEnv('IS_UPDATE_FLOW')) {
 // Also require a billing request ID to be present.
 const searchParams = new URLSearchParams(window.location.search)
 const gcRedirect = searchParams.get("gocardless_success") === "true"
+const stripeRedirect = searchParams.get("stripe_success") === "true"
 const savedSession = JSON.parse(sessionStorage.getItem(SAVED_STATE_KEY) || "{}")
 const gcBillingRequestId = savedSession['gcBillingRequestId']
-let shouldRedirectToConfirm = gcRedirect && gcBillingRequestId
+const stripePaymentIntentId = savedSession['stripePaymentIntentId']
+let shouldRedirectToConfirm = (gcRedirect && gcBillingRequestId) || (stripeRedirect && stripePaymentIntentId)
 
 // @ts-ignore
 const stripePromise = loadStripe(getEnv('STRIPE_PUBLISHABLE_KEY'));

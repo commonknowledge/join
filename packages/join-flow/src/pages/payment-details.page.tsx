@@ -23,6 +23,8 @@ import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
 import { get as getEnv } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
+import { usePostResource } from "../services/rest-resource.service";
+import { SAVED_STATE_KEY } from "../services/router.service";
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -253,7 +255,7 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
   );
 };
 
-const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100
+const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100;
 
 const StripePaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
@@ -263,12 +265,14 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
   const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
     (plan) => plan.value === data.membership
   );
-  const amount = plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100;
+  const amount = plan.amount
+    ? convertCurrencyFromMajorToMinorUnits(plan.amount)
+    : 100;
   const currency = plan.currency.toLowerCase() || "gbp";
-  const paymentMethodTypes = ['card']
+  const paymentMethodTypes = ["card"];
   // Add direct debit payment method for GBP only, as it is a UK only feature
-  if (currency === 'gbp' && getEnv("STRIPE_DIRECT_DEBIT")) {
-    paymentMethodTypes.push('bacs_debit')
+  if (currency === "gbp" && getEnv("STRIPE_DIRECT_DEBIT")) {
+    paymentMethodTypes.push("bacs_debit");
   }
   return (
     <Elements
@@ -281,18 +285,26 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
         paymentMethodTypes
       }}
     >
-      <StripeForm onCompleted={onCompleted} />
+      <StripeForm onCompleted={onCompleted} data={data} />
     </Elements>
   );
 };
 
 const StripeForm = ({
-  onCompleted
+  onCompleted,
+  data
 }: {
   onCompleted: (data: FormSchema) => void;
+  data: FormSchema;
 }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const createSubscription = usePostResource<
+    FormSchema,
+    {
+      latest_invoice: { payment_intent: { id: string; client_secret: string } };
+    }
+  >("/stripe/create-subscription");
 
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -311,31 +323,47 @@ const StripeForm = ({
 
     setLoading(true);
 
-    const { error: submitError } = await elements.submit();
+    elements.submit();
 
-    if (submitError) {
-      handleError(submitError);
-      return;
+    try {
+      const subscription = await createSubscription(data);
+      const clientSecret =
+        subscription.latest_invoice.payment_intent.client_secret;
+
+      sessionStorage.setItem(
+        SAVED_STATE_KEY,
+        JSON.stringify({
+          ...data,
+          stripePaymentIntentId: subscription.latest_invoice.payment_intent.id
+        })
+      );
+
+      const returnUrl = new URL(window.location.href)
+      returnUrl.searchParams.set("stripe_success", "true");
+
+      const { error } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: returnUrl.toString()
+        }
+      });
+
+      if (error) {
+        handleError(error);
+        return;
+      }
+    } catch (e) {
+      console.error("Create subscription error", e);
+      handleError({ message: "Unknown error" });
     }
-
-    const { error, confirmationToken } = await stripe.createConfirmationToken({
-      elements
-    });
-
-    // Display error if the confirmation token cannot be obtained
-    if (error) {
-      handleError(error);
-      return;
-    }
-
-    onCompleted({ paymentToken: confirmationToken.id });
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <div>
         <PaymentElement />
-        <ContinueButton disabled={loading} />
+        <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
         {errorMessage && <div>{errorMessage}</div>}
       </div>
     </form>

@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.3
+ * Version:         1.2.5
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -259,6 +259,41 @@ add_action('rest_api_init', function () {
             update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", wp_json_encode($data));
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
+        }
+    ));
+
+    register_rest_route('join/v1', '/stripe/create-subscription', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $data = json_decode($request->get_body(), true);
+
+            $selectedPlanLabel = $data['membership'];
+
+            $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
+
+            $plan = Settings::getMembershipPlan($selectedPlanLabel);
+
+            if (!$plan) {
+                throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
+            } else {
+                $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
+            }
+
+            $joinBlockLog->info('Processing Stripe subscription creation request');
+
+            $email = $data['email'];
+
+            StripeService::initialise();
+            [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+
+            $subscription = StripeService::createSubscription($customer, $plan);
+
+            return $subscription;
         }
     ));
 
