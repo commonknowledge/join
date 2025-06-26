@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.8
+ * Version:         1.2.10
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -380,6 +380,20 @@ add_action('rest_api_init', function () {
             global $joinBlockLog;
             $joinBlockLog->info("Received GoCardless webhook: " . $request->get_body());
             JoinService::ensureGoCardlessSubscriptionsCreated();
+        }
+    ));
+
+    register_rest_route('join/v1', '/stripe/webhook', array(
+        'methods' => ['GET', 'POST'],
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+            $joinBlockLog->info("Received Stripe webhook: " . $request->get_body());
+            $event = json_decode($request->get_body(), true);
+            StripeService::initialise();
+            StripeService::handleWebhook($event);
         }
     ));
 });

@@ -224,6 +224,10 @@ const CustomGoCardlessSchema = object({
   gcBillingRequestId: string()
 })
 
+const StripeSchema = object({
+  stripePaymentIntentId: string()
+})
+
 export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(Prerequesites)
   .concat(DetailsSchema)
@@ -232,6 +236,7 @@ export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(PaymentMethodSchema)
   .concat(PaymentDetailsSchema)
   .concat(CustomGoCardlessSchema)
+  .concat(StripeSchema)
   .required();
 
 export type FormSchema = Partial<
@@ -245,7 +250,8 @@ export type FormSchema = Partial<
     | InferType<typeof PaymentMethodCardSchema>
   ) &
   InferType<typeof PaymentDetailsSchema> &
-  InferType<typeof CustomGoCardlessSchema>
+  InferType<typeof CustomGoCardlessSchema> &
+  InferType<typeof StripeSchema>
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {

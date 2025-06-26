@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use CommonKnowledge\JoinBlock\Settings;
 use Stripe\Stripe;
@@ -52,7 +52,8 @@ class StripeService
                     'price' => $plan['stripe_price_id'],
                 ],
             ],
-            'payment_behavior'=> 'default_incomplete',
+            'payment_behavior' => 'default_incomplete',
+            'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
             'expand' => ['latest_invoice.payment_intent'],
         ]);
@@ -65,7 +66,7 @@ class StripeService
         global $joinBlockLog;
 
         $joinBlockLog->info('Confirming payment intent for subscription', $subscription->toArray());
-        
+
         if (!$subscription->latest_invoice || !$subscription->latest_invoice->payment_intent) {
             $joinBlockLog->info('No payment intent found for this subscription. It might be a free trial or zero-amount invoice');
             return null;
@@ -222,6 +223,45 @@ class StripeService
         } catch (ApiErrorException $e) {
             $joinBlockLog->error("Error creating/retrieving price: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    public static function handleWebhook($event)
+    {
+        global $joinBlockLog;
+
+        $customerId = null;
+        try {
+            if ($event['type'] !== 'mandate.updated') {
+                return;
+            }
+            $mandate = $event['data']['object'] ?? null;
+            $paymentType = $mandate['payment_method_details']['type'] ?? null;
+
+            if (!$mandate || $mandate['status'] !== 'active' || $paymentType !== 'bacs_debit') {
+                return;
+            }
+
+            $paymentMethodId = $mandate['payment_method'];
+            $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+            $customerId = $paymentMethod->customer;
+
+            // Lookup latest draft invoice and finalize
+            $invoices = \Stripe\Invoice::all([
+                'customer' => $customerId,
+                'status' => 'draft',
+                'limit' => 1
+            ]);
+
+            $joinBlockLog->info("Finalizing direct debit subscription for Stripe customer $customerId");
+
+            if (count($invoices->data) > 0) {
+                $invoice = $invoices->data[0];
+                $invoice->finalizeInvoice();
+            }
+        } catch (\Exception $e) {
+            $c = $customerId ? $customerId : "(unknown)";
+            $joinBlockLog->error("Error finalizing direct debit subscription for customer $c: " . $e->getMessage());
         }
     }
 }
