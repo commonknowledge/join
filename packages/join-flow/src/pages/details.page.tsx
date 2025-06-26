@@ -72,6 +72,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING")
   const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY")
   const contactDetailsHeading = getEnvStr("CONTACT_DETAILS_HEADING")
+  const contactConsentCopy = getEnvStr("CONTACT_CONSENT_COPY")
   const contactDetailsCopy = getEnvStr("CONTACT_DETAILS_COPY")
   const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING")
   const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY")
@@ -285,9 +286,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </FormItem>
         {getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ? (
           <>
-            <p className="text-secondary">
-              How would you like us to contact you?
-            </p>
+            <div className="text-secondary" dangerouslySetInnerHTML={{ __html: contactConsentCopy }}></div>
             <FormItem form={form} name="contactByEmail">
               <Form.Check label="Email" />
             </FormItem>

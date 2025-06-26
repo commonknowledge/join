@@ -111,6 +111,8 @@ class Settings
                 ->set_default_value("Contact details"),
             Field::make('rich_text', 'contact_details_copy')
                 ->set_default_value("We’ll use this to keep in touch about things that matter to you."),
+            Field::make('rich_text', 'contact_consent_copy')
+                ->set_default_value("How would you like us to contact you?"),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('rich_text', 'membership_tiers_copy')
