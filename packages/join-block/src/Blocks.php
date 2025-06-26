@@ -147,6 +147,8 @@ class Blocks
         $custom_membership_plans = Settings::createMembershipPlansField('custom_membership_plans')
             ->set_help_text('Leave blank to use the default plans from the settings page.');
 
+        $custom_fields = self::createCustomFieldsField();
+
         /** @var Block_Container $join_form_block */
         $join_form_block = Block::make(__('CK Join Form', 'common-knowledge-join-flow'))
             ->add_fields(array(
@@ -166,6 +168,7 @@ class Blocks
                             'be linked to with the email URL search parameter set, e.g. /become-paid-member/?email=someone@example.com. ' .
                             'This can be achieved by using the CK Join Form Link block on a landing page, and linking to this page.'
                     ),
+                $custom_fields,
                 $custom_membership_plans,
                 Field::make('text', 'custom_webhook_url')
                     ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
@@ -197,6 +200,26 @@ class Blocks
                 Settings::saveMembershipPlans($custom_membership_plans);
             }
         }, 10, 2);
+    }
+
+    private static function createCustomFieldsField()
+    {
+        /** @var Select_Field $field_type */
+        $field_type = Field::make('select', 'field_type');
+        $field_type->set_options(array(
+            'text' => 'Text',
+            'checkbox' => 'Checkbox',
+            'number' => 'Number',
+        ))->set_default_value('text');
+        /** @var Complex_Field $custom_fields */
+        $custom_fields = Field::make('complex', 'custom_fields');
+        $custom_fields->add_fields([
+            Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
+            Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
+            $field_type,
+            Field::make('rich_text', 'instructions')->set_help_text("Text to display below the field."),
+        ]);
+        return $custom_fields;
     }
 
     private static function registerJoinLinkBlock()
@@ -383,6 +406,11 @@ class Blocks
             )
         );
 
+        $custom_fields = array_map(function ($field) {
+            $field['instructions'] = wpautop($field['instructions'] ?? '');
+            return $field;
+        }, $fields['custom_fields'] ?? []);
+
         $environment = [
             'HOME_URL' => $homeUrl,
             "WP_REST_API" => get_rest_url(),
@@ -399,7 +427,7 @@ class Blocks
             "CONTACT_DETAILS_COPY" => wpautop(Settings::get("CONTACT_DETAILS_COPY")),
             "CONTACT_DETAILS_HEADING" => Settings::get("CONTACT_DETAILS_HEADING"),
             "CREATE_AUTH0_ACCOUNT" => Settings::get("CREATE_AUTH0_ACCOUNT"),
-            "CUSTOM_FIELDS" => Settings::get("CUSTOM_FIELDS"),
+            "CUSTOM_FIELDS" => $custom_fields ?? [],
             "CUSTOM_FIELDS_HEADING" => Settings::get("CUSTOM_FIELDS_HEADING"),
             'DATE_OF_BIRTH_COPY' => wpautop(Settings::get("DATE_OF_BIRTH_COPY")),
             'DATE_OF_BIRTH_HEADING' => Settings::get("DATE_OF_BIRTH_HEADING"),
@@ -407,6 +435,7 @@ class Blocks
             "HEAR_ABOUT_US_HEADING" => Settings::get("HEAR_ABOUT_US_HEADING"),
             "HEAR_ABOUT_US_OPTIONS" => $hearAboutUsOptions,
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
+            "MEMBERSHIP_TIERS_HEADING" => Settings::get("MEMBERSHIP_TIERS_HEADING"),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
             "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,
             "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
@@ -419,6 +448,7 @@ class Blocks
             "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),
+            "SUBSCRIPTION_DAY_OF_MONTH_COPY" => Settings::get("SUBSCRIPTION_DAY_OF_MONTH_COPY"),
             "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
             "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             "USE_GOCARDLESS_API" => Settings::get("USE_GOCARDLESS_API"),

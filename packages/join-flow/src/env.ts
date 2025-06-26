@@ -21,6 +21,7 @@ interface StaticEnv {
     HIDE_HOME_ADDRESS_COPY: boolean;
     HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
+    MEMBERSHIP_TIERS_HEADING: string;
     MEMBERSHIP_TIERS_COPY: string;
     ORGANISATION_NAME: string;
     ORGANISATION_BANK_NAME: string;
@@ -30,6 +31,7 @@ interface StaticEnv {
     PRIVACY_COPY: string;
     STRIPE_DIRECT_DEBIT: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
+    SUBSCRIPTION_DAY_OF_MONTH_COPY: string;
     SUCCESS_REDIRECT: string;
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
     INCLUDE_SKIP_PAYMENT_BUTTON: boolean;
@@ -76,6 +78,7 @@ const staticEnv: StaticEnv = {
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
+    MEMBERSHIP_TIERS_HEADING: process.env.REACT_APP_MEMBERSHIP_TIERS_HEADING || '',
     MEMBERSHIP_TIERS_COPY: process.env.REACT_APP_MEMBERSHIP_TIERS_COPY || '',
     MINIMAL_JOIN_FORM: parseBooleanEnvVar("REACT_APP_MINIMAL_JOIN_FORM"),
     ORGANISATION_NAME: process.env.REACT_APP_ORGANISATION_NAME || '',
@@ -85,6 +88,7 @@ const staticEnv: StaticEnv = {
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     STRIPE_DIRECT_DEBIT: parseBooleanEnvVar(process.env.REACT_APP_STRIPE_DIRECT_DEBIT || ''),
     STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
+    SUBSCRIPTION_DAY_OF_MONTH_COPY: process.env.REACT_APP_SUBSCRIPTION_DAY_OF_MONTH_COPY || '',
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
     INCLUDE_SKIP_PAYMENT_BUTTON: parseBooleanEnvVar("REACT_APP_INCLUDE_SKIP_PAYMENT_BUTTON"),

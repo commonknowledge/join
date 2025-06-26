@@ -43,7 +43,7 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan)
+    public static function createSubscription($customer, $plan, $subscriptionDayOfMonth = 1)
     {
         $subscription = Subscription::create([
             'customer' => $customer->id,
@@ -51,6 +51,9 @@ class StripeService
                 [
                     'price' => $plan['stripe_price_id'],
                 ],
+            ],
+            'billing_cycle_anchor_config' => [
+                'day_of_month' => $subscriptionDayOfMonth,
             ],
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',

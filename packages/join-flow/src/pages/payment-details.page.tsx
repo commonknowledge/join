@@ -21,10 +21,12 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
-import { get as getEnv } from "../env";
+import { get as getEnv, getStr as getEnvStr } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
 import { usePostResource } from "../services/rest-resource.service";
 import { SAVED_STATE_KEY } from "../services/router.service";
+
+const subscriptionDayOfMonthCopy = getEnvStr("SUBSCRIPTION_DAY_OF_MONTH_COPY");
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -285,27 +287,30 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
         paymentMethodTypes
       }}
     >
-      <StripeForm onCompleted={onCompleted} data={data} />
+      <StripeForm onCompleted={onCompleted} data={data} plan={plan} />
     </Elements>
   );
 };
 
 const StripeForm = ({
   onCompleted,
-  data
+  data,
+  plan
 }: {
   onCompleted: (data: FormSchema) => void;
   data: FormSchema;
+  plan: { frequency: string };
 }) => {
   const stripe = useStripe();
   const elements = useElements();
   const createSubscription = usePostResource<
-    FormSchema,
+    FormSchema & { subscriptionDayOfMonth: number },
     {
       latest_invoice: { payment_intent: { id: string; client_secret: string } };
     }
   >("/stripe/create-subscription");
 
+  const [dayOfMonth, setDayOfMonth] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -326,7 +331,7 @@ const StripeForm = ({
     elements.submit();
 
     try {
-      const subscription = await createSubscription(data);
+      const subscription = await createSubscription({ ...data, subscriptionDayOfMonth: dayOfMonth });
       const clientSecret =
         subscription.latest_invoice.payment_intent.client_secret;
 
@@ -338,7 +343,7 @@ const StripeForm = ({
         })
       );
 
-      const returnUrl = new URL(window.location.href)
+      const returnUrl = new URL(window.location.href);
       returnUrl.searchParams.set("stripe_success", "true");
 
       const { error } = await stripe.confirmPayment({
@@ -362,6 +367,27 @@ const StripeForm = ({
   return (
     <form onSubmit={handleSubmit}>
       <div>
+        {plan.frequency === "monthly" && (
+          <div className="form-group">
+            <label htmlFor="day-of-month">{subscriptionDayOfMonthCopy}</label>
+            <select
+              id="day-of-month"
+              className="form-control"
+              value={dayOfMonth}
+              onChange={(e) => setDayOfMonth(Number(e.target.value) || 1)}
+            >
+              {new Array(31)
+                .fill(null)
+                .map((_, i) => i + 1)
+                .map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              <option value="other">Other</option>
+            </select>
+          </div>
+        )}
         <PaymentElement />
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
         {errorMessage && <div>{errorMessage}</div>}

@@ -265,17 +265,23 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       {customFields.length ? (
         <section className="form-section">
           {customFieldsHeading ? <h2>{customFieldsHeading}</h2> : null}
-          {customFields.map((field) =>
-            field.field_type === "checkbox" ? (
-              <FormItem name={field.id} form={form}>
-                <Form.Check label={field.label} />
-              </FormItem>
-            ) : (
-              <FormItem label={field.label} name={field.id} form={form}>
-                <Form.Control autoComplete={field.id} type={field.field_type} />
-              </FormItem>
-            )
-          )}
+          {customFields.map((field) => (
+            <>
+              {field.field_type === "checkbox" ? (
+                <FormItem name={field.id} form={form}>
+                  <Form.Check label={field.label} />
+                </FormItem>
+              ) : (
+                <FormItem label={field.label} name={field.id} form={form}>
+                  <Form.Control
+                    autoComplete={field.id}
+                    type={field.field_type}
+                  />
+                </FormItem>
+              )}
+              {field.instructions && <div className="text-secondary" dangerouslySetInnerHTML={{ __html: field.instructions }}></div>}
+            </>
+          ))}
         </section>
       ) : null}
 

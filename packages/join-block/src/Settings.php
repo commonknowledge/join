@@ -70,12 +70,6 @@ class Settings
             $membership_plans,
         ];
 
-        $custom_fields = [
-            Field::make('separator', 'custom_fields_sep', 'Custom Fields (Action Network only)'),
-            Field::make('text', 'custom_fields_heading', 'Form section heading (leave blank for no heading)')->set_default_value("More about you"),
-            self::createCustomFieldsField()
-        ];
-
         $theme_fields = [
             Field::make('color', 'theme_primary_color', 'Primary Color')
                 ->set_default_value('#007bff')
@@ -107,6 +101,7 @@ class Settings
                 ->set_help_text("E.G. Use this password to log in at https://example.com"),
             Field::make('rich_text', 'home_address_copy')
                 ->set_help_text("E.G. We'll use this to connect you with your local group."),
+            Field::make('text', 'custom_fields_heading', 'Form section heading (leave blank for no heading)')->set_default_value("More about you"),
             Field::make('text', 'contact_details_heading')
                 ->set_default_value("Contact details"),
             Field::make('rich_text', 'contact_details_copy')
@@ -120,8 +115,11 @@ class Settings
             Field::make('text', 'hear_about_us_details', '"How did you hear about us?" additional details textbox label')->set_default_value("Further information"),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
+            Field::make('text', 'membership_tiers_heading')
+                ->set_default_value("Choose the plan that’s right for you"),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
+            Field::make('text', 'subscription_day_of_month_copy', 'Only valid for monthly subscriptions')->set_default_value("Day of month to take payment"),
         ];
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),
@@ -199,7 +197,6 @@ class Settings
         CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')
             ->add_tab('Features', $feature_fields)
             ->add_tab('Membership Plans', $membership_plans_fields)
-            ->add_tab('Custom Fields', $custom_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)
@@ -404,25 +401,6 @@ class Settings
             Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network.")
         ])->set_min(1);
         return $membership_plans;
-    }
-
-    public static function createCustomFieldsField($name = 'custom_fields')
-    {
-        /** @var Select_Field $field_type */
-        $field_type = Field::make('select', 'field_type');
-        $field_type->set_options(array(
-            'checkbox' => 'Checkbox',
-            'number' => 'Number',
-            'text' => 'Text',
-        ))->set_default_value('GBP');
-        /** @var Complex_Field $custom_fields */
-        $custom_fields = Field::make('complex', $name);
-        $custom_fields->add_fields([
-            Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
-            Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
-            $field_type,
-        ]);
-        return $custom_fields;
     }
 
     public static function get($key)

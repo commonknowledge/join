@@ -26,12 +26,12 @@ class ActionNetworkService
             return trim($tag);
         }, explode(",", $removeTags));
 
-        $customFields = Settings::get("CUSTOM_FIELDS");
         $customFieldValues = [
             "How did you hear about us?" => $data['howDidYouHearAboutUs'],
             "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'],
         ];
-        foreach ($customFields as $customField) {
+        $customFieldsConfig = $data['customFieldsConfig'] ?? [];
+        foreach ($customFieldsConfig as $customField) {
             $customFieldValues[$customField["id"]] = $data[$customField["id"]] ?? "";
         }
 

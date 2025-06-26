@@ -6,6 +6,7 @@ import { Summary } from "../components/summary";
 import { FormSchema, currencyCodeToSymbol } from "../schema";
 import { get as getEnv, getStr as getEnvStr } from "../env";
 
+const membershipTiersHeading = getEnvStr("MEMBERSHIP_TIERS_HEADING");
 const membershipTiersCopy = getEnvStr("MEMBERSHIP_TIERS_COPY") || "You can change or cancel whenever you want.";
 
 export const PlanPage: StagerComponent<FormSchema> = ({
@@ -24,7 +25,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
 
       <fieldset className="radio-grid form-section" role="radiogroup">
         <legend>
-          <h2>Choose the plan that’s right for you</h2>
+          <h2>{membershipTiersHeading}</h2>
         </legend>
         <div className="text-secondary" dangerouslySetInnerHTML={{ __html: membershipTiersCopy }}></div>
 
