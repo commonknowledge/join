@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use Carbon_Fields\Block;
 use Carbon_Fields\Field;
@@ -67,7 +67,7 @@ class Blocks
 
             // Only load the script on a page with the block
             $content = $post ? apply_filters('the_content', $post->post_content) : '';
-            
+
             if (!str_contains($content, 'ck-join')) {
                 wp_dequeue_script('common-knowledge-join-flow-js');
             }
@@ -177,7 +177,7 @@ class Blocks
             if (Settings::get("USE_CHARGEBEE")) {
                 wp_enqueue_script("chargebee", "https://js.chargebee.com/v2/chargebee.js", [], "v2", ["in_footer" => false]);
             }
-            ?>
+        ?>
             <div class="ck-join-flow">
                 <div class="ck-join-form mt-4"></div>
             </div>
@@ -290,11 +290,11 @@ class Blocks
 
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             static::echoEnvironment($fields, self::MINIMAL_BLOCK_MODE);
-            ?>
+        ?>
             <div class="ck-minimalist-join-flow ck-join-form">
                 <div class="ck-minimalist-join-form"><!-- Minimalist Join Form attaches here --></div>
             </div>
-            <?php
+        <?php
         });
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
@@ -368,6 +368,21 @@ class Blocks
             $use_postcode_lookup = (bool) $apiKey;
         }
 
+        $hearAboutUsOptions = Settings::get("HEAR_ABOUT_US_OPTIONS") ?? "";
+        $hearAboutUsOptions = array_values(
+            array_filter(
+                array_map(
+                    function ($o) {
+                        return trim($o);
+                    },
+                    explode(",", $hearAboutUsOptions)
+                ),
+                function ($o) {
+                    return (bool) $o;
+                }
+            )
+        );
+
         $environment = [
             'HOME_URL' => $homeUrl,
             "WP_REST_API" => get_rest_url(),
@@ -388,6 +403,8 @@ class Blocks
             "CUSTOM_FIELDS_HEADING" => Settings::get("CUSTOM_FIELDS_HEADING"),
             'DATE_OF_BIRTH_COPY' => wpautop(Settings::get("DATE_OF_BIRTH_COPY")),
             'DATE_OF_BIRTH_HEADING' => Settings::get("DATE_OF_BIRTH_HEADING"),
+            "HEAR_ABOUT_US_HEADING" => Settings::get("HEAR_ABOUT_US_HEADING"),
+            "HEAR_ABOUT_US_OPTIONS" => $hearAboutUsOptions,
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
             "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,
@@ -414,7 +431,7 @@ class Blocks
         <script type="application/json" id="env">
             <?php echo wp_json_encode($environment); ?>
         </script>
-        <?php
+<?php
     }
 
     private static function enqueueBlockCss()

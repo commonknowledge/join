@@ -21,6 +21,17 @@ const addressLookupFormSchema = yup.object().shape({
 const homeAddressCopy = getEnvStr("HOME_ADDRESS_COPY");
 const passwordPurpose = getEnvStr("PASSWORD_PURPOSE");
 const privacyCopy = getEnvStr("PRIVACY_COPY");
+const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING")
+const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY")
+const contactDetailsHeading = getEnvStr("CONTACT_DETAILS_HEADING")
+const contactConsentCopy = getEnvStr("CONTACT_CONSENT_COPY")
+const contactDetailsCopy = getEnvStr("CONTACT_DETAILS_COPY")
+const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING")
+const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY")
+const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
+const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING")
+const hearAboutUsHeading = getEnvStr("HEAR_ABOUT_US_HEADING")
+const hearAboutUsOptions = (getEnv("HEAR_ABOUT_US_OPTIONS") || []) as any[];
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -68,16 +79,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     await recordStep({ ...data, stage: "enter-details" });
     await redirectToSuccess(data);
   };
-
-  const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING")
-  const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY")
-  const contactDetailsHeading = getEnvStr("CONTACT_DETAILS_HEADING")
-  const contactConsentCopy = getEnvStr("CONTACT_CONSENT_COPY")
-  const contactDetailsCopy = getEnvStr("CONTACT_DETAILS_COPY")
-  const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING")
-  const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY")
-  const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
-  const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING")
 
   return (
     <form
@@ -320,17 +321,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       ) : null}
 
       <section className="form-section">
-        <h2>How did you hear about us?</h2>
+        <h2>{hearAboutUsHeading}</h2>
         <FormItem name="howDidYouHearAboutUs" form={form}>
           <Form.Control as="select" custom className="form-control">
-            <option>Choose an option</option>
-
-            <option>From another member</option>
-            <option>An email from us</option>
-            <option>Social media</option>
-            <option>Press/radio</option>
-            <option>TV</option>
-            <option>Other</option>
+            <option value="">Choose an option</option>
+            {hearAboutUsOptions.map((value) => <option key={value} value={value}>{value}</option>)}
           </Form.Control>
         </FormItem>
       </section>

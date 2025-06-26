@@ -15,6 +15,8 @@ interface StaticEnv {
     CUSTOM_FIELDS_HEADING: string;
     DATE_OF_BIRTH_COPY: string;
     DATE_OF_BIRTH_HEADING: string;
+    HEAR_ABOUT_US_HEADING: string;
+    HEAR_ABOUT_US_OPTIONS: string[];
     HIDE_HOME_ADDRESS_COPY: boolean;
     HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
@@ -67,6 +69,8 @@ const staticEnv: StaticEnv = {
     CUSTOM_FIELDS_HEADING: process.env.REACT_APP_CUSTOM_FIELDS_HEADING || '',
     DATE_OF_BIRTH_COPY: process.env.REACT_APP_DATE_OF_BIRTH_COPY || '',
     DATE_OF_BIRTH_HEADING: process.env.REACT_APP_DATE_OF_BIRTH_HEADING || '',
+    HEAR_ABOUT_US_HEADING: process.env.REACT_APP_HEAR_ABOUT_US_HEADING || '',
+    HEAR_ABOUT_US_OPTIONS: (process.env.REACT_APP_HEAR_ABOUT_US_OPTIONS || '').split('.').map(i => i.trim()).filter(Boolean),
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],

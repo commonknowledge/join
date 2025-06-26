@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use Carbon_Fields\Container;
 use Carbon_Fields\Datastore\Empty_Datastore;
@@ -113,12 +113,15 @@ class Settings
                 ->set_default_value("We’ll use this to keep in touch about things that matter to you."),
             Field::make('rich_text', 'contact_consent_copy')
                 ->set_default_value("How would you like us to contact you?"),
+            Field::make('text', 'hear_about_us_heading', '"How did you hear about us?" heading')->set_default_value("How did you hear about us?"),
+            Field::make('text', 'hear_about_us_options', '"How did you hear about us?" options')
+                ->set_help_text("Options for the dropdown, comma separated")
+                ->set_default_value('From another member, An email from us, Social media, Press/radio, TV, Other'),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
         ];
-
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),
             Field::make('text', 'zetkin_organisation_id', 'Zetkin Organisation ID')->set_attribute('type', 'number'),
