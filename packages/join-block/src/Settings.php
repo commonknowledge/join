@@ -117,6 +117,7 @@ class Settings
             Field::make('text', 'hear_about_us_options', '"How did you hear about us?" options')
                 ->set_help_text("Options for the dropdown, comma separated")
                 ->set_default_value('From another member, An email from us, Social media, Press/radio, TV, Other'),
+            Field::make('text', 'hear_about_us_details', '"How did you hear about us?" additional details textbox label')->set_default_value("Further information"),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('rich_text', 'membership_tiers_copy')
