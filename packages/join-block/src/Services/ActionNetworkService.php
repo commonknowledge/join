@@ -29,6 +29,7 @@ class ActionNetworkService
         $customFieldValues = [
             "How did you hear about us?" => $data['howDidYouHearAboutUs'],
             "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'],
+            "Date of birth" => $data['dob']
         ];
         $customFieldsConfig = $data['customFieldsConfig'] ?? [];
         foreach ($customFieldsConfig as $customField) {
@@ -88,6 +89,62 @@ class ActionNetworkService
                     "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
                 ],
                 "json" => $anData,
+            ]
+        );
+    }
+
+    public static function addTag($email, $tag)
+    {
+        $client = new Client();
+
+        $data = [
+            "add_tags" => [$tag],
+            "person" => [
+                "email_addresses" => [
+                    [
+                        "address" => $email,
+                        "primary" => true
+                    ]
+                ]
+            ]
+        ];
+
+        $client->request(
+            "POST",
+            "https://actionnetwork.org/api/v2/people/",
+            [
+                "headers" => [
+                    "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
+                ],
+                "json" => $data
+            ]
+        );
+    }
+
+    public static function removeTag($email, $tag)
+    {
+        $client = new Client();
+
+        $data = [
+            "remove_tags" => [$tag],
+            "person" => [
+                "email_addresses" => [
+                    [
+                        "address" => $email,
+                        "primary" => true
+                    ]
+                ]
+            ]
+        ];
+
+        $client->request(
+            "POST",
+            "https://actionnetwork.org/api/v2/people/",
+            [
+                "headers" => [
+                    "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
+                ],
+                "json" => $data
             ]
         );
     }

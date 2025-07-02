@@ -66,6 +66,9 @@ class Settings
         ];
 
         $membership_plans_fields = [
+            Field::make('text', 'lapsed_tag')
+                ->set_default_value("Lapsed - failed payment")
+                ->set_help_text("Will be applied to members in your CMS if they delete or do not pay their subscription"),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
         ];

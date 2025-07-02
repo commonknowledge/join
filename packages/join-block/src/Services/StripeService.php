@@ -234,37 +234,95 @@ class StripeService
         global $joinBlockLog;
 
         $customerId = null;
+        $customerLapsed = false;
+
         try {
-            if ($event['type'] !== 'mandate.updated') {
-                return;
+            switch ($event['type']) {
+                case 'mandate.updated':
+                    $mandate = $event['data']['object'] ?? null;
+                    $paymentType = $mandate['payment_method_details']['type'] ?? null;
+
+                    if (!$mandate || $mandate['status'] !== 'active' || $paymentType !== 'bacs_debit') {
+                        return;
+                    }
+
+                    $paymentMethodId = $mandate['payment_method'];
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+                    $customerId = $paymentMethod->customer;
+
+                    $invoices = \Stripe\Invoice::all([
+                        'customer' => $customerId,
+                        'status' => 'draft',
+                        'limit' => 1
+                    ]);
+
+                    $joinBlockLog->info("Finalizing direct debit subscription for Stripe customer $customerId");
+
+                    if (count($invoices->data) > 0) {
+                        $invoice = $invoices->data[0];
+                        $invoice->finalizeInvoice();
+                    }
+                    break;
+
+                case 'customer.subscription.deleted':
+                    $subscription = $event['data']['object'] ?? null;
+                    $customerId = $subscription['customer'] ?? '(unknown)';
+
+                    $joinBlockLog->info("Subscription cancelled for Stripe customer $customerId");
+                    if (!empty($subscription['customer'])) {
+                        $customerLapsed = true;
+                    }
+                    break;
+
+                case 'invoice.payment_failed':
+                    $invoice = $event['data']['object'] ?? null;
+                    $customerId = $invoice['customer'] ?? '(unknown)';
+
+                    if (empty($invoice['next_payment_attempt'])) {
+                        $joinBlockLog->warning("Final payment attempt failed for Stripe customer $customerId. No retries will be attempted.");
+                        if (!empty($invoice['customer'])) {
+                            $customerLapsed = true;
+                        }
+                    } else {
+                        $joinBlockLog->info("Payment failed for Stripe customer $customerId, retry scheduled.");
+                    }
+                    break;
+
+                case 'invoice.paid':
+                    $invoice = $event['data']['object'] ?? null;
+                    $customerId = $invoice['customer'] ?? '(unknown)';
+                    $joinBlockLog->info("Invoice paid for Stripe customer $customerId");
+                    if (!empty($invoice['customer'])) {
+                        $email = self::getEmailForCustomer($customerId);
+                        if ($email) {
+                            JoinService::toggleMemberLapsed($email, false);
+                        }
+                    }
+                    break;
+
+                default:
+                    // Ignore unrelated events
+                    return;
             }
-            $mandate = $event['data']['object'] ?? null;
-            $paymentType = $mandate['payment_method_details']['type'] ?? null;
 
-            if (!$mandate || $mandate['status'] !== 'active' || $paymentType !== 'bacs_debit') {
-                return;
-            }
-
-            $paymentMethodId = $mandate['payment_method'];
-            $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
-            $customerId = $paymentMethod->customer;
-
-            // Lookup latest draft invoice and finalize
-            $invoices = \Stripe\Invoice::all([
-                'customer' => $customerId,
-                'status' => 'draft',
-                'limit' => 1
-            ]);
-
-            $joinBlockLog->info("Finalizing direct debit subscription for Stripe customer $customerId");
-
-            if (count($invoices->data) > 0) {
-                $invoice = $invoices->data[0];
-                $invoice->finalizeInvoice();
+            if ($customerLapsed) {
+                $email = self::getEmailForCustomer($customerId);
+                if ($email) {
+                    JoinService::toggleMemberLapsed($email, true);
+                }
             }
         } catch (\Exception $e) {
-            $c = $customerId ? $customerId : "(unknown)";
-            $joinBlockLog->error("Error finalizing direct debit subscription for customer $c: " . $e->getMessage());
+            $c = $customerId ?: "(unknown)";
+            $joinBlockLog->error("Error handling Stripe webhook for customer $c: " . $e->getMessage());
         }
+    }
+
+    private static function getEmailForCustomer($customerId)
+    {
+        $customer = Customer::retrieve($customerId);
+        if (!$customer) {
+            return null;
+        }
+        return $customer->email;
     }
 }
