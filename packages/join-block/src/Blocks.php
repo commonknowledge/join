@@ -19,8 +19,29 @@ class Blocks
 
     public static function init()
     {
+        global $joinBlockLog;
+
         self::registerScripts();
         self::registerBlocks();
+
+        $joinBlockLog->info("Registering save_post hook to save membership plans and webhooks");
+        // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
+        // for an explanation.
+        add_action('save_post', function ($_, $post) {
+            global $joinBlockLog;
+            $joinBlockLog->info("Running Join Form save_post hook on post " . $post->post_name);
+            $blocks = parse_blocks($post->post_content);
+            $joinBlockLog->info("Found " . count($blocks) . " blocks");
+            foreach ($blocks as $block) {
+            $joinBlockLog->info("Processing block " . ($block["blockName"] ?? "unknown"));
+                $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
+                if ($custom_webhook_url) {
+                    Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
+                }
+                $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
+                Settings::saveMembershipPlans($custom_membership_plans);
+            }
+        }, 10, 2);
     }
 
     private static function registerScripts()
@@ -186,20 +207,6 @@ class Blocks
             </div>
         <?php
         });
-
-        // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
-        // for an explanation.
-        add_action('save_post', function ($_, $post) {
-            $blocks = parse_blocks($post->post_content);
-            foreach ($blocks as $block) {
-                $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
-                if ($custom_webhook_url) {
-                    Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
-                }
-                $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
-                Settings::saveMembershipPlans($custom_membership_plans);
-            }
-        }, 10, 2);
     }
 
     private static function createCustomFieldsField()

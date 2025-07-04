@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.16
+ * Version:         1.2.17
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -270,7 +270,6 @@ add_action('rest_api_init', function () {
             global $joinBlockLog;
 
             $data = json_decode($request->get_body(), true);
-            $subscriptionDayOfMonth = $data["subscriptionDayOfMonth"] ?? 1;
 
             $selectedPlanLabel = $data['membership'];
 
@@ -291,7 +290,7 @@ add_action('rest_api_init', function () {
             StripeService::initialise();
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $subscription = StripeService::createSubscription($customer, $plan, $subscriptionDayOfMonth);
+            $subscription = StripeService::createSubscription($customer, $plan);
 
             return $subscription;
         }

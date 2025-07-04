@@ -458,10 +458,16 @@ class Settings
 
     public static function saveMembershipPlans($membership_plans)
     {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
         foreach ($membership_plans as $plan) {
-            update_option('ck_join_flow_membership_plan_' . sanitize_title($plan['label']), $plan);
+            $slug = sanitize_title($plan['label']);
+            $joinBlockLog->info("Saving membership plan: $slug");
+            update_option('ck_join_flow_membership_plan_' . $slug, $plan);
 
             do_action('ck_join_flow_membership_plan_saved', $plan);
+            $joinBlockLog->info("Saved membership plan: $slug");
         }
     }
 
