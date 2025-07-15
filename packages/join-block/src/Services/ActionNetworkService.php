@@ -6,6 +6,7 @@ if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class ActionNetworkService
 {
@@ -13,7 +14,7 @@ class ActionNetworkService
     {
         global $joinBlockLog;
 
-        $joinBlockLog->info("Adding {$data['email']} to Mailchimp");
+        $joinBlockLog->info("Adding {$data['email']} to Action Network");
 
         $addTags = $data["membershipPlan"]["add_tags"] ?? "";
         $removeTags = $data["membershipPlan"]["remove_tags"] ?? "";
@@ -80,17 +81,24 @@ class ActionNetworkService
             ];
         }
 
-        $client = new Client();
-        $client->request(
-            "POST",
-            "https://actionnetwork.org/api/v2/people/",
-            [
-                "headers" => [
-                    "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
-                ],
-                "json" => $anData,
-            ]
-        );
+        try {
+            $client = new Client();
+            $client->request(
+                "POST",
+                "https://actionnetwork.org/api/v2/people/",
+                [
+                    "headers" => [
+                        "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
+                    ],
+                    "json" => $anData,
+                ]
+            );
+        } catch (RequestException $e) {
+            $jsonData = json_encode($anData);
+            $responseBody = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : 'No response body';
+            $joinBlockLog->error("Action Network request failed with payload: $jsonData. Response: $responseBody");
+            throw $e;
+        }
     }
 
     public static function addTag($email, $tag)
