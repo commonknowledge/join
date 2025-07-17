@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.19
+ * Version:         1.2.20
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -269,7 +269,11 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
-            $data = json_decode($request->get_body(), true);
+            $body = $request->get_body();
+
+            $joinBlockLog->info("Received /stripe/create-subscription request: " . $body);
+
+            $data = json_decode($body, true);
 
             $selectedPlanLabel = $data['membership'];
 
