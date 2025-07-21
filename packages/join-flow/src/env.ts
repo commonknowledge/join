@@ -29,6 +29,7 @@ interface StaticEnv {
     MINIMAL_JOIN_FORM: boolean;
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
+    SENTRY_DSN: string;
     STRIPE_DIRECT_DEBIT: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
     SUBSCRIPTION_DAY_OF_MONTH_COPY: string;
@@ -86,6 +87,7 @@ const staticEnv: StaticEnv = {
     ORGANISATION_EMAIL_ADDRESS: process.env.REACT_APP_ORGANISATION_EMAIL_ADDRESS || '',
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
+    SENTRY_DSN: process.env.REACT_APP_SENTRY_DSN || "",
     STRIPE_DIRECT_DEBIT: parseBooleanEnvVar(process.env.REACT_APP_STRIPE_DIRECT_DEBIT || ''),
     STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
     SUBSCRIPTION_DAY_OF_MONTH_COPY: process.env.REACT_APP_SUBSCRIPTION_DAY_OF_MONTH_COPY || '',
@@ -103,7 +105,7 @@ const staticEnv: StaticEnv = {
     WP_REST_API: '',
 }
 
-export const get = (envVar: keyof StaticEnv): object[]|boolean|string => {
+export const get = (envVar: keyof StaticEnv): object[]|boolean|string|string[] => {
     return window.process.env[envVar] || staticEnv[envVar] || ''
 }
 

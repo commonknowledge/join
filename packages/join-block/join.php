@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.21
+ * Version:         1.2.22
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -269,34 +269,42 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $request) {
             global $joinBlockLog;
 
-            $body = $request->get_body();
+            $email = "";
+            try {
+                $body = $request->get_body();
+                $data = json_decode($body, true);
 
-            $joinBlockLog->info("Received /stripe/create-subscription request: " . $body);
+                $email = $data['email'];
 
-            $data = json_decode($body, true);
+                $joinBlockLog->info("Received /stripe/create-subscription request: " . $body);
 
-            $selectedPlanLabel = $data['membership'];
+                $selectedPlanLabel = $data['membership'];
 
-            $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
+                $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
 
-            $plan = Settings::getMembershipPlan($selectedPlanLabel);
+                $plan = Settings::getMembershipPlan($selectedPlanLabel);
 
-            if (!$plan) {
-                throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
-            } else {
-                $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
+                if (!$plan) {
+                    throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
+                } else {
+                    $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
+                }
+
+                $joinBlockLog->info('Processing Stripe subscription creation request');
+
+                StripeService::initialise();
+                [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+
+                $subscription = StripeService::createSubscription($customer, $plan);
+
+                return $subscription;
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    'Failed to create Stripe subscription for user ' . $email . ": " . $e->getMessage(),
+                    ['error' => $e]
+                );
+                throw $e;
             }
-
-            $joinBlockLog->info('Processing Stripe subscription creation request');
-
-            $email = $data['email'];
-
-            StripeService::initialise();
-            [$customer, $newCustomer] = StripeService::upsertCustomer($email);
-
-            $subscription = StripeService::createSubscription($customer, $plan);
-
-            return $subscription;
         }
     ));
 

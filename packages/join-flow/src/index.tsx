@@ -6,8 +6,9 @@ import "../scss/index.scss";
 
 import React from "react";
 import ReactDOM from "react-dom";
+import * as Sentry from "@sentry/react";
 import App from "./app";
-import { get as getEnv } from "./env";
+import { get as getEnv, getStr as getEnvStr } from "./env";
 
 const joinFormElement = document.querySelector(".ck-join-form");
 
@@ -18,6 +19,13 @@ const init = () => {
     );
     return;
   }
+
+
+  const sentryDsn = getEnvStr("SENTRY_DSN")
+  Sentry.init({
+    dsn: sentryDsn,
+    release: "1.2.22"
+  });
 
   if (getEnv('USE_CHARGEBEE')) {
     if (!window.Chargebee) {

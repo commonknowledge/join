@@ -13,6 +13,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { Form, FormGroup, Spinner } from "react-bootstrap";
 import { useForm } from "react-hook-form";
+import * as Sentry from "@sentry/react";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
@@ -313,9 +314,10 @@ const StripeForm = ({
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleError = (error: { message?: string }) => {
+  const handleError = (error: { message: string }) => {
     setLoading(false);
     setErrorMessage(error.message);
+    Sentry.captureMessage(error.message, 'error')
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -356,12 +358,14 @@ const StripeForm = ({
       });
 
       if (error) {
-        handleError(error);
+        const message = JSON.stringify(error)
+        handleError({ message });
         return;
       }
     } catch (e) {
       console.error("Create subscription error", e);
       handleError({ message: "Unknown error" });
+      Sentry.captureException(e)
     }
   };
 

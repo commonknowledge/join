@@ -172,6 +172,9 @@ class Settings
                 "Auth0 Management API audience, labelled as Identifier on the " .
                     "API > Auth0 Management API > Settings page"
             ),
+
+            Field::make('separator', 'sentry', 'Sentry'),
+            Field::make('text', 'sentry_dsn'),
         ];
 
         // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable.

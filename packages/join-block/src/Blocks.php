@@ -461,6 +461,7 @@ class Blocks
             "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
             "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
             "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
+            "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),
             "SUBSCRIPTION_DAY_OF_MONTH_COPY" => Settings::get("SUBSCRIPTION_DAY_OF_MONTH_COPY"),
