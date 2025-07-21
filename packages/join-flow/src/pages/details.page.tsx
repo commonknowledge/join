@@ -21,6 +21,20 @@ const addressLookupFormSchema = yup.object().shape({
 const homeAddressCopy = getEnvStr("HOME_ADDRESS_COPY");
 const passwordPurpose = getEnvStr("PASSWORD_PURPOSE");
 const privacyCopy = getEnvStr("PRIVACY_COPY");
+const aboutYouHeading = getEnvStr("ABOUT_YOU_HEADING");
+const aboutYouCopy = getEnvStr("ABOUT_YOU_COPY");
+const contactDetailsHeading = getEnvStr("CONTACT_DETAILS_HEADING");
+const contactConsentCopy = getEnvStr("CONTACT_CONSENT_COPY");
+const contactDetailsCopy = getEnvStr("CONTACT_DETAILS_COPY");
+const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING");
+const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY");
+const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
+const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING");
+const hearAboutUsDetails = getEnvStr("HEAR_ABOUT_US_DETAILS");
+const hearAboutUsHeading = getEnvStr("HEAR_ABOUT_US_HEADING");
+const hearAboutUsOptions = (
+  (getEnv("HEAR_ABOUT_US_OPTIONS") || []) as any[]
+).filter((o) => o.toLowerCase() !== "other");
 
 export const DetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -33,6 +47,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
   const [manuallyOpen, setAddressManuallyOpen] = useState(false);
   const [skippingPayment, setSkippingPayment] = useState(false);
   const usePostcodeLookup = getEnv("USE_POSTCODE_LOOKUP");
+  const howDidYouHearAboutUs = form.watch("howDidYouHearAboutUs");
 
   const addressLookupForm = useForm({
     resolver: yupResolver(addressLookupFormSchema)
@@ -69,8 +84,6 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
     await redirectToSuccess(data);
   };
 
-  const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
-
   return (
     <form
       className="form-content"
@@ -78,10 +91,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       onSubmit={form.handleSubmit(onCompleted)}
     >
       <section className="form-section">
-        <h2>Tell us more about you</h2>
-        <p className="text-secondary">
-          All fields marked with an asterisk (*) are required.
-        </p>
+        <h2>{aboutYouHeading}</h2>
+        <div
+          className="text-secondary"
+          dangerouslySetInnerHTML={{ __html: aboutYouCopy }}
+        ></div>
         <FormItem label="First Name" name="firstName" form={form} required>
           <Form.Control autoComplete="given-name" />
         </FormItem>
@@ -94,13 +108,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <section className="form-section">
           <fieldset>
             <legend>
-              <h2>Date of birth</h2>
+              <h2>{dateOfBirthHeading}</h2>
             </legend>
-
-            <p className="text-secondary">
-              We collect every member's date of birth because our membership
-              types are based on age.
-            </p>
+            <div
+              className="text-secondary"
+              dangerouslySetInnerHTML={{ __html: dateOfBirthCopy }}
+            ></div>
             <Row>
               <Col>
                 <FormItem label="Day" name="dobDay" form={form} required>
@@ -251,33 +264,33 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 
       {customFields.length ? (
         <section className="form-section">
-          <h2>Custom fields</h2>
-          {customFields.map((field) =>
-            field.field_type === "checkbox" ? (
-              <FormItem name={field.id} form={form}>
-                <Form.Check label={field.label} />
-              </FormItem>
-            ) : (
-              <FormItem
-                label={field.label}
-                name={field.id}
-                form={form}
-              >
-                <Form.Control
-                  autoComplete={field.id}
-                  type={field.field_type}
-                />
-              </FormItem>
-            )
-          )}
+          {customFieldsHeading ? <h2>{customFieldsHeading}</h2> : null}
+          {customFields.map((field) => (
+            <>
+              {field.field_type === "checkbox" ? (
+                <FormItem name={field.id} form={form}>
+                  <Form.Check label={field.label} />
+                </FormItem>
+              ) : (
+                <FormItem label={field.label} name={field.id} form={form}>
+                  <Form.Control
+                    autoComplete={field.id}
+                    type={field.field_type}
+                  />
+                </FormItem>
+              )}
+              {field.instructions && <div className="text-secondary" dangerouslySetInnerHTML={{ __html: field.instructions }}></div>}
+            </>
+          ))}
         </section>
       ) : null}
 
       <section className="form-section">
-        <h2>Contact details</h2>
-        <p className="text-secondary">
-          We’ll use this to keep in touch about things that matter to you.
-        </p>
+        <h2>{contactDetailsHeading}</h2>
+        <div
+          className="text-secondary"
+          dangerouslySetInnerHTML={{ __html: contactDetailsCopy }}
+        ></div>
         <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control autoComplete="email" type="email" />
         </FormItem>
@@ -286,9 +299,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </FormItem>
         {getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ? (
           <>
-            <p className="text-secondary">
-              How would you like us to contact you?
-            </p>
+            <div
+              className="text-secondary"
+              dangerouslySetInnerHTML={{ __html: contactConsentCopy }}
+            ></div>
             <FormItem form={form} name="contactByEmail">
               <Form.Check label="Email" />
             </FormItem>
@@ -322,19 +336,30 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       ) : null}
 
       <section className="form-section">
-        <h2>How did you hear about us?</h2>
+        <h2>{hearAboutUsHeading}</h2>
         <FormItem name="howDidYouHearAboutUs" form={form}>
           <Form.Control as="select" custom className="form-control">
-            <option>Choose an option</option>
-
-            <option>From another member</option>
-            <option>An email from us</option>
-            <option>Social media</option>
-            <option>Press/radio</option>
-            <option>TV</option>
-            <option>Other</option>
+            <option value="">Choose an option</option>
+            {hearAboutUsOptions.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+            <option value="other">Other</option>
           </Form.Control>
         </FormItem>
+        {howDidYouHearAboutUs === "other" && (
+          <FormItem
+            name="howDidYouHearAboutUsDetails"
+            form={form}
+            label={hearAboutUsDetails}
+          >
+            <Form.Control
+              autoComplete="howDidYouHearAboutUsDetails"
+              as="textarea"
+            />
+          </FormItem>
+        )}
       </section>
 
       <section className="form-section">

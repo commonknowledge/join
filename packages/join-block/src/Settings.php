@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use Carbon_Fields\Container;
 use Carbon_Fields\Datastore\Empty_Datastore;
@@ -66,13 +66,11 @@ class Settings
         ];
 
         $membership_plans_fields = [
+            Field::make('text', 'lapsed_tag')
+                ->set_default_value("Lapsed - failed payment")
+                ->set_help_text("Will be applied to members in your CMS if they delete or do not pay their subscription"),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
-        ];
-
-        $custom_fields = [
-            Field::make('separator', 'custom_fields_sep', 'Custom Fields (Action Network only)'),
-            self::createCustomFieldsField()
         ];
 
         $theme_fields = [
@@ -94,16 +92,38 @@ class Settings
                 ->set_required(true),
             Field::make('text', 'organisation_email_address')->set_help_text("The support email for members")
                 ->set_required(true),
+            Field::make('text', 'about_you_heading')
+                ->set_default_value("Tell us about you"),
+            Field::make('rich_text', 'about_you_copy')
+                ->set_default_value("All fields marked with an asterisk (*) are required."),
+            Field::make('text', 'date_of_birth_heading')
+                ->set_default_value("Date of birth"),
+            Field::make('rich_text', 'date_of_birth_copy')
+                ->set_default_value("We collect every member's date of birth because our membership types are based on age."),
             Field::make('rich_text', 'password_purpose')
                 ->set_help_text("E.G. Use this password to log in at https://example.com"),
             Field::make('rich_text', 'home_address_copy')
-                ->set_help_text("E.G. We'll use this to connect you with your local group.."),
+                ->set_help_text("E.G. We'll use this to connect you with your local group."),
+            Field::make('text', 'custom_fields_heading', 'Form section heading (leave blank for no heading)')->set_default_value("More about you"),
+            Field::make('text', 'contact_details_heading')
+                ->set_default_value("Contact details"),
+            Field::make('rich_text', 'contact_details_copy')
+                ->set_default_value("We’ll use this to keep in touch about things that matter to you."),
+            Field::make('rich_text', 'contact_consent_copy')
+                ->set_default_value("How would you like us to contact you?"),
+            Field::make('text', 'hear_about_us_heading', '"How did you hear about us?" heading')->set_default_value("How did you hear about us?"),
+            Field::make('text', 'hear_about_us_options', '"How did you hear about us?" options')
+                ->set_help_text("Options for the dropdown, comma separated")
+                ->set_default_value('From another member, An email from us, Social media, Press/radio, TV, Other'),
+            Field::make('text', 'hear_about_us_details', '"How did you hear about us?" additional details textbox label')->set_default_value("Further information"),
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
+            Field::make('text', 'membership_tiers_heading')
+                ->set_default_value("Choose the plan that’s right for you"),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
+            Field::make('text', 'subscription_day_of_month_copy', 'Only valid for monthly subscriptions')->set_default_value("Day of month to take payment"),
         ];
-
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),
             Field::make('text', 'zetkin_organisation_id', 'Zetkin Organisation ID')->set_attribute('type', 'number'),
@@ -152,6 +172,9 @@ class Settings
                 "Auth0 Management API audience, labelled as Identifier on the " .
                     "API > Auth0 Management API > Settings page"
             ),
+
+            Field::make('separator', 'sentry', 'Sentry'),
+            Field::make('text', 'sentry_dsn'),
         ];
 
         // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable.
@@ -180,7 +203,6 @@ class Settings
         CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')
             ->add_tab('Features', $feature_fields)
             ->add_tab('Membership Plans', $membership_plans_fields)
-            ->add_tab('Custom Fields', $custom_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)
@@ -387,25 +409,6 @@ class Settings
         return $membership_plans;
     }
 
-    public static function createCustomFieldsField($name = 'custom_fields')
-    {
-        /** @var Select_Field $field_type */
-        $field_type = Field::make('select', 'field_type');
-        $field_type->set_options(array(
-            'checkbox' => 'Checkbox',
-            'number' => 'Number',
-            'text' => 'Text',
-        ))->set_default_value('GBP');
-        /** @var Complex_Field $custom_fields */
-        $custom_fields = Field::make('complex', $name);
-        $custom_fields->add_fields([
-            Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
-            Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
-            $field_type,
-        ]);
-        return $custom_fields;
-    }
-
     public static function get($key)
     {
         $carbon_key = strtolower($key);
@@ -458,10 +461,16 @@ class Settings
 
     public static function saveMembershipPlans($membership_plans)
     {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
         foreach ($membership_plans as $plan) {
-            update_option('ck_join_flow_membership_plan_' . sanitize_title($plan['label']), $plan);
+            $slug = sanitize_title($plan['label']);
+            $joinBlockLog->info("Saving membership plan: $slug");
+            update_option('ck_join_flow_membership_plan_' . $slug, $plan);
 
             do_action('ck_join_flow_membership_plan_saved', $plan);
+            $joinBlockLog->info("Saved membership plan: $slug");
         }
     }
 

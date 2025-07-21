@@ -1,15 +1,27 @@
 interface StaticEnv {
+    ABOUT_YOU_COPY: string;
+    ABOUT_YOU_HEADING: string;
     ASK_FOR_ADDITIONAL_DONATION: boolean;
     CHARGEBEE_API_PUBLISHABLE_KEY: string;
     CHARGEBEE_SITE_NAME: string;
     COLLECT_COUNTY: boolean;
     COLLECT_DATE_OF_BIRTH: boolean;
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: boolean;
+    CONTACT_CONSENT_COPY: string;
+    CONTACT_DETAILS_COPY: string;
+    CONTACT_DETAILS_HEADING: string;
     CREATE_AUTH0_ACCOUNT: boolean;
     CUSTOM_FIELDS: object[];
+    CUSTOM_FIELDS_HEADING: string;
+    DATE_OF_BIRTH_COPY: string;
+    DATE_OF_BIRTH_HEADING: string;
+    HEAR_ABOUT_US_DETAILS: string;
+    HEAR_ABOUT_US_HEADING: string;
+    HEAR_ABOUT_US_OPTIONS: string[];
     HIDE_HOME_ADDRESS_COPY: boolean;
     HOME_ADDRESS_COPY: string;
     MEMBERSHIP_PLANS: object[];
+    MEMBERSHIP_TIERS_HEADING: string;
     MEMBERSHIP_TIERS_COPY: string;
     ORGANISATION_NAME: string;
     ORGANISATION_BANK_NAME: string;
@@ -17,8 +29,10 @@ interface StaticEnv {
     MINIMAL_JOIN_FORM: boolean;
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
+    SENTRY_DSN: string;
     STRIPE_DIRECT_DEBIT: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
+    SUBSCRIPTION_DAY_OF_MONTH_COPY: string;
     SUCCESS_REDIRECT: string;
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
     INCLUDE_SKIP_PAYMENT_BUTTON: boolean;
@@ -43,17 +57,29 @@ const parseBooleanEnvVar = (name: string): boolean => {
 // Dynamic values from the WordPress settings page are available in window.process.env.
 // The get() function below checks the dynamic values first, and falls back to this object.
 const staticEnv: StaticEnv = {
+    ABOUT_YOU_COPY: process.env.REACT_APP_ABOUT_YOU_COPY || '',
+    ABOUT_YOU_HEADING: process.env.REACT_APP_ABOUT_YOU_HEADING || '',
     ASK_FOR_ADDITIONAL_DONATION: parseBooleanEnvVar("REACT_APP_ASK_FOR_ADDITIONAL_DONATION"),
     CHARGEBEE_API_PUBLISHABLE_KEY: process.env.REACT_APP_CHARGEBEE_API_PUBLISHABLE_KEY || '',
     CHARGEBEE_SITE_NAME: process.env.REACT_APP_CHARGEBEE_SITE_NAME || '',
     COLLECT_COUNTY: parseBooleanEnvVar("REACT_APP_COLLECT_COUNTY"),
     COLLECT_DATE_OF_BIRTH: parseBooleanEnvVar("REACT_APP_COLLECT_DATE_OF_BIRTH"),
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: parseBooleanEnvVar("REACT_APP_COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
+    CONTACT_CONSENT_COPY: process.env.REACT_ENV_CONTACT_CONSENT_COPY || '',
+    CONTACT_DETAILS_COPY: process.env.REACT_APP_CONTACT_DETAILS_COPY || '',
+    CONTACT_DETAILS_HEADING: process.env.REACT_APP_CONTACT_DETAILS_HEADING || '',
     CREATE_AUTH0_ACCOUNT: parseBooleanEnvVar("REACT_APP_CREATE_AUTH0_ACCOUNT"),
     CUSTOM_FIELDS: JSON.parse(process.env.REACT_APP_CUSTOM_FIELDS || '[]') as object[],
+    CUSTOM_FIELDS_HEADING: process.env.REACT_APP_CUSTOM_FIELDS_HEADING || '',
+    DATE_OF_BIRTH_COPY: process.env.REACT_APP_DATE_OF_BIRTH_COPY || '',
+    DATE_OF_BIRTH_HEADING: process.env.REACT_APP_DATE_OF_BIRTH_HEADING || '',
+    HEAR_ABOUT_US_DETAILS: process.env.REACT_APP_HEAR_ABOUT_US_DETAILS || '',
+    HEAR_ABOUT_US_HEADING: process.env.REACT_APP_HEAR_ABOUT_US_HEADING || '',
+    HEAR_ABOUT_US_OPTIONS: (process.env.REACT_APP_HEAR_ABOUT_US_OPTIONS || '').split('.').map(i => i.trim()).filter(Boolean),
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
+    MEMBERSHIP_TIERS_HEADING: process.env.REACT_APP_MEMBERSHIP_TIERS_HEADING || '',
     MEMBERSHIP_TIERS_COPY: process.env.REACT_APP_MEMBERSHIP_TIERS_COPY || '',
     MINIMAL_JOIN_FORM: parseBooleanEnvVar("REACT_APP_MINIMAL_JOIN_FORM"),
     ORGANISATION_NAME: process.env.REACT_APP_ORGANISATION_NAME || '',
@@ -61,8 +87,10 @@ const staticEnv: StaticEnv = {
     ORGANISATION_EMAIL_ADDRESS: process.env.REACT_APP_ORGANISATION_EMAIL_ADDRESS || '',
     PASSWORD_PURPOSE: process.env.REACT_APP_PASSWORD_PURPOSE || '',
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
+    SENTRY_DSN: process.env.REACT_APP_SENTRY_DSN || "",
     STRIPE_DIRECT_DEBIT: parseBooleanEnvVar(process.env.REACT_APP_STRIPE_DIRECT_DEBIT || ''),
     STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
+    SUBSCRIPTION_DAY_OF_MONTH_COPY: process.env.REACT_APP_SUBSCRIPTION_DAY_OF_MONTH_COPY || '',
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
     INCLUDE_SKIP_PAYMENT_BUTTON: parseBooleanEnvVar("REACT_APP_INCLUDE_SKIP_PAYMENT_BUTTON"),
@@ -77,7 +105,7 @@ const staticEnv: StaticEnv = {
     WP_REST_API: '',
 }
 
-export const get = (envVar: keyof StaticEnv): object[]|boolean|string => {
+export const get = (envVar: keyof StaticEnv): object[]|boolean|string|string[] => {
     return window.process.env[envVar] || staticEnv[envVar] || ''
 }
 

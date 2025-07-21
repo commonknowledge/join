@@ -25,7 +25,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
-  const autoSubmit = Boolean(data.gcBillingRequestId);
+  const autoSubmit = Boolean(data.gcBillingRequestId || data.stripePaymentIntentId);
 
   // Default "requestInFlight" to true if autoSubmit is set, as the request is sent
   // immediately through useEffect() below

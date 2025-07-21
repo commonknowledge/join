@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use CommonKnowledge\JoinBlock\Settings;
 use Stripe\Stripe;
@@ -52,7 +52,8 @@ class StripeService
                     'price' => $plan['stripe_price_id'],
                 ],
             ],
-            'payment_behavior'=> 'default_incomplete',
+            'payment_behavior' => 'default_incomplete',
+            'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
             'expand' => ['latest_invoice.payment_intent'],
         ]);
@@ -65,7 +66,7 @@ class StripeService
         global $joinBlockLog;
 
         $joinBlockLog->info('Confirming payment intent for subscription', $subscription->toArray());
-        
+
         if (!$subscription->latest_invoice || !$subscription->latest_invoice->payment_intent) {
             $joinBlockLog->info('No payment intent found for this subscription. It might be a free trial or zero-amount invoice');
             return null;
@@ -223,5 +224,126 @@ class StripeService
             $joinBlockLog->error("Error creating/retrieving price: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    public static function removeExistingSubscriptions($email, $customerId, $subscriptionId)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Removing previous subscriptions for user " . $email . ", customer: " . $customerId);
+
+        try {
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $customerId,
+                'status' => 'all',
+                'limit' => 100,
+            ]);
+
+            foreach ($subscriptions->autoPagingIterator() as $sub) {
+                if ($sub->id !== $subscriptionId && in_array($sub->status, ['active', 'trialing', 'past_due'])) {
+                    $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
+                    $sub->cancel();
+                }
+            }
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Error removing subscriptions for user " . $email . ": " . $e->getMessage());
+        }
+    }
+
+    public static function handleWebhook($event)
+    {
+        global $joinBlockLog;
+
+        $customerId = null;
+        $customerLapsed = false;
+
+        try {
+            switch ($event['type']) {
+                case 'mandate.updated':
+                    $mandate = $event['data']['object'] ?? null;
+                    $paymentType = $mandate['payment_method_details']['type'] ?? null;
+
+                    if (!$mandate || $mandate['status'] !== 'active' || $paymentType !== 'bacs_debit') {
+                        return;
+                    }
+
+                    $paymentMethodId = $mandate['payment_method'];
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+                    $customerId = $paymentMethod->customer;
+
+                    $invoices = \Stripe\Invoice::all([
+                        'customer' => $customerId,
+                        'status' => 'draft',
+                        'limit' => 1
+                    ]);
+
+                    $joinBlockLog->info("Finalizing direct debit subscription for Stripe customer $customerId");
+
+                    if (count($invoices->data) > 0) {
+                        $invoice = $invoices->data[0];
+                        $invoice->finalizeInvoice();
+                    }
+                    break;
+
+                case 'customer.subscription.deleted':
+                    $subscription = $event['data']['object'] ?? null;
+                    $customerId = $subscription['customer'] ?? '(unknown)';
+
+                    $joinBlockLog->info("Subscription cancelled for Stripe customer $customerId");
+                    if (!empty($subscription['customer'])) {
+                        $customerLapsed = true;
+                    }
+                    break;
+
+                case 'invoice.payment_failed':
+                    $invoice = $event['data']['object'] ?? null;
+                    $customerId = $invoice['customer'] ?? '(unknown)';
+
+                    if (empty($invoice['next_payment_attempt'])) {
+                        $joinBlockLog->warning("Final payment attempt failed for Stripe customer $customerId. No retries will be attempted.");
+                        if (!empty($invoice['customer'])) {
+                            $customerLapsed = true;
+                        }
+                    } else {
+                        $joinBlockLog->info("Payment failed for Stripe customer $customerId, retry scheduled.");
+                    }
+                    break;
+
+                case 'invoice.paid':
+                    $invoice = $event['data']['object'] ?? null;
+                    $customerId = $invoice['customer'] ?? '(unknown)';
+                    $joinBlockLog->info("Invoice paid for Stripe customer $customerId");
+                    if (!empty($invoice['customer'])) {
+                        $email = self::getEmailForCustomer($customerId);
+                        if ($email) {
+                            JoinService::toggleMemberLapsed($email, false);
+                        }
+                    }
+                    break;
+
+                default:
+                    // Ignore unrelated events
+                    return;
+            }
+
+            if ($customerLapsed) {
+                $email = self::getEmailForCustomer($customerId);
+                if ($email) {
+                    JoinService::toggleMemberLapsed($email, true);
+                }
+            }
+        } catch (\Exception $e) {
+            $c = $customerId ?: "(unknown)";
+            $joinBlockLog->error("Error handling Stripe webhook for customer $c: " . $e->getMessage());
+        }
+    }
+
+    private static function getEmailForCustomer($customerId)
+    {
+        $customer = Customer::retrieve($customerId);
+        if (!$customer) {
+            return null;
+        }
+        return $customer->email;
     }
 }

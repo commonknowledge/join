@@ -18,7 +18,7 @@ class JoinService
 {
     // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
     // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
-    private static function formatDateForChargebee($day, $month, $year)
+    private static function formatDob($day, $month, $year)
     {
         # Create date at 12pm UTC to avoid timezone issues changing the printed date
         $date = new \DateTime('1970-01-01T12:00:00Z');
@@ -173,6 +173,10 @@ class JoinService
 
         $customerResult = null;
 
+        if (!empty($data['dobDay'])) {
+            $data['dob'] = self::formatDob($data['dobDay'], $data['dobMonth'], $data['dobYear']);
+        }
+
         $useChargebee = Settings::get('USE_CHARGEBEE');
         if ($useChargebee) {
             $customerResult = self::handleChargebee($data, $billingAddress);
@@ -190,29 +194,8 @@ class JoinService
         $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
         if (Settings::get("USE_STRIPE")) {
-            $joinBlockLog->info('Subscribing with Stripe', [
-                "email" => $data['email'],
-                "membershipPlan" => $data['membershipPlan'],
-                "paymentToken" => $data['paymentToken']
-            ]);
-
             StripeService::initialise();
-            [$customer, $newCustomer] = StripeService::upsertCustomer($data['email']);
-            $subscription = StripeService::createSubscription($customer, $data['membershipPlan']);
-            $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['paymentToken']);
-            StripeService::updateCustomerDefaultPaymentMethod($customer->id, $subscription->latest_invoice->payment_intent->payment_method);
-
-            $data['stripeStatus'] = $confirmedPaymentIntent->status;
-            $data['stripeNewCustomer'] = $newCustomer;
-            $data['stripeCustomer'] = $customer->toArray();
-            $data['stripeSubscription'] = $subscription->toArray();
-
-            $joinBlockLog->info("Subscribed with Stripe", [
-                "email" => $data['email'],
-                "customer" => $data['stripeCustomer'],
-                "newCustomer" => $data['stripeNewCustomer'],
-                "subscription" => $data['stripeSubscription']
-            ]);
+            StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"], $data["stripeSubscriptionId"]);
         }
 
         $subscriptionPlanId = '';
@@ -223,7 +206,7 @@ class JoinService
 
         if (Settings::get("CREATE_AUTH0_ACCOUNT")) {
             try {
-                Auth0Service::createAuth0User($data, $subscriptionPlanId, $customer->id);
+                Auth0Service::createAuth0User($data, $subscriptionPlanId, $customer ? $customer->id : "Unknown");
             } catch (\Exception $exception) {
                 $joinBlockLog->error('Auth0 user creation failed', ['exception' => $exception]);
                 throw new JoinBlockException('Auth0 user creation failed', 7);
@@ -350,6 +333,30 @@ class JoinService
         }
     }
 
+    public static function toggleMemberLapsed($email, $lapsed = true)
+    {
+        global $joinBlockLog;
+
+        $action = $lapsed ? "Marking" : "Unmarking";
+        $done = $lapsed ? "Marked" : "Unmarked";
+        $joinBlockLog->info("$action member $email as lapsed");
+
+        if (Settings::get("USE_ACTION_NETWORK")) {
+            $joinBlockLog->info("$action member $email as lapsed in Action Network");
+            try {
+                if ($lapsed) {
+                    ActionNetworkService::addTag($email, Settings::get("LAPSED_TAG"));
+                } else {
+                    ActionNetworkService::removeTag($email, Settings::get("LAPSED_TAG"));
+                }
+                $joinBlockLog->info("$done member $email as lapsed in Action Network");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
+                throw $exception;
+            }
+        }
+    }
+
     private static function handleChargebee($data, $billingAddress)
     {
         global $joinBlockLog;
@@ -401,9 +408,8 @@ class JoinService
                 "phone" => $data['phoneNumber'],
             ];
 
-            if (!empty($data['dobDay'])) {
-                $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
-                $chargebeeCreditCardPayload["cf_birthdate"] = $formattedDateOfBirth;
+            if (!empty($data['dob'])) {
+                $chargebeeCreditCardPayload["cf_birthdate"] = $data['dob'];
             }
 
             if ($data['howDidYouHearAboutUs'] !== "Choose an option") {
@@ -541,9 +547,8 @@ class JoinService
             "billingAddress" => $billingAddress,
         ];
 
-        if (!empty($data['dobDay'])) {
-            $formattedDateOfBirth = self::formatDateForChargebee($data['dobDay'], $data['dobMonth'], $data['dobYear']);
-            $directDebitChargebeeCustomer["cf_birthdate"] = $formattedDateOfBirth;
+        if (!empty($data['dob'])) {
+            $directDebitChargebeeCustomer["cf_birthdate"] = $data['dob'];
         }
 
         if ($data['howDidYouHearAboutUs'] !== "Choose an option") {

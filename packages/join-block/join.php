@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.3
+ * Version:         1.2.22
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -22,7 +22,6 @@ use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Settings;
-use GuzzleHttp\Exception\ClientException;
 
 Logging::init();
 global $joinBlockLog;
@@ -262,6 +261,53 @@ add_action('rest_api_init', function () {
         }
     ));
 
+    register_rest_route('join/v1', '/stripe/create-subscription', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $email = "";
+            try {
+                $body = $request->get_body();
+                $data = json_decode($body, true);
+
+                $email = $data['email'];
+
+                $joinBlockLog->info("Received /stripe/create-subscription request: " . $body);
+
+                $selectedPlanLabel = $data['membership'];
+
+                $joinBlockLog->info('Attempting to find a matching plan', ['selectedPlanLabel' => $selectedPlanLabel]);
+
+                $plan = Settings::getMembershipPlan($selectedPlanLabel);
+
+                if (!$plan) {
+                    throw new \Exception('Selected plan is not in the list of plans, this is unexpected');
+                } else {
+                    $joinBlockLog->info('Found a matching plan in the list of plans', $plan);
+                }
+
+                $joinBlockLog->info('Processing Stripe subscription creation request');
+
+                StripeService::initialise();
+                [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+
+                $subscription = StripeService::createSubscription($customer, $plan);
+
+                return $subscription;
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    'Failed to create Stripe subscription for user ' . $email . ": " . $e->getMessage(),
+                    ['error' => $e]
+                );
+                throw $e;
+            }
+        }
+    ));
+
     register_rest_route('join/v1', '/stripe/create-confirm-subscription', array(
         'methods' => 'POST',
         'permission_callback' => function ($req) {
@@ -345,6 +391,20 @@ add_action('rest_api_init', function () {
             global $joinBlockLog;
             $joinBlockLog->info("Received GoCardless webhook: " . $request->get_body());
             JoinService::ensureGoCardlessSubscriptionsCreated();
+        }
+    ));
+
+    register_rest_route('join/v1', '/stripe/webhook', array(
+        'methods' => ['GET', 'POST'],
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+            $joinBlockLog->info("Received Stripe webhook: " . $request->get_body());
+            $event = json_decode($request->get_body(), true);
+            StripeService::initialise();
+            StripeService::handleWebhook($event);
         }
     ));
 });
