@@ -225,6 +225,8 @@ const CustomGoCardlessSchema = object({
 })
 
 const StripeSchema = object({
+  stripeCustomerId: string(),
+  stripeSubscriptionId: string(),
   stripePaymentIntentId: string()
 })
 

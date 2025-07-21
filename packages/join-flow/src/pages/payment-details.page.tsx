@@ -304,6 +304,8 @@ const StripeForm = ({
   const createSubscription = usePostResource<
     FormSchema,
     {
+      id: string;
+      customer: string;
       latest_invoice: { payment_intent: { id: string; client_secret: string } };
     }
   >("/stripe/create-subscription");
@@ -336,6 +338,8 @@ const StripeForm = ({
         SAVED_STATE_KEY,
         JSON.stringify({
           ...data,
+          stripeCustomerId: subscription.customer,
+          stripeSubscriptionId: subscription.id,
           stripePaymentIntentId: subscription.latest_invoice.payment_intent.id
         })
       );

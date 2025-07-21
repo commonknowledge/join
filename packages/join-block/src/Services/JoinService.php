@@ -194,8 +194,8 @@ class JoinService
         $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
         if (Settings::get("USE_STRIPE")) {
-            // Dev note: nothing is done here because Stripe payment is handled on the front-end
-            // in order to support 3D Secure Authorization
+            StripeService::initialise();
+            StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"], $data["stripeSubscriptionId"]);
         }
 
         $subscriptionPlanId = '';

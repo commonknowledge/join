@@ -1223,6 +1223,61 @@
     lodash "^4.17.15"
     lodash-es "^4.17.15"
 
+"@sentry-internal/browser-utils@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry-internal/browser-utils/-/browser-utils-9.40.0.tgz"
+  integrity sha512-Ajvz6jN+EEMKrOHcUv2+HlhbRUh69uXhhRoBjJw8sc61uqA2vv3QWyBSmTRoHdTnLGboT5bKEhHIkzVXb+YgEw==
+  dependencies:
+    "@sentry/core" "9.40.0"
+
+"@sentry-internal/feedback@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry-internal/feedback/-/feedback-9.40.0.tgz"
+  integrity sha512-39UbLdGWGvSJ7bAzRnkv91cBdd6fLbdkLVVvqE2ZUfegm7+rH1mRPglmEhw4VE4mQfKZM1zWr/xus2+XPqJcYw==
+  dependencies:
+    "@sentry/core" "9.40.0"
+
+"@sentry-internal/replay-canvas@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry-internal/replay-canvas/-/replay-canvas-9.40.0.tgz"
+  integrity sha512-GLoJ4R4Uipd7Vb+0LzSJA2qCyN1J6YalQIoDuOJTfYyykHvKltds5D8a/5S3Q6d8PcL/nxTn93fynauGEZt2Ow==
+  dependencies:
+    "@sentry-internal/replay" "9.40.0"
+    "@sentry/core" "9.40.0"
+
+"@sentry-internal/replay@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry-internal/replay/-/replay-9.40.0.tgz"
+  integrity sha512-WrmCvqbLJQC45IFRVN3k0J5pU5NkdX0e9o6XxjcmDiATKk00RHnW4yajnCJ8J1cPR4918yqiJHPX5xpG08BZNA==
+  dependencies:
+    "@sentry-internal/browser-utils" "9.40.0"
+    "@sentry/core" "9.40.0"
+
+"@sentry/browser@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry/browser/-/browser-9.40.0.tgz"
+  integrity sha512-qz/1Go817vcsbcIwgrz4/T34vi3oQ4UIqikosuaCTI9wjZvK0HyW3QmLvTbAnsE7G7h6+UZsVkpO5R16IQvQhQ==
+  dependencies:
+    "@sentry-internal/browser-utils" "9.40.0"
+    "@sentry-internal/feedback" "9.40.0"
+    "@sentry-internal/replay" "9.40.0"
+    "@sentry-internal/replay-canvas" "9.40.0"
+    "@sentry/core" "9.40.0"
+
+"@sentry/core@9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry/core/-/core-9.40.0.tgz"
+  integrity sha512-cZkuz6BDna6VXSqvlWnrRsaDx4QBKq1PcfQrqhVz8ljs0M7Gcl+Mtj8dCzUxx12fkYM62hQXG72DEGNlAQpH/Q==
+
+"@sentry/react@^9.40.0":
+  version "9.40.0"
+  resolved "https://registry.npmjs.org/@sentry/react/-/react-9.40.0.tgz"
+  integrity sha512-y00d33qozmQAKroQ4Kk2jxhznprPBOb55SL4LOpNPRHGEomxZCUeM3geltczrf14JsGowCr5+xlT+cZQ2XcNlA==
+  dependencies:
+    "@sentry/browser" "9.40.0"
+    "@sentry/core" "9.40.0"
+    hoist-non-react-statics "^3.3.2"
+
 "@sindresorhus/is@^0.7.0":
   version "0.7.0"
   resolved "https://registry.npmjs.org/@sindresorhus/is/-/is-0.7.0.tgz"
@@ -3847,7 +3902,7 @@ he@^1.2.0:
   resolved "https://registry.npmjs.org/he/-/he-1.2.0.tgz"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-hoist-non-react-statics@^3.3.0:
+hoist-non-react-statics@^3.3.0, hoist-non-react-statics@^3.3.2:
   version "3.3.2"
   resolved "https://registry.npmjs.org/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz"
   integrity sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==
@@ -5912,10 +5967,10 @@ react-transition-group@^4.4.1:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-"react@^15.0.0 || ^16.0.0 || ^17.0.0", react@^16.13.1, react@^16.8.0, "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@>=0.14.0, react@>=15.0.0, react@>=16.3.0, react@>=16.3.2, react@>=16.6.0, react@>=16.8.0:
-  version "16.13.1"
-  resolved "https://registry.npmjs.org/react/-/react-16.13.1.tgz"
-  integrity sha512-YMZQQq32xHLX0bz5Mnibv1/LHb3Sqzngu7xstSM+vrkE5Kzr9xE0yMByK5kMoTK30YVJE61WfbxIFFvfeDKT1w==
+"react@^15.0.0 || ^16.0.0 || ^17.0.0", react@^16.13.1, "react@^16.14.0 || 17.x || 18.x || 19.x", react@^16.8.0, "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@>=0.14.0, react@>=15.0.0, react@>=16.3.0, react@>=16.3.2, react@>=16.6.0, react@>=16.8.0:
+  version "16.14.0"
+  resolved "https://registry.npmjs.org/react/-/react-16.14.0.tgz"
+  integrity sha512-0X2CImDkJGApiAlcf0ODKIneSwBPhqJawOa5wCtKbu7ZECrmS26NvtSILynQ66cgkT/RJ4LidJOc3bUESwmU8g==
   dependencies:
     loose-envify "^1.1.0"
     object-assign "^4.1.1"

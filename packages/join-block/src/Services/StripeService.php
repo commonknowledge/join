@@ -226,6 +226,30 @@ class StripeService
         }
     }
 
+    public static function removeExistingSubscriptions($email, $customerId, $subscriptionId)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Removing previous subscriptions for user " . $email . ", customer: " . $customerId);
+
+        try {
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $customerId,
+                'status' => 'all',
+                'limit' => 100,
+            ]);
+
+            foreach ($subscriptions->autoPagingIterator() as $sub) {
+                if ($sub->id !== $subscriptionId && in_array($sub->status, ['active', 'trialing', 'past_due'])) {
+                    $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
+                    $sub->cancel();
+                }
+            }
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Error removing subscriptions for user " . $email . ": " . $e->getMessage());
+        }
+    }
+
     public static function handleWebhook($event)
     {
         global $joinBlockLog;
