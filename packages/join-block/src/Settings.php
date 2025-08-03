@@ -145,6 +145,11 @@ class Settings
             Field::make('text', 'stripe_publishable_key', 'Stripe publishable key'),
             Field::make('text', 'stripe_secret_key', 'Stripe secret key'),
             Field::make('checkbox', 'stripe_direct_debit', 'Enable direct debit through Stripe (must be enabled in your Stripe account)'),
+            Field::make('html', 'stripe_download_subscriptions')->set_html(
+                '<a href="' . get_rest_url(null, "join/v1/stripe/download-subscriptions?_wpnonce=") . wp_create_nonce('wp_rest') .
+                '" download onclick="this.innerText = \'Loading...\'">Download Subscriptions</a>'
+            ),
+
 
             Field::make('separator', 'postcodes', 'Postcode Address Providers'),
             $postcode_provider_select,

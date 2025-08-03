@@ -29,7 +29,7 @@ class ActionNetworkService
 
         $customFieldValues = [
             "How did you hear about us?" => $data['howDidYouHearAboutUs'],
-            "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'],
+            "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'] ?? "",
             "Date of birth" => $data['dob']
         ];
         $customFieldsConfig = $data['customFieldsConfig'] ?? [];

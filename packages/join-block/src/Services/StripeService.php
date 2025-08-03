@@ -54,11 +54,101 @@ class StripeService
             ],
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',
-            'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
+            'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => ['card', 'bacs_debit']],
             'expand' => ['latest_invoice.payment_intent'],
         ]);
 
         return $subscription;
+    }
+    public static function getSubscriptionsForCSVOutput()
+    {
+        global $joinBlockLog;
+
+        $subs = [];
+        $starting_after = null;
+        $priceCache = [];
+
+        do {
+            $params = ['limit' => 100];
+            if ($starting_after) {
+                $params['starting_after'] = $starting_after;
+            }
+
+            $response = \Stripe\Subscription::all($params);
+            $data = $response->data;
+            $subs = array_merge($subs, $data);
+
+            $starting_after = end($data)?->id;
+
+            $joinBlockLog->info("Got " . count($data) . " subs from Stripe");
+        } while (count($data) === 100);
+
+        $customerIds = array_unique(array_map(fn($sub) => $sub->customer, $subs));
+
+        $customers = [];
+        $starting_after = null;
+
+        do {
+            $params = ['limit' => 100];
+            if ($starting_after) {
+                $params['starting_after'] = $starting_after;
+            }
+
+            $response = \Stripe\Customer::all($params);
+            foreach ($response->data as $cust) {
+                if (in_array($cust->id, $customerIds)) {
+                    $customers[$cust->id] = $cust;
+                }
+            }
+
+            $starting_after = end($response->data)?->id;
+
+            $joinBlockLog->info("Got " . count($data) . " customers from Stripe");
+        } while (count($response->data) === 100 && count($customers) < count($customerIds));
+
+        if (count($customers) < count($customerIds)) {
+            $joinBlockLog->warning("Some customers were not found during bulk fetch.");
+        }
+
+        $output = [];
+        foreach ($subs as $sub) {
+            $customer = $customers[$sub->customer] ?? null;
+            if (!$customer) {
+                continue;
+            }
+
+            $price_id = $sub->items->data[0]->price->id ?? null;
+
+            if ($price_id) {
+                if (!isset($priceCache[$price_id])) {
+                    try {
+                        $price = \Stripe\Price::retrieve($price_id);
+                        $nickname = $price->nickname;
+                        if (!$nickname && $price->product) {
+                            $product = \Stripe\Product::retrieve($price->product);
+                            $nickname = $product->name . ' - ' . strtoupper($price->currency) . ' ' . number_format($price->unit_amount / 100, 2);
+                        }
+                        $priceCache[$price_id] = $nickname ?: 'Unknown';
+                    } catch (\Exception $e) {
+                        $priceCache[$price_id] = 'Error loading price';
+                    }
+                }
+            }
+
+            $row = [
+                "email" => $customer->email,
+                "customer_id" => $customer->id,
+                "subscription_id" => $sub->id,
+                "subscription_status" => $sub->status,
+                "subscription_created" => $sub->created,
+                "subscription_end" => $sub->current_period_end,
+                "price_id" => $sub->items->data[0]->price->id ?? null,
+                "price_label" => $priceCache[$price_id] ?? "Unknown",
+            ];
+            $output[] = $row;
+        }
+
+        return $output;
     }
 
     public static function confirmSubscriptionPaymentIntent($subscription, $confirmationTokenId)
@@ -243,6 +333,19 @@ class StripeService
                 if ($sub->id !== $subscriptionId && in_array($sub->status, ['active', 'trialing', 'past_due'])) {
                     $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
                     $sub->cancel();
+
+                    // Find and void any open invoices for this subscription
+                    $invoices = \Stripe\Invoice::all([
+                        'customer' => $customerId,
+                        'subscription' => $sub->id,
+                        'status' => 'open',
+                        'limit' => 100,
+                    ]);
+
+                    foreach ($invoices->autoPagingIterator() as $invoice) {
+                        $joinBlockLog->info("Voiding invoice " . $invoice->id . " for canceled subscription " . $sub->id);
+                        $invoice->voidInvoice();
+                    }
                 }
             }
         } catch (\Exception $e) {

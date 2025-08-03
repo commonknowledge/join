@@ -3,13 +3,13 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.22
+ * Version:         1.2.24
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
@@ -17,6 +17,7 @@ use ChargeBee\ChargeBee\Environment;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
+use CommonKnowledge\JoinBlock\Commands\ExportStripeSubscriptions;
 use CommonKnowledge\JoinBlock\Logging;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
@@ -405,6 +406,27 @@ add_action('rest_api_init', function () {
             $event = json_decode($request->get_body(), true);
             StripeService::initialise();
             StripeService::handleWebhook($event);
+        }
+    ));
+
+    register_rest_route('join/v1', '/stripe/download-subscriptions', array(
+        'methods' => ['GET'],
+        'permission_callback' => function ($req) {
+            return current_user_can('manage_options');
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+            $joinBlockLog->info("Downloading Stripe subscriptions");
+
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="stripe_subscriptions.csv"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+
+            ExportStripeSubscriptions::run();
+
+            // Prevent WP from sending a JSON response
+            exit;
         }
     ));
 });
