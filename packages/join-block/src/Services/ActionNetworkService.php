@@ -30,7 +30,10 @@ class ActionNetworkService
         $customFieldValues = [
             "How did you hear about us?" => $data['howDidYouHearAboutUs'],
             "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'] ?? "",
-            "Date of birth" => $data['dob']
+            "Date of birth" => $data['dob'],
+            "First Stripe Subscription Date" => $data['stripeFirstSubscriptionDate'],
+            "First Stripe Payment Date" => $data['stripeFirstPaymentDate'],
+            "Latest Stripe Payment Date" => $data['stripeLastPaymentDate'],
         ];
         $customFieldsConfig = $data['customFieldsConfig'] ?? [];
         foreach ($customFieldsConfig as $customField) {
@@ -143,6 +146,38 @@ class ActionNetworkService
                     ]
                 ]
             ]
+        ];
+
+        $client->request(
+            "POST",
+            "https://actionnetwork.org/api/v2/people/",
+            [
+                "headers" => [
+                    "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
+                ],
+                "json" => $data
+            ]
+        );
+    }
+
+    public static function updateCustomFields($email, $fields)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Updating " . $email . " in Action Network with fields " . json_encode($fields));
+
+        $client = new Client();
+
+        $data = [
+            "person" => [
+                "email_addresses" => [
+                    [
+                        "address" => $email,
+                        "primary" => true
+                    ]
+                ],
+                "custom_fields" => $fields,
+            ],
         ];
 
         $client->request(

@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.24
+ * Version:         1.2.25
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -19,6 +19,7 @@ use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
 use CommonKnowledge\JoinBlock\Commands\ExportStripeSubscriptions;
 use CommonKnowledge\JoinBlock\Logging;
+use CommonKnowledge\JoinBlock\Services\ActionNetworkService;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
@@ -482,4 +483,21 @@ add_action('ck_join_block_gocardless_cron_hook', function () {
 
 if (!wp_next_scheduled('ck_join_block_gocardless_cron_hook')) {
     wp_schedule_event(time(), 'hourly', 'ck_join_block_gocardless_cron_hook');
+}
+
+if (defined('WP_CLI') && WP_CLI) {
+    WP_CLI::add_command('join update_an_from_stripe', function () {
+        StripeService::initialise();
+        $customers = StripeService::getCustomers();
+        foreach ($customers as $c) {
+            if ($c->email) {
+                $dates = StripeService::getSubscriptionHistory($c->id);
+                ActionNetworkService::updateCustomFields($c->email, [
+                    "First Stripe Subscription Date" => $dates['firstSubscription'],
+                    "First Stripe Payment Date" => $dates['firstPayment'],
+                    "Latest Stripe Payment Date" => $dates['lastPayment'],
+                ]);
+            }
+        }
+    });
 }

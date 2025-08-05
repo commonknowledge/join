@@ -17,6 +17,32 @@ class StripeService
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
     }
 
+    public static function getCustomers()
+    {
+        global $joinBlockLog;
+
+        $customers = [];
+        $starting_after = null;
+
+        do {
+            $params = ['limit' => 100];
+            if ($starting_after) {
+                $params['starting_after'] = $starting_after;
+            }
+
+            $response = \Stripe\Customer::all($params);
+            foreach ($response->data as $cust) {
+                $customers[] = $cust;
+            }
+
+            $starting_after = end($response->data)?->id;
+
+            $joinBlockLog->info("Got " . count($response->data) . " customers from Stripe");
+        } while (count($response->data) === 100);
+
+        return $customers;
+    }
+
     public static function upsertCustomer($email)
     {
         global $joinBlockLog;
@@ -60,6 +86,7 @@ class StripeService
 
         return $subscription;
     }
+
     public static function getSubscriptionsForCSVOutput()
     {
         global $joinBlockLog;
@@ -68,6 +95,7 @@ class StripeService
         $starting_after = null;
         $priceCache = [];
 
+        // 1. Get subscriptions
         do {
             $params = ['limit' => 100];
             if ($starting_after) {
@@ -85,6 +113,7 @@ class StripeService
 
         $customerIds = array_unique(array_map(fn($sub) => $sub->customer, $subs));
 
+        // 2. Get customers in bulk
         $customers = [];
         $starting_after = null;
 
@@ -103,13 +132,33 @@ class StripeService
 
             $starting_after = end($response->data)?->id;
 
-            $joinBlockLog->info("Got " . count($data) . " customers from Stripe");
+            $joinBlockLog->info("Got " . count($response->data) . " customers from Stripe");
         } while (count($response->data) === 100 && count($customers) < count($customerIds));
 
         if (count($customers) < count($customerIds)) {
             $joinBlockLog->warning("Some customers were not found during bulk fetch.");
         }
 
+        // 3. Get invoices in bulk (covering all subs)
+        $invoices = [];
+        $starting_after = null;
+        do {
+            $params = ['limit' => 100];
+            if ($starting_after) {
+                $params['starting_after'] = $starting_after;
+            }
+
+            $response = \Stripe\Invoice::all($params);
+            foreach ($response->data as $inv) {
+                if (!empty($inv->subscription) && $inv->status === 'paid') {
+                    $invoices[$inv->subscription][] = $inv;
+                }
+            }
+
+            $starting_after = end($response->data)?->id;
+        } while (count($response->data) === 100);
+
+        // 4. Build output
         $output = [];
         foreach ($subs as $sub) {
             $customer = $customers[$sub->customer] ?? null;
@@ -135,6 +184,15 @@ class StripeService
                 }
             }
 
+            // Get first & last payment from invoices
+            $firstPayment = null;
+            $lastPayment = null;
+            if (!empty($invoices[$sub->id])) {
+                usort($invoices[$sub->id], fn($a, $b) => $a->created <=> $b->created);
+                $firstPayment = $invoices[$sub->id][0]->created;
+                $lastPayment  = end($invoices[$sub->id])->created;
+            }
+
             $row = [
                 "email" => $customer->email,
                 "customer_id" => $customer->id,
@@ -142,7 +200,9 @@ class StripeService
                 "subscription_status" => $sub->status,
                 "subscription_created" => $sub->created,
                 "subscription_end" => $sub->current_period_end,
-                "price_id" => $sub->items->data[0]->price->id ?? null,
+                "first_payment" => $firstPayment,
+                "last_payment"  => $lastPayment,
+                "price_id" => $price_id,
                 "price_label" => $priceCache[$price_id] ?? "Unknown",
             ];
             $output[] = $row;
@@ -322,24 +382,36 @@ class StripeService
 
         $joinBlockLog->info("Removing previous subscriptions for user " . $email . ", customer: " . $customerId);
 
+        $firstSubscriptionDate = date('Y-m-d');
+        $firstPayment = null;
+        $lastPayment = null;
+
         try {
+            // Fetch all subscriptions for date calculation
             $subscriptions = \Stripe\Subscription::all([
                 'customer' => $customerId,
-                'status' => 'all',
-                'limit' => 100,
+                'status'   => 'all',
+                'limit'    => 100,
             ]);
 
             foreach ($subscriptions->autoPagingIterator() as $sub) {
+                // Track earliest subscription date
+                $createdDate = date('Y-m-d', $sub->created);
+                if (is_null($firstSubscriptionDate) || $createdDate < $firstSubscriptionDate) {
+                    $firstSubscriptionDate = $createdDate;
+                }
+
+                // Cancel and void if it's an "active-ish" subscription and not the current one
                 if ($sub->id !== $subscriptionId && in_array($sub->status, ['active', 'trialing', 'past_due'])) {
                     $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
                     $sub->cancel();
 
-                    // Find and void any open invoices for this subscription
+                    // Find and void open invoices for this subscription
                     $invoices = \Stripe\Invoice::all([
-                        'customer' => $customerId,
+                        'customer'     => $customerId,
                         'subscription' => $sub->id,
-                        'status' => 'open',
-                        'limit' => 100,
+                        'status'       => 'open',
+                        'limit'        => 100,
                     ]);
 
                     foreach ($invoices->autoPagingIterator() as $invoice) {
@@ -348,9 +420,85 @@ class StripeService
                     }
                 }
             }
+
+            // Fetch all paid invoices for first/last payment dates
+            $paidInvoices = \Stripe\Invoice::all([
+                'customer' => $customerId,
+                'status'   => 'paid',
+                'limit'    => 100,
+            ]);
+
+            foreach ($paidInvoices->autoPagingIterator() as $invoice) {
+                $paymentDate = date('Y-m-d', $invoice->status_transitions->paid_at);
+                if (is_null($firstPayment) || $paymentDate < $firstPayment) {
+                    $firstPayment = $paymentDate;
+                }
+                if (is_null($lastPayment) || $paymentDate > $lastPayment) {
+                    $lastPayment = $paymentDate;
+                }
+            }
         } catch (\Exception $e) {
             $joinBlockLog->error("Error removing subscriptions for user " . $email . ": " . $e->getMessage());
         }
+
+        return [
+            "firstSubscription" => $firstSubscriptionDate,
+            "firstPayment"      => $firstPayment,
+            "lastPayment"       => $lastPayment,
+        ];
+    }
+
+    public static function getSubscriptionHistory($customerId)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Getting subscription history for customer: " . $customerId);
+
+        $firstSubscriptionDate = date('Y-m-d');
+        $firstPayment = null;
+        $lastPayment = null;
+
+        try {
+            // Fetch all subscriptions for date calculation
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $customerId,
+                'status'   => 'all',
+                'limit'    => 100,
+            ]);
+
+            foreach ($subscriptions->autoPagingIterator() as $sub) {
+                // Track earliest subscription date
+                $createdDate = date('Y-m-d', $sub->created);
+                if (is_null($firstSubscriptionDate) || $createdDate < $firstSubscriptionDate) {
+                    $firstSubscriptionDate = $createdDate;
+                }
+            }
+
+            // Fetch all paid invoices for first/last payment dates
+            $paidInvoices = \Stripe\Invoice::all([
+                'customer' => $customerId,
+                'status'   => 'paid',
+                'limit'    => 100,
+            ]);
+
+            foreach ($paidInvoices->autoPagingIterator() as $invoice) {
+                $paymentDate = date('Y-m-d', $invoice->status_transitions->paid_at);
+                if (is_null($firstPayment) || $paymentDate < $firstPayment) {
+                    $firstPayment = $paymentDate;
+                }
+                if (is_null($lastPayment) || $paymentDate > $lastPayment) {
+                    $lastPayment = $paymentDate;
+                }
+            }
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Error Getting subscription history for customer " . $customerId . ": " . $e->getMessage());
+        }
+
+        return [
+            "firstSubscription" => $firstSubscriptionDate,
+            "firstPayment"      => $firstPayment,
+            "lastPayment"       => $lastPayment,
+        ];
     }
 
     public static function handleWebhook($event)

@@ -195,7 +195,10 @@ class JoinService
 
         if (Settings::get("USE_STRIPE")) {
             StripeService::initialise();
-            StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"], $data["stripeSubscriptionId"]);
+            $stripeDates = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"], $data["stripeSubscriptionId"]);
+            $data["stripeFirstSubscriptionDate"] = $stripeDates["firstSubscription"];
+            $data["stripeFirstPaymentDate"] = $stripeDates["firstPayment"];
+            $data["stripeLastPaymentDate"] = $stripeDates["lastPayment"];
         }
 
         $subscriptionPlanId = '';
@@ -333,7 +336,7 @@ class JoinService
         }
     }
 
-    public static function toggleMemberLapsed($email, $lapsed = true)
+    public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null)
     {
         global $joinBlockLog;
 
@@ -348,6 +351,9 @@ class JoinService
                     ActionNetworkService::addTag($email, Settings::get("LAPSED_TAG"));
                 } else {
                     ActionNetworkService::removeTag($email, Settings::get("LAPSED_TAG"));
+                    ActionNetworkService::updateCustomFields($email, [
+                        "Latest Stripe Payment Date" => $paymentDate ?? date('Y-m-d'),
+                    ]);
                 }
                 $joinBlockLog->info("$done member $email as lapsed in Action Network");
             } catch (\Exception $exception) {

@@ -13,7 +13,19 @@ class ExportStripeSubscriptions
     {
         StripeService::initialise();
         $subs = StripeService::getSubscriptionsForCSVOutput();
-        echo join(",", ['"Email"', '"Customer ID"', '"Subscription ID"', '"Subscription Status"', '"Subscription Created"', '"Subscription End"', '"Price ID"', '"Price Name"']);
+        echo join(",", [
+            '"Email"',
+            '"Customer ID"',
+            '"Subscription ID"',
+            '"Subscription Status"',
+            '"Subscription Created"',
+            '"Subscription End"',
+            '"Price ID"',
+            '"Price Name"',
+            '"First Payment"',
+            '"Last Payment"',
+
+        ]);
         echo "\n";
         foreach ($subs as $sub) {
             $row = [
@@ -24,7 +36,9 @@ class ExportStripeSubscriptions
                 date('Y-m-d H:i:s', $sub["subscription_created"]),
                 date('Y-m-d H:i:s', $sub["subscription_end"]),
                 $sub["price_id"],
-                $sub["price_label"]
+                $sub["price_label"],
+                date('Y-m-d H:i:s', $sub["first_payment"]),
+                date('Y-m-d H:i:s', $sub["last_payment"]),
             ];
             echo join(",", array_map(function ($c) {
                 return '"' . $c . '"';
