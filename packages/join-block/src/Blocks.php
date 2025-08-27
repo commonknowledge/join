@@ -10,7 +10,6 @@ use Carbon_Fields\Container\Block_Container;
 use Carbon_Fields\Field\Association_Field;
 use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Image_Field;
-use CommonKnowledge\JoinBlock\Services\GocardlessService;
 
 class Blocks
 {
@@ -19,37 +18,29 @@ class Blocks
 
     public static function init()
     {
-        global $joinBlockLog;
-
         self::registerScripts();
         self::registerBlocks();
 
         // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
         // for an explanation.
         add_action('save_post', function ($_, $post) {
-            global $joinBlockLog;
-            $joinBlockLog->info("Running Join Form save_post hook on post " . $post->post_name);
             $blocks = parse_blocks($post->post_content);
-
-            function parseBlocks($blocks)
-            {
-                global $joinBlockLog;
-                $joinBlockLog->info("Parsing " . count($blocks) . " blocks");
-                foreach ($blocks as $block) {
-                    $joinBlockLog->info("Processing block " . ($block["blockName"] ?? "unknown"));
-                    $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
-                    if ($custom_webhook_url) {
-                        Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
-                    }
-                    $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
-                    Settings::saveMembershipPlans($custom_membership_plans);
-                    $innerBlocks = $block["innerBlocks"] ?? [];
-                    parseBlocks($innerBlocks);
-                }
-            }
-
-            parseBlocks($blocks);
+            Blocks::processBlocks($blocks);
         }, 10, 2);
+    }
+
+    public static function processBlocks($blocks)
+    {
+        foreach ($blocks as $block) {
+            $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
+            if ($custom_webhook_url) {
+                Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
+            }
+            $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
+            Settings::saveMembershipPlans($custom_membership_plans);
+            $innerBlocks = $block["innerBlocks"] ?? [];
+            self::processBlocks($innerBlocks);
+        }
     }
 
     private static function registerScripts()
