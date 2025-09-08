@@ -9,7 +9,11 @@ interface ContinueButtonProps {
   onClick?(event: React.MouseEvent<HTMLButtonElement>): void;
 }
 
-export const ContinueButton: FC<ContinueButtonProps> = ({ disabled, text, onClick }) => (
+export const ContinueButton: FC<ContinueButtonProps> = ({
+  disabled,
+  text,
+  onClick
+}) => (
   <Button
     className="form-section-addon d-flex align-items-center text-xxs"
     type="submit"
@@ -53,15 +57,15 @@ export const RadioPanel: FC<RadioPanelProps> = ({
     render={({ onChange }) => {
       const currentValue = form?.watch(name);
       const checked = value === currentValue;
-      const customValue = form?.watch('customMembershipAmount')
-      const priceLabel = `${currencySymbol}${amount}, ${frequency}`
+      const customValue = form?.watch("customMembershipAmount");
+      const priceLabel = `${currencySymbol}${amount}, ${frequency}`;
 
       const onChangeClearCustom = () => {
         if (!allowCustomAmount) {
-          form?.setValue("customMembershipAmount", "")
+          form?.setValue("customMembershipAmount", "");
         }
-        onChange(value)
-      }
+        onChange(value);
+      };
 
       return (
         <Form.Label
@@ -83,13 +87,25 @@ export const RadioPanel: FC<RadioPanelProps> = ({
           <div className="flex-grow-1">
             <h3 className="radio-panel-label mb-0">
               {label}
-              {!allowCustomAmount ? <span className="float-right">{priceLabel}</span> : null}
+              {!allowCustomAmount ? (
+                <span className="float-right">{priceLabel}</span>
+              ) : null}
             </h3>
             {allowCustomAmount ? (
               <div className="radio-panel-custom-amount">
                 {currencySymbol}
-                <FormItem name="customMembershipAmount" form={form} required={checked}>
-                  <Form.Control type="number" min={amount || 1} max="1000" value={customValue} onChange={() => onChange(value)} />
+                <FormItem
+                  name="customMembershipAmount"
+                  form={form}
+                  required={checked}
+                >
+                  <Form.Control
+                    type="number"
+                    min={amount || 1}
+                    max="1000"
+                    value={customValue}
+                    onChange={() => onChange(value)}
+                  />
                 </FormItem>
                 {frequency}
               </div>
@@ -109,9 +125,10 @@ interface FormItemProps {
   className?: string;
   label?: string;
   form: UseFormMethods<any>;
-  children: ReactElement;
+  children: ReactElement | ReactElement[];
   required?: Boolean;
   after?: ReactElement;
+  style?: React.CSSProperties;
 }
 
 export const FormItem: FC<FormItemProps> = ({
@@ -121,8 +138,12 @@ export const FormItem: FC<FormItemProps> = ({
   className,
   children,
   after,
+  style,
   required
 }) => {
+  const childArr: ReactElement[] = (
+    Array.isArray(children) ? children : [children]
+  ) as ReactElement[];
   const error = form.errors[name]?.message;
   if (error) {
     console.log(error);
@@ -132,7 +153,7 @@ export const FormItem: FC<FormItemProps> = ({
   const isValid = form.formState.isSubmitted && !error;
 
   return (
-    <Form.Group className={className}>
+    <Form.Group className={className} style={style}>
       {label && (
         <Form.Label htmlFor={name}>
           {label}{" "}
@@ -144,14 +165,17 @@ export const FormItem: FC<FormItemProps> = ({
           )}
         </Form.Label>
       )}
-      {cloneElement(children, {
-        name,
-        ref: form.register,
-        id: name,
-        isInvalid,
-        isValid,
-        required
-      })}
+      {childArr.map((child, i) =>
+        cloneElement(child, {
+          name,
+          ref: form.register,
+          id: child.props.id || name,
+          isInvalid,
+          isValid,
+          key: i,
+          required
+        })
+      )}
       {isInvalid && (
         <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
       )}
@@ -185,12 +209,11 @@ export const DetailPanel: FC<DetailPanelProps> = ({
       <div className="d-table-cell p-2 p-md-3 w-md-25 text-xxs text-nowrap">
         {label.replace(/ /g, " ")}
       </div>
-      <div className="d-table-cell p-2 p-md-3 w-100 w-md-50 text-xxs">{children}</div>
+      <div className="d-table-cell p-2 p-md-3 w-100 w-md-50 text-xxs">
+        {children}
+      </div>
       <div className="d-table-cell p-2 p-md-3 w-md-25 text-xxs text-right">
-        <a
-          onClick={onRequestChange}
-          href="#"
-        >
+        <a onClick={onRequestChange} href="#">
           Change
         </a>
       </div>

@@ -216,6 +216,8 @@ class Blocks
             'text' => 'Text',
             'checkbox' => 'Checkbox',
             'number' => 'Number',
+            'select' => 'Select',
+            'radio' => 'Radio'
         ))->set_default_value('text');
         /** @var Complex_Field $custom_fields */
         $custom_fields = Field::make('complex', 'custom_fields');
@@ -223,6 +225,15 @@ class Blocks
             Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
             Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
             $field_type,
+            Field::make('textarea', 'options', "Options")
+                ->set_help_text("The allowed field values (separated by new lines). The 'value : label' format is also supported if required, e.g. <br /><pre>red : Red\nblue : Blue</pre>")
+                ->set_conditional_logic([
+                [
+                    'field' => 'field_type',
+                    'value' => ['select', 'radio'],
+                    'compare' => 'IN',
+                ]
+            ]),
             Field::make('rich_text', 'instructions')->set_help_text("Text to display below the field."),
         ]);
         return $custom_fields;

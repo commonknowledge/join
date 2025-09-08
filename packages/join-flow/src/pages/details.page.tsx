@@ -266,11 +266,42 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <section className="form-section">
           {customFieldsHeading ? <h2>{customFieldsHeading}</h2> : null}
           {customFields.map((field) => (
-            <>
+            <React.Fragment key={field.id}>
               {field.field_type === "checkbox" ? (
                 <FormItem name={field.id} form={form}>
                   <Form.Check label={field.label} />
                 </FormItem>
+              ) : field.field_type === "select" ? (
+                <FormItem label={field.label} name={field.id} form={form}>
+                  <Form.Control as="select" custom className="form-control">
+                    <option value="">Choose an option</option>
+                    {parseCustomFieldOptions(field.options).map(
+                      (o: { label: string; value: string }) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      )
+                    )}
+                  </Form.Control>
+                </FormItem>
+              ) : field.field_type === "radio" ? (
+                <>
+                  <span>{field.label}</span>
+                  <FormItem name={field.id} form={form} style={{marginTop: "0.125rem"}}>
+                      {parseCustomFieldOptions(field.options).map(
+                        (o: { label: string; value: string }) => (
+                          <Form.Check
+                            key={o.value}
+                            value={o.value}
+                            name={field.id}
+                            type="radio"
+                            id={`${field.id}-${o.value}`}
+                            label={o.label}
+                          />
+                        )
+                      )}
+                  </FormItem>
+                </>
               ) : (
                 <FormItem label={field.label} name={field.id} form={form}>
                   <Form.Control
@@ -279,8 +310,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
                   />
                 </FormItem>
               )}
-              {field.instructions && <div className="text-secondary" dangerouslySetInnerHTML={{ __html: field.instructions }}></div>}
-            </>
+              {field.instructions && (
+                <div
+                  className="text-secondary"
+                  dangerouslySetInnerHTML={{ __html: field.instructions }}
+                ></div>
+              )}
+            </React.Fragment>
           ))}
         </section>
       ) : null}
@@ -378,4 +414,27 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
       ) : null}
     </form>
   );
+};
+
+const parseCustomFieldOptions = (options: string) => {
+  return options
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) =>
+      row
+        .split(":")
+        .map((c) => c.trim())
+        .filter(Boolean)
+    )
+    .map((row) => {
+      if (row.length === 0) {
+        return null;
+      }
+      if (row.length === 1) {
+        return { value: row[0], label: row[0] };
+      }
+      return { value: row[0], label: row.slice(1).join(":") };
+    })
+    .filter((r) => r !== null);
 };
