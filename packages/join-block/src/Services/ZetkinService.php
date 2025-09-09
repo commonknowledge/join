@@ -50,7 +50,7 @@ class ZetkinService
         }
 
         $client = new Client();
-        $base_url = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetkin.org" : "http://api.dev.zetkin.org";
+        $base_url = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/" : "http://api.dev.zetkin.org";
         $response = $client->request(
             "POST",
             "$base_url/v1/orgs/$zetkin_org_id/join_forms/$zetkin_form_id/submissions",
