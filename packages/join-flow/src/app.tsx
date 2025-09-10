@@ -252,7 +252,6 @@ const getInitialState = (): FormSchema => {
     // Default contact flags to true if not collecting consent, otherwise false
     contactByEmail: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
     contactByPhone: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
-    customFieldsConfig: getEnv("CUSTOM_FIELDS"),
   });
 
   const getSavedState = () => {
@@ -288,7 +287,8 @@ const getInitialState = (): FormSchema => {
     ...getSavedState(),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv('IS_UPDATE_FLOW'),
-    webhookUuid: getEnv('WEBHOOK_UUID')
+    webhookUuid: getEnv('WEBHOOK_UUID'),
+    customFieldsConfig: getEnv("CUSTOM_FIELDS"),
   } as any;
   return state;
 };

@@ -1,5 +1,13 @@
 import { memoize } from "lodash-es";
-import { boolean, InferType, number, object, ObjectSchema, string } from "yup";
+import {
+  BaseSchema,
+  boolean,
+  InferType,
+  number,
+  object,
+  ObjectSchema,
+  string
+} from "yup";
 import "yup-phone";
 import { yupResolver } from "@hookform/resolvers/yup";
 
@@ -43,66 +51,86 @@ function isInPast(value: number | null | undefined | object) {
   );
 }
 
+const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
+const CustomFieldsSchema = customFields.reduce((o, field) => {
+  let def: BaseSchema = string();
+  if (field.field_type === "checkbox") {
+    def = boolean();
+  } else if (field.field_type === "number") {
+    def = number();
+  }
+  return { ...o, [field.id]: field.required ? def.required() : def };
+}, {});
+
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
   email: string()
     .email("Your email address must be a valid email address")
     .required("Email address is required"),
-  dobDay: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
-    .typeError("The day of your birth must be a number")
-    .integer("The day of your birth should be a whole number")
-    .positive("The day of your birth should be a positive number")
-    .max(
-      31,
-      "The day of your birth should be a number between 1 and 31, representing the days of the month"
-    )
-    .test(
-      "is-valid-day-of-month",
-      "This is not a valid day in the month",
-      isValidDayOfMonth
-    )
-    .required() : number(),
-  dobMonth: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
-    .typeError("The month of your birth must be a number")
-    .integer("The month of your birth should be a whole number")
-    .positive("The month of your birth should be a positive number")
-    .max(
-      12,
-      "The month of your birth should be only be a number between 1 and 12, representing the months of the year"
-    )
-    .required() : number(),
-  dobYear: getEnv('COLLECT_DATE_OF_BIRTH') ? number()
-    .typeError("The year of your birth must be a number")
-    .integer("The year of your birth should be a whole number")
-    .positive("The year of your birth should be a positive number")
-    .min(1900, "The year of your birth should not be in the distant past")
-    .test(
-      "is-not-in-future",
-      "The date of your birth should not be in the future",
-      isInPast
-    )
-    .required() : number(),
+  dobDay: getEnv("COLLECT_DATE_OF_BIRTH")
+    ? number()
+        .typeError("The day of your birth must be a number")
+        .integer("The day of your birth should be a whole number")
+        .positive("The day of your birth should be a positive number")
+        .max(
+          31,
+          "The day of your birth should be a number between 1 and 31, representing the days of the month"
+        )
+        .test(
+          "is-valid-day-of-month",
+          "This is not a valid day in the month",
+          isValidDayOfMonth
+        )
+        .required()
+    : number(),
+  dobMonth: getEnv("COLLECT_DATE_OF_BIRTH")
+    ? number()
+        .typeError("The month of your birth must be a number")
+        .integer("The month of your birth should be a whole number")
+        .positive("The month of your birth should be a positive number")
+        .max(
+          12,
+          "The month of your birth should be only be a number between 1 and 12, representing the months of the year"
+        )
+        .required()
+    : number(),
+  dobYear: getEnv("COLLECT_DATE_OF_BIRTH")
+    ? number()
+        .typeError("The year of your birth must be a number")
+        .integer("The year of your birth should be a whole number")
+        .positive("The year of your birth should be a positive number")
+        .min(1900, "The year of your birth should not be in the distant past")
+        .test(
+          "is-not-in-future",
+          "The date of your birth should not be in the future",
+          isInPast
+        )
+        .required()
+    : number(),
   addressLine1: string().required(),
   addressLine2: string(),
   addressCity: string().required(),
-  addressCounty: getEnv('COLLECT_COUNTY') ? string().required() : string(),
+  addressCounty: getEnv("COLLECT_COUNTY") ? string().required() : string(),
   addressPostcode: string().required(),
   addressCountry: string().required(),
-  password: getEnv('CREATE_AUTH0_ACCOUNT') ? string()
-    .min(8, "Password must be at least 8 characters")
-    .matches(/[0-9]/, "Password must contain a number.")
-    .matches(/[A-Z]/, "Password must contain an uppercase letter.")
-    .matches(
-      /[!@#$%^&*]/,
-      "Password must contain at least one special character, !@#$%^&* are allowed."
-    )
-    .required() : string(),
+  password: getEnv("CREATE_AUTH0_ACCOUNT")
+    ? string()
+        .min(8, "Password must be at least 8 characters")
+        .matches(/[0-9]/, "Password must contain a number.")
+        .matches(/[A-Z]/, "Password must contain an uppercase letter.")
+        .matches(
+          /[!@#$%^&*]/,
+          "Password must contain at least one special character, !@#$%^&* are allowed."
+        )
+        .required()
+    : string(),
   phoneNumber: string()
     .phone("GB", false, "A valid phone number is required")
     .required(),
   contactByEmail: boolean(),
-  contactByPhone: boolean()
+  contactByPhone: boolean(),
+  ...CustomFieldsSchema
 }).required();
 
 export const PlanSchema = object({
@@ -120,42 +148,48 @@ export const PlanSchema = object({
 }).required();
 
 const ucwords = (str: string) => {
-  return str.split(' ').map(s => {
-    return `${s.substring(0, 1).toLocaleUpperCase()}${s.substring(1)}`
-  }).join(' ')
-}
+  return str
+    .split(" ")
+    .map((s) => {
+      return `${s.substring(0, 1).toLocaleUpperCase()}${s.substring(1)}`;
+    })
+    .join(" ");
+};
 
 export const currencyCodeToSymbol = (code: string): string => {
-  switch(code) {
-    case 'EUR':
-      return '€';
-    case 'GBP':
-      return '£';
-    case 'USD':
-      return '$';
+  switch (code) {
+    case "EUR":
+      return "€";
+    case "GBP":
+      return "£";
+    case "USD":
+      return "$";
   }
-  return '£';
-}
+  return "£";
+};
 
 export const getPaymentPlan = (name: string | undefined) => {
-  const plans = getEnv('MEMBERSHIP_PLANS')
-  return (plans as any[]).filter(p => p.value === name).pop()
-}
+  const plans = getEnv("MEMBERSHIP_PLANS");
+  return (plans as any[]).filter((p) => p.value === name).pop();
+};
 
-export const renderPaymentPlan = ({ membership, customMembershipAmount }: FormSchema) => {
+export const renderPaymentPlan = ({
+  membership,
+  customMembershipAmount
+}: FormSchema) => {
   if (!membership) {
     return "None";
   }
 
-  const plan = getPaymentPlan(membership)
+  const plan = getPaymentPlan(membership);
 
   if (!plan || !plan.allowCustomAmount) {
-    return ucwords(membership)
+    return ucwords(membership);
   }
 
-  const amount = `${currencyCodeToSymbol(plan.currency)}${customMembershipAmount}`
-  const parts = [ucwords(membership), amount, plan.frequency]
-  return parts.join(', ')
+  const amount = `${currencyCodeToSymbol(plan.currency)}${customMembershipAmount}`;
+  const parts = [ucwords(membership), amount, plan.frequency];
+  return parts.join(", ");
 };
 
 const PaymentMethodSchema = object({
@@ -163,9 +197,9 @@ const PaymentMethodSchema = object({
 }).required();
 
 export const getPaymentFrequency = (membership: string | undefined) => {
-  const plan = getPaymentPlan(membership)
-  return plan?.frequency || ''
-}
+  const plan = getPaymentPlan(membership);
+  return plan?.frequency || "";
+};
 
 export const renderPaymentMethod = ({
   paymentMethod,
@@ -184,7 +218,7 @@ export const renderPaymentMethod = ({
   const frequency = getPaymentFrequency(membership);
 
   if (frequency) {
-    return `${paymentFormat}, ${frequency}`
+    return `${paymentFormat}, ${frequency}`;
   }
 
   return paymentFormat;
@@ -222,13 +256,13 @@ const DonationSchema = object({
 
 const CustomGoCardlessSchema = object({
   gcBillingRequestId: string()
-})
+});
 
 const StripeSchema = object({
   stripeCustomerId: string(),
   stripeSubscriptionId: string(),
   stripePaymentIntentId: string()
-})
+});
 
 export const FormSchema: ObjectSchema<FormSchema> = object()
   .concat(Prerequesites)
@@ -243,21 +277,21 @@ export const FormSchema: ObjectSchema<FormSchema> = object()
 
 export type FormSchema = Partial<
   InferType<typeof Prerequesites> &
-  InferType<typeof DetailsSchema> &
-  InferType<typeof PlanSchema> &
-  InferType<typeof DonationSchema> &
-  InferType<typeof PaymentMethodSchema> &
-  (
-    | InferType<typeof PaymentMethodDDSchema>
-    | InferType<typeof PaymentMethodCardSchema>
-  ) &
-  InferType<typeof PaymentDetailsSchema> &
-  InferType<typeof CustomGoCardlessSchema> &
-  InferType<typeof StripeSchema>
+    InferType<typeof DetailsSchema> &
+    InferType<typeof PlanSchema> &
+    InferType<typeof DonationSchema> &
+    InferType<typeof PaymentMethodSchema> &
+    (
+      | InferType<typeof PaymentMethodDDSchema>
+      | InferType<typeof PaymentMethodCardSchema>
+    ) &
+    InferType<typeof PaymentDetailsSchema> &
+    InferType<typeof CustomGoCardlessSchema> &
+    InferType<typeof StripeSchema>
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {
-  const useTestData = getEnv('USE_TEST_DATA');
+  const useTestData = getEnv("USE_TEST_DATA");
   if (useTestData) {
     console.log(
       "REACT_APP_USE_TEST_DATA environment variable set. Using test data."

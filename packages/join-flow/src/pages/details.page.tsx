@@ -30,6 +30,7 @@ const dateOfBirthHeading = getEnvStr("DATE_OF_BIRTH_HEADING");
 const dateOfBirthCopy = getEnvStr("DATE_OF_BIRTH_COPY");
 const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
 const customFieldsHeading = getEnvStr("CUSTOM_FIELDS_HEADING");
+const useHearAboutUs = getEnv("COLLECT_HEAR_ABOUT_US") || false;
 const hearAboutUsDetails = getEnvStr("HEAR_ABOUT_US_DETAILS");
 const hearAboutUsHeading = getEnvStr("HEAR_ABOUT_US_HEADING");
 const hearAboutUsOptions = (
@@ -268,11 +269,11 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           {customFields.map((field) => (
             <React.Fragment key={field.id}>
               {field.field_type === "checkbox" ? (
-                <FormItem name={field.id} form={form}>
+                <FormItem name={field.id} form={form} required={field.required}>
                   <Form.Check label={field.label} />
                 </FormItem>
               ) : field.field_type === "select" ? (
-                <FormItem label={field.label} name={field.id} form={form}>
+                <FormItem label={field.label} name={field.id} form={form} required={field.required}>
                   <Form.Control as="select" custom className="form-control">
                     <option value="">Choose an option</option>
                     {parseCustomFieldOptions(field.options).map(
@@ -287,23 +288,28 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               ) : field.field_type === "radio" ? (
                 <>
                   <span>{field.label}</span>
-                  <FormItem name={field.id} form={form} style={{marginTop: "0.125rem"}}>
-                      {parseCustomFieldOptions(field.options).map(
-                        (o: { label: string; value: string }) => (
-                          <Form.Check
-                            key={o.value}
-                            value={o.value}
-                            name={field.id}
-                            type="radio"
-                            id={`${field.id}-${o.value}`}
-                            label={o.label}
-                          />
-                        )
-                      )}
+                  <FormItem
+                    name={field.id}
+                    form={form}
+                    style={{ marginTop: "0.125rem" }}
+                    required={field.required}
+                  >
+                    {parseCustomFieldOptions(field.options).map(
+                      (o: { label: string; value: string }) => (
+                        <Form.Check
+                          key={o.value}
+                          value={o.value}
+                          name={field.id}
+                          type="radio"
+                          id={`${field.id}-${o.value}`}
+                          label={o.label}
+                        />
+                      )
+                    )}
                   </FormItem>
                 </>
               ) : (
-                <FormItem label={field.label} name={field.id} form={form}>
+                <FormItem label={field.label} name={field.id} form={form} required={field.required}>
                   <Form.Control
                     autoComplete={field.id}
                     type={field.field_type}
@@ -371,32 +377,34 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </section>
       ) : null}
 
-      <section className="form-section">
-        <h2>{hearAboutUsHeading}</h2>
-        <FormItem name="howDidYouHearAboutUs" form={form}>
-          <Form.Control as="select" custom className="form-control">
-            <option value="">Choose an option</option>
-            {hearAboutUsOptions.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-            <option value="other">Other</option>
-          </Form.Control>
-        </FormItem>
-        {howDidYouHearAboutUs === "other" && (
-          <FormItem
-            name="howDidYouHearAboutUsDetails"
-            form={form}
-            label={hearAboutUsDetails}
-          >
-            <Form.Control
-              autoComplete="howDidYouHearAboutUsDetails"
-              as="textarea"
-            />
+      {useHearAboutUs ? (
+        <section className="form-section">
+          <h2>{hearAboutUsHeading}</h2>
+          <FormItem name="howDidYouHearAboutUs" form={form}>
+            <Form.Control as="select" custom className="form-control">
+              <option value="">Choose an option</option>
+              {hearAboutUsOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+              <option value="other">Other</option>
+            </Form.Control>
           </FormItem>
-        )}
-      </section>
+          {howDidYouHearAboutUs === "other" && (
+            <FormItem
+              name="howDidYouHearAboutUsDetails"
+              form={form}
+              label={hearAboutUsDetails}
+            >
+              <Form.Control
+                autoComplete="howDidYouHearAboutUsDetails"
+                as="textarea"
+              />
+            </FormItem>
+          )}
+        </section>
+      ) : null}
 
       <section className="form-section">
         <div dangerouslySetInnerHTML={{ __html: privacyCopy }}></div>

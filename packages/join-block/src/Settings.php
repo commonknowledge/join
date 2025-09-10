@@ -48,6 +48,8 @@ class Settings
 
         $feature_fields = [
             Field::make('checkbox', 'collect_date_of_birth'),
+            Field::make('checkbox', 'collect_hear_about_us', "Ask 'How did you hear about us?'")
+            ->set_help_text("If using Zetkin, make sure to create the 'hear_about_us' and 'hear_about_us_details' custom fields and add them to your join form"),
             Field::make('checkbox', 'collect_county'),
             Field::make('checkbox', 'collect_phone_and_email_contact_consent')
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),

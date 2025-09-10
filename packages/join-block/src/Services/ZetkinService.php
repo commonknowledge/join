@@ -21,6 +21,7 @@ class ZetkinService
         $zetkin_form_id = Settings::get("ZETKIN_JOIN_FORM_ID");
         $zetkin_token = Settings::get("ZETKIN_JOIN_FORM_SUBMIT_TOKEN");
         $zetkin_membership_field = Settings::get("ZETKIN_MEMBERSHIP_CUSTOM_FIELD");
+        $collect_hear_about_us = Settings::get("COLLECT_HEAR_ABOUT_US");
 
         $person_data = [
             "email" => $email,
@@ -34,6 +35,15 @@ class ZetkinService
             }
         }
 
+        if ($collect_hear_about_us) {
+            $person_data["hear_about_us"] = $data['howDidYouHearAboutUs'];
+            $person_data["hear_about_us_details"] = $data['howDidYouHearAboutUsDetails'] ?? "";
+        }
+
+        $customFieldsConfig = $data['customFieldsConfig'] ?? [];
+        foreach ($customFieldsConfig as $customField) {
+            $person_data[$customField["id"]] = $data[$customField["id"]] ?? "";
+        }
 
         if (!$data['isUpdateFlow']) {
             $person_data = array_merge($person_data, [
@@ -50,7 +60,7 @@ class ZetkinService
         }
 
         $client = new Client();
-        $base_url = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/" : "http://api.dev.zetkin.org";
+        $base_url = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in" : "http://api.dev.zetkin.org";
         $response = $client->request(
             "POST",
             "$base_url/v1/orgs/$zetkin_org_id/join_forms/$zetkin_form_id/submissions",

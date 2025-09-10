@@ -224,6 +224,7 @@ class Blocks
         $custom_fields->add_fields([
             Field::make('text', 'label', "Label")->set_required(true)->set_help_text("The label to display to the user."),
             Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
+            Field::make("checkbox", "required"),
             $field_type,
             Field::make('textarea', 'options', "Options")
                 ->set_help_text("The allowed field values (separated by new lines). The 'value : label' format is also supported if required, e.g. <br /><pre>red : Red\nblue : Blue</pre>")
@@ -439,6 +440,7 @@ class Blocks
             "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
             "COLLECT_COUNTY" => Settings::get("COLLECT_COUNTY"),
             "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
+            "COLLECT_HEAR_ABOUT_US" => Settings::get("COLLECT_HEAR_ABOUT_US"),
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
             "CONTACT_CONSENT_COPY" => wpautop(Settings::get("CONTACT_CONSENT_COPY")),
             "CONTACT_DETAILS_COPY" => wpautop(Settings::get("CONTACT_DETAILS_COPY")),
