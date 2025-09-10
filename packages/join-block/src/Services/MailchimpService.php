@@ -2,7 +2,7 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
 use MailchimpMarketing\ApiClient;
 use CommonKnowledge\JoinBlock\Settings;
@@ -44,6 +44,12 @@ class MailchimpService
                     "country" => $data["addressCountry"]
                 ]
             ];
+
+            $customFieldsConfig = $data['customFieldsConfig'] ?? [];
+            foreach ($customFieldsConfig as $customField) {
+                $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField["id"]));
+                $mergeFields[$mergeField] = $data[$customField["id"]] ?? "";
+            }
         }
 
         try {
@@ -61,6 +67,5 @@ class MailchimpService
                 throw $e;
             }
         }
-
     }
 }
