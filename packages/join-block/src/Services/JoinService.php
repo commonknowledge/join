@@ -162,7 +162,7 @@ class JoinService
         $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
         if ($data['membershipPlan']['allow_custom_amount']) {
             $minimumAmount = $membershipAmount;
-            $membershipAmount = $data['customMembershipAmount'] ?? 1;
+            $membershipAmount = (float) $data['customMembershipAmount'] ?? 0;
             if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
                 $error = 'Invalid membership amount: ' . $membershipAmount;
                 $joinBlockLog->error($error);
@@ -195,10 +195,16 @@ class JoinService
 
         if (Settings::get("USE_STRIPE")) {
             StripeService::initialise();
-            $stripeDates = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"], $data["stripeSubscriptionId"]);
-            $data["stripeFirstSubscriptionDate"] = $stripeDates["firstSubscription"];
-            $data["stripeFirstPaymentDate"] = $stripeDates["firstPayment"];
-            $data["stripeLastPaymentDate"] = $stripeDates["lastPayment"];
+            $subscriptionInfo = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
+            if ($subscriptionInfo["amount"] !== $membershipAmount) {
+                $email = $data['email'];
+                $subAmount = round($subscriptionInfo["unitAmount"] / 100, 2);
+                $joinBlockLog->error("Found mismatched subscription amounts for $email - claimed: $membershipAmount, found in stripe: $subAmount");
+                throw new JoinBlockException("Invalid subscription amount", 8);
+            }
+            $data["stripeFirstSubscriptionDate"] = $subscriptionInfo["firstSubscription"];
+            $data["stripeFirstPaymentDate"] = $subscriptionInfo["firstPayment"];
+            $data["stripeLastPaymentDate"] = $subscriptionInfo["lastPayment"];
         }
 
         $subscriptionPlanId = '';
@@ -594,7 +600,7 @@ class JoinService
         $chargebeeSubscriptionPayload["subscription_items"] = [
             [
                 "item_price_id" => $planId,
-                "unit_price" => (int)$data['membershipPlan']['amount'] * 100
+                "unit_price" => (float) $data['membershipPlan']['amount'] * 100
             ]
         ];
 
@@ -602,12 +608,12 @@ class JoinService
         $joinBlockLog->info('Handling donation');
 
         // Non-recurring donation
-        $hasDonation = ((int)$data['donationAmount']) > 0;
+        $hasDonation = ((float) $data['donationAmount']) > 0;
         if ($hasDonation && $data['recurDonation'] === false) {
             $joinBlockLog->info('Setting up non-recurring donation');
             $chargebeeSubscriptionPayload["subscription_items"][] = [
                 "item_price_id" => "additional_donation_single",
-                "unit_price" => (int)$data['donationAmount'] * 100
+                "unit_price" => (float) $data['donationAmount'] * 100
             ];
         }
 
@@ -616,7 +622,7 @@ class JoinService
             $joinBlockLog->info('Setting up recurring donation');
             $chargebeeSubscriptionPayload["subscription_items"][] = [
                 "item_price_id" => "additional_donation_monthly",
-                "unit_price" => (int)$data['donationAmount'] * 100
+                "unit_price" => (float) $data['donationAmount'] * 100
             ];
         }
 

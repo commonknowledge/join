@@ -72,8 +72,8 @@ class StripeService
     public static function createSubscription($customer, $plan, $customAmount = null)
     {
         $priceId = $plan["stripe_price_id"];
-        $customAmount = (int) $customAmount;
-        $minAmount = (int) $plan["amount"];
+        $customAmount = (float) $customAmount;
+        $minAmount = (float) $plan["amount"];
         if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
             $product = self::getOrCreateProductForMembershipTier($plan);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
@@ -394,6 +394,12 @@ class StripeService
         $firstSubscriptionDate = date('Y-m-d');
         $firstPayment = null;
         $lastPayment = null;
+        $amount = 0;
+
+        if (!$customerId) {
+            [$customer,] = self::upsertCustomer($email);
+            $customerId = $customer->id;
+        }
 
         try {
             // Fetch all subscriptions for date calculation
@@ -428,6 +434,13 @@ class StripeService
                         $invoice->voidInvoice();
                     }
                 }
+
+                if ($sub->id === $subscriptionId) {
+                    $subItem = $sub->items->first();
+                    if ($subItem) {
+                        $amount = $subItem->price->unit_amount;
+                    }
+                }
             }
 
             // Fetch all paid invoices for first/last payment dates
@@ -454,6 +467,7 @@ class StripeService
             "firstSubscription" => $firstSubscriptionDate,
             "firstPayment"      => $firstPayment,
             "lastPayment"       => $lastPayment,
+            "amount"            => round($amount / 100),
         ];
     }
 

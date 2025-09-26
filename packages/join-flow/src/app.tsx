@@ -19,7 +19,7 @@ import {
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
-import { FormSchema, getTestDataIfEnabled } from "./schema";
+import { FormSchema, getPaymentPlan, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
@@ -27,14 +27,14 @@ import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
 import stripe from "./images/stripe.png";
 
-import { Elements } from '@stripe/react-stripe-js';
+import { Elements } from "@stripe/react-stripe-js";
 import MinimalJoinForm from "./components/minimal-join-flow";
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe } from "@stripe/stripe-js";
 
 interface Stage {
-  id: PageState["stage"],
-  label: string
-  breadcrumb: boolean
+  id: PageState["stage"];
+  label: string;
+  breadcrumb: boolean;
 }
 
 let stages: Stage[] = [
@@ -46,23 +46,27 @@ let stages: Stage[] = [
   { id: "confirm", label: "Confirm", breadcrumb: false }
 ];
 
-if (getEnv('IS_UPDATE_FLOW')) {
-  stages = stages.filter(s => s.id !== 'enter-details')
+if (getEnv("IS_UPDATE_FLOW")) {
+  stages = stages.filter((s) => s.id !== "enter-details");
 }
 
 // Redirect to confirm page if ?gocardless_success === "true"
 // because that is a redirect from GoCardless
 // Also require a billing request ID to be present.
-const searchParams = new URLSearchParams(window.location.search)
-const gcRedirect = searchParams.get("gocardless_success") === "true"
-const stripeRedirect = searchParams.get("stripe_success") === "true"
-const savedSession = JSON.parse(sessionStorage.getItem(SAVED_STATE_KEY) || "{}")
-const gcBillingRequestId = savedSession['gcBillingRequestId']
-const stripePaymentIntentId = savedSession['stripePaymentIntentId']
-let shouldRedirectToConfirm = (gcRedirect && gcBillingRequestId) || (stripeRedirect && stripePaymentIntentId)
+const searchParams = new URLSearchParams(window.location.search);
+const gcRedirect = searchParams.get("gocardless_success") === "true";
+const stripeRedirect = searchParams.get("stripe_success") === "true";
+const savedSession = JSON.parse(
+  sessionStorage.getItem(SAVED_STATE_KEY) || "{}"
+);
+const gcBillingRequestId = savedSession["gcBillingRequestId"];
+const stripePaymentIntentId = savedSession["stripePaymentIntentId"];
+let shouldRedirectToConfirm =
+  (gcRedirect && gcBillingRequestId) ||
+  (stripeRedirect && stripePaymentIntentId);
 
 // @ts-ignore
-const stripePromise = loadStripe(getEnv('STRIPE_PUBLISHABLE_KEY'));
+const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 
 const App = () => {
   const [data, setData] = useState(getInitialState);
@@ -74,13 +78,16 @@ const App = () => {
     stages
   );
 
-  useEffect(function routerAnalytics() {
-    try {
-      // @ts-ignore
-      // In case there is a posthog install in the parent website
-      posthog?.capture("join flow navigation", { stage: router.state.stage })
-    } catch (e) { }
-  }, [router])
+  useEffect(
+    function routerAnalytics() {
+      try {
+        // @ts-ignore
+        // In case there is a posthog install in the parent website
+        posthog?.capture("join flow navigation", { stage: router.state.stage });
+      } catch (e) {}
+    },
+    [router]
+  );
 
   if (shouldRedirectToConfirm) {
     router.setState({ stage: "confirm" });
@@ -90,8 +97,12 @@ const App = () => {
 
   useOnce(stripUrlParams);
 
-  const recordStep = usePostResource<Partial<FormSchema & { stage: string }>>("/step");
-  const getGoCardlessRedirect = usePostResource<Partial<FormSchema & { redirectUrl: string }>>("/gocardless/auth");
+  const recordStep =
+    usePostResource<Partial<FormSchema & { stage: string }>>("/step");
+  const getGoCardlessRedirect =
+    usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
+      "/gocardless/auth"
+    );
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
@@ -106,31 +117,44 @@ const App = () => {
       setData(nextData);
       sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(nextData));
 
-      let nextStage = router.state.stage
+      let nextStage = router.state.stage;
 
       if (router.state.stage === "enter-details") {
-        nextStage = "plan"
+        nextStage = "plan";
         // Send initial details to catch drop off
-        await recordStep({ ...nextData, stage: 'enter-details' });
+        await recordStep({ ...nextData, stage: "enter-details" });
       } else if (router.state.stage === "plan") {
-        nextStage = "donation"
+        nextStage = "donation";
       } else if (router.state.stage === "donation") {
-        nextStage = "payment-method"
+        nextStage = "payment-method";
       } else if (router.state.stage === "payment-method") {
-        nextStage = "payment-details"
+        nextStage = "payment-details";
       } else if (router.state.stage === "payment-details") {
-        nextStage = "confirm"
+        nextStage = "confirm";
       } else if (router.state.stage === "confirm") {
-        router.reset()
-        await redirectToSuccess(data)
+        router.reset();
+        await redirectToSuccess(data);
       }
 
       if (nextStage === "donation" && !includeDonationPage) {
-        nextStage = "payment-method"
+        nextStage = "payment-method";
+      }
+
+      // Skip payment if member has selected a free membership, and it is allowed
+      if (nextStage === "payment-method") {
+        const plan = getPaymentPlan(nextData.membership);
+        if (
+          plan &&
+          Number(plan.amount) === 0 &&
+          plan.allowCustomAmount &&
+          Number(nextData.customMembershipAmount) === 0
+        ) {
+          nextStage = "confirm";
+        }
       }
 
       if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
-        nextStage = "payment-details"
+        nextStage = "payment-details";
       }
 
       // Go to external GoCardless pages if not using the GoCardless API
@@ -151,7 +175,10 @@ const App = () => {
         });
         sessionStorage.setItem(
           SAVED_STATE_KEY,
-          JSON.stringify({ ...nextData, gcBillingRequestId: goCardlessHrefResponse.gcBillingRequestId })
+          JSON.stringify({
+            ...nextData,
+            gcBillingRequestId: goCardlessHrefResponse.gcBillingRequestId
+          })
         );
         window.location.href = goCardlessHrefResponse.href;
       }
@@ -162,79 +189,87 @@ const App = () => {
   );
 
   const paymentProviderLogos = getPaymentMethods().map((method) => {
-    return method === "directDebit" ?
+    return method === "directDebit" ? (
       <a key={method} href="https://gocardless.com" target="_blank">
         <img alt="GoCardless" src={gocardless} width="100px" />
-      </a> : getEnv("USE_CHARGEBEE") ?
+      </a>
+    ) : getEnv("USE_CHARGEBEE") ? (
       <a key={method} href="https://chargebee.com" target="_blank">
         <img alt="Chargebee" src={chargebee} width="100px" />
-      </a> : getEnv("USE_STRIPE") ?
+      </a>
+    ) : getEnv("USE_STRIPE") ? (
       <a key={method} href="https://stripe.com" target="_blank">
         <img alt="Stripe" src={stripe} width="100px" />
-      </a> : null
-  })
+      </a>
+    ) : null;
+  });
 
   const options = {
-    paymentMethodCreation: 'manual',
-    mode: 'subscription',
+    paymentMethodCreation: "manual",
+    mode: "subscription",
     amount: 100,
-    currency: 'gbp'
+    currency: "gbp"
   };
 
   // @ts-ignore
-  const minimalJoinForm = <Elements stripe={stripePromise} options={options}>
-    <MinimalJoinForm />
-  </Elements>;
+  const minimalJoinForm = (
+    <Elements stripe={stripePromise} options={options}>
+      <MinimalJoinForm />
+    </Elements>
+  );
 
-  const fullJoinForm = <>
-    <RouterContext.Provider value={router}>
-      <div className="progress-steps">
-        <h6>Join Us</h6>
-        <div className="progress-steps__secure">
-          <p>🔒 Secure payment with<br />{paymentProviderLogos}</p>
+  const fullJoinForm = (
+    <>
+      <RouterContext.Provider value={router}>
+        <div className="progress-steps">
+          <h6>Join Us</h6>
+          <div className="progress-steps__secure">
+            <p>
+              🔒 Secure payment with
+              <br />
+              {paymentProviderLogos}
+            </p>
+          </div>
+          <ul className="p-0 list-unstyled">
+            {stages.map(
+              (stage, i) =>
+                stage.breadcrumb && (
+                  <li
+                    key={stage.id}
+                    className={`progress-step progress-step--${i < currentIndex ? "done" : i === currentIndex ? "current" : "next"}`}
+                  >
+                    <div>
+                      <span className="progress-circle"></span>
+                      <span className="progress-text">{stage.label}</span>
+                    </div>
+                    <div className="progress-line"></div>
+                  </li>
+                )
+            )}
+          </ul>
         </div>
-        <ul className="p-0 list-unstyled">
-          {stages.map(
-            (stage, i) =>
-              stage.breadcrumb && (
-                <li
-                  key={stage.id}
-                  className={`progress-step progress-step--${i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'next'}`}
-                >
-                  <div>
-                    <span className="progress-circle"></span>
-                    <span className="progress-text">
-                      {stage.label}
-                    </span>
-                  </div>
-                  <div className="progress-line"></div>
-                </li>
-              )
-          )}
-        </ul>
-      </div>
 
-      <Stager
-        stage={router.state.stage}
-        data={data}
-        onStageCompleted={handlePageCompleted}
-        components={{
-          "enter-details": DetailsPage,
-          plan: PlanPage,
-          donation: DonationPage,
-          "payment-details": PaymentDetailsPage,
-          "payment-method": PaymentPage,
-          confirm: ConfirmationPage
-        }}
-        fallback={<Fail router={router} />}
-      />
-    </RouterContext.Provider>
-  </>
-
+        <Stager
+          stage={router.state.stage}
+          data={data}
+          onStageCompleted={handlePageCompleted}
+          components={{
+            "enter-details": DetailsPage,
+            plan: PlanPage,
+            donation: DonationPage,
+            "payment-details": PaymentDetailsPage,
+            "payment-method": PaymentPage,
+            confirm: ConfirmationPage
+          }}
+          fallback={<Fail router={router} />}
+        />
+      </RouterContext.Provider>
+    </>
+  );
 
   let form = fullJoinForm;
 
-  if (getEnv('MINIMAL_JOIN_FORM')) {
+  if (getEnv("MINIMAL_JOIN_FORM")) {
     form = minimalJoinForm;
   }
 
@@ -244,14 +279,14 @@ const App = () => {
 const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substring(1));
 
-  const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[]
+  const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[];
   const paymentMethods = getPaymentMethods();
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
     paymentMethod: paymentMethods.length ? paymentMethods[0] : "creditCard",
     // Default contact flags to true if not collecting consent, otherwise false
-    contactByEmail: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
-    contactByPhone: !getEnv('COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT'),
+    contactByEmail: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
+    contactByPhone: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT")
   });
 
   const getSavedState = () => {
@@ -259,12 +294,15 @@ const getInitialState = (): FormSchema => {
     if (sessionState) {
       const state = JSON.parse(sessionState);
       const membership = state?.membership;
-      const isMembershipValid = membershipPlans.filter(p => p.value === membership).length > 0
+      const isMembershipValid =
+        membershipPlans.filter((p) => p.value === membership).length > 0;
       if (!isMembershipValid) {
-        state.membership = membershipPlans.length ? membershipPlans[0].value : "standard";
+        state.membership = membershipPlans.length
+          ? membershipPlans[0].value
+          : "standard";
       }
       if (!state.customMembershipAmount) {
-        delete state.customMembershipAmount
+        delete state.customMembershipAmount;
       }
       return FormSchema.cast(state, {
         strict: true
@@ -286,9 +324,9 @@ const getInitialState = (): FormSchema => {
     ...getDefaultState(),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams(),
-    isUpdateFlow: getEnv('IS_UPDATE_FLOW'),
-    webhookUuid: getEnv('WEBHOOK_UUID'),
-    customFieldsConfig: getEnv("CUSTOM_FIELDS"),
+    isUpdateFlow: getEnv("IS_UPDATE_FLOW"),
+    webhookUuid: getEnv("WEBHOOK_UUID"),
+    customFieldsConfig: getEnv("CUSTOM_FIELDS")
   } as any;
   return state;
 };

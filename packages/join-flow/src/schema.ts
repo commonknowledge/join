@@ -188,7 +188,7 @@ export const renderPaymentPlan = ({
   }
 
   const amount = `${currencyCodeToSymbol(plan.currency)}${customMembershipAmount}`;
-  const parts = [ucwords(membership), amount, plan.frequency];
+  const parts = [plan.label, amount, plan.frequency];
   return parts.join(", ");
 };
 

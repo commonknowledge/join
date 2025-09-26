@@ -103,7 +103,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
                     type="number"
                     min={amount || 1}
                     max="1000"
-                    value={customValue}
+                    value={customValue || amount || 1}
                     onChange={() => onChange(value)}
                   />
                 </FormItem>

@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.32
+ * Version:         1.2.33
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -95,7 +95,6 @@ add_action('rest_api_init', function () {
                         [
                             'status' => 500,
                             'error_code' => $exception->getCode(),
-                            'error_message' => $exception->getMessage(),
                             'fields' => $exception->getFields()
                         ]
                     );
@@ -105,7 +104,7 @@ add_action('rest_api_init', function () {
                 return new WP_Error(
                     'join_failed',
                     'Join process failed',
-                    ['status' => 500, 'error_code' => $error->getCode(), 'error_message' => $error->getMessage()]
+                    ['status' => 500, 'error_code' => $error->getCode()]
                 );
             }
 
