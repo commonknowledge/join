@@ -69,13 +69,20 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan)
+    public static function createSubscription($customer, $plan, $customAmount = null)
     {
+        $priceId = $plan["stripe_price_id"];
+        $customAmount = (int) $customAmount;
+        $minAmount = (int) $plan["amount"];
+        if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
+            $product = self::getOrCreateProductForMembershipTier($plan);
+            $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
+        }
         $subscription = Subscription::create([
             'customer' => $customer->id,
             'items' => [
                 [
-                    'price' => $plan['stripe_price_id'],
+                    'price' => $priceId,
                 ],
             ],
             'payment_behavior' => 'default_incomplete',
@@ -347,18 +354,20 @@ class StripeService
         $stripePrice = $amount * 100;
 
         try {
-            $joinBlockLog->info("Searching for existing Stripe price for recurring product '{$product->id}' with currency '{$currency}'");
+            $joinBlockLog->info("Searching for existing Stripe price for recurring product '{$product->id}' with currency '{$currency}' and amount {$stripePrice}");
 
             $existingPrices = \Stripe\Price::search([
                 'query' => "active:'true' AND product:'{$product->id}' AND type:'recurring' AND currency:'{$currency}'",
             ]);
 
-            if (count($existingPrices->data) > 0) {
-                $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' already exists.");
-                return $existingPrices->data[0];
+            foreach ($existingPrices->data as $price) {
+                if ($price->unit_amount === $stripePrice) {
+                    $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' and amount {$stripePrice} already exists.");
+                    return $existingPrices->data[0];
+                }
             }
 
-            $joinBlockLog->info("No existing price found for product '{$product->id}' with currency '{$currency}', creating new price");
+            $joinBlockLog->info("No existing price found for product '{$product->id}' with currency '{$currency}' and amount {$stripePrice}, creating new price");
 
             $newPrice = \Stripe\Price::create([
                 'product' => $product->id,

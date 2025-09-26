@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.30
+ * Version:         1.2.32
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -297,7 +297,7 @@ add_action('rest_api_init', function () {
                 StripeService::initialise();
                 [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-                $subscription = StripeService::createSubscription($customer, $plan);
+                $subscription = StripeService::createSubscription($customer, $plan, $data["customMembershipAmount"] ?? null);
 
                 return $subscription;
             } catch (\Exception $e) {
