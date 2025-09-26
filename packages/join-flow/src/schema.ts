@@ -184,7 +184,7 @@ export const renderPaymentPlan = ({
   const plan = getPaymentPlan(membership);
 
   if (!plan || !plan.allowCustomAmount) {
-    return ucwords(membership);
+    return plan?.label || ucwords(membership);
   }
 
   const amount = `${currencyCodeToSymbol(plan.currency)}${customMembershipAmount}`;
