@@ -164,7 +164,7 @@ class JoinService
             $minimumAmount = $membershipAmount;
             $membershipAmount = (float) $data['customMembershipAmount'] ?? 0;
             if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
-                $error = 'Invalid membership amount: ' . $membershipAmount;
+                $error = "Invalid membership amount: $membershipAmount < $minimumAmount or > 1000";
                 $joinBlockLog->error($error);
                 throw new \Exception(esc_html($error));
             }
