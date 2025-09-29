@@ -30,6 +30,8 @@ interface StaticEnv {
     MINIMAL_JOIN_FORM: boolean;
     PASSWORD_PURPOSE: string;
     PRIVACY_COPY: string;
+    REQUIRE_ADDRESS: boolean;
+    REQUIRE_PHONE_NUMBER: boolean;
     SENTRY_DSN: string;
     STRIPE_DIRECT_DEBIT: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
@@ -96,6 +98,8 @@ const staticEnv: StaticEnv = {
     SUCCESS_REDIRECT: '/',
     IS_UPDATE_FLOW: parseBooleanEnvVar("REACT_APP_IS_UPDATE_FLOW"),
     INCLUDE_SKIP_PAYMENT_BUTTON: parseBooleanEnvVar("REACT_APP_INCLUDE_SKIP_PAYMENT_BUTTON"),
+    REQUIRE_ADDRESS: parseBooleanEnvVar("REACT_APP_REQUIRE_ADDRESS"),
+    REQUIRE_PHONE_NUMBER: parseBooleanEnvVar("REACT_APP_REQUIRE_PHONE_NUMBER"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),

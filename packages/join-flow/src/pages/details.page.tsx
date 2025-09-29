@@ -18,6 +18,7 @@ const addressLookupFormSchema = yup.object().shape({
   postcode: yup.string().required("We need a postcode to search your postcode")
 });
 
+const requireAddress = Boolean(getEnv("REQUIRE_ADDRESS"));
 const homeAddressCopy = getEnvStr("HOME_ADDRESS_COPY");
 const passwordPurpose = getEnvStr("PASSWORD_PURPOSE");
 const privacyCopy = getEnvStr("PRIVACY_COPY");
@@ -219,7 +220,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
           }
         >
           <div>
-            <FormItem label="Address line 1" name="addressLine1" form={form}>
+            <FormItem label="Address line 1" name="addressLine1" form={form} required={requireAddress}>
               <Form.Control
                 autoComplete="address-line1"
                 disabled={addressLookup.loading}
@@ -231,22 +232,22 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
                 disabled={addressLookup.loading}
               />
             </FormItem>
-            <FormItem label="City" name="addressCity" form={form}>
+            <FormItem label="City" name="addressCity" form={form} required={requireAddress}>
               <Form.Control
                 autoComplete="address-level2"
                 disabled={addressLookup.loading}
               />
             </FormItem>
             {getEnv("COLLECT_COUNTY") ? (
-              <FormItem label="County" name="addressCounty" form={form}>
+              <FormItem label="County" name="addressCounty" form={form} required>
                 <Form.Control disabled={addressLookup.loading} />
               </FormItem>
             ) : null}
 
-            <FormItem label="Postcode" name="addressPostcode" form={form}>
+            <FormItem label="Postcode" name="addressPostcode" form={form} required={requireAddress}>
               <Form.Control disabled={addressLookup.loading} />
             </FormItem>
-            <FormItem label="Country" form={form} name="addressCountry">
+            <FormItem label="Country" form={form} name="addressCountry" required={requireAddress}>
               <Form.Control
                 autoComplete="country"
                 as="select"
@@ -336,7 +337,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control autoComplete="email" type="email" />
         </FormItem>
-        <FormItem label="Phone number" name="phoneNumber" form={form} required>
+        <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
           <Form.Control autoComplete="tel-national" type="tel" />
         </FormItem>
         {getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ? (

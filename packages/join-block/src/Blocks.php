@@ -174,6 +174,8 @@ class Blocks
             ->add_fields(array(
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
+                Field::make('checkbox', 'require_address')->set_default_value(true),
+                Field::make('checkbox', 'require_phone_number')->set_default_value(true),
                 Field::make('checkbox', 'ask_for_additional_donation'),
                 Field::make('checkbox', 'hide_home_address_copy')
                     ->set_help_text('Check to hide the copy that explains why the address is collected.'),
@@ -465,6 +467,8 @@ class Blocks
             "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
             "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
             "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
+            "REQUIRE_ADDRESS" => $fields["require_address"] ?? false,
+            "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? false,
             "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),

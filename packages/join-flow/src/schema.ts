@@ -62,6 +62,8 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
   return { ...o, [field.id]: field.required ? def.required() : def };
 }, {});
 
+const requireAddress = getEnv("REQUIRE_ADDRESS");
+
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
@@ -108,12 +110,12 @@ export const DetailsSchema = object({
         )
         .required()
     : number(),
-  addressLine1: string().required(),
+  addressLine1: requireAddress ? string().required() : string(),
   addressLine2: string(),
-  addressCity: string().required(),
+  addressCity: requireAddress ? string().required() : string(),
   addressCounty: getEnv("COLLECT_COUNTY") ? string().required() : string(),
-  addressPostcode: string().required(),
-  addressCountry: string().required(),
+  addressPostcode: requireAddress ? string().required() : string(),
+  addressCountry: requireAddress ? string().required() : string(),
   password: getEnv("CREATE_AUTH0_ACCOUNT")
     ? string()
         .min(8, "Password must be at least 8 characters")
@@ -125,9 +127,15 @@ export const DetailsSchema = object({
         )
         .required()
     : string(),
-  phoneNumber: string()
-    .phone("GB", false, "A valid phone number is required")
-    .required(),
+  phoneNumber: getEnv("REQUIRE_PHONE_NUMBER")
+    ? string()
+        .phone("GB", false, "A valid UK phone number is required")
+        .required()
+    : string().test( // .test() used because .phone() forces .required()
+        "is-valid-phone",
+        "Please enter a valid UK phone number",
+        (value) => !value || string().phone("GB", false).isValidSync(value)
+      ),
   contactByEmail: boolean(),
   contactByPhone: boolean(),
   ...CustomFieldsSchema
