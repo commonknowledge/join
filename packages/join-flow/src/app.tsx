@@ -143,11 +143,10 @@ const App = () => {
       // Skip payment if member has selected a free membership, and it is allowed
       if (nextStage === "payment-method") {
         const plan = getPaymentPlan(nextData.membership);
+        const isAmountZero = plan && Number(plan.amount) === 0;
+        const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
         if (
-          plan &&
-          Number(plan.amount) === 0 &&
-          plan.allowCustomAmount &&
-          Number(nextData.customMembershipAmount) === 0
+          isAmountZero && !isCustomAmountAboveZero
         ) {
           nextStage = "confirm";
         }
