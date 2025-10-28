@@ -135,6 +135,7 @@ class Settings
             $zetkin_environment_select,
 
             Field::make('separator', 'chargebee', 'Chargebee'),
+            Field::make('checkbox', 'use_chargebee_hosted_pages'),
             Field::make('text', 'chargebee_site_name'),
             Field::make('text', 'chargebee_api_key'),
             Field::make('text', 'chargebee_api_publishable_key'),
@@ -407,6 +408,7 @@ class Settings
         $membership_plans = Field::make('complex', $name);
         $membership_plans->add_fields([
             Field::make('text', 'label', "Name")->set_required(true),
+            Field::make('text', 'id', "Price Point ID")->set_help_text("Membership price point ID (required for Chargebee)"),
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
             Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')

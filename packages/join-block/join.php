@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.38
+ * Version:         1.2.39
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -14,6 +14,7 @@ if (! defined('ABSPATH')) exit; // Exit if accessed directly
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
 use ChargeBee\ChargeBee\Environment;
+use ChargeBee\ChargeBee\Models\HostedPage;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use CommonKnowledge\JoinBlock\Blocks;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
@@ -273,6 +274,63 @@ add_action('rest_api_init', function () {
             update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", wp_json_encode($data));
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
+        }
+    ));
+
+    // Get the link to the ChargeBee hosted page, and redirect the user to it.
+    // Also return the Hosted Page ID, as it is saved in the session data
+    // and used later to get the new Customer ID when the user is redirected
+    // back to the Join Form
+    register_rest_route('join/v1', '/chargebee/hosted-page', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+            try {
+                $data = json_decode($request->get_body(), true);
+                $redirectUrl = $data['redirectUrl'];
+                $successUrl = add_query_arg('chargebee_success', 'true', $redirectUrl);
+
+                $membershipPlan = Settings::getMembershipPlan($data['membership'] ?? '');
+                $planId = empty($membershipPlan["id"]) ? sanitize_title($data['membership']) : $membershipPlan["id"];
+
+                $hostedPage = HostedPage::checkoutNewForItems([
+                    "subscription_items" => [
+                        [
+                            "item_price_id" => $planId,
+                            "quantity" => 1
+                        ]
+                    ],
+                    "customer" => [
+                        "email" => $data["email"]
+                    ],
+                    "redirect_url" => $successUrl,
+                    "cancel_url" => $redirectUrl
+                ]);
+
+                /** @var HostedPage $createdHostedPage */
+                $createdHostedPage = $hostedPage->hostedPage();
+                $hostedPageId = $createdHostedPage->id;
+                $hostedPageUrl = $createdHostedPage->url;
+
+                $joinBlockLog->info("Got ChargeBee hosted page ID {$hostedPageId} for {$data['email']}");
+
+                // Save this data in the database so if the user doesn't set up the subscription it can be
+                // done when we receive a ChargeBee webhook
+                $data['createdAt'] = time();
+                // Make stage = "confirm" to match the normal flow
+                // (the user is redirected back from ChargeBee and submits their data to the /join endpoint)
+                $data['stage'] = "confirm";
+                update_option("JOIN_FORM_UNPROCESSED_CHARGEBEE_REQUEST_{$hostedPageId}", wp_json_encode($data));
+
+                return ["href" => $hostedPageUrl, "cbHostedPageId" => $hostedPageId];
+            } catch (\Exception $e) {
+                $joinBlockLog->error("Error getting ChargeBee hosted page: {$e->getMessage()}");
+            }
+
+            return new WP_REST_Response(['status' => 'internal server error'], 500);
         }
     ));
 

@@ -474,6 +474,7 @@ class Blocks
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),
             "SUBSCRIPTION_DAY_OF_MONTH_COPY" => Settings::get("SUBSCRIPTION_DAY_OF_MONTH_COPY"),
             "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
+            "USE_CHARGEBEE_HOSTED_PAGES" => Settings::get("USE_CHARGEBEE_HOSTED_PAGES"),
             "USE_GOCARDLESS" => Settings::get("USE_GOCARDLESS"),
             "USE_GOCARDLESS_API" => Settings::get("USE_GOCARDLESS_API"),
             "USE_MAILCHIMP" => Settings::get("USE_MAILCHIMP"),
