@@ -182,6 +182,10 @@ class Settings
 
             Field::make('separator', 'sentry', 'Sentry'),
             Field::make('text', 'sentry_dsn'),
+
+            Field::make('separator', 'google_cloud_logging', 'Google Cloud Logging'),
+            Field::make('text', 'google_cloud_project_id'),
+            Field::make('textarea', 'google_cloud_key_file_contents'),
         ];
 
         // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable.

@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.35
+ * Version:         1.2.38
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -44,6 +44,20 @@ add_action('after_setup_theme', function () {
 add_action('carbon_fields_register_fields', function () {
     Settings::init();
     Blocks::init();
+
+    $sentryDsn = Settings::get("SENTRY_DSN");
+    if ($sentryDsn) {
+        \Sentry\init([
+            'dsn' => $sentryDsn
+        ]);
+        Logging::enableSentry();
+    }
+
+    $googleCloudProjectId = Settings::get("GOOGLE_CLOUD_PROJECT_ID");
+    $googleCloudKeyFileContents = trim(Settings::get("GOOGLE_CLOUD_KEY_FILE_CONTENTS"));
+    if ($googleCloudProjectId && $googleCloudKeyFileContents) {
+        Logging::enableGoogleCloud($googleCloudProjectId, $googleCloudKeyFileContents);
+    }
 });
 
 // Ignore sanitization error as this could break provided environment variables

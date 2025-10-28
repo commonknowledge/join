@@ -2,8 +2,10 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
+use Google\Cloud\Logging\LoggingClient;
+use Monolog\Handler\PsrHandler;
 use Monolog\Logger;
 use Monolog\Processor\WebProcessor;
 use Monolog\Handler\RotatingFileHandler;
@@ -31,5 +33,34 @@ class Logging
         $logFilename = "debug-$logFilenameHash.log";
         $joinBlockLog->pushHandler(new RotatingFileHandler("$logLocation/$logFilename", 10, Level::Info));
         $joinBlockLog->pushProcessor(new WebProcessor());
+    }
+
+    public static function enableSentry()
+    {
+        global $joinBlockLog;
+        $joinBlockLog->pushHandler(new \Sentry\Monolog\BreadcrumbHandler(
+            hub: \Sentry\SentrySdk::getCurrentHub(),
+            level: Level::Info,
+        ));
+        $joinBlockLog->pushHandler(new \Sentry\Monolog\Handler(
+            hub: \Sentry\SentrySdk::getCurrentHub(),
+            level: Level::Error,
+            fillExtraContext: false,
+        ));
+    }
+
+    public static function enableGoogleCloud($projectId, $keyFileContents)
+    {
+        global $joinBlockLog;
+
+        $config = [
+            'projectId' => $projectId,
+            'keyFile' => json_decode($keyFileContents, true)
+        ];
+
+        $logging = new LoggingClient($config);
+
+        $batchLogger = $logging->psrBatchLogger('join-flow', ['clientConfig' => $config]);
+        $joinBlockLog->pushHandler(new PsrHandler($batchLogger));
     }
 }
