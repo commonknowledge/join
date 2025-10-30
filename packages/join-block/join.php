@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.2.39
+ * Version:         1.3.0
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -294,14 +294,24 @@ add_action('rest_api_init', function () {
                 $successUrl = add_query_arg('chargebee_success', 'true', $redirectUrl);
 
                 $membershipPlan = Settings::getMembershipPlan($data['membership'] ?? '');
-                $planId = empty($membershipPlan["id"]) ? sanitize_title($data['membership']) : $membershipPlan["id"];
+                $planId = Settings::getMembershipPlanId($membershipPlan);
+
+                $subscriptionItem = [
+                    "item_price_id" => $planId,
+                    "quantity" => 1
+                ];
+
+                if ($membershipPlan['allow_custom_amount']) {
+                    $minimumAmount = (float) $membershipPlan['amount'] ?? 0;
+                    $customAmount = (float) $data['customMembershipAmount'] ?? 0;
+                    if ($customAmount >= $minimumAmount && $customAmount <= 1000) {
+                        $subscriptionItem["unit_price"] = $customAmount * 100;
+                    }
+                }
 
                 $hostedPage = HostedPage::checkoutNewForItems([
                     "subscription_items" => [
-                        [
-                            "item_price_id" => $planId,
-                            "quantity" => 1
-                        ]
+                        $subscriptionItem
                     ],
                     "customer" => [
                         "email" => $data["email"]

@@ -68,8 +68,6 @@ let shouldRedirectToConfirm =
   (stripeRedirect && stripePaymentIntentId) ||
   (cbRedirect && cbHostedPageId);
 
-console.log('cb redirect', cbRedirect, cbHostedPageId, shouldRedirectToConfirm)
-
 // @ts-ignore
 const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 

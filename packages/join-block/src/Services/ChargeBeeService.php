@@ -9,6 +9,7 @@ use ChargeBee\ChargeBee\Models\Customer;
 use ChargeBee\ChargeBee\Models\HostedPage;
 use ChargeBee\ChargeBee\Models\Subscription;
 use CommonKnowledge\JoinBlock\Exceptions\JoinBlockException;
+use CommonKnowledge\JoinBlock\Settings;
 
 if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
@@ -171,7 +172,7 @@ class ChargeBeeService
             "subscription_items" => []
         ];
 
-        $planId = empty($data["membershipPlan"]["id"]) ? sanitize_title($data['membership']) : $data["membershipPlan"]["id"];
+        $planId = Settings::getMembershipPlanId($data["membershipPlan"]);
         $chargebeeSubscriptionPayload["subscription_items"] = [
             [
                 "item_price_id" => $planId,

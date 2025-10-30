@@ -377,7 +377,7 @@ class Settings
             $membershipPlan['stripe_product_id'] = $newOrExistingProduct->id;
             $membershipPlan['stripe_price_id'] = $newOrExistingPrice->id;
 
-            $membershipPlanID = sanitize_title($membershipPlan['label']);
+            $membershipPlanID = Settings::getMembershipPlanId($membershipPlan);
             update_option('ck_join_flow_membership_plan_' . $membershipPlanID, $membershipPlan);
 
             $joinBlockLog->info("Membership plan {$membershipPlanID} saved");
@@ -478,7 +478,7 @@ class Settings
 
         $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
         foreach ($membership_plans as $plan) {
-            $slug = sanitize_title($plan['label']);
+            $slug = Settings::getMembershipPlanId($plan);
             $joinBlockLog->info("Saving membership plan: $slug");
             update_option('ck_join_flow_membership_plan_' . $slug, $plan);
 
@@ -487,8 +487,13 @@ class Settings
         }
     }
 
-    public static function getMembershipPlan($membership_plan_label)
+    public static function getMembershipPlanId($membership_plan)
     {
-        return get_option('ck_join_flow_membership_plan_' . sanitize_title($membership_plan_label));
+        return empty($membership_plan["id"]) ? sanitize_title($membership_plan["label"]) : $membership_plan["id"];
+    }
+
+    public static function getMembershipPlan($id)
+    {
+        return get_option('ck_join_flow_membership_plan_' . $id);
     }
 }

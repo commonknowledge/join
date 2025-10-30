@@ -155,7 +155,7 @@ class JoinService
             throw new \Exception(esc_html($error));
         }
 
-        $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 1;
+        $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 0;
         if ($data['membershipPlan']['allow_custom_amount']) {
             $minimumAmount = $membershipAmount;
             $membershipAmount = (float) $data['customMembershipAmount'] ?? 0;

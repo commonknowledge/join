@@ -385,7 +385,7 @@ class Blocks
         $membership_plans_prepared = [];
         foreach ($membership_plans as $plan) {
             $membership_plans_prepared[] = [
-                "value" => sanitize_title($plan["label"]),
+                "value" => Settings::getMembershipPlanId($plan),
                 "label" => $plan["label"],
                 "allowCustomAmount" => $plan["allow_custom_amount"] ?? false,
                 "amount" => $plan["amount"],

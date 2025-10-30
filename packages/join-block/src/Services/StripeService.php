@@ -279,7 +279,7 @@ class StripeService
     {
         global $joinBlockLog;
 
-        $tierID = sanitize_title($membershipPlan['label']);
+        $tierID = Settings::getMembershipPlanId($membershipPlan);
 
         $tierDescription = $membershipPlan['description'];
 
