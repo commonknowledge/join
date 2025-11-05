@@ -466,6 +466,7 @@ class Blocks
             "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),
             "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
             "PASSWORD_PURPOSE" => wpautop(Settings::get("PASSWORD_PURPOSE")),
+            "POSTCODE_ADDRESS_PROVIDER" => Settings::get("POSTCODE_ADDRESS_PROVIDER"),
             "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
             "REQUIRE_ADDRESS" => $fields["require_address"] ?? false,
             "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? false,

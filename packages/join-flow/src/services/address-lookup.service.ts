@@ -134,19 +134,19 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 
     let address: Address | null = null;
 
-    // Distinguish between providers based on response structure:
-    // - Ideal Postcodes returns structured data with individual address components (line_1, post_town, etc.)
-    // - getAddress.io only returns 'id' and 'address' (formatted string) and requires a second API call
-    // We check if line_1 exists as it's the most fundamental structured field
-    const hasStructuredData = Boolean(hit.line_1);
+    // Check which provider is configured to determine if we need a second API call:
+    // - Ideal Postcodes returns complete structured data immediately
+    // - getAddress.io returns only id/address in autocomplete and requires a second call
+    const provider = getEnv('POSTCODE_ADDRESS_PROVIDER') as string;
+    const isGetAddressIo = provider === 'get_address_io';
     
-    if (hasStructuredData) {
-      // Address data is already structured (Ideal Postcodes)
-      address = hit;
-    } else {
-      // Need to fetch structured address details (getAddress.io)
+    if (isGetAddressIo) {
+      // getAddress.io: need to fetch full address details
       setLoading(true);
       address = await fetchAddress(id);
+    } else {
+      // Ideal Postcodes (or any other provider): address data is already complete
+      address = hit;
     }
 
     setTimeout(() => {
