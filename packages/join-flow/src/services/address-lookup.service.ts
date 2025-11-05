@@ -134,14 +134,18 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 
     let address: Address | null = null;
 
-    // ideal-postcodes address lookups have all the required data
-    if (id.startsWith('idealpostcodes')) {
-      address = hit
-    }
-    // however getAddress.io lookups require another request to populate
-    // the address components
-    else {
-      setLoading(true)
+    // Distinguish between providers based on response structure:
+    // - Ideal Postcodes returns structured data with individual address components (line_1, post_town, etc.)
+    // - getAddress.io only returns 'id' and 'address' (formatted string) and requires a second API call
+    // We check if line_1 exists as it's the most fundamental structured field
+    const hasStructuredData = Boolean(hit.line_1);
+    
+    if (hasStructuredData) {
+      // Address data is already structured (Ideal Postcodes)
+      address = hit;
+    } else {
+      // Need to fetch structured address details (getAddress.io)
+      setLoading(true);
       address = await fetchAddress(id);
     }
 
