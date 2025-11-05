@@ -276,25 +276,6 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
     paymentMethodTypes.push("bacs_debit");
   }
   
-  // Pre-fill billing details from the form data
-  // This allows users to verify their details are correct when setting up Direct Debit
-  const defaultValues = {
-    billingDetails: {
-      name: data.firstName && data.lastName 
-        ? `${data.firstName} ${data.lastName}` 
-        : undefined,
-      email: data.email || undefined,
-      phone: data.phoneNumber || undefined,
-      address: {
-        line1: data.addressLine1 || undefined,
-        line2: data.addressLine2 || undefined,
-        city: data.addressCity || undefined,
-        postal_code: data.addressPostcode || undefined,
-        country: data.addressCountry || undefined,
-      }
-    }
-  };
-  
   return (
     <Elements
       stripe={stripePromise}
@@ -304,7 +285,6 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
         amount,
         currency,
         paymentMethodTypes,
-        defaultValues
       }}
     >
       <StripeForm onCompleted={onCompleted} data={data} plan={plan} />
@@ -390,10 +370,29 @@ const StripeForm = ({
     }
   };
 
+  // Pre-fill billing details from the form data
+  // This allows users to verify their details are correct when setting up Direct Debit
+  const defaultValues = {
+    billingDetails: {
+      name: data.firstName && data.lastName
+        ? `${data.firstName} ${data.lastName}`
+        : undefined,
+      email: data.email || undefined,
+      phone: data.phoneNumber || undefined,
+      address: {
+        line1: data.addressLine1 || undefined,
+        line2: data.addressLine2 || undefined,
+        city: data.addressCity || undefined,
+        postal_code: data.addressPostcode || undefined,
+        country: data.addressCountry || undefined,
+      }
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <PaymentElement />
+        <PaymentElement options={{defaultValues}}/>
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
         {errorMessage && <div>{errorMessage}</div>}
       </div>
