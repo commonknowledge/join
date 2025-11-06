@@ -135,6 +135,7 @@ class Settings
             $zetkin_environment_select,
 
             Field::make('separator', 'chargebee', 'Chargebee'),
+            Field::make('checkbox', 'use_chargebee_hosted_pages'),
             Field::make('text', 'chargebee_site_name'),
             Field::make('text', 'chargebee_api_key'),
             Field::make('text', 'chargebee_api_publishable_key'),
@@ -376,7 +377,7 @@ class Settings
             $membershipPlan['stripe_product_id'] = $newOrExistingProduct->id;
             $membershipPlan['stripe_price_id'] = $newOrExistingPrice->id;
 
-            $membershipPlanID = sanitize_title($membershipPlan['label']);
+            $membershipPlanID = Settings::getMembershipPlanId($membershipPlan);
             update_option('ck_join_flow_membership_plan_' . $membershipPlanID, $membershipPlan);
 
             $joinBlockLog->info("Membership plan {$membershipPlanID} saved");
@@ -407,6 +408,7 @@ class Settings
         $membership_plans = Field::make('complex', $name);
         $membership_plans->add_fields([
             Field::make('text', 'label', "Name")->set_required(true),
+            Field::make('text', 'id', "Price Point ID")->set_help_text("Membership price point ID (required for Chargebee)"),
             Field::make('text', 'amount', "Price")->set_required(true)->set_attribute('type', 'number')
                 ->set_help_text("Price without currency, e.g. 10"),
             Field::make('checkbox', 'allow_custom_amount', 'Allow users to change the amount')
@@ -476,7 +478,7 @@ class Settings
 
         $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
         foreach ($membership_plans as $plan) {
-            $slug = sanitize_title($plan['label']);
+            $slug = Settings::getMembershipPlanId($plan);
             $joinBlockLog->info("Saving membership plan: $slug");
             update_option('ck_join_flow_membership_plan_' . $slug, $plan);
 
@@ -485,8 +487,13 @@ class Settings
         }
     }
 
-    public static function getMembershipPlan($membership_plan_label)
+    public static function getMembershipPlanId($membership_plan)
     {
-        return get_option('ck_join_flow_membership_plan_' . sanitize_title($membership_plan_label));
+        return empty($membership_plan["id"]) ? sanitize_title($membership_plan["label"]) : $membership_plan["id"];
+    }
+
+    public static function getMembershipPlan($id)
+    {
+        return get_option('ck_join_flow_membership_plan_' . $id);
     }
 }

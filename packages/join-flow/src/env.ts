@@ -41,6 +41,7 @@ interface StaticEnv {
     IS_UPDATE_FLOW: boolean; // email must be provided through a URL parameter
     INCLUDE_SKIP_PAYMENT_BUTTON: boolean;
     USE_CHARGEBEE: boolean;
+    USE_CHARGEBEE_HOSTED_PAGES: boolean;
     USE_GOCARDLESS: boolean;
     USE_GOCARDLESS_API: boolean;
     USE_MAILCHIMP: boolean;
@@ -103,6 +104,7 @@ const staticEnv: StaticEnv = {
     REQUIRE_ADDRESS: parseBooleanEnvVar("REACT_APP_REQUIRE_ADDRESS"),
     REQUIRE_PHONE_NUMBER: parseBooleanEnvVar("REACT_APP_REQUIRE_PHONE_NUMBER"),
     USE_CHARGEBEE: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE"),
+    USE_CHARGEBEE_HOSTED_PAGES: parseBooleanEnvVar("REACT_APP_USE_CHARGEBEE_HOSTED_PAGES"),
     USE_GOCARDLESS: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS"),
     USE_GOCARDLESS_API: parseBooleanEnvVar("REACT_APP_USE_GOCARDLESS_API"),
     USE_MAILCHIMP: parseBooleanEnvVar("REACT_APP_USE_MAILCHIMP"),

@@ -100,10 +100,10 @@ select.form-control {
 }
 
 .radio-panel-custom-amount {
-  align-items: center;
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  background-color: $white;
+  border: $input-border-width solid transparent;
+  border-radius: 0.5rem;
+  padding: $btn-padding-x;
 
   .form-group {
     margin-bottom: 0;

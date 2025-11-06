@@ -54,16 +54,19 @@ if (getEnv("IS_UPDATE_FLOW")) {
 // because that is a redirect from GoCardless
 // Also require a billing request ID to be present.
 const searchParams = new URLSearchParams(window.location.search);
+const cbRedirect = searchParams.get("chargebee_success") === "true";
 const gcRedirect = searchParams.get("gocardless_success") === "true";
 const stripeRedirect = searchParams.get("stripe_success") === "true";
 const savedSession = JSON.parse(
   sessionStorage.getItem(SAVED_STATE_KEY) || "{}"
 );
+const cbHostedPageId = savedSession["cbHostedPageId"];
 const gcBillingRequestId = savedSession["gcBillingRequestId"];
 const stripePaymentIntentId = savedSession["stripePaymentIntentId"];
 let shouldRedirectToConfirm =
   (gcRedirect && gcBillingRequestId) ||
-  (stripeRedirect && stripePaymentIntentId);
+  (stripeRedirect && stripePaymentIntentId) ||
+  (cbRedirect && cbHostedPageId);
 
 // @ts-ignore
 const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
@@ -102,6 +105,10 @@ const App = () => {
   const getGoCardlessRedirect =
     usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
       "/gocardless/auth"
+    );
+  const getChargeBeeRedirect =
+    usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
+      "/chargebee/hosted-page"
     );
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
@@ -180,6 +187,32 @@ const App = () => {
           })
         );
         window.location.href = goCardlessHrefResponse.href;
+      }
+
+      // Go to external ChargeBee pages if not using the ChargeBee API
+      if (
+        nextStage === "payment-details" &&
+        nextData.paymentMethod === "creditCard" &&
+        getEnv("USE_CHARGEBEE") &&
+        getEnv("USE_CHARGEBEE_HOSTED_PAGES")
+      ) {
+        // Undo the transition to prevent flicker
+        nextStage = router.state.stage;
+        // Redirect to ChargeBee
+        const redirectUrl = encodeURI(window.location.href);
+
+        const chargeBeeRedirectResponse: any = await getChargeBeeRedirect({
+          ...nextData,
+          redirectUrl
+        });
+        sessionStorage.setItem(
+          SAVED_STATE_KEY,
+          JSON.stringify({
+            ...nextData,
+            cbHostedPageId: chargeBeeRedirectResponse.cbHostedPageId
+          })
+        );
+        window.location.href = chargeBeeRedirectResponse.href;
       }
 
       router.setState({ stage: nextStage });
