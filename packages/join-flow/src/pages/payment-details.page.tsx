@@ -32,17 +32,20 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   onCompleted
 }) => {
   const renderForm = () => {
-    if (data.paymentMethod === "directDebit") {
+    if (getEnv("USE_GOCARDLESS")) {
       return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
     }
+
     if (data.paymentMethod === "creditCard") {
       if (getEnv("USE_CHARGEBEE")) {
         return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
       }
-      if (getEnv("USE_STRIPE")) {
-        return <StripePaymentPage data={data} onCompleted={onCompleted} />;
-      }
+
       return <p>Error: no payment providers available. Please contact us.</p>;
+    }
+
+    if (getEnv("USE_STRIPE")) {
+      return <StripePaymentPage data={data} onCompleted={onCompleted} />;
     }
   };
 
