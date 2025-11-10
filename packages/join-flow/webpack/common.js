@@ -55,7 +55,7 @@ module.exports = {
     new webpack.DefinePlugin({
         "process.env": Object.keys(process.env).reduce((env, key) => {
           if (key.startsWith("REACT_APP_")) {
-            env[key] = process.env[key]
+            env[key] = JSON.stringify(process.env[key])
           }
           return env
         }, {})
