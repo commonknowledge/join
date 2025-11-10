@@ -62,7 +62,7 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
   return { ...o, [field.id]: field.required ? def.required() : def };
 }, {});
 
-const requireAddress = getEnv("REQUIRE_ADDRESS");
+const requireAddress = Boolean(getEnv("REQUIRE_ADDRESS"));
 
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
@@ -127,7 +127,7 @@ export const DetailsSchema = object({
         )
         .required()
     : string(),
-  phoneNumber: getEnv("REQUIRE_PHONE_NUMBER")
+  phoneNumber: Boolean(getEnv("REQUIRE_PHONE_NUMBER"))
     ? string()
         .phone("GB", false, "A valid UK phone number is required")
         .required()
