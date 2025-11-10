@@ -148,6 +148,12 @@ class Settings
             Field::make('text', 'stripe_publishable_key', 'Stripe publishable key'),
             Field::make('text', 'stripe_secret_key', 'Stripe secret key'),
             Field::make('checkbox', 'stripe_direct_debit', 'Enable direct debit through Stripe (must be enabled in your Stripe account)'),
+            Field::make('checkbox', 'stripe_direct_debit_only', 'Direct Debit only, hide credit card option')
+                ->set_help_text('When enabled, only BACS Direct Debit will be available.')
+                ->set_conditional_logic([[
+                    'field' => 'stripe_direct_debit',
+                    'value' => true
+                ]]),
             Field::make('html', 'stripe_download_subscriptions')->set_html(
                 '<a href="' . get_rest_url(null, "join/v1/stripe/download-subscriptions?_wpnonce=") . wp_create_nonce('wp_rest') .
                 '" download onclick="this.innerText = \'Loading...\'">Download Subscriptions</a>'

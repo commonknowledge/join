@@ -35,6 +35,7 @@ interface StaticEnv {
     REQUIRE_PHONE_NUMBER: boolean;
     SENTRY_DSN: string;
     STRIPE_DIRECT_DEBIT: boolean;
+    STRIPE_DIRECT_DEBIT_ONLY: boolean;
     STRIPE_PUBLISHABLE_KEY: string;
     SUBSCRIPTION_DAY_OF_MONTH_COPY: string;
     SUCCESS_REDIRECT: string;
@@ -96,6 +97,7 @@ const staticEnv: StaticEnv = {
     PRIVACY_COPY: process.env.REACT_APP_PRIVACY_COPY || '',
     SENTRY_DSN: process.env.REACT_APP_SENTRY_DSN || "",
     STRIPE_DIRECT_DEBIT: parseBooleanEnvVar(process.env.REACT_APP_STRIPE_DIRECT_DEBIT || ''),
+    STRIPE_DIRECT_DEBIT_ONLY: parseBooleanEnvVar("REACT_APP_STRIPE_DIRECT_DEBIT_ONLY"),
     STRIPE_PUBLISHABLE_KEY: process.env.REACT_STRIPE_PUBLISHABLE_KEY || '',
     SUBSCRIPTION_DAY_OF_MONTH_COPY: process.env.REACT_APP_SUBSCRIPTION_DAY_OF_MONTH_COPY || '',
     SUCCESS_REDIRECT: '/',
@@ -135,7 +137,10 @@ export const getPaymentMethods = () => {
     if (get("USE_GOCARDLESS")) {
         paymentMethods.push("directDebit")
     }
-    if (get("USE_CHARGEBEE") || get("USE_STRIPE")) {
+    // If Stripe Direct Debit-only mode, add directDebit instead of creditCard
+    if (get("USE_STRIPE") && get("STRIPE_DIRECT_DEBIT") && get("STRIPE_DIRECT_DEBIT_ONLY")) {
+        paymentMethods.push("directDebit")
+    } else if (get("USE_CHARGEBEE") || get("USE_STRIPE")) {
         paymentMethods.push("creditCard")
     }
     return paymentMethods

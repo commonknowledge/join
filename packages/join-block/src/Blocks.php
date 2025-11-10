@@ -472,6 +472,7 @@ class Blocks
             "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? false,
             "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
+            "STRIPE_DIRECT_DEBIT_ONLY" => Settings::get("STRIPE_DIRECT_DEBIT_ONLY"),
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),
             "SUBSCRIPTION_DAY_OF_MONTH_COPY" => Settings::get("SUBSCRIPTION_DAY_OF_MONTH_COPY"),
             "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
