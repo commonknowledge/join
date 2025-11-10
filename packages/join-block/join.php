@@ -166,11 +166,23 @@ add_action('rest_api_init', function () {
              * Filter: ck_join_flow_step_response
              * 
              * Modify the response returned to the frontend.
+             * Can block form progression with custom error message.
              * 
-             * @param array           $response Response data
+             * @param array           $response Response data ['status' => 'ok']
              * @param array           $data     Form data submitted
              * @param WP_REST_Request $request  REST request object
-             * @return array Modified response
+             * @return array Modified response. Set status to 'blocked' with 'message' to stop progression.
+             * 
+             * Example: Block users outside coverage area
+             * add_filter('ck_join_flow_step_response', function($response, $data) {
+             *     if (!in_coverage_area($data['addressPostcode'])) {
+             *         return [
+             *             'status' => 'blocked',
+             *             'message' => '<h3>Sorry, we don\'t cover your area yet.</h3><p>Contact us for updates.</p>'
+             *         ];
+             *     }
+             *     return $response;
+             * }, 10, 2);
              */
             $response_data = apply_filters(
                 'ck_join_flow_step_response',
@@ -688,3 +700,4 @@ if (defined('WP_CLI') && WP_CLI) {
         }
     });
 }
+

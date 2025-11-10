@@ -73,6 +73,7 @@ const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 
 const App = () => {
   const [data, setData] = useState(getInitialState);
+  const [blockingMessage, setBlockingMessage] = useState<string | null>(null);
 
   const router = useStateRouter(
     {
@@ -129,7 +130,16 @@ const App = () => {
       if (router.state.stage === "enter-details") {
         nextStage = "plan";
         // Send initial details to catch drop off
-        await recordStep({ ...nextData, stage: "enter-details" });
+        const response: any = await recordStep({ ...nextData, stage: "enter-details" });
+        
+        // Check if the form progression is blocked
+        if (response?.status === 'blocked') {
+          setBlockingMessage(response.message || 'Unable to proceed with this submission.');
+          return; // Stop progression
+        }
+        
+        // Clear any previous blocking message
+        setBlockingMessage(null);
       } else if (router.state.stage === "plan") {
         nextStage = "donation";
       } else if (router.state.stage === "donation") {
@@ -217,7 +227,7 @@ const App = () => {
 
       router.setState({ stage: nextStage });
     },
-    [router, data]
+    [router, data, setBlockingMessage]
   );
 
   const paymentProviderLogos = getPaymentMethods().map((method) => {
@@ -281,20 +291,28 @@ const App = () => {
           </ul>
         </div>
 
-        <Stager
-          stage={router.state.stage}
-          data={data}
-          onStageCompleted={handlePageCompleted}
-          components={{
-            "enter-details": DetailsPage,
-            plan: PlanPage,
-            donation: DonationPage,
-            "payment-details": PaymentDetailsPage,
-            "payment-method": PaymentPage,
-            confirm: ConfirmationPage
-          }}
-          fallback={<Fail router={router} />}
-        />
+        {blockingMessage ? (
+          <div className="ml-4">
+            <div className="alert alert-danger" role="alert">
+              <div dangerouslySetInnerHTML={{ __html: blockingMessage }} />
+            </div>
+          </div>
+        ) : (
+          <Stager
+            stage={router.state.stage}
+            data={data}
+            onStageCompleted={handlePageCompleted}
+            components={{
+              "enter-details": DetailsPage,
+              plan: PlanPage,
+              donation: DonationPage,
+              "payment-details": PaymentDetailsPage,
+              "payment-method": PaymentPage,
+              confirm: ConfirmationPage
+            }}
+            fallback={<Fail router={router} />}
+          />
+        )}
       </RouterContext.Provider>
     </>
   );

@@ -68,3 +68,19 @@
         color-mix(in lch, $danger 50%, black),
     );
 }
+
+.alert-warning {
+    @include alert-variant(
+        color-mix(in lch, $warning 20%, white),
+        color-mix(in lch, $warning 40%, white),
+        color-mix(in lch, $warning 50%, black),
+    );
+}
+
+.alert-info {
+    @include alert-variant(
+        color-mix(in lch, $info 20%, white),
+        color-mix(in lch, $info 40%, white),
+        color-mix(in lch, $info 50%, black),
+    );
+}

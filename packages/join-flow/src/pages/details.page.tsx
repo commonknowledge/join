@@ -197,7 +197,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               </a>
             </p>
 
-            <Collapse in={!!addressLookup.options}>
+            <Collapse in={!!addressLookup.options && addressLookup.options.length > 0}>
               <Form.Group>
                 <Form.Label>Select Address</Form.Label>
                 <Form.Control
