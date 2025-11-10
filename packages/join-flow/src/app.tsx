@@ -221,7 +221,7 @@ const App = () => {
   );
 
   const paymentProviderLogos = getPaymentMethods().map((method) => {
-    return method === "directDebit" ? (
+    return getEnv("USE_GOCARDLESS") ? (
       <a key={method} href="https://gocardless.com" target="_blank">
         <img alt="GoCardless" src={gocardless} width="100px" />
       </a>
