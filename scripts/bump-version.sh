@@ -59,10 +59,49 @@ else
     fi
 fi
 
+echo ""
+echo "Enter changelog entries for version $NEW_VERSION (one per line, empty line to finish):"
+CHANGELOG_ENTRIES=()
+while IFS= read -r line; do
+    if [ -z "$line" ]; then
+        break
+    fi
+    CHANGELOG_ENTRIES+=("$line")
+done
+
+if [ ${#CHANGELOG_ENTRIES[@]} -eq 0 ]; then
+    print_warning "No changelog entries provided"
+fi
+
 print_step "Updating version to $NEW_VERSION in 3 files..."
 
-print_step "1. Updating readme.txt (Stable tag)"
+print_step "1. Updating readme.txt (Stable tag and changelog)"
 sed -i.bak "s/^Stable tag: .*/Stable tag: $NEW_VERSION/" "$README_TXT"
+
+if [ ${#CHANGELOG_ENTRIES[@]} -gt 0 ]; then
+    CHANGELOG_LINE=$(grep -n "^== Changelog ==" "$README_TXT" | cut -d: -f1)
+    
+    if [ -z "$CHANGELOG_LINE" ]; then
+        print_error "Could not find Changelog section in readme.txt"
+        rm -f "$README_TXT.bak"
+        exit 1
+    fi
+    
+    INSERT_LINE=$((CHANGELOG_LINE + 2))
+    
+    {
+        head -n "$CHANGELOG_LINE" "$README_TXT"
+        echo ""
+        echo "= $NEW_VERSION ="
+        for entry in "${CHANGELOG_ENTRIES[@]}"; do
+            echo "* $entry"
+        done
+        tail -n +$INSERT_LINE "$README_TXT"
+    } > "$README_TXT.tmp"
+    
+    mv "$README_TXT.tmp" "$README_TXT"
+fi
+
 rm -f "$README_TXT.bak"
 
 print_step "2. Updating join.php (Version)"
