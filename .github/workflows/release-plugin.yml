@@ -35,4 +35,3 @@ jobs:
         SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
         SLUG: common-knowledge-join-flow
         BUILD_DIR: dist/common-knowledge-join-flow
-        VERSION: 1.3.4
