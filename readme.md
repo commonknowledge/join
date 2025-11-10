@@ -54,7 +54,49 @@ scopes: read:users, update:users, create:users, delete:users.
 
 ### Deploying
 
-In order to deploy this work, you need to create a WordPress plugin and add it to the WordPress instance as needed.
+#### Automated Deployment to WordPress.org
+
+Releases to WordPress.org are automated via GitHub Actions. To deploy a new version:
+
+1. **Bump the version** in all required files:
+
+```bash
+./scripts/bump-version.sh
+```
+
+This will automatically increment the patch version (e.g., 1.3.3 → 1.3.4). You can also specify a version manually:
+
+```bash
+./scripts/bump-version.sh 1.4.0
+```
+
+2. **Review and commit the changes:**
+
+```bash
+git diff
+git add -A
+git commit -m "Bump version to 1.3.4"
+```
+
+3. **Create and push the tag:**
+
+```bash
+git tag 1.3.4
+git push && git push --tags
+```
+
+4. **GitHub Actions takes over:**
+
+The GitHub Action (`.github/workflows/release-plugin.yml`) will automatically:
+- Build the plugin assets
+- Package the plugin
+- Deploy to the WordPress.org plugin repository
+
+You can monitor the deployment progress in the Actions tab on GitHub.
+
+#### Manual Deployment
+
+In order to manually deploy this work, you need to create a WordPress plugin and add it to the WordPress instance as needed.
 
 1. Run the build commands above to compile the React application.
 2. Run `sh scripts/package.sh` on linux this can be run as `./scripts/package.sh`. This will create zip files of the WordPress plugin and theme in the root directory.
