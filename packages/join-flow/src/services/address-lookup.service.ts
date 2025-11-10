@@ -48,10 +48,17 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
   const [options, setOptions] = useState<Address[]>();
   const [address, setAddressValue] = useState<Address>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'error' | 'info' | null>(null);
 
   const setPostcode = async (postcode: string) => {
     const endpoint = "join/v1/postcode";
     const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, ''); // trim trailing slash
+    
+    // Clear previous messages
+    setMessage(null);
+    setMessageType(null);
+    
     try {
       const res = await fetch(`${baseUrl}/${endpoint}?postcode=${encodeURIComponent(postcode)}`, {
         method: "GET",
@@ -67,12 +74,29 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 
       const response = await res.json();
 
-      if (response.status !== 'ok') {
-        throw new Error('Postcode address lookup failed: ' + response.status)
+      // Handle bad postcode (validation failed)
+      if (response.status === 'bad_postcode') {
+        setMessage(response.message);
+        setMessageType('error');
+        setOptions([]);
+        setAddressValue(undefined);
+        return;
       }
 
-      setAddressValue(undefined);
-      setOptions(response.data.map((addr: any) => Object.assign(new Address(), addr)));
+      // Handle successful lookup
+      if (response.status === 'ok') {
+        setAddressValue(undefined);
+        setOptions(response.data.map((addr: any) => Object.assign(new Address(), addr)));
+        
+        // Handle enrichment message (positive info like local branch)
+        if (response.message) {
+          setMessage(response.message);
+          setMessageType('info');
+        }
+        return;
+      }
+
+      throw new Error('Postcode address lookup failed: ' + response.status);
     } catch (error: any) {
       console.error(error.message)
       setOptions([]);
@@ -167,6 +191,8 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
     setAddress,
     address,
     options,
-    loading
+    loading,
+    message,
+    messageType
   };
 };

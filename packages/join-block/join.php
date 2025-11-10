@@ -152,7 +152,34 @@ add_action('rest_api_init', function () {
                 $joinBlockLog->error('CK Join form step error: ' . $e->getMessage());
             }
 
-            return new WP_REST_Response(['status' => 'ok'], 200);
+            /**
+             * Action: ck_join_flow_step
+             * 
+             * Fired after step data is processed. Use for side effects like analytics or logging.
+             * 
+             * @param array           $data    Form data submitted
+             * @param WP_REST_Request $request REST request object
+             */
+            do_action('ck_join_flow_step', $data, $request);
+
+            /**
+             * Filter: ck_join_flow_step_response
+             * 
+             * Modify the response returned to the frontend.
+             * 
+             * @param array           $response Response data
+             * @param array           $data     Form data submitted
+             * @param WP_REST_Request $request  REST request object
+             * @return array Modified response
+             */
+            $response_data = apply_filters(
+                'ck_join_flow_step_response',
+                ['status' => 'ok'],
+                $data,
+                $request
+            );
+
+            return new WP_REST_Response($response_data, 200);
         },
     ));
 
@@ -193,7 +220,86 @@ add_action('rest_api_init', function () {
                 } else {
                     $addresses = $data['result'] ?? [];
                 }
-                return new WP_REST_Response(['status' => 'ok', 'data' => $addresses], 200);
+
+                /**
+                 * Filter: ck_join_flow_postcode_validation
+                 * 
+                 * Validate postcode and optionally reject it with custom message.
+                 * Return modified response with status 'bad_postcode' and message to reject.
+                 * 
+                 * @param array           $response  ['status' => 'ok', 'data' => $addresses]
+                 * @param string          $postcode  The postcode
+                 * @param array           $addresses Addresses found
+                 * @param WP_REST_Request $request   REST request object
+                 * @return array Modified response
+                 * 
+                 * Example: Geographic restriction
+                 * add_filter('ck_join_flow_postcode_validation', function($response, $postcode) {
+                 *     if (!in_supported_region($postcode)) {
+                 *         return [
+                 *             'status' => 'bad_postcode',
+                 *             'message' => '<p>Sorry, we don\'t cover your area.</p>'
+                 *         ];
+                 *     }
+                 *     return $response;
+                 * }, 10, 2);
+                 */
+                $response_data = apply_filters(
+                    'ck_join_flow_postcode_validation',
+                    ['status' => 'ok', 'data' => $addresses],
+                    $postcode,
+                    $addresses,
+                    $request
+                );
+
+                // If validation failed, return immediately
+                if ($response_data['status'] !== 'ok') {
+                    return new WP_REST_Response($response_data, 200);
+                }
+
+                /**
+                 * Action: ck_join_flow_postcode_lookup
+                 * 
+                 * Fired after successful postcode lookup (validation passed).
+                 * Use for side effects like analytics or logging.
+                 * 
+                 * @param string          $postcode  The postcode looked up
+                 * @param array           $addresses Addresses found
+                 * @param WP_REST_Request $request   REST request object
+                 */
+                do_action('ck_join_flow_postcode_lookup', $postcode, $addresses, $request);
+
+                /**
+                 * Filter: ck_join_flow_postcode_response
+                 * 
+                 * Enrich successful responses with additional data or messages.
+                 * Can add 'message' field for positive information like local branch details.
+                 * 
+                 * @param array           $response  Current response ['status' => 'ok', 'data' => $addresses]
+                 * @param string          $postcode  The postcode
+                 * @param array           $addresses Addresses found
+                 * @param WP_REST_Request $request   REST request object
+                 * @return array Modified response (can include 'message' field)
+                 * 
+                 * Example: Show local branch
+                 * add_filter('ck_join_flow_postcode_response', function($response, $postcode) {
+                 *     if ($response['status'] !== 'ok') return $response;
+                 *     $branch = find_branch($postcode);
+                 *     if ($branch) {
+                 *         $response['message'] = "<div>Your branch: {$branch->name}</div>";
+                 *     }
+                 *     return $response;
+                 * }, 10, 2);
+                 */
+                $response_data = apply_filters(
+                    'ck_join_flow_postcode_response',
+                    $response_data,
+                    $postcode,
+                    $addresses,
+                    $request
+                );
+
+                return new WP_REST_Response($response_data, 200);
             } catch (\Exception $e) {
                 $joinBlockLog->error('CK Join form postcode address search error: ' . $e->getMessage());
             }

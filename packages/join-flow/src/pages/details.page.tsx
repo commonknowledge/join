@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Col, Form, Row, Button, Collapse } from "react-bootstrap";
+import { Col, Form, Row, Button, Collapse, Alert } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 
 import { get as getEnv, getStr as getEnvStr } from "../env";
@@ -176,6 +176,15 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             >
               <Form.Control className="mb-2" autoComplete="postal-code" />
             </FormItem>
+
+            {addressLookup.message && (
+              <Alert 
+                variant={addressLookup.messageType === 'error' ? 'warning' : 'info'} 
+                className="mt-2"
+              >
+                <div dangerouslySetInnerHTML={{ __html: addressLookup.message }} />
+              </Alert>
+            )}
 
             <p className="text-secondary">
               <a
