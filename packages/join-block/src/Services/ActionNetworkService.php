@@ -27,6 +27,15 @@ class ActionNetworkService
             return trim($tag);
         }, explode(",", $removeTags));
 
+        // Allow third-party code to modify tags before they're applied
+        // Generic filter applies to all services
+        $addTags = apply_filters('ck_join_flow_add_tags', $addTags, $data, 'action_network');
+        $removeTags = apply_filters('ck_join_flow_remove_tags', $removeTags, $data, 'action_network');
+        
+        // Service-specific filter for Action Network-only customization
+        $addTags = apply_filters('ck_join_flow_action_network_add_tags', $addTags, $data);
+        $removeTags = apply_filters('ck_join_flow_action_network_remove_tags', $removeTags, $data);
+
         $customFieldValues = [
             "How did you hear about us?" => $data['howDidYouHearAboutUs'],
             "How did you hear about us? (Details)" => $data['howDidYouHearAboutUsDetails'] ?? "",

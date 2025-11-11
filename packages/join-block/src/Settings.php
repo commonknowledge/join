@@ -70,7 +70,7 @@ class Settings
         $membership_plans_fields = [
             Field::make('text', 'lapsed_tag')
                 ->set_default_value("Lapsed - failed payment")
-                ->set_help_text("Will be applied to members in your CMS if they delete or do not pay their subscription"),
+                ->set_help_text("Will be applied to members in Action Network and Mailchimp if they delete or do not pay their subscription"),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
         ];
@@ -422,8 +422,8 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
-            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network."),
-            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network.")
+            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network and Mailchimp."),
+            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network and Mailchimp.")
         ])->set_min(1);
         return $membership_plans;
     }

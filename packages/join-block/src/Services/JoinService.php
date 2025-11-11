@@ -368,6 +368,21 @@ class JoinService
                 throw $exception;
             }
         }
+
+        if (Settings::get("USE_MAILCHIMP")) {
+            $joinBlockLog->info("$action member $email as lapsed in Mailchimp");
+            try {
+                if ($lapsed) {
+                    MailchimpService::addTag($email, Settings::get("LAPSED_TAG"));
+                } else {
+                    MailchimpService::removeTag($email, Settings::get("LAPSED_TAG"));
+                }
+                $joinBlockLog->info("$done member $email as lapsed in Mailchimp");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
+                throw $exception;
+            }
+        }
     }
 
     private static function handleGocardless($data)
