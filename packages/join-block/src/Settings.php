@@ -70,7 +70,7 @@ class Settings
         $membership_plans_fields = [
             Field::make('text', 'lapsed_tag')
                 ->set_default_value("Lapsed - failed payment")
-                ->set_help_text("Will be applied to members in Action Network and Mailchimp if they delete or do not pay their subscription"),
+                ->set_help_text("Will be applied to members in Action Network, Mailchimp and Zetkin if they delete or do not pay their subscription"),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
         ];
@@ -133,6 +133,9 @@ class Settings
             Field::make('text', 'zetkin_join_form_submit_token', 'Zetkin Join Form Submission Token'),
             Field::make('text', 'zetkin_membership_custom_field', 'Zetkin Membership Tier Custom Field'),
             Field::make('text', 'zetkin_join_date_custom_field', 'Zetkin Join Date Custom Field'),
+            Field::make('text', 'zetkin_client_id', 'Zetkin OAuth Client ID')->set_help_text("Required for tags to be applied"),
+            Field::make('text', 'zetkin_client_secret', 'Zetkin OAuth Client Secret')->set_help_text("Required for tags to be applied"),
+            Field::make('text', 'zetkin_jwt', 'Zetkin OAuth JWT')->set_help_text("Required for tags to be applied"),
             $zetkin_environment_select,
 
             Field::make('separator', 'chargebee', 'Chargebee'),
@@ -423,8 +426,8 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
-            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network and Mailchimp."),
-            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network and Mailchimp.")
+            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin."),
+            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network, Mailchimp and Zetkin.")
         ])->set_min(1);
         return $membership_plans;
     }

@@ -383,6 +383,28 @@ class JoinService
                 throw $exception;
             }
         }
+
+        if (Settings::get("USE_ZETKIN")) {
+            $clientId = Settings::get("ZETKIN_CLIENT_ID");
+            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
+            $jwt = Settings::get("ZETKIN_JWT");
+            if ($clientId && $clientSecret && $jwt) {
+                $joinBlockLog->info("$action member $email as lapsed in Zetkin");
+                try {
+                    if ($lapsed) {
+                        ZetkinService::addTag($email, Settings::get("LAPSED_TAG"));
+                    } else {
+                        ZetkinService::removeTag($email, Settings::get("LAPSED_TAG"));
+                    }
+                    $joinBlockLog->info("$done member $email as lapsed in Zetkin");
+                } catch (\Exception $exception) {
+                    $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
+                    throw $exception;
+                }
+            } else {
+                $joinBlockLog->warning("Can't $action member $email as lapsed in Zetkin - need OAuth credentials");
+            }
+        }
     }
 
     private static function handleGocardless($data)
