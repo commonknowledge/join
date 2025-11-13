@@ -21,6 +21,7 @@ class ZetkinService
         $zetkin_form_id = Settings::get("ZETKIN_JOIN_FORM_ID");
         $zetkin_token = Settings::get("ZETKIN_JOIN_FORM_SUBMIT_TOKEN");
         $zetkin_membership_field = Settings::get("ZETKIN_MEMBERSHIP_CUSTOM_FIELD");
+        $zetkin_join_date_field = Settings::get("ZETKIN_JOIN_DATE_CUSTOM_FIELD");
         $collect_hear_about_us = Settings::get("COLLECT_HEAR_ABOUT_US");
 
         $person_data = [
@@ -33,6 +34,10 @@ class ZetkinService
             if ($label) {
                 $person_data[$zetkin_membership_field] = $label;
             }
+        }
+
+        if ($zetkin_join_date_field) {
+            $person_data[$zetkin_join_date_field] = date("Y-m-d");
         }
 
         if ($collect_hear_about_us) {

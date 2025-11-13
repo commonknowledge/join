@@ -132,6 +132,7 @@ class Settings
             Field::make('text', 'zetkin_join_form_id', 'Zetkin Join Form ID'),
             Field::make('text', 'zetkin_join_form_submit_token', 'Zetkin Join Form Submission Token'),
             Field::make('text', 'zetkin_membership_custom_field', 'Zetkin Membership Tier Custom Field'),
+            Field::make('text', 'zetkin_join_date_custom_field', 'Zetkin Join Date Custom Field'),
             $zetkin_environment_select,
 
             Field::make('separator', 'chargebee', 'Chargebee'),
