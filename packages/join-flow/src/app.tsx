@@ -145,7 +145,20 @@ const App = () => {
       } else if (router.state.stage === "donation") {
         nextStage = "payment-method";
       } else if (router.state.stage === "payment-method") {
-        nextStage = "payment-details";
+        // Check if this is a zero-price membership before setting next stage
+        // This handles the case where the user is ON the payment-method page
+        // (e.g., when there are multiple payment methods to choose from)
+        const plan = getPaymentPlan(nextData.membership);
+        const isAmountZero = plan && Number(plan.amount) === 0;
+        const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
+        const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
+        
+        // Skip payment only if membership is free, no custom amount, AND no donation
+        if (isAmountZero && !isCustomAmountAboveZero && !hasDonation) {
+          nextStage = "confirm";
+        } else {
+          nextStage = "payment-details";
+        }
       } else if (router.state.stage === "payment-details") {
         nextStage = "confirm";
       } else if (router.state.stage === "confirm") {
@@ -157,19 +170,24 @@ const App = () => {
         nextStage = "payment-method";
       }
 
-      // Skip payment if member has selected a free membership, and it is allowed
-      if (nextStage === "payment-method") {
-        const plan = getPaymentPlan(nextData.membership);
-        const isAmountZero = plan && Number(plan.amount) === 0;
-        const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
-        if (
-          isAmountZero && !isCustomAmountAboveZero
-        ) {
-          nextStage = "confirm";
-        }
-      }
+      // Skip payment entirely if member has selected a free membership when arriving
+      // at the payment-method stage from a previous stage (e.g., plan or donation).
+      // Note: There's a similar check above for when the user is already ON the
+      // payment-method page - both are needed to cover all navigation paths.
+      const plan = getPaymentPlan(nextData.membership);
+      const isAmountZero = plan && Number(plan.amount) === 0;
+      const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
+      const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
+      
+      // Only skip payment if there's truly nothing to pay (no membership fee, no custom amount, no donation)
+      const shouldSkipPayment = nextStage === "payment-method" && isAmountZero && !isCustomAmountAboveZero && !hasDonation;
 
-      if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
+      if (shouldSkipPayment) {
+        // For zero-price memberships with no donation, skip directly to confirmation
+        nextStage = "confirm";
+      } else if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
+        // Auto-skip payment method selection if there's only one option available
+        // This only runs if we haven't already skipped payment entirely above
         nextStage = "payment-details";
       }
 

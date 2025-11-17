@@ -3,7 +3,7 @@ import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema, getPaymentFrequency } from "../schema";
+import { FormSchema, getPaymentFrequency, getPaymentPlan } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
@@ -45,6 +45,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   let directDebitDetailsMessage = null;
 
+  // Only show Direct Debit payment details if there's actually an amount to pay
   if (data.paymentMethod === "directDebit" && data.membership) {
     const frequency = getPaymentFrequency(data.membership)
     directDebitDetailsMessage = (
