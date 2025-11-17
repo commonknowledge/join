@@ -47,25 +47,33 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   // Only show Direct Debit payment details if there's actually an amount to pay
   if (data.paymentMethod === "directDebit" && data.membership) {
-    const frequency = getPaymentFrequency(data.membership)
-    directDebitDetailsMessage = (
-      <section className="form-section mb-3">
-        <p>
-          You are paying for your membership of {organisationName} by Direct Debit.
-        </p>
-        <p>
-          This will be charged {frequency ? frequency + ' ' : ''}from your
-          bank account.
-        </p>
-        <p>
-          On your bank statement the charge will appear as "{organisationBankName}".
-        </p>
-        <p>
-          You can contact the membership team of {organisationName} at{" "}
-          <a href={organisationMailToLink}>{organisationEmailAddress}</a>.
-        </p>
-      </section>
-    );
+    const plan = getPaymentPlan(data.membership);
+    const isAmountZero = plan && Number(plan.amount) === 0;
+    const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(data.customMembershipAmount) > 0 : false;
+    const hasDonation = data.donationAmount && Number(data.donationAmount) > 0;
+    
+    // Only show payment details if there's something to pay (membership, custom amount, or donation)
+    if (!isAmountZero || isCustomAmountAboveZero || hasDonation) {
+      const frequency = getPaymentFrequency(data.membership)
+      directDebitDetailsMessage = (
+        <section className="form-section mb-3">
+          <p>
+            You are paying for your membership of {organisationName} by Direct Debit.
+          </p>
+          <p>
+            This will be charged {frequency ? frequency + ' ' : ''}from your
+            bank account.
+          </p>
+          <p>
+            On your bank statement the charge will appear as "{organisationBankName}".
+          </p>
+          <p>
+            You can contact the membership team of {organisationName} at{" "}
+            <a href={organisationMailToLink}>{organisationEmailAddress}</a>.
+          </p>
+        </section>
+      );
+    }
   }
 
   const onSubmit = async () => {
