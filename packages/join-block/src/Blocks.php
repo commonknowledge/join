@@ -175,6 +175,8 @@ class Blocks
                 Field::make('separator', 'ck_join_form', 'CK Join Form'),
                 $joined_page_association,
                 Field::make('checkbox', 'require_address')->set_default_value(true),
+                Field::make('checkbox', 'hide_address')
+                    ->set_help_text('Check to completely hide the address section from the form.'),
                 Field::make('checkbox', 'require_phone_number')->set_default_value(true),
                 Field::make('checkbox', 'ask_for_additional_donation'),
                 Field::make('checkbox', 'hide_home_address_copy')
@@ -194,6 +196,12 @@ class Blocks
                 $custom_membership_plans,
                 Field::make('text', 'custom_webhook_url')
                     ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
+                Field::make('text', 'custom_sidebar_heading')
+                    ->set_help_text('Leave blank to use the default from settings page.'),
+                Field::make('text', 'custom_membership_stage_label')
+                    ->set_help_text('Leave blank to use the default from settings page.'),
+                Field::make('text', 'custom_joining_verb')
+                    ->set_help_text('Leave blank to use the default from settings page (e.g., "Joining").'),
 
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
@@ -431,6 +439,33 @@ class Blocks
             return $field;
         }, $fields['custom_fields'] ?? []);
 
+        // Determine sidebar heading
+        $sidebar_heading = $fields['custom_sidebar_heading'] ?? '';
+        if (!$sidebar_heading) {
+            $sidebar_heading = Settings::get("JOIN_FORM_SIDEBAR_HEADING");
+        }
+        if (!$sidebar_heading) {
+            $sidebar_heading = "Join Us";
+        }
+
+        // Determine membership stage label
+        $membership_stage_label = $fields['custom_membership_stage_label'] ?? '';
+        if (!$membership_stage_label) {
+            $membership_stage_label = Settings::get("MEMBERSHIP_STAGE_LABEL");
+        }
+        if (!$membership_stage_label) {
+            $membership_stage_label = "Your Membership";
+        }
+
+        // Determine joining verb
+        $joining_verb = $fields['custom_joining_verb'] ?? '';
+        if (!$joining_verb) {
+            $joining_verb = Settings::get("JOINING_VERB");
+        }
+        if (!$joining_verb) {
+            $joining_verb = "Joining";
+        }
+
         $environment = [
             'HOME_URL' => $homeUrl,
             "WP_REST_API" => get_rest_url(),
@@ -455,13 +490,17 @@ class Blocks
             "HEAR_ABOUT_US_DETAILS" => Settings::get("HEAR_ABOUT_US_DETAILS"),
             "HEAR_ABOUT_US_HEADING" => Settings::get("HEAR_ABOUT_US_HEADING"),
             "HEAR_ABOUT_US_OPTIONS" => $hearAboutUsOptions,
+            "HIDE_ZERO_PRICE_DISPLAY" => Settings::get("HIDE_ZERO_PRICE_DISPLAY"),
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_HEADING" => Settings::get("MEMBERSHIP_TIERS_HEADING"),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
             "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,
             "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
             "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
+            "JOIN_FORM_SIDEBAR_HEADING" => $sidebar_heading,
+            "JOINING_VERB" => $joining_verb,
             "MEMBERSHIP_PLANS" => $membership_plans_prepared,
+            "MEMBERSHIP_STAGE_LABEL" => $membership_stage_label,
             "ORGANISATION_NAME" => Settings::get("ORGANISATION_NAME"),
             "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),
             "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),
@@ -469,6 +508,7 @@ class Blocks
             "POSTCODE_ADDRESS_PROVIDER" => Settings::get("POSTCODE_ADDRESS_PROVIDER"),
             "PRIVACY_COPY" => wpautop(Settings::get("PRIVACY_COPY")),
             "REQUIRE_ADDRESS" => $fields["require_address"] ?? false,
+            "HIDE_ADDRESS" => $fields["hide_address"] ?? false,
             "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? false,
             "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),

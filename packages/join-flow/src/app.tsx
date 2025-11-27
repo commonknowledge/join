@@ -21,7 +21,7 @@ import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
 import { FormSchema, getPaymentPlan, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import { get as getEnv, getPaymentMethods } from "./env";
+import { get as getEnv, getStr as getEnvStr, getPaymentMethods } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
@@ -35,19 +35,6 @@ interface Stage {
   id: PageState["stage"];
   label: string;
   breadcrumb: boolean;
-}
-
-let stages: Stage[] = [
-  { id: "enter-details", label: "Your Details", breadcrumb: true },
-  { id: "plan", label: "Your Membership", breadcrumb: true },
-  { id: "donation", label: "Can you chip in?", breadcrumb: false },
-  { id: "payment-details", label: "Payment", breadcrumb: true },
-  { id: "payment-method", label: "Payment", breadcrumb: false },
-  { id: "confirm", label: "Confirm", breadcrumb: false }
-];
-
-if (getEnv("IS_UPDATE_FLOW")) {
-  stages = stages.filter((s) => s.id !== "enter-details");
 }
 
 // Redirect to confirm page if ?gocardless_success === "true"
@@ -72,6 +59,18 @@ let shouldRedirectToConfirm =
 const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 
 const App = () => {
+  let stages: Stage[] = [
+    { id: "enter-details", label: "Your Details", breadcrumb: true },
+    { id: "plan", label: getEnvStr("MEMBERSHIP_STAGE_LABEL"), breadcrumb: true },
+    { id: "donation", label: "Can you chip in?", breadcrumb: false },
+    { id: "payment-details", label: "Payment", breadcrumb: true },
+    { id: "payment-method", label: "Payment", breadcrumb: false },
+    { id: "confirm", label: "Confirm", breadcrumb: false }
+  ];
+
+  if (getEnv("IS_UPDATE_FLOW")) {
+    stages = stages.filter((s) => s.id !== "enter-details");
+  }
   const [data, setData] = useState(getInitialState);
   const [blockingMessage, setBlockingMessage] = useState<string | null>(null);
 
@@ -282,7 +281,7 @@ const App = () => {
     <>
       <RouterContext.Provider value={router}>
         <div className="progress-steps">
-          <h6>Join Us</h6>
+          <h6>{getEnvStr("JOIN_FORM_SIDEBAR_HEADING")}</h6>
           <div className="progress-steps__secure">
             <p>
               🔒 Secure payment with

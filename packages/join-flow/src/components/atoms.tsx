@@ -3,6 +3,7 @@ import { Form, Button } from "react-bootstrap";
 import { Controller, UseFormMethods } from "react-hook-form";
 import { PageState, useCurrentRouter } from "../services/router.service";
 import { currencyCodeToSymbol } from "../schema";
+import { get as getEnv } from "../env";
 
 interface ContinueButtonProps {
   disabled?: boolean;
@@ -101,6 +102,8 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
   name,
   className = ""
 }) => {
+  const hideZeroPriceDisplay = Boolean(getEnv("HIDE_ZERO_PRICE_DISPLAY"));
+
   return (
     <Controller
       name={name}
@@ -120,6 +123,9 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
           amount: number;
           frequency: string;
         }) => {
+          if (hideZeroPriceDisplay && amount === 0) {
+            return "";
+          }
           const currencySymbol = currencyCodeToSymbol(currency);
           return `${currencySymbol}${amount}, ${frequency}`;
         };
@@ -177,7 +183,9 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                     </Form.Control>
 
                     {!checked || !currentPlan.allowCustomAmount ? (
-                      `${currencyCodeToSymbol(currentPlan.currency)}${currentPlan.amount}`
+                      (hideZeroPriceDisplay && currentPlan.amount === 0) 
+                        ? ""
+                        : `${currencyCodeToSymbol(currentPlan.currency)}${currentPlan.amount}`
                     ) : (
                       <div
                         className={

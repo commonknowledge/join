@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.3.11
+Stable tag: 1.3.12
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,13 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.3.12 =
+* Hide price display for zero-price membership tiers (global setting)
+* Block-level option to completely hide address section
+* Customisable sidebar heading (global + per-block override)
+* Customisable membership stage label (global + per-block override)
+* Customisable loading spinner verb (global + per-block override)
+* All new text customizations include sensible fallback defaults for backwards compatibility
 = 1.3.11 =
 * Fix bug with display of Direct Debit information when we have a zero priced tier.
 = 1.3.10 =
