@@ -133,6 +133,9 @@ class Settings
             Field::make('text', 'membership_stage_label')
                 ->set_default_value("Your Membership")
                 ->set_help_text("The label for the membership selection stage"),
+            Field::make('text', 'joining_verb')
+                ->set_default_value("Joining")
+                ->set_help_text("The verb used in the loading spinner (e.g., 'Joining Organisation Name')"),
         ];
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),

@@ -19,6 +19,7 @@ const addressLookupFormSchema = yup.object().shape({
 });
 
 const requireAddress = Boolean(getEnv("REQUIRE_ADDRESS"));
+const hideAddress = Boolean(getEnv("HIDE_ADDRESS"));
 const homeAddressCopy = getEnvStr("HOME_ADDRESS_COPY");
 const passwordPurpose = getEnvStr("PASSWORD_PURPOSE");
 const privacyCopy = getEnvStr("PRIVACY_COPY");
@@ -149,15 +150,16 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </section>
       ) : null}
 
-      <section className="form-section">
-        <h2>Home address</h2>
-        {getEnv("HIDE_HOME_ADDRESS_COPY") ? (
-          <div
-            className="text-secondary"
-            dangerouslySetInnerHTML={{ __html: homeAddressCopy }}
-          ></div>
-        ) : null}
-        {usePostcodeLookup ? (
+      {!hideAddress ? (
+        <section className="form-section">
+          <h2>Home address</h2>
+          {getEnv("HIDE_HOME_ADDRESS_COPY") ? (
+            <div
+              className="text-secondary"
+              dangerouslySetInnerHTML={{ __html: homeAddressCopy }}
+            ></div>
+          ) : null}
+          {usePostcodeLookup ? (
           <>
             <FormItem
               label="Postcode"
@@ -271,7 +273,8 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             </FormItem>
           </div>
         </Collapse>
-      </section>
+        </section>
+      ) : null}
 
       {customFields.length ? (
         <section className="form-section">

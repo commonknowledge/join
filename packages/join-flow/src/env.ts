@@ -19,10 +19,12 @@ interface StaticEnv {
     HEAR_ABOUT_US_DETAILS: string;
     HEAR_ABOUT_US_HEADING: string;
     HEAR_ABOUT_US_OPTIONS: string[];
+    HIDE_ADDRESS: boolean;
     HIDE_HOME_ADDRESS_COPY: boolean;
     HIDE_ZERO_PRICE_DISPLAY: boolean;
     HOME_ADDRESS_COPY: string;
     JOIN_FORM_SIDEBAR_HEADING: string;
+    JOINING_VERB: string;
     MEMBERSHIP_PLANS: object[];
     MEMBERSHIP_STAGE_LABEL: string;
     MEMBERSHIP_TIERS_HEADING: string;
@@ -86,10 +88,12 @@ const staticEnv: StaticEnv = {
     HEAR_ABOUT_US_DETAILS: process.env.REACT_APP_HEAR_ABOUT_US_DETAILS || '',
     HEAR_ABOUT_US_HEADING: process.env.REACT_APP_HEAR_ABOUT_US_HEADING || '',
     HEAR_ABOUT_US_OPTIONS: (process.env.REACT_APP_HEAR_ABOUT_US_OPTIONS || '').split('.').map(i => i.trim()).filter(Boolean),
+    HIDE_ADDRESS: parseBooleanEnvVar("REACT_APP_HIDE_ADDRESS"),
     HIDE_HOME_ADDRESS_COPY: parseBooleanEnvVar("REACT_APP_HIDE_HOME_ADDRESS_COPY"),
     HIDE_ZERO_PRICE_DISPLAY: parseBooleanEnvVar("REACT_APP_HIDE_ZERO_PRICE_DISPLAY"),
     HOME_ADDRESS_COPY: process.env.REACT_APP_HOME_ADDRESS_COPY || '',
     JOIN_FORM_SIDEBAR_HEADING: process.env.REACT_APP_JOIN_FORM_SIDEBAR_HEADING || 'Support Us',
+    JOINING_VERB: process.env.REACT_APP_JOINING_VERB || 'Joining',
     MEMBERSHIP_PLANS: JSON.parse(process.env.REACT_APP_MEMBERSHIP_PLANS || '[]') as object[],
     MEMBERSHIP_STAGE_LABEL: process.env.REACT_APP_MEMBERSHIP_STAGE_LABEL || 'Your Membership',
     MEMBERSHIP_TIERS_HEADING: process.env.REACT_APP_MEMBERSHIP_TIERS_HEADING || '',

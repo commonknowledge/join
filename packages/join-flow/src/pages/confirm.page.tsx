@@ -7,7 +7,7 @@ import { FormSchema, getPaymentFrequency, getPaymentPlan } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
-import { get as getEnv } from '../env';
+import { get as getEnv, getStr as getEnvStr } from '../env';
 import { useCurrentRouter } from "../services/router.service";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
@@ -19,6 +19,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   const organisationEmailAddress = getEnv('ORGANISATION_EMAIL_ADDRESS');
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
   const chargebeeSiteName = getEnv('CHARGEBEE_SITE_NAME');
+  const joiningVerb = getEnvStr('JOINING_VERB');
 
   const form = useForm();
   const router = useCurrentRouter();
@@ -39,7 +40,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <div className="spinner-border" role="status">
         <span className="sr-only">Please wait</span>
       </div>
-      <div className="mt-3">Joining {organisationName}</div>
+      <div className="mt-3">{joiningVerb} {organisationName}</div>
     </div>
   );
 
