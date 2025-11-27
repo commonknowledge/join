@@ -194,6 +194,10 @@ class Blocks
                 $custom_membership_plans,
                 Field::make('text', 'custom_webhook_url')
                     ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
+                Field::make('text', 'custom_sidebar_heading')
+                    ->set_help_text('Leave blank to use the default from settings page.'),
+                Field::make('text', 'custom_membership_stage_label')
+                    ->set_help_text('Leave blank to use the default from settings page.'),
 
             ));
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
@@ -431,6 +435,18 @@ class Blocks
             return $field;
         }, $fields['custom_fields'] ?? []);
 
+        // Determine sidebar heading
+        $sidebar_heading = $fields['custom_sidebar_heading'] ?? '';
+        if (!$sidebar_heading) {
+            $sidebar_heading = Settings::get("JOIN_FORM_SIDEBAR_HEADING");
+        }
+
+        // Determine membership stage label
+        $membership_stage_label = $fields['custom_membership_stage_label'] ?? '';
+        if (!$membership_stage_label) {
+            $membership_stage_label = Settings::get("MEMBERSHIP_STAGE_LABEL");
+        }
+
         $environment = [
             'HOME_URL' => $homeUrl,
             "WP_REST_API" => get_rest_url(),
@@ -455,13 +471,16 @@ class Blocks
             "HEAR_ABOUT_US_DETAILS" => Settings::get("HEAR_ABOUT_US_DETAILS"),
             "HEAR_ABOUT_US_HEADING" => Settings::get("HEAR_ABOUT_US_HEADING"),
             "HEAR_ABOUT_US_OPTIONS" => $hearAboutUsOptions,
+            "HIDE_ZERO_PRICE_DISPLAY" => Settings::get("HIDE_ZERO_PRICE_DISPLAY"),
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_HEADING" => Settings::get("MEMBERSHIP_TIERS_HEADING"),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
             "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,
             "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
             "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
+            "JOIN_FORM_SIDEBAR_HEADING" => $sidebar_heading,
             "MEMBERSHIP_PLANS" => $membership_plans_prepared,
+            "MEMBERSHIP_STAGE_LABEL" => $membership_stage_label,
             "ORGANISATION_NAME" => Settings::get("ORGANISATION_NAME"),
             "ORGANISATION_BANK_NAME" => Settings::get("ORGANISATION_BANK_NAME"),
             "ORGANISATION_EMAIL_ADDRESS" => Settings::get("ORGANISATION_EMAIL_ADDRESS"),

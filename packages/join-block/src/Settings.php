@@ -53,6 +53,8 @@ class Settings
             Field::make('checkbox', 'collect_county'),
             Field::make('checkbox', 'collect_phone_and_email_contact_consent')
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
+            Field::make('checkbox', 'hide_zero_price_display', 'Hide price display for zero-price items')
+                ->set_help_text('When enabled, membership tiers with a price of zero will not show a price label'),
             Field::make('checkbox', 'create_auth0_account'),
             Field::make('checkbox', 'use_zetkin', 'Use Zetkin'),
             Field::make('checkbox', 'use_gocardless', 'Use GoCardless'),
@@ -121,10 +123,16 @@ class Settings
             Field::make('rich_text', 'privacy_copy')
                 ->set_help_text("E.G. We will always do our very best to keep the information we hold about you safe and secure."),
             Field::make('text', 'membership_tiers_heading')
-                ->set_default_value("Choose the plan that’s right for you"),
+                ->set_default_value("Choose the plan that's right for you"),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
             Field::make('text', 'subscription_day_of_month_copy', 'Only valid for monthly subscriptions')->set_default_value("Day of month to take payment"),
+            Field::make('text', 'join_form_sidebar_heading')
+                ->set_default_value("Join Us")
+                ->set_help_text("The heading shown in the sidebar progress steps"),
+            Field::make('text', 'membership_stage_label')
+                ->set_default_value("Your Membership")
+                ->set_help_text("The label for the membership selection stage"),
         ];
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),
