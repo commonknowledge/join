@@ -494,9 +494,17 @@ add_action('rest_api_init', function () {
                 $joinBlockLog->info('Processing Stripe subscription creation request');
 
                 StripeService::initialise();
-                [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+                
+                // Pass all form data to upsertCustomer for name, phone, address, etc.
+                [$customer, $newCustomer] = StripeService::upsertCustomer($email, $data);
 
-                $subscription = StripeService::createSubscription($customer, $plan, $data["customMembershipAmount"] ?? null);
+                // Pass additional data to createSubscription for metadata (donations, etc.)
+                $subscription = StripeService::createSubscription(
+                    $customer, 
+                    $plan, 
+                    $data["customMembershipAmount"] ?? null,
+                    $data
+                );
 
                 return $subscription;
             } catch (\Exception $e) {
@@ -536,9 +544,12 @@ add_action('rest_api_init', function () {
             $email = $data['email'];
 
             StripeService::initialise();
-            [$customer, $newCustomer] = StripeService::upsertCustomer($email);
+            
+            // Pass all form data to upsertCustomer for name, phone, address, etc.
+            [$customer, $newCustomer] = StripeService::upsertCustomer($email, $data);
 
-            $subscription = StripeService::createSubscription($customer, $plan);
+            // Pass additional data to createSubscription for metadata (donations, etc.)
+            $subscription = StripeService::createSubscription($customer, $plan, null, $data);
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
 

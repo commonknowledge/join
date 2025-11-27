@@ -43,7 +43,7 @@ class StripeService
         return $customers;
     }
 
-    public static function upsertCustomer($email)
+    public static function upsertCustomer($email, $additionalData = [])
     {
         global $joinBlockLog;
 
@@ -54,14 +54,67 @@ class StripeService
 
         $newCustomer = false;
 
+        // Prepare customer data from additional fields
+        $customerData = ['email' => $email];
+        
+        // Add name if available
+        if (!empty($additionalData['firstName']) && !empty($additionalData['lastName'])) {
+            $customerData['name'] = trim($additionalData['firstName'] . ' ' . $additionalData['lastName']);
+        }
+        
+        // Add phone if available
+        if (!empty($additionalData['phoneNumber'])) {
+            $customerData['phone'] = $additionalData['phoneNumber'];
+        }
+        
+        // Add address if available
+        $address = [];
+        if (!empty($additionalData['addressLine1'])) {
+            $address['line1'] = $additionalData['addressLine1'];
+        }
+        if (!empty($additionalData['addressLine2'])) {
+            $address['line2'] = $additionalData['addressLine2'];
+        }
+        if (!empty($additionalData['addressCity'])) {
+            $address['city'] = $additionalData['addressCity'];
+        }
+        if (!empty($additionalData['addressPostcode'])) {
+            $address['postal_code'] = $additionalData['addressPostcode'];
+        }
+        if (!empty($additionalData['addressCountry'])) {
+            $address['country'] = $additionalData['addressCountry'];
+        }
+        if (!empty($address)) {
+            $customerData['address'] = $address;
+        }
+        
+        // Add metadata for additional fields
+        $metadata = [];
+        if (!empty($additionalData['dobDay']) && !empty($additionalData['dobMonth']) && !empty($additionalData['dobYear'])) {
+            $metadata['dob'] = sprintf('%04d-%02d-%02d', $additionalData['dobYear'], $additionalData['dobMonth'], $additionalData['dobDay']);
+        }
+        if (isset($additionalData['contactByEmail'])) {
+            $metadata['contact_by_email'] = $additionalData['contactByEmail'] ? 'true' : 'false';
+        }
+        if (isset($additionalData['contactByPhone'])) {
+            $metadata['contact_by_phone'] = $additionalData['contactByPhone'] ? 'true' : 'false';
+        }
+        if (!empty($metadata)) {
+            $customerData['metadata'] = $metadata;
+        }
+
         if (count($customers->data) > 0) {
             $customer = $customers->data[0];
+            
+            // Update existing customer with new data if provided
+            if (count($customerData) > 1) { // More than just email
+                $joinBlockLog->info('Updating existing customer ' . $customer->id . ' with additional data');
+                $customer = Customer::update($customer->id, $customerData);
+            }
         } else {
             $newCustomer = true;
 
-            $customer = Customer::create([
-                'email' => $email
-            ]);
+            $customer = Customer::create($customerData);
 
             $joinBlockLog->info('Customer created successfully! Customer ID: ' . $customer->id);
         }
@@ -69,7 +122,7 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan, $customAmount = null)
+    public static function createSubscription($customer, $plan, $customAmount = null, $additionalData = [])
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
@@ -78,7 +131,34 @@ class StripeService
             $product = self::getOrCreateProductForMembershipTier($plan);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         }
-        $subscription = Subscription::create([
+        
+        // Prepare subscription metadata
+        $metadata = [];
+        
+        // Add membership plan information
+        if (!empty($plan['label'])) {
+            $metadata['membership_plan'] = $plan['label'];
+        }
+        
+        // Add custom membership amount if applicable
+        if ($customAmount && $customAmount > $minAmount) {
+            $metadata['custom_amount'] = (string) $customAmount;
+        }
+        
+        // Add donation information
+        if (!empty($additionalData['donationAmount']) && (float) $additionalData['donationAmount'] > 0) {
+            $metadata['donation_amount'] = (string) $additionalData['donationAmount'];
+            if (isset($additionalData['recurDonation'])) {
+                $metadata['recurring_donation'] = $additionalData['recurDonation'] ? 'true' : 'false';
+            }
+        }
+        
+        // Add payment method type
+        if (!empty($additionalData['paymentMethod'])) {
+            $metadata['payment_method_type'] = $additionalData['paymentMethod'];
+        }
+        
+        $subscriptionData = [
             'customer' => $customer->id,
             'items' => [
                 [
@@ -89,7 +169,14 @@ class StripeService
             'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => ['card', 'bacs_debit']],
             'expand' => ['latest_invoice.payment_intent'],
-        ]);
+        ];
+        
+        // Add metadata if we have any
+        if (!empty($metadata)) {
+            $subscriptionData['metadata'] = $metadata;
+        }
+        
+        $subscription = Subscription::create($subscriptionData);
 
         return $subscription;
     }
