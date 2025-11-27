@@ -444,11 +444,17 @@ class Blocks
         if (!$sidebar_heading) {
             $sidebar_heading = Settings::get("JOIN_FORM_SIDEBAR_HEADING");
         }
+        if (!$sidebar_heading) {
+            $sidebar_heading = "Join Us";
+        }
 
         // Determine membership stage label
         $membership_stage_label = $fields['custom_membership_stage_label'] ?? '';
         if (!$membership_stage_label) {
             $membership_stage_label = Settings::get("MEMBERSHIP_STAGE_LABEL");
+        }
+        if (!$membership_stage_label) {
+            $membership_stage_label = "Your Membership";
         }
 
         // Determine joining verb
