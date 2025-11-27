@@ -456,6 +456,9 @@ class Blocks
         if (!$joining_verb) {
             $joining_verb = Settings::get("JOINING_VERB");
         }
+        if (!$joining_verb) {
+            $joining_verb = "Joining";
+        }
 
         $environment = [
             'HOME_URL' => $homeUrl,
