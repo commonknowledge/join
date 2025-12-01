@@ -163,9 +163,28 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                 {label}
 
                 {plans.length === 1 ? (
-                  <div className="float-right ml-2">
-                    {makePriceLabel(currentPlan)}
-                  </div>
+                  currentPlan.allowCustomAmount ? (
+                    <div className="d-flex align-items-center mb-2">
+                      {currencyCodeToSymbol(currentPlan.currency)}
+                      <FormItem
+                        name="customMembershipAmount"
+                        form={form}
+                        required={checked && currentPlan.allowCustomAmount}
+                        className="mb-0 ml-1"
+                      >
+                        <Form.Control
+                          id={`${currentPlan.value}-amount`}
+                          type="number"
+                          min={currentPlan.amount || 1}
+                          max="1000"
+                        />
+                      </FormItem>
+                    </div>
+                  ) : (
+                    <div className="float-right ml-2">
+                      {makePriceLabel(currentPlan)}
+                    </div>
+                  )
                 ) : (
                   <>
                     <Form.Control
