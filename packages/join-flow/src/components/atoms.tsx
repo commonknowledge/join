@@ -123,7 +123,7 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
           amount: number;
           frequency: string;
         }) => {
-          if (hideZeroPriceDisplay && amount === 0) {
+          if (hideZeroPriceDisplay && Number(amount) === 0) {
             return "";
           }
           const currencySymbol = currencyCodeToSymbol(currency);
@@ -183,7 +183,7 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                     </Form.Control>
 
                     {!checked || !currentPlan.allowCustomAmount ? (
-                      (hideZeroPriceDisplay && currentPlan.amount === 0) 
+                      (hideZeroPriceDisplay && Number(currentPlan.amount) === 0) 
                         ? ""
                         : `${currencyCodeToSymbol(currentPlan.currency)}${currentPlan.amount}`
                     ) : (
