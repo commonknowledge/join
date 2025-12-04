@@ -139,21 +139,46 @@ export const getStr = (envVar: keyof StaticEnv): string => {
     return String(val)
 }
 
-export const getPaymentMethods = () => {
-    const paymentMethods = []
-    // TODO: refactor paymentMethods to be ["gocardless", "chargebee", "stripe"]
-    // Originally gocardless => directDebit, and chargebee => creditCard, but
-    // stripe does direct debit and credit card, so this distinction is wrong.
+export type PaymentMethod = "creditCard" | "directDebit";
+export type PaymentProvider = "chargebee" | "gocardless" | "stripe";
+
+export const getPaymentProviders = () => {
+    const paymentProviders: Partial<Record<PaymentProvider, PaymentMethod[]>> = {};
+
     if (get("USE_GOCARDLESS")) {
-        paymentMethods.push("directDebit")
+        paymentProviders.gocardless = ["directDebit"];
     }
-    // If Stripe Direct Debit-only mode, add directDebit instead of creditCard
-    if (get("USE_STRIPE") && get("STRIPE_DIRECT_DEBIT") && get("STRIPE_DIRECT_DEBIT_ONLY")) {
-        paymentMethods.push("directDebit")
-    } else if (get("USE_CHARGEBEE") || get("USE_STRIPE")) {
-        paymentMethods.push("creditCard")
+
+    if (get("USE_STRIPE")) {
+        const stripeMethods: PaymentMethod[] = [];
+        // Ensure creditCard comes first to match the default state of the Stripe component
+        if (!get("STRIPE_DIRECT_DEBIT_ONLY")) {
+            stripeMethods.push("creditCard");
+        }
+        if (get("STRIPE_DIRECT_DEBIT")) {
+            stripeMethods.push("directDebit");
+        }
+        if (stripeMethods.length) {
+            paymentProviders.stripe = stripeMethods;
+        }
     }
-    return paymentMethods
+
+    if (get("USE_CHARGEBEE")) {
+        paymentProviders.chargebee = ["creditCard"];
+        // TODO: Add ChargeBee direct debit settings
+    }
+    return paymentProviders;
+};
+
+export const getPaymentMethods = () => {
+    const paymentProviders = getPaymentProviders();
+    const paymentMethods: Partial<Record<PaymentMethod, boolean>> = {};
+    for (const provider of Object.keys(paymentProviders)) {
+        for (const method of paymentProviders[provider as PaymentProvider] || []) {
+            paymentMethods[method] = true;
+        }
+    }
+    return Object.keys(paymentMethods) as PaymentMethod[];
 }
 
 const initFromHtml = (): void => {

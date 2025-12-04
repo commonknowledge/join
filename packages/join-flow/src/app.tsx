@@ -21,7 +21,7 @@ import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
 import { FormSchema, getPaymentPlan, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import { get as getEnv, getStr as getEnvStr, getPaymentMethods } from "./env";
+import { get as getEnv, getStr as getEnvStr, getPaymentMethods, getPaymentProviders, PaymentMethod, PaymentProvider } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
@@ -184,10 +184,14 @@ const App = () => {
       if (shouldSkipPayment) {
         // For zero-price memberships with no donation, skip directly to confirmation
         nextStage = "confirm";
-      } else if (nextStage === "payment-method" && getPaymentMethods().length < 2) {
-        // Auto-skip payment method selection if there's only one option available
-        // This only runs if we haven't already skipped payment entirely above
-        nextStage = "payment-details";
+      } else if (nextStage === "payment-method") {
+        const paymentProviders = getPaymentProviders();
+        const paymentMethods = getPaymentMethods();
+        if (Object.keys(paymentProviders).length < 2 || paymentMethods.length < 2) {
+          // Auto-skip payment method selection if there's only one option available
+          // This only runs if we haven't already skipped payment entirely above
+          nextStage = "payment-details";
+        }
       }
 
       // Go to external GoCardless pages if not using the GoCardless API
@@ -247,17 +251,18 @@ const App = () => {
     [router, data, setBlockingMessage]
   );
 
-  const paymentProviderLogos = getPaymentMethods().map((method) => {
-    return getEnv("USE_GOCARDLESS") ? (
-      <a key={method} href="https://gocardless.com" target="_blank">
+  const paymentProviders: PaymentProvider[] = Object.keys(getPaymentProviders()) as PaymentProvider[];
+  const paymentProviderLogos = paymentProviders.map((provider: PaymentProvider) => {
+    return provider === "gocardless" ? (
+      <a key={provider} href="https://gocardless.com" target="_blank">
         <img alt="GoCardless" src={gocardless} width="100px" />
       </a>
-    ) : getEnv("USE_CHARGEBEE") ? (
-      <a key={method} href="https://chargebee.com" target="_blank">
+    ) : provider === "chargebee" ? (
+      <a key={provider} href="https://chargebee.com" target="_blank">
         <img alt="Chargebee" src={chargebee} width="100px" />
       </a>
-    ) : getEnv("USE_STRIPE") ? (
-      <a key={method} href="https://stripe.com" target="_blank">
+    ) : provider === "stripe" ? (
+      <a key={provider} href="https://stripe.com" target="_blank">
         <img alt="Stripe" src={stripe} width="100px" />
       </a>
     ) : null;
@@ -318,6 +323,7 @@ const App = () => {
           <Stager
             stage={router.state.stage}
             data={data}
+            setData={setData}
             onStageCompleted={handlePageCompleted}
             components={{
               "enter-details": DetailsPage,
@@ -347,10 +353,10 @@ const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substring(1));
 
   const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[];
-  const paymentMethods = getPaymentMethods();
+  const defaultMethod: PaymentMethod = getPaymentMethods()[0] || "creditCard";
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
-    paymentMethod: paymentMethods.length ? paymentMethods[0] : "creditCard",
+    paymentMethod: defaultMethod,
     // Default contact flags to true if not collecting consent, otherwise false
     contactByEmail: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
     contactByPhone: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT")

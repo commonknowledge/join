@@ -67,6 +67,7 @@ export const RadioPanel: FC<RadioPanelProps> = ({
             type="radio"
             checked={checked}
             className={checked ? "checked" : undefined}
+            onChange={(e) => onChange(value)}
           />
           <div className="flex-grow-1">
             <h3 className="radio-panel-label mb-0">{label}</h3>
