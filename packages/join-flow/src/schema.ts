@@ -201,7 +201,7 @@ export const renderPaymentPlan = ({
 };
 
 const PaymentMethodSchema = object({
-  paymentMethod: string().oneOf(["directDebit", "creditCard"]).required()
+  paymentMethod: string().oneOf(["directDebit", "creditCard"]).required(),
 }).required();
 
 export const getPaymentFrequency = (membership: string | undefined) => {

@@ -22,31 +22,41 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
-import { get as getEnv, getStr as getEnvStr } from "../env";
+import { get as getEnv, getStr as getEnvStr, getPaymentProviders, PaymentMethod, PaymentProvider } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
 import { usePostResource } from "../services/rest-resource.service";
 import { SAVED_STATE_KEY } from "../services/router.service";
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
+  setData,
   onCompleted
 }) => {
   const renderForm = () => {
-    if (getEnv("USE_GOCARDLESS")) {
-      return <DirectDebitPaymentPage data={data} onCompleted={onCompleted} />;
-    }
-
-    if (data.paymentMethod === "creditCard") {
-      if (getEnv("USE_CHARGEBEE")) {
-        return <CreditCardPaymentPage data={data} onCompleted={onCompleted} />;
+    // Get first provider that matches selected payment method
+    const paymentProviders = getPaymentProviders();
+    let paymentProvider: PaymentProvider | null = null
+    for (const provider of Object.keys(paymentProviders)) {
+      const methods = paymentProviders[provider as PaymentProvider];
+      if (methods?.includes(data.paymentMethod as PaymentMethod)) {
+        paymentProvider = provider as PaymentProvider;
+        break
       }
-
-      return <p>Error: no payment providers available. Please contact us.</p>;
     }
 
-    if (getEnv("USE_STRIPE")) {
-      return <StripePaymentPage data={data} onCompleted={onCompleted} />;
+    if (paymentProvider === "stripe") {
+      return <StripePaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
     }
+
+    if (paymentProvider === "gocardless") {
+      return <GocardlessPaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
+    }
+
+    if (paymentProvider === "chargebee") {
+      return <ChargebeePaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
+    }
+
+    return <p>Error: no payment providers available. Please contact us.</p>;
   };
 
   return (
@@ -59,7 +69,7 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   );
 };
 
-const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
+const GocardlessPaymentPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
@@ -165,7 +175,7 @@ const DirectDebitPaymentPage: StagerComponent<FormSchema> = ({
   );
 };
 
-const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
+const ChargebeePaymentPage: StagerComponent<FormSchema> = ({
   onCompleted,
   data
 }) => {
@@ -262,8 +272,8 @@ const CreditCardPaymentPage: StagerComponent<FormSchema> = ({
 const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100;
 
 const StripePaymentPage: StagerComponent<FormSchema> = ({
-  onCompleted,
-  data
+  data,
+  setData,
 }) => {
   const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY") as string);
   const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
@@ -273,13 +283,19 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
     ? convertCurrencyFromMajorToMinorUnits(plan.amount)
     : 100;
   const currency = plan.currency.toLowerCase() || "gbp";
-  const paymentMethodTypes = getEnv("STRIPE_DIRECT_DEBIT_ONLY") ? ["bacs_debit"] : ["card"];
+  const paymentMethodTypes = getEnv("STRIPE_DIRECT_DEBIT_ONLY")
+    ? ["bacs_debit"]
+    : ["card"];
   // Add direct debit payment method for GBP only, as it is a UK only feature
   // Only add if not in Direct Debit-only mode (as it's already the only option)
-  if (currency === "gbp" && getEnv("STRIPE_DIRECT_DEBIT") && !getEnv("STRIPE_DIRECT_DEBIT_ONLY")) {
+  if (
+    currency === "gbp" &&
+    getEnv("STRIPE_DIRECT_DEBIT") &&
+    !getEnv("STRIPE_DIRECT_DEBIT_ONLY")
+  ) {
     paymentMethodTypes.push("bacs_debit");
   }
-  
+
   return (
     <Elements
       stripe={stripePromise}
@@ -288,21 +304,21 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
         mode: "subscription",
         amount,
         currency,
-        paymentMethodTypes,
+        paymentMethodTypes
       }}
     >
-      <StripeForm onCompleted={onCompleted} data={data} plan={plan} />
+      <StripeForm data={data} setData={setData} plan={plan} />
     </Elements>
   );
 };
 
 const StripeForm = ({
-  onCompleted,
   data,
+  setData,
   plan
 }: {
-  onCompleted: (data: FormSchema) => void;
   data: FormSchema;
+  setData: (d: FormSchema) => void;
   plan: { frequency: string };
 }) => {
   const stripe = useStripe();
@@ -319,10 +335,14 @@ const StripeForm = ({
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
 
+  // Use ref for paymentMethodOrder so that it is fixed when the component is first rendered
+  // Otherwise the Stripe form switches the order whenever the payment method is changed
+  const paymentMethodOrder = useRef<string[]>(data.paymentMethod === "directDebit" ? ["bacs_debit", "card"] : ["card", "bacs_debit"]);
+
   const handleError = (error: { message: string }) => {
     setLoading(false);
     setErrorMessage(error.message);
-    Sentry.captureMessage(error.message, 'error')
+    Sentry.captureMessage(error.message, "error");
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -363,14 +383,14 @@ const StripeForm = ({
       });
 
       if (error) {
-        const message = JSON.stringify(error)
+        const message = JSON.stringify(error);
         handleError({ message });
         return;
       }
     } catch (e) {
       console.error("Create subscription error", e);
       handleError({ message: "Unknown error" });
-      Sentry.captureException(e)
+      Sentry.captureException(e);
     }
   };
 
@@ -378,9 +398,10 @@ const StripeForm = ({
   // This allows users to verify their details are correct when setting up Direct Debit
   const defaultValues = {
     billingDetails: {
-      name: data.firstName && data.lastName
-        ? `${data.firstName} ${data.lastName}`
-        : undefined,
+      name:
+        data.firstName && data.lastName
+          ? `${data.firstName} ${data.lastName}`
+          : undefined,
       email: data.email || undefined,
       phone: data.phoneNumber || undefined,
       address: {
@@ -388,7 +409,7 @@ const StripeForm = ({
         line2: data.addressLine2 || undefined,
         city: data.addressCity || undefined,
         postal_code: data.addressPostcode || undefined,
-        country: data.addressCountry || undefined,
+        country: data.addressCountry || undefined
       }
     }
   };
@@ -396,7 +417,10 @@ const StripeForm = ({
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <PaymentElement options={{defaultValues}}/>
+        <PaymentElement options={{ defaultValues, paymentMethodOrder: paymentMethodOrder.current }} onChange={(e) => {
+          const stripePaymentMethod = e.value.type
+          setData({ ...data, paymentMethod: stripePaymentMethod === "bacs_debit" ? "directDebit" : "creditCard" })
+        }} />
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
         {errorMessage && <div>{errorMessage}</div>}
       </div>

@@ -1,12 +1,11 @@
 import React from "react";
-import { Container, Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { ContinueButton, RadioPanel } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema, renderPaymentMethod, renderPaymentPlan } from "../schema";
+import { FormSchema } from "../schema";
 
-export const PaymentPage: StagerComponent = ({ data, onCompleted }) => {
+export const PaymentPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => {
   const form = useForm({
     defaultValues: data as FormSchema
   });

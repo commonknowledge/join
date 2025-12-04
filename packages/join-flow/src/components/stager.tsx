@@ -3,20 +3,22 @@ import { ComponentType } from "react";
 
 interface StagerProps<T = {}> {
   data: T;
+  setData: (d: T) => void;
   fallback: ReactElement;
   onStageCompleted: (state: T) => void;
   stage: string;
   components: {
-    [id: string]: StagerComponent;
+    [id: string]: StagerComponent<T>;
   };
 }
 
-interface StagerComponentProps<T = {}> {
+interface StagerComponentProps<T> {
   data: T;
+  setData: (d: T) => void;
   onCompleted: (data: T) => void;
 }
 
-export type StagerComponent<T = {}> = ComponentType<StagerComponentProps<T>>;
+export type StagerComponent<T> = ComponentType<StagerComponentProps<T>>;
 
 export type Stager = <T>(props: StagerProps<T>) => ReactElement;
 export const Stager: Stager = ({
@@ -24,6 +26,7 @@ export const Stager: Stager = ({
   stage,
   fallback,
   data,
+  setData,
   onStageCompleted
 }) => {
   const StageComponent = components[stage];
@@ -34,6 +37,7 @@ export const Stager: Stager = ({
   return (
     <StageComponent
       data={data}
+      setData={setData}
       onCompleted={(change) => onStageCompleted({ ...data, ...change })}
     />
   );
