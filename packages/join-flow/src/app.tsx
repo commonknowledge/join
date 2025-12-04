@@ -21,14 +21,7 @@ import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
 import { FormSchema, getPaymentPlan, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import {
-  get as getEnv,
-  getStr as getEnvStr,
-  getPaymentMethods,
-  getPaymentProviders,
-  PaymentMethod,
-  PaymentProvider
-} from "./env";
+import { get as getEnv, getStr as getEnvStr, getPaymentMethods, getPaymentProviders, PaymentMethod, PaymentProvider } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
@@ -68,11 +61,7 @@ const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 const App = () => {
   let stages: Stage[] = [
     { id: "enter-details", label: "Your Details", breadcrumb: true },
-    {
-      id: "plan",
-      label: getEnvStr("MEMBERSHIP_STAGE_LABEL"),
-      breadcrumb: true
-    },
+    { id: "plan", label: getEnvStr("MEMBERSHIP_STAGE_LABEL"), breadcrumb: true },
     { id: "donation", label: "Can you chip in?", breadcrumb: false },
     { id: "payment-details", label: "Payment", breadcrumb: true },
     { id: "payment-method", label: "Payment", breadcrumb: false },
@@ -117,9 +106,10 @@ const App = () => {
     usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
       "/gocardless/auth"
     );
-  const getChargeBeeRedirect = usePostResource<
-    Partial<FormSchema & { redirectUrl: string }>
-  >("/chargebee/hosted-page");
+  const getChargeBeeRedirect =
+    usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
+      "/chargebee/hosted-page"
+    );
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
@@ -139,19 +129,14 @@ const App = () => {
       if (router.state.stage === "enter-details") {
         nextStage = "plan";
         // Send initial details to catch drop off
-        const response: any = await recordStep({
-          ...nextData,
-          stage: "enter-details"
-        });
-
+        const response: any = await recordStep({ ...nextData, stage: "enter-details" });
+        
         // Check if the form progression is blocked
-        if (response?.status === "blocked") {
-          setBlockingMessage(
-            response.message || "Unable to proceed with this submission."
-          );
+        if (response?.status === 'blocked') {
+          setBlockingMessage(response.message || 'Unable to proceed with this submission.');
           return; // Stop progression
         }
-
+        
         // Clear any previous blocking message
         setBlockingMessage(null);
       } else if (router.state.stage === "plan") {
@@ -164,13 +149,9 @@ const App = () => {
         // (e.g., when there are multiple payment methods to choose from)
         const plan = getPaymentPlan(nextData.membership);
         const isAmountZero = plan && Number(plan.amount) === 0;
-        const isCustomAmountAboveZero =
-          plan && plan.allowCustomAmount
-            ? Number(nextData.customMembershipAmount) > 0
-            : false;
-        const hasDonation =
-          nextData.donationAmount && Number(nextData.donationAmount) > 0;
-
+        const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
+        const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
+        
         // Skip payment only if membership is free, no custom amount, AND no donation
         if (isAmountZero && !isCustomAmountAboveZero && !hasDonation) {
           nextStage = "confirm";
@@ -194,19 +175,11 @@ const App = () => {
       // payment-method page - both are needed to cover all navigation paths.
       const plan = getPaymentPlan(nextData.membership);
       const isAmountZero = plan && Number(plan.amount) === 0;
-      const isCustomAmountAboveZero =
-        plan && plan.allowCustomAmount
-          ? Number(nextData.customMembershipAmount) > 0
-          : false;
-      const hasDonation =
-        nextData.donationAmount && Number(nextData.donationAmount) > 0;
-
+      const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
+      const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
+      
       // Only skip payment if there's truly nothing to pay (no membership fee, no custom amount, no donation)
-      const shouldSkipPayment =
-        nextStage === "payment-method" &&
-        isAmountZero &&
-        !isCustomAmountAboveZero &&
-        !hasDonation;
+      const shouldSkipPayment = nextStage === "payment-method" && isAmountZero && !isCustomAmountAboveZero && !hasDonation;
 
       if (shouldSkipPayment) {
         // For zero-price memberships with no donation, skip directly to confirmation
@@ -278,26 +251,22 @@ const App = () => {
     [router, data, setBlockingMessage]
   );
 
-  const paymentProviders: PaymentProvider[] = Object.keys(
-    getPaymentProviders()
-  ) as PaymentProvider[];
-  const paymentProviderLogos = paymentProviders.map(
-    (provider: PaymentProvider) => {
-      return provider === "gocardless" ? (
-        <a key={provider} href="https://gocardless.com" target="_blank">
-          <img alt="GoCardless" src={gocardless} width="100px" />
-        </a>
-      ) : provider === "chargebee" ? (
-        <a key={provider} href="https://chargebee.com" target="_blank">
-          <img alt="Chargebee" src={chargebee} width="100px" />
-        </a>
-      ) : provider === "stripe" ? (
-        <a key={provider} href="https://stripe.com" target="_blank">
-          <img alt="Stripe" src={stripe} width="100px" />
-        </a>
-      ) : null;
-    }
-  );
+  const paymentProviders: PaymentProvider[] = Object.keys(getPaymentProviders()) as PaymentProvider[];
+  const paymentProviderLogos = paymentProviders.map((provider: PaymentProvider) => {
+    return provider === "gocardless" ? (
+      <a key={provider} href="https://gocardless.com" target="_blank">
+        <img alt="GoCardless" src={gocardless} width="100px" />
+      </a>
+    ) : provider === "chargebee" ? (
+      <a key={provider} href="https://chargebee.com" target="_blank">
+        <img alt="Chargebee" src={chargebee} width="100px" />
+      </a>
+    ) : provider === "stripe" ? (
+      <a key={provider} href="https://stripe.com" target="_blank">
+        <img alt="Stripe" src={stripe} width="100px" />
+      </a>
+    ) : null;
+  });
 
   const options = {
     paymentMethodCreation: "manual",
@@ -384,9 +353,7 @@ const getInitialState = (): FormSchema => {
   const queryParams = parse(window.location.search.substring(1));
 
   const membershipPlans = getEnv("MEMBERSHIP_PLANS") as any[];
-
-  const defaultMethod: PaymentMethod = getPaymentMethods()[0] || "creditCard"
-
+  const defaultMethod: PaymentMethod = getPaymentMethods()[0] || "creditCard";
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
     paymentMethod: defaultMethod,

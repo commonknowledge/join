@@ -51,7 +51,6 @@ export const RadioPanel: FC<RadioPanelProps> = ({
     render={({ onChange }) => {
       const currentValue = form?.watch(name);
       const checked = value === currentValue;
-      console.log('cv', currentValue)
 
       return (
         <Form.Label
