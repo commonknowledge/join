@@ -300,12 +300,13 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
                 </FormItem>
               ) : field.field_type === "radio" ? (
                 <>
-                  <span>{field.label}</span>
                   <FormItem
                     name={field.id}
                     form={form}
                     style={{ marginTop: "0.125rem" }}
+                    label={field.label}
                     required={field.required}
+                    isRadio
                   >
                     {parseCustomFieldOptions(field.options).map(
                       (o: { label: string; value: string }) => (

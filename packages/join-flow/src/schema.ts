@@ -56,6 +56,10 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
   let def: BaseSchema = string();
   if (field.field_type === "checkbox") {
     def = boolean();
+    if (field.required) {
+      // Required checkboxes must be checked
+      def = def.oneOf([true]);
+    }
   } else if (field.field_type === "number") {
     def = number();
   }
@@ -131,7 +135,8 @@ export const DetailsSchema = object({
     ? string()
         .phone("GB", false, "A valid UK phone number is required")
         .required()
-    : string().test( // .test() used because .phone() forces .required()
+    : string().test(
+        // .test() used because .phone() forces .required()
         "is-valid-phone",
         "Please enter a valid UK phone number",
         (value) => !value || string().phone("GB", false).isValidSync(value)

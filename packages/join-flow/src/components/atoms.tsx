@@ -203,9 +203,12 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                     </Form.Control>
 
                     {!checked || !currentPlan.allowCustomAmount ? (
-                      (hideZeroPriceDisplay && Number(currentPlan.amount) === 0) 
-                        ? ""
-                        : `${currencyCodeToSymbol(currentPlan.currency)}${currentPlan.amount}`
+                      hideZeroPriceDisplay &&
+                      Number(currentPlan.amount) === 0 ? (
+                        ""
+                      ) : (
+                        `${currencyCodeToSymbol(currentPlan.currency)}${currentPlan.amount}`
+                      )
                     ) : (
                       <div
                         className={
@@ -249,6 +252,7 @@ interface FormItemProps {
   name: string;
   className?: string;
   label?: string;
+  isRadio?: boolean;
   form: UseFormMethods<any>;
   children: ReactElement | ReactElement[];
   required?: Boolean;
@@ -264,7 +268,8 @@ export const FormItem: FC<FormItemProps> = ({
   children,
   after,
   style,
-  required
+  required,
+  isRadio
 }) => {
   const childArr: ReactElement[] = (
     Array.isArray(children) ? children : [children]
@@ -280,7 +285,7 @@ export const FormItem: FC<FormItemProps> = ({
   return (
     <Form.Group className={className} style={style}>
       {label && (
-        <Form.Label htmlFor={name}>
+        <Form.Label {...isRadio ? {} : {htmlFor: name}}>
           {label}{" "}
           {required && (
             <>
@@ -290,17 +295,32 @@ export const FormItem: FC<FormItemProps> = ({
           )}
         </Form.Label>
       )}
-      {childArr.map((child, i) =>
-        cloneElement(child, {
+      {childArr.map((child, i) => {
+        let label = child.props.label;
+        if (label && required && !isRadio) {
+          label = (
+            <>
+              {label}{" "}
+              {required && (
+                <>
+                  <span aria-hidden="true">*</span>{" "}
+                  <div className="sr-only">required</div>
+                </>
+              )}
+            </>
+          );
+        }
+        return cloneElement(child, {
           name,
           ref: form.register,
           id: child.props.id || name,
           isInvalid,
           isValid,
           key: i,
+          label,
           required
-        })
-      )}
+        });
+      })}
       {isInvalid && (
         <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
       )}
