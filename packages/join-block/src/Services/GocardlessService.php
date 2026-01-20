@@ -171,7 +171,7 @@ class GocardlessService
         }
     }
 
-    public static function removeCustomerMandates($customerId)
+    public static function removeCustomerMandates($customerId, $dontRemoveId = null)
     {
         global $joinBlockLog;
         $joinBlockLog->info("Removing existing mandates for customer {$customerId}");
@@ -180,12 +180,16 @@ class GocardlessService
             "params" => ["customer" => $customerId]
         ]);
         foreach ($mandates->records as $mandate) {
+            if ($mandate->id === $dontRemoveId) {
+                $joinBlockLog->info("Not removing mandate for customer {$customerId}" . $mandate->id);
+                continue;
+            }
             try {
-                $joinBlockLog->info("Removing existing mandate for customer " . $mandate->id);
+                $joinBlockLog->info("Removing existing mandate for customer {$customerId}" . $mandate->id);
                 $client->mandates()->cancel($mandate->id);
-                $joinBlockLog->info("Removed existing mandate for customer " . $mandate->id);
+                $joinBlockLog->info("Removed existing mandate for customer {$customerId}" . $mandate->id);
             } catch (\Exception $e) {
-                $joinBlockLog->error("Failed to delete customer mandate {$mandate->id}: " . $e->getMessage());
+                $joinBlockLog->error("Failed to delete customer {$customerId} mandate {$mandate->id}: " . $e->getMessage());
             }
         }
     }
