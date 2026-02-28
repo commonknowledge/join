@@ -108,8 +108,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 == Changelog ==
 
 = 1.3.18 =
-* Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join
-* Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps
+* Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
+* Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps.
 = 1.3.17 =
 * Fix issues with phone number and custom field checkboxes.
 = 1.3.16 =
