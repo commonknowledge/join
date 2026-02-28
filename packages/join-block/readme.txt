@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.3.17
+Stable tag: 1.3.18
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,9 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.3.18 =
+* Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join
+* Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps
 = 1.3.17 =
 * Fix issues with phone number and custom field checkboxes.
 = 1.3.16 =
