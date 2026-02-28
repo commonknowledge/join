@@ -254,8 +254,12 @@ class JoinService
                 ZetkinService::signup($data);
                 $joinBlockLog->info("Completed Zetkin signup request for $email");
             } catch (\Exception $exception) {
+                // Non-blocking: Zetkin is a secondary integration. The Stripe payment is
+                // the essential step and has already completed by this point. A Zetkin
+                // failure (e.g. expired credentials) should not surface an error to the
+                // member — they have successfully joined. The member record can be
+                // retro-added to Zetkin once the underlying issue is resolved.
                 $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
-                throw $exception;
             }
         }
 

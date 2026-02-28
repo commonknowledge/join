@@ -195,6 +195,15 @@ class ZetkinService
             }
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             if ($e->hasResponse()) {
+                if ($e->getResponse()->getStatusCode() === 403) {
+                    throw new \Exception(
+                        "Zetkin API returned 403 Forbidden. This indicates an authentication or " .
+                        "authorisation problem — the most likely cause is that the ZETKIN_JWT has " .
+                        "expired. Regenerate the JWT grant in the Zetkin console and update the " .
+                        "ZETKIN_JWT setting in WordPress. Raw response: " .
+                        $e->getResponse()->getBody()->getContents()
+                    );
+                }
                 throw new \Exception("Bad Zetkin response: " . $e->getResponse()->getBody()->getContents());
             }
             throw new \Exception("Request failed: " . $e->getMessage());
