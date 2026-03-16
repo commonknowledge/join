@@ -687,6 +687,41 @@ class StripeService
                     }
                     break;
 
+                case 'customer.subscription.updated':
+                    $subscription = $event['data']['object'] ?? null;
+                    $previousAttributes = $event['data']['previous_attributes'] ?? [];
+
+                    if (!$subscription) {
+                        break;
+                    }
+
+                    $previousStatus = $previousAttributes['status'] ?? null;
+                    $currentStatus = $subscription['status'] ?? null;
+
+                    // Only act on status changes not already covered by invoice events
+                    if ($previousStatus && $previousStatus !== $currentStatus) {
+                        $cid = $subscription['customer'];
+                        $email = self::getEmailForCustomer($cid);
+
+                        if ($email) {
+                            $activeStatuses = ['active', 'trialing'];
+                            $lapsedStatuses = ['unpaid', 'incomplete_expired'];
+
+                            $wasActive = in_array($previousStatus, $activeStatuses);
+                            $isNowActive = in_array($currentStatus, $activeStatuses);
+                            $isNowLapsed = in_array($currentStatus, $lapsedStatuses);
+
+                            if (!$wasActive && $isNowActive) {
+                                $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
+                                JoinService::toggleMemberLapsed($email, false);
+                            } elseif ($isNowLapsed) {
+                                $joinBlockLog->info("Subscription lapsed for $email ($previousStatus -> $currentStatus)");
+                                JoinService::toggleMemberLapsed($email, true);
+                            }
+                        }
+                    }
+                    break;
+
                 default:
                     // Ignore unrelated events
                     return;
