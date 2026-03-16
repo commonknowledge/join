@@ -260,6 +260,102 @@ class ZetkinService
     }
 
     /**
+     * Find a person in Zetkin by email and update their contact details.
+     * Used to sync changes made via the Stripe customer portal.
+     *
+     * @param string      $email         The person's current email
+     * @param array       $personData    Fields to update (null values are ignored)
+     * @param string|null $previousEmail Previous email if it changed, used as the lookup key
+     */
+    public static function updatePerson(string $email, array $personData, ?string $previousEmail = null): void
+    {
+        global $joinBlockLog;
+
+        try {
+            $clientId = Settings::get("ZETKIN_CLIENT_ID");
+            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
+            $jwt = Settings::get("ZETKIN_JWT");
+            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
+            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+
+            if (!$clientId || !$clientSecret || !$jwt) {
+                $joinBlockLog->warning("Cannot update person $email in Zetkin - missing OAuth credentials");
+                return;
+            }
+
+            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
+            $client = new \GuzzleHttp\Client();
+
+            $searchEmail = $previousEmail ?? $email;
+            $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
+                "headers" => [
+                    "Authorization" => "Bearer {$accessToken}",
+                    "Content-type" => "application/json",
+                ],
+                "json" => ["q" => $searchEmail],
+            ]);
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            if (!empty($responseData["error"])) {
+                throw new \Exception(json_encode($responseData["error"]));
+            }
+
+            $people = $responseData["data"] ?? [];
+            $person = null;
+            foreach ($people as $candidate) {
+                if ($candidate["email"] === $searchEmail) {
+                    $person = $candidate;
+                    break;
+                }
+            }
+
+            if (!$person) {
+                $joinBlockLog->warning("Cannot update person in Zetkin - no person found with email $searchEmail");
+                return;
+            }
+
+            $personId = $person["id"];
+
+            // Include new email if it changed
+            if ($previousEmail && $previousEmail !== $email) {
+                $personData['email'] = $email;
+            }
+
+            $updateData = array_filter($personData, fn($v) => $v !== null && $v !== '');
+            if (empty($updateData)) {
+                return;
+            }
+
+            $response = $client->request("PATCH", "$baseUrl/orgs/$orgId/people/$personId", [
+                "headers" => [
+                    "Authorization" => "Bearer {$accessToken}",
+                    "Content-type" => "application/json",
+                ],
+                "json" => $updateData,
+            ]);
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            if (!empty($responseData["error"])) {
+                throw new \Exception("Could not update person: " . json_encode($responseData["error"]));
+            }
+
+            $joinBlockLog->info("Updated person $email in Zetkin (person ID $personId)");
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            if ($e->hasResponse()) {
+                if ($e->getResponse()->getStatusCode() === 403) {
+                    throw new \Exception(
+                        "Zetkin API returned 403 Forbidden updating $email. " .
+                        "Check ZETKIN_JWT has not expired. Raw response: " .
+                        $e->getResponse()->getBody()->getContents()
+                    );
+                }
+                throw new \Exception("Bad Zetkin response updating $email: " . $e->getResponse()->getBody()->getContents());
+            }
+            throw new \Exception("Request failed updating $email in Zetkin: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Standalone function to find a person by email and apply a tag (string)
      */
     public static function addTag($email, $tag)
