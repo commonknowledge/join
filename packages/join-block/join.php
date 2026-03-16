@@ -9,7 +9,9 @@
  * License: GPLv2 or later
  */
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
@@ -154,9 +156,9 @@ add_action('rest_api_init', function () {
 
             /**
              * Action: ck_join_flow_step
-             * 
+             *
              * Fired after step data is processed. Use for side effects like analytics or logging.
-             * 
+             *
              * @param array           $data    Form data submitted
              * @param WP_REST_Request $request REST request object
              */
@@ -164,15 +166,15 @@ add_action('rest_api_init', function () {
 
             /**
              * Filter: ck_join_flow_step_response
-             * 
+             *
              * Modify the response returned to the frontend.
              * Can block form progression with custom error message.
-             * 
+             *
              * @param array           $response Response data ['status' => 'ok']
              * @param array           $data     Form data submitted
              * @param WP_REST_Request $request  REST request object
              * @return array Modified response. Set status to 'blocked' with 'message' to stop progression.
-             * 
+             *
              * Example: Block users outside coverage area
              * add_filter('ck_join_flow_step_response', function($response, $data) {
              *     if (!in_coverage_area($data['addressPostcode'])) {
@@ -235,16 +237,16 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Filter: ck_join_flow_postcode_validation
-                 * 
+                 *
                  * Validate postcode and optionally reject it with custom message.
                  * Return modified response with status 'bad_postcode' and message to reject.
-                 * 
+                 *
                  * @param array           $response  ['status' => 'ok', 'data' => $addresses]
                  * @param string          $postcode  The postcode
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
                  * @return array Modified response
-                 * 
+                 *
                  * Example: Geographic restriction
                  * add_filter('ck_join_flow_postcode_validation', function($response, $postcode) {
                  *     if (!in_supported_region($postcode)) {
@@ -271,10 +273,10 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Action: ck_join_flow_postcode_lookup
-                 * 
+                 *
                  * Fired after successful postcode lookup (validation passed).
                  * Use for side effects like analytics or logging.
-                 * 
+                 *
                  * @param string          $postcode  The postcode looked up
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
@@ -283,16 +285,16 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Filter: ck_join_flow_postcode_response
-                 * 
+                 *
                  * Enrich successful responses with additional data or messages.
                  * Can add 'message' field for positive information like local branch details.
-                 * 
+                 *
                  * @param array           $response  Current response ['status' => 'ok', 'data' => $addresses]
                  * @param string          $postcode  The postcode
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
                  * @return array Modified response (can include 'message' field)
-                 * 
+                 *
                  * Example: Show local branch
                  * add_filter('ck_join_flow_postcode_response', function($response, $postcode) {
                  *     if ($response['status'] !== 'ok') return $response;
@@ -699,5 +701,88 @@ if (defined('WP_CLI') && WP_CLI) {
             }
         }
     });
-}
 
+    /**
+     * Backfill command: sync current Stripe customer contact details to Zetkin and Mailchimp.
+     *
+     * Intended as a one-time operation to propagate any customer portal changes that occurred
+     * before the customer.updated webhook was configured.
+     *
+     * Usage: wp join backfill_stripe_to_zetkin_mailchimp [--dry-run]
+     */
+    WP_CLI::add_command('join backfill_stripe_to_zetkin_mailchimp', function ($args, $assocArgs) {
+        global $joinBlockLog;
+
+        $dryRun = !empty($assocArgs['dry-run']);
+        if ($dryRun) {
+            WP_CLI::log("DRY RUN — no changes will be written.");
+        }
+
+        StripeService::initialise();
+
+        $useZetkin = Settings::get("USE_ZETKIN");
+        $useMailchimp = Settings::get("USE_MAILCHIMP");
+
+        if (!$useZetkin && !$useMailchimp) {
+            WP_CLI::error("Neither USE_ZETKIN nor USE_MAILCHIMP is enabled. Nothing to sync.");
+            return;
+        }
+
+        $customers = StripeService::getCustomers();
+        $total = count($customers);
+        WP_CLI::log("Found $total customers in Stripe.");
+
+        $synced = 0;
+        $skipped = 0;
+        $errors = 0;
+
+        foreach ($customers as $customer) {
+            $email = $customer->email;
+            if (!$email) {
+                $skipped++;
+                continue;
+            }
+
+            $customerArray = $customer->toArray();
+            $personData = StripeService::extractPersonDataFromStripeCustomer($customerArray);
+            $mergeFields = StripeService::extractMailchimpMergeFieldsFromStripeCustomer($customerArray);
+
+            if (empty($personData) && empty($mergeFields)) {
+                $skipped++;
+                continue;
+            }
+
+            WP_CLI::log("Syncing $email ...");
+
+            if (!$dryRun) {
+                if ($useZetkin && !empty($personData)) {
+                    try {
+                        \CommonKnowledge\JoinBlock\Services\ZetkinService::updatePerson($email, $personData);
+                        $joinBlockLog->info("Backfill: updated $email in Zetkin");
+                    } catch (\Exception $e) {
+                        WP_CLI::warning("Zetkin error for $email: " . $e->getMessage());
+                        $joinBlockLog->error("Backfill Zetkin error for $email: " . $e->getMessage());
+                        $errors++;
+                        continue;
+                    }
+                }
+
+                if ($useMailchimp && !empty($mergeFields)) {
+                    try {
+                        \CommonKnowledge\JoinBlock\Services\MailchimpService::updateMember($email, $mergeFields);
+                        $joinBlockLog->info("Backfill: updated $email in Mailchimp");
+                    } catch (\Exception $e) {
+                        WP_CLI::warning("Mailchimp error for $email: " . $e->getMessage());
+                        $joinBlockLog->error("Backfill Mailchimp error for $email: " . $e->getMessage());
+                        $errors++;
+                        continue;
+                    }
+                }
+            }
+
+            $synced++;
+        }
+
+        WP_CLI::success("Backfill complete. Synced: $synced | Skipped: $skipped | Errors: $errors");
+    });
+}
