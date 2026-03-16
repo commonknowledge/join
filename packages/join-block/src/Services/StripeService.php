@@ -524,6 +524,64 @@ class StripeService
         ];
     }
 
+    /**
+     * Extract Zetkin person fields from a Stripe Customer object.
+     * Pure function: no WordPress or external dependencies.
+     *
+     * @param array $customer Stripe Customer array
+     * @return array Person data fields (only non-empty values)
+     */
+    public static function extractPersonDataFromStripeCustomer(array $customer): array
+    {
+        $name = $customer['name'] ?? null;
+        $nameParts = $name ? explode(' ', trim($name), 2) : [];
+        $address = $customer['address'] ?? [];
+
+        return array_filter([
+            'first_name'     => $nameParts[0] ?? null,
+            'last_name'      => $nameParts[1] ?? null,
+            'phone'          => $customer['phone'] ?? null,
+            'street_address' => $address['line1'] ?? null,
+            'co_address'     => $address['line2'] ?? null,
+            'city'           => $address['city'] ?? null,
+            'zip_code'       => $address['postal_code'] ?? null,
+            'country'        => $address['country'] ?? null,
+        ], fn($v) => $v !== null && $v !== '');
+    }
+
+    /**
+     * Extract Mailchimp merge fields from a Stripe Customer object.
+     * Pure function: no WordPress or external dependencies.
+     *
+     * @param array $customer Stripe Customer array
+     * @return array Mailchimp merge fields (only non-empty values)
+     */
+    public static function extractMailchimpMergeFieldsFromStripeCustomer(array $customer): array
+    {
+        $name = $customer['name'] ?? null;
+        $nameParts = $name ? explode(' ', trim($name), 2) : [];
+        $address = $customer['address'] ?? [];
+
+        $mergeFields = array_filter([
+            'FNAME' => $nameParts[0] ?? null,
+            'LNAME' => $nameParts[1] ?? null,
+            'PHONE' => $customer['phone'] ?? null,
+        ], fn($v) => $v !== null && $v !== '');
+
+        if (!empty($address['line1'])) {
+            $mergeFields['ADDRESS'] = [
+                'addr1'   => $address['line1'] ?? '',
+                'addr2'   => $address['line2'] ?? '',
+                'city'    => $address['city'] ?? '',
+                'state'   => $address['state'] ?? '',
+                'zip'     => $address['postal_code'] ?? '',
+                'country' => $address['country'] ?? '',
+            ];
+        }
+
+        return $mergeFields;
+    }
+
     public static function handleWebhook($event)
     {
         global $joinBlockLog;
