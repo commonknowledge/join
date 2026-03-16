@@ -653,6 +653,40 @@ class StripeService
                     }
                     break;
 
+                case 'customer.updated':
+                    $customer = $event['data']['object'] ?? null;
+                    $previousAttributes = $event['data']['previous_attributes'] ?? [];
+
+                    if (!$customer || empty($customer['email'])) {
+                        $joinBlockLog->warning("customer.updated event received with no email, skipping");
+                        return;
+                    }
+
+                    $email = $customer['email'];
+                    $previousEmail = $previousAttributes['email'] ?? null;
+
+                    $joinBlockLog->info("Syncing updated customer details for Stripe customer {$customer['id']} ($email)");
+
+                    $personData = self::extractPersonDataFromStripeCustomer($customer);
+                    $mergeFields = self::extractMailchimpMergeFieldsFromStripeCustomer($customer);
+
+                    if (Settings::get("USE_ZETKIN") && (!empty($personData) || $previousEmail)) {
+                        try {
+                            ZetkinService::updatePerson($email, $personData, $previousEmail);
+                        } catch (\Exception $e) {
+                            $joinBlockLog->error("Zetkin error syncing customer.updated for $email: " . $e->getMessage());
+                        }
+                    }
+
+                    if (Settings::get("USE_MAILCHIMP") && (!empty($mergeFields) || $previousEmail)) {
+                        try {
+                            MailchimpService::updateMember($email, $mergeFields, $previousEmail);
+                        } catch (\Exception $e) {
+                            $joinBlockLog->error("Mailchimp error syncing customer.updated for $email: " . $e->getMessage());
+                        }
+                    }
+                    break;
+
                 default:
                     // Ignore unrelated events
                     return;
