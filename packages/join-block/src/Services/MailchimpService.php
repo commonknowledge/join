@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use MailchimpMarketing\ApiClient;
 use CommonKnowledge\JoinBlock\Settings;
@@ -51,7 +53,7 @@ class MailchimpService
         // Generic filter applies to all services
         $addTags = apply_filters('ck_join_flow_add_tags', $addTags, $data, 'mailchimp');
         $removeTags = apply_filters('ck_join_flow_remove_tags', $removeTags, $data, 'mailchimp');
-        
+
         // Service-specific filter for Mailchimp-only customization
         $addTags = apply_filters('ck_join_flow_mailchimp_add_tags', $addTags, $data);
         $removeTags = apply_filters('ck_join_flow_mailchimp_remove_tags', $removeTags, $data);
@@ -112,21 +114,21 @@ class MailchimpService
             try {
                 $subscriberHash = md5(strtolower($email));
                 $tagUpdates = [];
-                
+
                 // If member exists, add tags that weren't added during creation
                 if ($memberExists && !empty($addTags)) {
                     foreach ($addTags as $tag) {
                         $tagUpdates[] = ["name" => $tag, "status" => "active"];
                     }
                 }
-                
+
                 // Add tags to remove
                 if (!empty($removeTags)) {
                     foreach ($removeTags as $tag) {
                         $tagUpdates[] = ["name" => $tag, "status" => "inactive"];
                     }
                 }
-                
+
                 if (!empty($tagUpdates)) {
                     $mailchimp->lists->updateListMemberTags(
                         $mailchimp_audience_id,
@@ -139,6 +141,55 @@ class MailchimpService
                 $joinBlockLog->error("Failed to update tags for $email in Mailchimp: " . $e->getMessage());
                 // Don't throw - tag updates are not critical for existing members
             }
+        }
+    }
+
+    /**
+     * Update an existing Mailchimp member's merge fields (name, phone, address, etc.).
+     * Used to sync changes made via the Stripe customer portal.
+     *
+     * @param string      $email         The member's current email
+     * @param array       $mergeFields   Mailchimp merge fields to update (null values are ignored)
+     * @param string|null $previousEmail Previous email if it changed, used as the lookup key
+     */
+    public static function updateMember(string $email, array $mergeFields, ?string $previousEmail = null): void
+    {
+        global $joinBlockLog;
+
+        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+        $array_key_parts = explode("-", $mailchimp_api_key);
+        $server = array_pop($array_key_parts);
+        $mailchimp = new ApiClient();
+        $mailchimp->setConfig(['apiKey' => $mailchimp_api_key, 'server' => $server]);
+
+        $lookupEmail = $previousEmail ?? $email;
+        $subscriberHash = md5(strtolower($lookupEmail));
+
+        $filteredMergeFields = array_filter($mergeFields, fn($v) => $v !== null && $v !== '');
+        $updateData = [];
+        if (!empty($filteredMergeFields)) {
+            $updateData['merge_fields'] = $filteredMergeFields;
+        }
+        if ($previousEmail && $previousEmail !== $email) {
+            $updateData['email_address'] = $email;
+        }
+
+        if (empty($updateData)) {
+            return;
+        }
+
+        try {
+            $mailchimp->lists->updateListMember($mailchimp_audience_id, $subscriberHash, $updateData);
+            $joinBlockLog->info("Updated member $email in Mailchimp");
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            $notFound = str_contains($body, "404") || str_contains($body, "Resource Not Found");
+            if ($notFound) {
+                $joinBlockLog->warning("Cannot update member in Mailchimp - $lookupEmail not found");
+                return;
+            }
+            throw $e;
         }
     }
 
