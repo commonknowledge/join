@@ -3,6 +3,7 @@
 namespace CommonKnowledge\JoinBlock\Tests;
 
 use Brain\Monkey;
+use Brain\Monkey\Actions;
 use Brain\Monkey\Filters;
 use CommonKnowledge\JoinBlock\Services\JoinService;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -18,13 +19,33 @@ class LapsingFilterTest extends TestCase
         Monkey\setUp();
         Monkey\Functions\when('get_option')->justReturn('');
         Monkey\Functions\when('esc_html')->returnArg();
+        Monkey\Functions\when('carbon_get_theme_option')->justReturn('');
+
+        global $joinBlockLog;
+        $joinBlockLog = new class {
+            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+            public function info($msg, $ctx = [])
+            {
+            }
+            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+            public function warning($msg, $ctx = [])
+            {
+            }
+            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+            public function error($msg, $ctx = [])
+            {
+            }
+        };
     }
 
     protected function tearDown(): void
     {
+        global $joinBlockLog;
+        $joinBlockLog = null;
         Monkey\tearDown();
         parent::tearDown();
     }
+
 
     // --- shouldLapseMember ---
 
@@ -110,5 +131,34 @@ class LapsingFilterTest extends TestCase
     public function testBackwardsCompatibility(): void
     {
         $this->assertTrue(JoinService::shouldLapseMember('test@example.com'));
+    }
+
+    // --- toggleMemberLapsed action hooks ---
+
+    public function testLapsedActionFiresAfterExecution(): void
+    {
+        Actions\expectDone('ck_join_flow_member_lapsed')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberLapsed('test@example.com', true, null, []);
+    }
+
+    public function testUnlapsedActionFiresAfterExecution(): void
+    {
+        Actions\expectDone('ck_join_flow_member_unlapsed')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberLapsed('test@example.com', false, null, []);
+    }
+
+    public function testActionsReceiveContext(): void
+    {
+        Actions\expectDone('ck_join_flow_member_lapsed')
+            ->once()
+            ->with(\Mockery::any(), \Mockery::on(fn($c) => $c['provider'] === 'stripe'));
+
+        JoinService::toggleMemberLapsed('test@example.com', true, null, ['provider' => 'stripe']);
     }
 }
