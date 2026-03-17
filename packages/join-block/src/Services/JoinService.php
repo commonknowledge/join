@@ -357,7 +357,7 @@ class JoinService
         return (bool) apply_filters('ck_join_flow_should_unlapse_member', true, $email, $context);
     }
 
-    public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null)
+    public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null, $context = [])
     {
         global $joinBlockLog;
 
@@ -418,6 +418,12 @@ class JoinService
             } else {
                 $joinBlockLog->warning("Can't $action member $email as lapsed in Zetkin - need OAuth credentials");
             }
+        }
+
+        if ($lapsed) {
+            do_action('ck_join_flow_member_lapsed', $email, $context);
+        } else {
+            do_action('ck_join_flow_member_unlapsed', $email, $context);
         }
     }
 
