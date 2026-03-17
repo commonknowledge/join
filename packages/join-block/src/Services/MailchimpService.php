@@ -152,7 +152,7 @@ class MailchimpService
      * @param array       $mergeFields   Mailchimp merge fields to update (null values are ignored)
      * @param string|null $previousEmail Previous email if it changed, used as the lookup key
      */
-    public static function updateMember(string $email, array $mergeFields, ?string $previousEmail = null): void
+    public static function updateMember($email, $mergeFields, $previousEmail = null)
     {
         global $joinBlockLog;
 

@@ -531,7 +531,7 @@ class StripeService
      * @param array $customer Stripe Customer array
      * @return array Person data fields (only non-empty values)
      */
-    public static function extractPersonDataFromStripeCustomer(array $customer): array
+    public static function extractPersonDataFromStripeCustomer($customer)
     {
         $name = $customer['name'] ?? null;
         $nameParts = $name ? explode(' ', trim($name), 2) : [];
@@ -556,7 +556,7 @@ class StripeService
      * @param array $customer Stripe Customer array
      * @return array Mailchimp merge fields (only non-empty values)
      */
-    public static function extractMailchimpMergeFieldsFromStripeCustomer(array $customer): array
+    public static function extractMailchimpMergeFieldsFromStripeCustomer($customer)
     {
         $name = $customer['name'] ?? null;
         $nameParts = $name ? explode(' ', trim($name), 2) : [];

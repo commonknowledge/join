@@ -267,7 +267,7 @@ class ZetkinService
      * @param array       $personData    Fields to update (null values are ignored)
      * @param string|null $previousEmail Previous email if it changed, used as the lookup key
      */
-    public static function updatePerson(string $email, array $personData, ?string $previousEmail = null): void
+    public static function updatePerson($email, $personData, $previousEmail = null)
     {
         global $joinBlockLog;
 

@@ -26,6 +26,7 @@ use CommonKnowledge\JoinBlock\Services\ActionNetworkService;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
+use CommonKnowledge\JoinBlock\Services\ZetkinService;
 use CommonKnowledge\JoinBlock\Settings;
 
 Logging::init();
@@ -757,7 +758,7 @@ if (defined('WP_CLI') && WP_CLI) {
             if (!$dryRun) {
                 if ($useZetkin && !empty($personData)) {
                     try {
-                        \CommonKnowledge\JoinBlock\Services\ZetkinService::updatePerson($email, $personData);
+                        ZetkinService::updatePerson($email, $personData);
                         $joinBlockLog->info("Backfill: updated $email in Zetkin");
                     } catch (\Exception $e) {
                         WP_CLI::warning("Zetkin error for $email: " . $e->getMessage());
@@ -769,7 +770,7 @@ if (defined('WP_CLI') && WP_CLI) {
 
                 if ($useMailchimp && !empty($mergeFields)) {
                     try {
-                        \CommonKnowledge\JoinBlock\Services\MailchimpService::updateMember($email, $mergeFields);
+                        MailchimpService::updateMember($email, $mergeFields);
                         $joinBlockLog->info("Backfill: updated $email in Mailchimp");
                     } catch (\Exception $e) {
                         WP_CLI::warning("Mailchimp error for $email: " . $e->getMessage());
