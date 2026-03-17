@@ -531,6 +531,14 @@ class StripeService
      * @param array $customer Stripe Customer array
      * @return array Person data fields (only non-empty values)
      */
+    private static function splitFullName($name)
+    {
+        if (empty($name)) {
+            return [];
+        }
+        return explode(' ', trim($name), 2);
+    }
+
     private static function removeNullOrEmpty($arr)
     {
         return array_filter($arr, function ($v) {
@@ -540,8 +548,7 @@ class StripeService
 
     public static function extractPersonDataFromStripeCustomer($customer)
     {
-        $name = $customer['name'] ?? null;
-        $nameParts = $name ? explode(' ', trim($name), 2) : [];
+        $nameParts = self::splitFullName($customer['name'] ?? null);
         $address = $customer['address'] ?? [];
 
         return self::removeNullOrEmpty([
@@ -565,8 +572,7 @@ class StripeService
      */
     public static function extractMailchimpMergeFieldsFromStripeCustomer($customer)
     {
-        $name = $customer['name'] ?? null;
-        $nameParts = $name ? explode(' ', trim($name), 2) : [];
+        $nameParts = self::splitFullName($customer['name'] ?? null);
         $address = $customer['address'] ?? [];
 
         $mergeFields = self::removeNullOrEmpty([
