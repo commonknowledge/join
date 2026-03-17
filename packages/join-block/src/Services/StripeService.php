@@ -4,6 +4,7 @@ namespace CommonKnowledge\JoinBlock\Services;
 
 if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 use Stripe\Stripe;
 use Stripe\Customer;
@@ -538,19 +539,12 @@ class StripeService
         return explode(' ', trim($name), 2);
     }
 
-    private static function removeNullOrEmpty($arr)
-    {
-        return array_filter($arr, function ($v) {
-            return $v !== null && $v !== '';
-        });
-    }
-
     public static function extractPersonDataFromStripeCustomer($customer)
     {
         $nameParts = self::splitFullName($customer['name'] ?? null);
         $address = $customer['address'] ?? [];
 
-        return self::removeNullOrEmpty([
+        return Helpers::removeNullOrEmpty([
             'first_name'     => $nameParts[0] ?? null,
             'last_name'      => $nameParts[1] ?? null,
             'phone'          => $customer['phone'] ?? null,
@@ -573,7 +567,7 @@ class StripeService
         $nameParts = self::splitFullName($customer['name'] ?? null);
         $address = $customer['address'] ?? [];
 
-        $mergeFields = self::removeNullOrEmpty([
+        $mergeFields = Helpers::removeNullOrEmpty([
             'FNAME' => $nameParts[0] ?? null,
             'LNAME' => $nameParts[1] ?? null,
             'PHONE' => $customer['phone'] ?? null,

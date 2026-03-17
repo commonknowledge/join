@@ -4,6 +4,7 @@ namespace CommonKnowledge\JoinBlock\Services;
 
 if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
 
@@ -314,7 +315,7 @@ class ZetkinService
                 $personData['email'] = $email;
             }
 
-            $updateData = self::removeNullOrEmpty($personData);
+            $updateData = Helpers::removeNullOrEmpty($personData);
             if (empty($updateData)) {
                 return;
             }
@@ -374,13 +375,6 @@ class ZetkinService
             'accessToken' => $accessToken,
             'client'      => $client,
         ];
-    }
-
-    private static function removeNullOrEmpty($arr)
-    {
-        return array_filter($arr, function ($v) {
-            return $v !== null && $v !== '';
-        });
     }
 
     /**

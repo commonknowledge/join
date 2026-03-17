@@ -7,17 +7,11 @@ if (! defined('ABSPATH')) {
 }
 
 use MailchimpMarketing\ApiClient;
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
-    private static function removeNullOrEmpty($arr)
-    {
-        return array_filter($arr, function ($v) {
-            return $v !== null && $v !== '';
-        });
-    }
-
     private static function getClient()
     {
         $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
@@ -174,7 +168,7 @@ class MailchimpService
         $lookupEmail = $previousEmail ?? $email;
         $subscriberHash = md5(strtolower($lookupEmail));
 
-        $filteredMergeFields = self::removeNullOrEmpty($mergeFields);
+        $filteredMergeFields = Helpers::removeNullOrEmpty($mergeFields);
 
         $updateData = [];
 
