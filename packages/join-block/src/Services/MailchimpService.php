@@ -18,6 +18,19 @@ class MailchimpService
         });
     }
 
+    private static function getClient()
+    {
+        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $array_key_parts = explode("-", $mailchimp_api_key);
+        $server = array_pop($array_key_parts);
+        $mailchimp = new ApiClient();
+        $mailchimp->setConfig([
+            'apiKey' => $mailchimp_api_key,
+            'server' => $server,
+        ]);
+        return $mailchimp;
+    }
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -26,16 +39,8 @@ class MailchimpService
 
         $joinBlockLog->info("Adding {$data['email']} to Mailchimp");
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $addTags = $data["membershipPlan"]["add_tags"] ?? "";
         $removeTags = $data["membershipPlan"]["remove_tags"] ?? "";
@@ -163,21 +168,20 @@ class MailchimpService
     {
         global $joinBlockLog;
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig(['apiKey' => $mailchimp_api_key, 'server' => $server]);
 
         $lookupEmail = $previousEmail ?? $email;
         $subscriberHash = md5(strtolower($lookupEmail));
 
         $filteredMergeFields = self::removeNullOrEmpty($mergeFields);
+
         $updateData = [];
+
         if (!empty($filteredMergeFields)) {
             $updateData['merge_fields'] = $filteredMergeFields;
         }
+
         if ($previousEmail && $previousEmail !== $email) {
             $updateData['email_address'] = $email;
         }
@@ -192,10 +196,12 @@ class MailchimpService
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
             $notFound = str_contains($body, "404") || str_contains($body, "Resource Not Found");
+
             if ($notFound) {
                 $joinBlockLog->warning("Cannot update member in Mailchimp - $lookupEmail not found");
                 return;
             }
+
             throw $e;
         }
     }
@@ -204,16 +210,8 @@ class MailchimpService
     {
         global $joinBlockLog;
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $subscriberHash = md5(strtolower($email));
 
@@ -234,16 +232,8 @@ class MailchimpService
     {
         global $joinBlockLog;
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $subscriberHash = md5(strtolower($email));
 
