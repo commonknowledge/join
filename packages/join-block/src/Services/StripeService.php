@@ -526,7 +526,6 @@ class StripeService
 
     /**
      * Extract Zetkin person fields from a Stripe Customer object.
-     * Pure function: no WordPress or external dependencies.
      *
      * @param array $customer Stripe Customer array
      * @return array Person data fields (only non-empty values)
@@ -565,7 +564,6 @@ class StripeService
 
     /**
      * Extract Mailchimp merge fields from a Stripe Customer object.
-     * Pure function: no WordPress or external dependencies.
      *
      * @param array $customer Stripe Customer array
      * @return array Mailchimp merge fields (only non-empty values)
