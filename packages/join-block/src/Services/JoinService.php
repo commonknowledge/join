@@ -347,6 +347,16 @@ class JoinService
         }
     }
 
+    public static function shouldLapseMember($email, $context = [])
+    {
+        return (bool) apply_filters('ck_join_flow_should_lapse_member', true, $email, $context);
+    }
+
+    public static function shouldUnlapseMember($email, $context = [])
+    {
+        return (bool) apply_filters('ck_join_flow_should_unlapse_member', true, $email, $context);
+    }
+
     public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null)
     {
         global $joinBlockLog;
