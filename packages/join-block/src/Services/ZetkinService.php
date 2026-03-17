@@ -271,21 +271,14 @@ class ZetkinService
     {
         global $joinBlockLog;
 
+        $ctx = self::getZetkinContext();
+        if (!$ctx) {
+            return;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+
         try {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
-            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
-
-            if (!$clientId || !$clientSecret || !$jwt) {
-                $joinBlockLog->warning("Cannot update person $email in Zetkin - missing OAuth credentials");
-                return;
-            }
-
-            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
-            $client = new \GuzzleHttp\Client();
-
             $searchEmail = $previousEmail ?? $email;
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
@@ -355,6 +348,34 @@ class ZetkinService
         }
     }
 
+    private static function getZetkinContext()
+    {
+        global $joinBlockLog;
+
+        $clientId = Settings::get("ZETKIN_CLIENT_ID");
+        $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
+        $jwt = Settings::get("ZETKIN_JWT");
+        $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live")
+            ? "https://api.zetk.in/v1"
+            : "http://api.dev.zetkin.org/v1";
+        $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+
+        if (!$clientId || !$clientSecret || !$jwt) {
+            $joinBlockLog->warning("Zetkin API call skipped - missing OAuth credentials");
+            return null;
+        }
+
+        $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
+        $client = new \GuzzleHttp\Client();
+
+        return [
+            'baseUrl'     => $baseUrl,
+            'orgId'       => $orgId,
+            'accessToken' => $accessToken,
+            'client'      => $client,
+        ];
+    }
+
     private static function removeNullOrEmpty($arr)
     {
         return array_filter($arr, function ($v) {
@@ -369,14 +390,13 @@ class ZetkinService
     {
         global $joinBlockLog;
         try {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
-            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+            $ctx = self::getZetkinContext();
+            if (!$ctx) {
+                return;
+            }
 
-            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
-            $client = new \GuzzleHttp\Client();
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
                     "Authorization" => "Bearer {$accessToken}",
@@ -427,14 +447,13 @@ class ZetkinService
     {
         global $joinBlockLog;
         try {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
-            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+            $ctx = self::getZetkinContext();
+            if (!$ctx) {
+                return;
+            }
 
-            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
-            $client = new \GuzzleHttp\Client();
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
                     "Authorization" => "Bearer {$accessToken}",
