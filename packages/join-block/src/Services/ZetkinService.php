@@ -272,12 +272,12 @@ class ZetkinService
     {
         global $joinBlockLog;
 
-        $ctx = self::getZetkinContext();
-        if (!$ctx) {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
             return;
         }
 
-        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
         try {
             $searchEmail = $previousEmail ?? $email;
@@ -384,12 +384,12 @@ class ZetkinService
     {
         global $joinBlockLog;
         try {
-            $ctx = self::getZetkinContext();
-            if (!$ctx) {
+            $zetkinContext = self::getZetkinContext();
+            if (!$zetkinContext) {
                 return;
             }
 
-            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
@@ -441,12 +441,12 @@ class ZetkinService
     {
         global $joinBlockLog;
         try {
-            $ctx = self::getZetkinContext();
-            if (!$ctx) {
+            $zetkinContext = self::getZetkinContext();
+            if (!$zetkinContext) {
                 return;
             }
 
-            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $ctx;
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
