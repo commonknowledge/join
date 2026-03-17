@@ -10,15 +10,9 @@ use PHPUnit\Framework\TestCase;
  *
  * These methods are pure functions (no WordPress, no HTTP) so they can be
  * exercised without a running WordPress environment.
- *
- * Manual verification steps are documented at the bottom of this file.
  */
 class StripeWebhookTest extends TestCase
 {
-    // ------------------------------------------------------------------ //
-    //  extractPersonDataFromStripeCustomer                               //
-    // ------------------------------------------------------------------ //
-
     public function testExtractPersonDataFullCustomer(): void
     {
         $customer = [
@@ -92,9 +86,35 @@ class StripeWebhookTest extends TestCase
         $this->assertArrayNotHasKey('city', $result);
     }
 
-    // ------------------------------------------------------------------ //
-    //  extractMailchimpMergeFieldsFromStripeCustomer                     //
-    // ------------------------------------------------------------------ //
+    public function testExtractPersonDataHyphenatedLastName(): void
+    {
+        $customer = ['name' => 'Sarah Lloyd-Jones', 'phone' => null, 'address' => []];
+
+        $result = StripeService::extractPersonDataFromStripeCustomer($customer);
+
+        $this->assertSame('Sarah', $result['first_name']);
+        $this->assertSame('Lloyd-Jones', $result['last_name']);
+    }
+
+    public function testExtractPersonDataNameParticle(): void
+    {
+        $customer = ['name' => 'Ludwig van Beethoven', 'phone' => null, 'address' => []];
+
+        $result = StripeService::extractPersonDataFromStripeCustomer($customer);
+
+        $this->assertSame('Ludwig', $result['first_name']);
+        $this->assertSame('van Beethoven', $result['last_name']);
+    }
+
+    public function testExtractPersonDataForeignCharacters(): void
+    {
+        $customer = ['name' => 'Ångström Müller', 'phone' => null, 'address' => []];
+
+        $result = StripeService::extractPersonDataFromStripeCustomer($customer);
+
+        $this->assertSame('Ångström', $result['first_name']);
+        $this->assertSame('Müller', $result['last_name']);
+    }
 
     public function testExtractMergeFieldsFullCustomer(): void
     {
@@ -154,5 +174,15 @@ class StripeWebhookTest extends TestCase
 
         $this->assertSame('Prince', $result['FNAME']);
         $this->assertArrayNotHasKey('LNAME', $result);
+    }
+
+    public function testExtractMergeFieldsHyphenatedLastName(): void
+    {
+        $customer = ['name' => 'Anne-Marie Davies-Smith', 'address' => []];
+
+        $result = StripeService::extractMailchimpMergeFieldsFromStripeCustomer($customer);
+
+        $this->assertSame('Anne-Marie', $result['FNAME']);
+        $this->assertSame('Davies-Smith', $result['LNAME']);
     }
 }
