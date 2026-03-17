@@ -11,6 +11,13 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    private static function removeNullOrEmpty($arr)
+    {
+        return array_filter($arr, function ($v) {
+            return $v !== null && $v !== '';
+        });
+    }
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -166,7 +173,7 @@ class MailchimpService
         $lookupEmail = $previousEmail ?? $email;
         $subscriberHash = md5(strtolower($lookupEmail));
 
-        $filteredMergeFields = array_filter($mergeFields, fn($v) => $v !== null && $v !== '');
+        $filteredMergeFields = self::removeNullOrEmpty($mergeFields);
         $updateData = [];
         if (!empty($filteredMergeFields)) {
             $updateData['merge_fields'] = $filteredMergeFields;

@@ -321,7 +321,7 @@ class ZetkinService
                 $personData['email'] = $email;
             }
 
-            $updateData = array_filter($personData, fn($v) => $v !== null && $v !== '');
+            $updateData = self::removeNullOrEmpty($personData);
             if (empty($updateData)) {
                 return;
             }
@@ -353,6 +353,13 @@ class ZetkinService
             }
             throw new \Exception("Request failed updating $email in Zetkin: " . $e->getMessage());
         }
+    }
+
+    private static function removeNullOrEmpty($arr)
+    {
+        return array_filter($arr, function ($v) {
+            return $v !== null && $v !== '';
+        });
     }
 
     /**

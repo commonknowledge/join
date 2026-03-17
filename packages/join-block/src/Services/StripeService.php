@@ -531,13 +531,20 @@ class StripeService
      * @param array $customer Stripe Customer array
      * @return array Person data fields (only non-empty values)
      */
+    private static function removeNullOrEmpty($arr)
+    {
+        return array_filter($arr, function ($v) {
+            return $v !== null && $v !== '';
+        });
+    }
+
     public static function extractPersonDataFromStripeCustomer($customer)
     {
         $name = $customer['name'] ?? null;
         $nameParts = $name ? explode(' ', trim($name), 2) : [];
         $address = $customer['address'] ?? [];
 
-        return array_filter([
+        return self::removeNullOrEmpty([
             'first_name'     => $nameParts[0] ?? null,
             'last_name'      => $nameParts[1] ?? null,
             'phone'          => $customer['phone'] ?? null,
@@ -546,7 +553,7 @@ class StripeService
             'city'           => $address['city'] ?? null,
             'zip_code'       => $address['postal_code'] ?? null,
             'country'        => $address['country'] ?? null,
-        ], fn($v) => $v !== null && $v !== '');
+        ]);
     }
 
     /**
@@ -562,11 +569,11 @@ class StripeService
         $nameParts = $name ? explode(' ', trim($name), 2) : [];
         $address = $customer['address'] ?? [];
 
-        $mergeFields = array_filter([
+        $mergeFields = self::removeNullOrEmpty([
             'FNAME' => $nameParts[0] ?? null,
             'LNAME' => $nameParts[1] ?? null,
             'PHONE' => $customer['phone'] ?? null,
-        ], fn($v) => $v !== null && $v !== '');
+        ]);
 
         if (!empty($address['line1'])) {
             $mergeFields['ADDRESS'] = [
