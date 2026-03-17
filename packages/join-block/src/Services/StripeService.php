@@ -593,6 +593,7 @@ class StripeService
 
         $customerId = null;
         $customerLapsed = false;
+        $lapseTrigger = null;
 
         try {
             switch ($event['type']) {
@@ -629,6 +630,7 @@ class StripeService
                     $joinBlockLog->info("Subscription cancelled for Stripe customer $customerId");
                     if (!empty($subscription['customer'])) {
                         $customerLapsed = true;
+                        $lapseTrigger = 'subscription_deleted';
                     }
                     break;
 
@@ -640,6 +642,7 @@ class StripeService
                         $joinBlockLog->warning("Final payment attempt failed for Stripe customer $customerId. No retries will be attempted.");
                         if (!empty($invoice['customer'])) {
                             $customerLapsed = true;
+                            $lapseTrigger = 'invoice_payment_failed';
                         }
                     } else {
                         $joinBlockLog->info("Payment failed for Stripe customer $customerId, retry scheduled.");
@@ -653,7 +656,10 @@ class StripeService
                     if (!empty($invoice['customer'])) {
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
-                            JoinService::toggleMemberLapsed($email, false);
+                            $context = ['provider' => 'stripe', 'trigger' => 'invoice_paid', 'event' => $event];
+                            if (JoinService::shouldUnlapseMember($email, $context)) {
+                                JoinService::toggleMemberLapsed($email, false, null, $context);
+                            }
                         }
                     }
                     break;
@@ -718,10 +724,16 @@ class StripeService
 
                             if (!$wasActive && $isNowActive) {
                                 $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
-                                JoinService::toggleMemberLapsed($email, false);
+                                $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
+                                if (JoinService::shouldUnlapseMember($email, $context)) {
+                                    JoinService::toggleMemberLapsed($email, false, null, $context);
+                                }
                             } elseif ($isNowLapsed) {
                                 $joinBlockLog->info("Subscription lapsed for $email ($previousStatus -> $currentStatus)");
-                                JoinService::toggleMemberLapsed($email, true);
+                                $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
+                                if (JoinService::shouldLapseMember($email, $context)) {
+                                    JoinService::toggleMemberLapsed($email, true, null, $context);
+                                }
                             }
                         }
                     }
@@ -735,7 +747,10 @@ class StripeService
             if ($customerLapsed) {
                 $email = self::getEmailForCustomer($customerId);
                 if ($email) {
-                    JoinService::toggleMemberLapsed($email, true);
+                    $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
+                    if (JoinService::shouldLapseMember($email, $context)) {
+                        JoinService::toggleMemberLapsed($email, true, null, $context);
+                    }
                 }
             }
         } catch (\Exception $e) {
