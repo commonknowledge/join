@@ -69,7 +69,7 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan, $customAmount = null)
+    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false)
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
@@ -78,20 +78,72 @@ class StripeService
             $product = self::getOrCreateProductForMembershipTier($plan);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         }
-        $subscription = Subscription::create([
-            'customer' => $customer->id,
-            'items' => [
-                [
-                    'price' => $priceId,
-                ],
-            ],
+
+        $items = [['price' => $priceId]];
+        $addInvoiceItems = [];
+
+        $donationAmount = (float) $donationAmount;
+        if ($donationAmount > 0) {
+            $donationProduct = self::getOrCreateDonationProduct();
+            if ($recurDonation) {
+                $interval = self::convertFrequencyToStripeInterval($plan['frequency']);
+                $donationPriceId = self::getOrCreatePriceForProduct(
+                    $donationProduct, $donationAmount, $plan['currency'], $interval
+                );
+                $items[] = ['price' => $donationPriceId];
+            } else {
+                $addInvoiceItems[] = [
+                    'price_data' => [
+                        'currency'    => strtolower($plan['currency']),
+                        'product'     => $donationProduct->id,
+                        'unit_amount' => (int) round($donationAmount * 100),
+                    ]
+                ];
+            }
+        }
+
+        $subscriptionPayload = [
+            'customer'         => $customer->id,
+            'items'            => $items,
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => ['card', 'bacs_debit']],
-            'expand' => ['latest_invoice.payment_intent'],
-        ]);
+            'expand'           => ['latest_invoice.payment_intent'],
+        ];
+
+        if (!empty($addInvoiceItems)) {
+            $subscriptionPayload['add_invoice_items'] = $addInvoiceItems;
+        }
+
+        $subscription = Subscription::create($subscriptionPayload);
 
         return $subscription;
+    }
+
+    public static function getOrCreateDonationProduct()
+    {
+        global $joinBlockLog;
+
+        try {
+            $existingProducts = \Stripe\Product::search([
+                'query' => "active:'true' AND metadata['type']:'supporter_donation'",
+            ]);
+
+            if (count($existingProducts->data) > 0) {
+                return $existingProducts->data[0];
+            }
+
+            $joinBlockLog->info("Creating Stripe product for supporter donations");
+
+            return \Stripe\Product::create([
+                'name'     => 'Supporter Donation',
+                'type'     => 'service',
+                'metadata' => ['type' => 'supporter_donation'],
+            ]);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            $joinBlockLog->error("Error creating/retrieving donation product: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public static function getSubscriptionsForCSVOutput()
