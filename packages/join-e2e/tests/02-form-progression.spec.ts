@@ -109,20 +109,13 @@ test.describe('2.2 — Validation', () => {
     await assertRequiredValidation(page, 'input#addressPostcode', 'OX14PE');
   });
 
-  test('2.2i — country required', async ({ page }) => {
-    // Country is a <select>; set it to an empty value to trigger validation.
-    // Note: the country select has no empty option, so we select the first
-    // option (index 0) which may be a non-GB country, then restore to GB.
-    await page.locator('select#addressCountry').selectOption({ index: 0 });
-    await page.locator(CONTINUE).click();
-    // If the first option is a valid non-empty country the form will advance;
-    // either way assert the select got the is-invalid class OR the stage
-    // stayed on details — but do NOT require an error since a non-empty
-    // country may be acceptable.  The intent of 2.2i is to confirm the field
-    // participates in validation when its value is missing.
-    // We therefore skip any extra assertion here beyond the stage check.
-    // (A truly empty country value cannot be triggered without an empty <option>.)
-    await page.locator('select#addressCountry').selectOption('GB');
+  test('2.2i — country field is present and pre-filled to GB', async ({ page }) => {
+    // The country select has no empty option so a truly empty value cannot be
+    // triggered.  Assert instead that the field is present and defaults to GB
+    // (confirming it participates in the form).
+    const select = page.locator('select#addressCountry');
+    await expect(select).toBeVisible();
+    await expect(select).toHaveValue('GB');
   });
 });
 
