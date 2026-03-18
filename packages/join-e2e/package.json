@@ -1,0 +1,17 @@
+{
+  "name": "@ck/join-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "wp-env:start": "wp-env start",
+    "wp-env:stop": "wp-env stop",
+    "pretest": "bash scripts/seed.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "@wordpress/e2e-test-utils-playwright": "^0.21.0",
+    "@wordpress/env": "^10.0.0"
+  }
+}
