@@ -496,7 +496,13 @@ add_action('rest_api_init', function () {
                 StripeService::initialise();
                 [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-                $subscription = StripeService::createSubscription($customer, $plan, $data["customMembershipAmount"] ?? null);
+                $subscription = StripeService::createSubscription(
+                    $customer,
+                    $plan,
+                    $data["customMembershipAmount"] ?? null,
+                    $data["donationAmount"] ?? null,
+                    $data["recurDonation"] ?? false
+                );
 
                 return $subscription;
             } catch (\Exception $e) {
@@ -538,7 +544,13 @@ add_action('rest_api_init', function () {
             StripeService::initialise();
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $subscription = StripeService::createSubscription($customer, $plan);
+            $subscription = StripeService::createSubscription(
+                $customer,
+                $plan,
+                $data["customMembershipAmount"] ?? null,
+                $data["donationAmount"] ?? null,
+                $data["recurDonation"] ?? false
+            );
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
 
