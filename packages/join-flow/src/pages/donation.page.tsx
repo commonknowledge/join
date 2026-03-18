@@ -60,6 +60,17 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     onCompleted(formData);
   });
 
+  if (supporterMode && supporterTiers.length === 0) {
+    return (
+      <div className="alert alert-warning m-4" role="alert">
+        <strong>No donation amounts configured.</strong>
+        <p className="mb-0 mt-1">
+          Add membership plans to this block in the WordPress editor — their amounts will be used as the donation tiers shown to supporters.
+        </p>
+      </div>
+    );
+  }
+
   if (supporterMode) {
     const currencySymbol = currencyCodeToSymbol(supporterCurrency);
     const activeAmount = (otherDonationAmount != null && otherDonationAmount !== "")

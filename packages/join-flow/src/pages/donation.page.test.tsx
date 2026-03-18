@@ -66,6 +66,18 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     });
   });
 
+  test('shows error when no membership plans are configured', () => {
+    mockGetEnv.mockImplementation((key: string) => {
+      if (key === 'DONATION_SUPPORTER_MODE') return true;
+      if (key === 'MEMBERSHIP_PLANS') return [];
+      return false;
+    });
+    renderDonationPage();
+
+    expect(screen.getByText(/No donation amounts configured/i)).toBeInTheDocument();
+    expect(screen.queryByText('Monthly')).not.toBeInTheDocument();
+  });
+
   test('renders Monthly and One-off toggle buttons', () => {
     renderDonationPage();
 
