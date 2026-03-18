@@ -65,7 +65,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       <div className="alert alert-warning m-4" role="alert">
         <strong>No donation amounts configured.</strong>
         <p className="mb-0 mt-1">
-          Add membership plans to this block in the WordPress editor — their amounts will be used as the donation tiers shown to supporters.
+          Add membership plans to this block in the WordPress editor. Their amounts will be used as the donation tiers shown to supporters.
         </p>
       </div>
     );
