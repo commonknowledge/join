@@ -5,6 +5,10 @@ import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
+import { get as getEnv } from "../env";
+
+const SUPPORTER_MONTHLY_TIERS = [3, 5, 10, 20];
+const SUPPORTER_ONEOFF_TIERS = [10, 25, 50, 100];
 
 const membershipToDonationTiers = (membership: string): Array<number> => {
   switch (membership) {
@@ -29,28 +33,125 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     ? membershipToDonationTiers(data.membership)
     : [5, 10, 15, 20];
 
+  const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
+
   const form = useForm({
     defaultValues: {
-      donationAmount: donationTiers[1],
+      donationAmount: supporterMode ? SUPPORTER_MONTHLY_TIERS[1] : donationTiers[1],
+      recurDonation: supporterMode ? true : false,
       ...data
     }
   });
 
   const selectedDonationAmount = form.watch("donationAmount");
+  const recurDonation = form.watch("recurDonation");
+  const otherDonationAmount = form.watch("otherDonationAmount");
+
+  const handleSubmit = form.handleSubmit((formData) => {
+    if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
+      formData.donationAmount = formData.otherDonationAmount;
+      delete formData.otherDonationAmount;
+    }
+    onCompleted(formData);
+  });
+
+  if (supporterMode) {
+    const activeTiers = recurDonation ? SUPPORTER_MONTHLY_TIERS : SUPPORTER_ONEOFF_TIERS;
+    const activeAmount = otherDonationAmount != null && otherDonationAmount !== ""
+      ? Number(otherDonationAmount)
+      : Number(selectedDonationAmount);
+    const ctaLabel = activeAmount > 0
+      ? (recurDonation ? `Donate £${activeAmount}/month` : `Donate £${activeAmount} now`)
+      : (recurDonation ? "Donate monthly" : "Donate now");
+
+    return (
+      <form className="form-content" onSubmit={handleSubmit}>
+        <div className="form-section">
+          <legend className="text-md">
+            <h2>Support us</h2>
+          </legend>
+        </div>
+
+        <fieldset className="mt-3">
+          <div className="btn-group mb-4" role="group">
+            <Button
+              type="button"
+              variant={recurDonation ? "dark" : "outline-dark"}
+              onClick={() => {
+                form.setValue("recurDonation", true);
+                form.setValue("otherDonationAmount", null);
+                form.setValue("donationAmount", SUPPORTER_MONTHLY_TIERS[1]);
+              }}
+            >
+              Monthly
+            </Button>
+            <Button
+              type="button"
+              variant={!recurDonation ? "dark" : "outline-dark"}
+              onClick={() => {
+                form.setValue("recurDonation", false);
+                form.setValue("otherDonationAmount", null);
+                form.setValue("donationAmount", SUPPORTER_ONEOFF_TIERS[1]);
+              }}
+            >
+              One-off
+            </Button>
+          </div>
+
+          <div className="mb-4">
+            {activeTiers.map((tier) => (
+              <Button
+                key={tier}
+                type="button"
+                className="mr-2 mb-2"
+                variant={
+                  (otherDonationAmount == null || otherDonationAmount === "") &&
+                  Number(selectedDonationAmount) === tier
+                    ? "dark"
+                    : "outline-dark"
+                }
+                onClick={() => {
+                  form.setValue("donationAmount", tier);
+                  form.setValue("otherDonationAmount", null);
+                }}
+              >
+                £{tier}
+              </Button>
+            ))}
+          </div>
+
+          <FormItem
+            label="Or enter another amount"
+            name="otherDonationAmount"
+            form={form}
+            className="mt-3"
+          >
+            <Form.Control type="number" min="1" />
+          </FormItem>
+        </fieldset>
+
+        <ContinueButton text={ctaLabel} />
+
+        <div className="mt-2 text-center">
+          <button
+            type="button"
+            className="btn btn-link p-0"
+            onClick={() => {
+              form.setValue("donationAmount", 0);
+              form.handleSubmit(onCompleted)();
+            }}
+          >
+            skip for now
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form
       className="form-content"
-      onSubmit={form.handleSubmit((data) => {
-        // From the perspective of the form schema, keep things clean with only having one variable for donation amount
-        // So remove the otherDonationAmount if we have it and copy it across.
-        if (data.otherDonationAmount !== "") {
-          data.donationAmount = data.otherDonationAmount;
-          delete data.otherDonationAmount;
-        }
-
-        onCompleted(data);
-      })}
+      onSubmit={handleSubmit}
     >
       <div>
         <Summary data={data} />
@@ -61,12 +162,12 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           <h2>Can you chip in?</h2>
         </legend>
         <p className="text-secondary">
-          We rely on our members' generosity to build our movement, 
-          particularly as we look ahead to the next General Election and 
+          We rely on our members' generosity to build our movement,
+          particularly as we look ahead to the next General Election and
           the work that needs to be done to gain more MPs.
         </p>
         <p className="text-secondary">
-          Many of our members top up their membership, which forms a vital part of our income. 
+          Many of our members top up their membership, which forms a vital part of our income.
           We'd be very grateful if you would consider doing the same.
         </p>
       </div>
