@@ -13,7 +13,6 @@ use Carbon_Fields\Field\Image_Field;
 
 class Blocks
 {
-    const MINIMAL_BLOCK_MODE = "MINIMAL";
     const NORMAL_BLOCK_MODE = "NORMAL";
 
     public static function init()
@@ -99,7 +98,6 @@ class Blocks
         self::registerJoinHeaderBlock();
         self::registerJoinFormBlock();
         self::registerJoinLinkBlock();
-        self::registerMinimalJoinFormBlock();
     }
 
     private static function registerJoinHeaderBlock()
@@ -309,63 +307,6 @@ class Blocks
         });
     }
 
-    private static function registerMinimalJoinFormBlock()
-    {
-        /** @var Association_Field $joined_page_association */
-        $joined_page_association = Field::make(
-            'association',
-            'joined_page',
-            __('Page to redirect to after joining', 'common-knowledge-join-flow')
-        )->set_required(true);
-        $joined_page_association->set_types(array(
-            array(
-                'type' => 'post',
-                'post_type' => 'page',
-            ),
-        ))->set_max(1);
-
-        /** @var Complex_Field $custom_membership_plans */
-        $custom_membership_plans = Settings::createMembershipPlansField('custom_membership_plans')
-            ->set_help_text('Leave blank to use the default plans from the settings page.');
-
-        /** @var Block_Container $join_form_block */
-        $join_form_block = Block::make(__('Minimalist Join Form', 'common-knowledge-join-flow'))
-            ->add_fields(array(
-                Field::make('separator', 'ck_join_form', 'Minimalist Join Form'),
-                $joined_page_association,
-                $custom_membership_plans,
-                Field::make('text', 'custom_webhook_url')
-                    ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
-
-            ));
-
-        $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
-            static::echoEnvironment($fields, self::MINIMAL_BLOCK_MODE);
-        ?>
-            <div class="ck-minimalist-join-flow ck-join-form">
-                <div class="ck-minimalist-join-form"><!-- Minimalist Join Form attaches here --></div>
-            </div>
-        <?php
-        });
-
-        // Add a save hook to connect the webhook URL with a UUID. See Settings::ensureWebhookUrlIsSaved()
-        // for an explanation.
-        add_action('save_post', function ($_, $post) {
-            $blocks = parse_blocks($post->post_content);
-
-            foreach ($blocks as $block) {
-                $custom_webhook_url = $block['attrs']['data']['custom_webhook_url'] ?? '';
-
-                if ($custom_webhook_url) {
-                    Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
-                }
-
-                $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
-                Settings::saveMembershipPlans($custom_membership_plans);
-            }
-        }, 10, 2);
-    }
-
     /**
      * @param array $fields An associative array of carbon fields set on the Block
      * @param string $block_mode 'NORMAL' or 'MINIMAL', from class constants e.g. Blocks::NORMAL_BLOCK_MODE
@@ -494,7 +435,6 @@ class Blocks
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_HEADING" => Settings::get("MEMBERSHIP_TIERS_HEADING"),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
-            "MINIMAL_JOIN_FORM" => $block_mode === self::MINIMAL_BLOCK_MODE,
             "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
             "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
             "JOIN_FORM_SIDEBAR_HEADING" => $sidebar_heading,
