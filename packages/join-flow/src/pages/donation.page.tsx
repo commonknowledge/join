@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
@@ -35,6 +35,10 @@ export const DonationPage: StagerComponent<FormSchema> = ({
 
   const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
 
+  // Local state for supporter mode to drive reliable re-renders
+  const [isMonthly, setIsMonthly] = useState(true);
+  const [selectedTier, setSelectedTier] = useState<number>(SUPPORTER_MONTHLY_TIERS[1]);
+
   const form = useForm({
     defaultValues: {
       donationAmount: supporterMode ? SUPPORTER_MONTHLY_TIERS[1] : donationTiers[1],
@@ -44,7 +48,6 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   });
 
   const selectedDonationAmount = form.watch("donationAmount");
-  const recurDonation = form.watch("recurDonation");
   const otherDonationAmount = form.watch("otherDonationAmount");
 
   const handleSubmit = form.handleSubmit((formData) => {
@@ -56,16 +59,20 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   });
 
   if (supporterMode) {
-    const activeTiers = recurDonation ? SUPPORTER_MONTHLY_TIERS : SUPPORTER_ONEOFF_TIERS;
-    const activeAmount = otherDonationAmount != null && otherDonationAmount !== ""
+    const activeTiers = isMonthly ? SUPPORTER_MONTHLY_TIERS : SUPPORTER_ONEOFF_TIERS;
+    const activeAmount = (otherDonationAmount != null && otherDonationAmount !== "")
       ? Number(otherDonationAmount)
-      : Number(selectedDonationAmount);
+      : selectedTier;
     const ctaLabel = activeAmount > 0
-      ? (recurDonation ? `Donate £${activeAmount}/month` : `Donate £${activeAmount} now`)
-      : (recurDonation ? "Donate monthly" : "Donate now");
+      ? (isMonthly ? `Donate £${activeAmount}/month` : `Donate £${activeAmount} now`)
+      : (isMonthly ? "Donate monthly" : "Donate now");
 
     return (
       <form className="form-content" onSubmit={handleSubmit}>
+        {/* Hidden registered inputs so values appear in handleSubmit data */}
+        <input type="hidden" name="donationAmount" ref={form.register} defaultValue={selectedTier} />
+        <input type="hidden" name="recurDonation" ref={form.register} defaultValue={isMonthly ? "true" : "false"} />
+
         <div className="form-section">
           <legend className="text-md">
             <h2>Support us</h2>
@@ -76,8 +83,10 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           <div className="btn-group mb-4" role="group">
             <Button
               type="button"
-              variant={recurDonation ? "dark" : "outline-dark"}
+              variant={isMonthly ? "dark" : "outline-dark"}
               onClick={() => {
+                setIsMonthly(true);
+                setSelectedTier(SUPPORTER_MONTHLY_TIERS[1]);
                 form.setValue("recurDonation", true);
                 form.setValue("otherDonationAmount", null);
                 form.setValue("donationAmount", SUPPORTER_MONTHLY_TIERS[1]);
@@ -87,8 +96,10 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             </Button>
             <Button
               type="button"
-              variant={!recurDonation ? "dark" : "outline-dark"}
+              variant={!isMonthly ? "dark" : "outline-dark"}
               onClick={() => {
+                setIsMonthly(false);
+                setSelectedTier(SUPPORTER_ONEOFF_TIERS[1]);
                 form.setValue("recurDonation", false);
                 form.setValue("otherDonationAmount", null);
                 form.setValue("donationAmount", SUPPORTER_ONEOFF_TIERS[1]);
@@ -106,11 +117,10 @@ export const DonationPage: StagerComponent<FormSchema> = ({
                 className="mr-2 mb-2"
                 variant={
                   (otherDonationAmount == null || otherDonationAmount === "") &&
-                  Number(selectedDonationAmount) === tier
-                    ? "dark"
-                    : "outline-dark"
+                  selectedTier === tier ? "dark" : "outline-dark"
                 }
                 onClick={() => {
+                  setSelectedTier(tier);
                   form.setValue("donationAmount", tier);
                   form.setValue("otherDonationAmount", null);
                 }}
@@ -138,7 +148,9 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             className="btn btn-link p-0"
             onClick={() => {
               form.setValue("donationAmount", 0);
-              form.handleSubmit(onCompleted)();
+              form.handleSubmit((formData) => {
+                onCompleted({ ...formData, donationAmount: 0 });
+              })();
             }}
           >
             skip for now
