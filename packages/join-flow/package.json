@@ -45,7 +45,8 @@
   },
   "scripts": {
     "start": "webpack serve --config './webpack/dev.js'",
-    "build": "webpack --config './webpack/production.js'"
+    "build": "webpack --config './webpack/production.js'",
+    "build:e2e": "REACT_APP_USE_TEST_DATA=true webpack --config './webpack/production.js'"
   },
   "proxy": "http://localhost:8080",
   "eslintConfig": {

@@ -1,0 +1,128 @@
+<?php
+/**
+ * E2E test setup script.
+ *
+ * Creates two test pages:
+ *   - e2e-standard-join: standard £5/month membership
+ *   - e2e-free-join:     free (£0/month) membership
+ *
+ * Run via:
+ *   wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Build the serialised Gutenberg block content for a CK Join Form block.
+ * The $fields array is passed verbatim as the block's "data" attribute,
+ * which is what Carbon_Fields\Container\Block_Container::render_block()
+ * forwards to the render callback as its first ($fields) argument.
+ */
+function ck_e2e_make_block_content(array $plans): string
+{
+    $data = [
+        'custom_membership_plans' => $plans,
+        'require_address'         => true,
+        'require_phone_number'    => true,
+        'ask_for_additional_donation' => false,
+    ];
+    $attrs = wp_json_encode(['data' => $data]);
+    return "<!-- wp:carbon-fields/ck-join-form {$attrs} -->\n"
+        . '<div class="ck-join-flow"><div class="ck-join-form mt-4"></div></div>' . "\n"
+        . '<!-- /wp:carbon-fields/ck-join-form -->';
+}
+
+/**
+ * Create or update a page by post_name slug.
+ * Returns the page ID on success; exits with status 1 on failure.
+ */
+function ck_e2e_upsert_page(string $slug, string $title, string $content): int
+{
+    $existing = get_posts([
+        'post_type'   => 'page',
+        'post_status' => 'publish',
+        'name'        => $slug,
+        'numberposts' => 1,
+    ]);
+
+    if ($existing) {
+        $page_id = $existing[0]->ID;
+        wp_update_post(['ID' => $page_id, 'post_content' => $content]);
+        echo "Updated page '{$slug}' (ID: {$page_id}).\n";
+        return $page_id;
+    }
+
+    $page_id = wp_insert_post([
+        'post_name'    => $slug,
+        'post_title'   => $title,
+        'post_status'  => 'publish',
+        'post_type'    => 'page',
+        'post_content' => $content,
+    ], true);
+
+    if (is_wp_error($page_id)) {
+        echo 'Failed to create page \'' . $slug . '\': ' . $page_id->get_error_message() . "\n";
+        exit(1);
+    }
+
+    echo "Created page '{$slug}' (ID: {$page_id}).\n";
+    return $page_id;
+}
+
+// Configure pretty permalinks so test URLs are predictable.
+update_option('permalink_structure', '/%postname%/');
+flush_rewrite_rules(true);
+
+// Standard membership plan (£5/month).
+$standard_plans = [
+    [
+        '_type'              => '',
+        'label'              => 'Standard',
+        'id'                 => 'standard',
+        'amount'             => '5',
+        'allow_custom_amount' => '',
+        'frequency'          => 'monthly',
+        'currency'           => 'GBP',
+        'description'        => '',
+        'add_tags'           => '',
+        'remove_tags'        => '',
+    ],
+];
+
+// Free membership plan (£0/month).
+$free_plans = [
+    [
+        '_type'              => '',
+        'label'              => 'Free',
+        'id'                 => 'free',
+        'amount'             => '0',
+        'allow_custom_amount' => '',
+        'frequency'          => 'monthly',
+        'currency'           => 'GBP',
+        'description'        => '',
+        'add_tags'           => '',
+        'remove_tags'        => '',
+    ],
+];
+
+$standard_page_id = ck_e2e_upsert_page(
+    'e2e-standard-join',
+    'E2E Standard Join Test',
+    ck_e2e_make_block_content($standard_plans)
+);
+
+$free_page_id = ck_e2e_upsert_page(
+    'e2e-free-join',
+    'E2E Free Membership Test',
+    ck_e2e_make_block_content($free_plans)
+);
+
+// Persist URLs as options so get-page-url.sh can retrieve them.
+update_option('ck_e2e_standard_page_url', get_permalink($standard_page_id));
+update_option('ck_e2e_free_page_url', get_permalink($free_page_id));
+
+echo 'Standard page URL: ' . get_permalink($standard_page_id) . "\n";
+echo 'Free page URL: '     . get_permalink($free_page_id)     . "\n";
+echo "Setup complete.\n";
