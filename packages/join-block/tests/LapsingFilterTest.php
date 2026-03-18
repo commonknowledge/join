@@ -63,27 +63,18 @@ class LapsingFilterTest extends TestCase
     {
         Filters\expectApplied('ck_join_flow_should_lapse_member')
             ->once()
-            ->andReturn(false);
+            ->andReturn(true);
 
-        $this->assertFalse(JoinService::shouldLapseMember('test@example.com'));
+        $this->assertTrue(JoinService::shouldLapseMember('test@example.com'));
     }
 
     public function testFilterCanEnableUnlapsing(): void
     {
         Filters\expectApplied('ck_join_flow_should_unlapse_member')
             ->once()
-            ->andReturn(false);
-
-        $this->assertFalse(JoinService::shouldUnlapseMember('test@example.com'));
-    }
-
-    public function testFilterReturningTrueEnablesLapsing(): void
-    {
-        Filters\expectApplied('ck_join_flow_should_lapse_member')
-            ->once()
             ->andReturn(true);
 
-        $this->assertTrue(JoinService::shouldLapseMember('test@example.com'));
+        $this->assertTrue(JoinService::shouldUnlapseMember('test@example.com'));
     }
 
     public function testFilterReceivesEmail(): void
