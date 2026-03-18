@@ -4,11 +4,8 @@ import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema } from "../schema";
+import { FormSchema, currencyCodeToSymbol } from "../schema";
 import { get as getEnv } from "../env";
-
-const SUPPORTER_MONTHLY_TIERS = [3, 5, 10, 20];
-const SUPPORTER_ONEOFF_TIERS = [10, 25, 50, 100];
 
 const membershipToDonationTiers = (membership: string): Array<number> => {
   switch (membership) {
@@ -35,13 +32,18 @@ export const DonationPage: StagerComponent<FormSchema> = ({
 
   const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
 
+  const membershipPlans = (getEnv("MEMBERSHIP_PLANS") as any[]) || [];
+  const supporterTiers: number[] = membershipPlans.map((p) => Number(p.amount)).filter((n) => n > 0);
+  const supporterCurrency: string = membershipPlans[0]?.currency || "GBP";
+  const defaultSupporterTier = supporterTiers[0] ?? 0;
+
   // Local state for supporter mode to drive reliable re-renders
   const [isMonthly, setIsMonthly] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<number>(SUPPORTER_MONTHLY_TIERS[1]);
+  const [selectedTier, setSelectedTier] = useState<number>(defaultSupporterTier);
 
   const form = useForm({
     defaultValues: {
-      donationAmount: supporterMode ? SUPPORTER_MONTHLY_TIERS[1] : donationTiers[1],
+      donationAmount: supporterMode ? defaultSupporterTier : donationTiers[1],
       recurDonation: supporterMode ? true : false,
       ...data
     }
@@ -59,12 +61,12 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   });
 
   if (supporterMode) {
-    const activeTiers = isMonthly ? SUPPORTER_MONTHLY_TIERS : SUPPORTER_ONEOFF_TIERS;
+    const currencySymbol = currencyCodeToSymbol(supporterCurrency);
     const activeAmount = (otherDonationAmount != null && otherDonationAmount !== "")
       ? Number(otherDonationAmount)
       : selectedTier;
     const ctaLabel = activeAmount > 0
-      ? (isMonthly ? `Donate £${activeAmount}/month` : `Donate £${activeAmount} now`)
+      ? (isMonthly ? `Donate ${currencySymbol}${activeAmount}/month` : `Donate ${currencySymbol}${activeAmount} now`)
       : (isMonthly ? "Donate monthly" : "Donate now");
 
     return (
@@ -86,10 +88,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
               variant={isMonthly ? "dark" : "outline-dark"}
               onClick={() => {
                 setIsMonthly(true);
-                setSelectedTier(SUPPORTER_MONTHLY_TIERS[1]);
                 form.setValue("recurDonation", true);
-                form.setValue("otherDonationAmount", null);
-                form.setValue("donationAmount", SUPPORTER_MONTHLY_TIERS[1]);
               }}
             >
               Monthly
@@ -99,10 +98,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
               variant={!isMonthly ? "dark" : "outline-dark"}
               onClick={() => {
                 setIsMonthly(false);
-                setSelectedTier(SUPPORTER_ONEOFF_TIERS[1]);
                 form.setValue("recurDonation", false);
-                form.setValue("otherDonationAmount", null);
-                form.setValue("donationAmount", SUPPORTER_ONEOFF_TIERS[1]);
               }}
             >
               One-off
@@ -110,7 +106,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           </div>
 
           <div className="mb-4">
-            {activeTiers.map((tier) => (
+            {supporterTiers.map((tier) => (
               <Button
                 key={tier}
                 type="button"
@@ -125,7 +121,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
                   form.setValue("otherDonationAmount", null);
                 }}
               >
-                £{tier}
+                {currencySymbol}{tier}
               </Button>
             ))}
           </div>

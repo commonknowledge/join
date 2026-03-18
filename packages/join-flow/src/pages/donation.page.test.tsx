@@ -21,6 +21,12 @@ const baseData = {
   membership: 'standard',
 } as any;
 
+const MOCK_PLANS = [
+  { value: 'plan-a', label: 'Plan A', amount: '5',  currency: 'GBP', frequency: 'monthly' },
+  { value: 'plan-b', label: 'Plan B', amount: '10', currency: 'GBP', frequency: 'monthly' },
+  { value: 'plan-c', label: 'Plan C', amount: '20', currency: 'GBP', frequency: 'monthly' },
+];
+
 function renderDonationPage(data = baseData) {
   return render(
     <DonationPage data={data} onCompleted={mockOnCompleted} />
@@ -53,9 +59,11 @@ describe('DonationPage — standard mode (DONATION_SUPPORTER_MODE off)', () => {
 
 describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
   beforeEach(() => {
-    mockGetEnv.mockImplementation((key: string) =>
-      key === 'DONATION_SUPPORTER_MODE' ? true : false
-    );
+    mockGetEnv.mockImplementation((key: string) => {
+      if (key === 'DONATION_SUPPORTER_MODE') return true;
+      if (key === 'MEMBERSHIP_PLANS') return MOCK_PLANS;
+      return false;
+    });
   });
 
   test('renders Monthly and One-off toggle buttons', () => {
@@ -73,31 +81,26 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     ).not.toBeInTheDocument();
   });
 
-  test('Monthly is active by default and shows monthly tiers', () => {
+  test('Monthly is active by default and shows plan tiers', () => {
     renderDonationPage();
 
-    const monthlyBtn = screen.getByText('Monthly');
-    expect(monthlyBtn).toHaveClass('btn-dark');
+    expect(screen.getByText('Monthly')).toHaveClass('btn-dark');
 
-    // Monthly tiers: 3, 5, 10, 20
-    expect(screen.getByText('£3')).toBeInTheDocument();
+    // Tiers from MOCK_PLANS amounts
     expect(screen.getByText('£5')).toBeInTheDocument();
     expect(screen.getByText('£10')).toBeInTheDocument();
     expect(screen.getByText('£20')).toBeInTheDocument();
   });
 
-  test('clicking One-off switches to one-off tiers', () => {
+  test('same tiers are shown after switching to One-off', () => {
     renderDonationPage();
 
     fireEvent.click(screen.getByText('One-off'));
 
-    // One-off tiers: 10, 25, 50, 100
-    expect(screen.getByText('£25')).toBeInTheDocument();
-    expect(screen.getByText('£50')).toBeInTheDocument();
-    expect(screen.getByText('£100')).toBeInTheDocument();
-
-    // Monthly-only tier £3 should no longer be present
-    expect(screen.queryByText('£3')).not.toBeInTheDocument();
+    // Same tiers — amounts do not change with the toggle
+    expect(screen.getByText('£5')).toBeInTheDocument();
+    expect(screen.getByText('£10')).toBeInTheDocument();
+    expect(screen.getByText('£20')).toBeInTheDocument();
   });
 
   test('skip button is not present in supporter mode', () => {
@@ -109,7 +112,7 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
   test('CTA label reflects monthly selection', () => {
     renderDonationPage();
 
-    // Default: Monthly £5 (index 1 of [3,5,10,20])
+    // Default: first plan tier £5, monthly
     expect(screen.getByText(/Donate £5\/month/i)).toBeInTheDocument();
   });
 
@@ -118,7 +121,7 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
 
     fireEvent.click(screen.getByText('One-off'));
 
-    // Default after switching: £25 (index 1 of [10,25,50,100])
-    expect(screen.getByText(/Donate £25 now/i)).toBeInTheDocument();
+    // Same selected tier (£5), now one-off
+    expect(screen.getByText(/Donate £5 now/i)).toBeInTheDocument();
   });
 });
