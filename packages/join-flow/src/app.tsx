@@ -27,8 +27,6 @@ import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
 import stripe from "./images/stripe.png";
 
-import { Elements } from "@stripe/react-stripe-js";
-import MinimalJoinForm from "./components/minimal-join-flow";
 import { loadStripe } from "@stripe/stripe-js";
 
 interface Stage {
@@ -294,20 +292,6 @@ const App = () => {
     ) : null;
   });
 
-  const options = {
-    paymentMethodCreation: "manual",
-    mode: "subscription",
-    amount: 100,
-    currency: "gbp"
-  };
-
-  // @ts-ignore
-  const minimalJoinForm = (
-    <Elements stripe={stripePromise} options={options}>
-      <MinimalJoinForm />
-    </Elements>
-  );
-
   const fullJoinForm = (
     <>
       <RouterContext.Provider value={router}>
@@ -366,13 +350,7 @@ const App = () => {
     </>
   );
 
-  let form = fullJoinForm;
-
-  if (getEnv("MINIMAL_JOIN_FORM")) {
-    form = minimalJoinForm;
-  }
-
-  return form;
+  return fullJoinForm;
 };
 
 const getInitialState = (): FormSchema => {
