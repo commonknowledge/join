@@ -332,7 +332,8 @@ class Blocks
         }
 
         $membership_plans = $fields['custom_membership_plans'] ?? [];
-        if (!$membership_plans) {
+        $is_supporter_mode = !empty($fields['donation_supporter_mode']);
+        if (!$membership_plans && !$is_supporter_mode) {
             $membership_plans = Settings::get("MEMBERSHIP_PLANS") ?? [];
         }
 
