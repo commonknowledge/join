@@ -49,14 +49,14 @@ class LapsingFilterTest extends TestCase
 
     // --- shouldLapseMember ---
 
-    public function testShouldLapseReturnsTrueByDefault(): void
+    public function testShouldLapseReturnsFalseByDefault(): void
     {
-        $this->assertTrue(JoinService::shouldLapseMember('test@example.com'));
+        $this->assertFalse(JoinService::shouldLapseMember('test@example.com'));
     }
 
-    public function testShouldUnlapseReturnsTrueByDefault(): void
+    public function testShouldUnlapseReturnsFalseByDefault(): void
     {
-        $this->assertTrue(JoinService::shouldUnlapseMember('test@example.com'));
+        $this->assertFalse(JoinService::shouldUnlapseMember('test@example.com'));
     }
 
     public function testFilterCanSuppressLapsing(): void
@@ -90,7 +90,7 @@ class LapsingFilterTest extends TestCase
     {
         Filters\expectApplied('ck_join_flow_should_lapse_member')
             ->once()
-            ->with(true, 'test@example.com', \Mockery::type('array'))
+            ->with(false, 'test@example.com', \Mockery::type('array'))
             ->andReturn(true);
 
         JoinService::shouldLapseMember('test@example.com', []);
@@ -100,7 +100,7 @@ class LapsingFilterTest extends TestCase
     {
         Filters\expectApplied('ck_join_flow_should_lapse_member')
             ->once()
-            ->with(true, \Mockery::any(), \Mockery::on(fn($c) => $c['provider'] === 'stripe'))
+            ->with(false, \Mockery::any(), \Mockery::on(fn($c) => $c['provider'] === 'stripe'))
             ->andReturn(true);
 
         JoinService::shouldLapseMember('test@example.com', ['provider' => 'stripe']);
@@ -110,7 +110,7 @@ class LapsingFilterTest extends TestCase
     {
         Filters\expectApplied('ck_join_flow_should_lapse_member')
             ->once()
-            ->with(true, \Mockery::any(), \Mockery::on(fn($c) => $c['trigger'] === 'invoice_paid'))
+            ->with(false, \Mockery::any(), \Mockery::on(fn($c) => $c['trigger'] === 'invoice_paid'))
             ->andReturn(true);
 
         JoinService::shouldLapseMember('test@example.com', ['trigger' => 'invoice_paid']);
@@ -122,15 +122,15 @@ class LapsingFilterTest extends TestCase
 
         Filters\expectApplied('ck_join_flow_should_lapse_member')
             ->once()
-            ->with(true, \Mockery::any(), \Mockery::on(fn($c) => $c['event'] === $event))
+            ->with(false, \Mockery::any(), \Mockery::on(fn($c) => $c['event'] === $event))
             ->andReturn(true);
 
         JoinService::shouldLapseMember('test@example.com', ['event' => $event]);
     }
 
-    public function testBackwardsCompatibility(): void
+    public function testDefaultsToFalseWithNoContext(): void
     {
-        $this->assertTrue(JoinService::shouldLapseMember('test@example.com'));
+        $this->assertFalse(JoinService::shouldLapseMember('test@example.com'));
     }
 
     // --- toggleMemberLapsed action hooks ---
