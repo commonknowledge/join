@@ -1,0 +1,12 @@
+{
+  "core": "WordPress/WordPress#6.5",
+  "plugins": ["../../packages/join-block"],
+  "mappings": {
+    "wp-content/e2e-scripts": "../../packages/join-e2e/scripts"
+  },
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true
+  }
+}
