@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DonationPage } from './donation.page';
 
@@ -100,18 +100,10 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     expect(screen.queryByText('£3')).not.toBeInTheDocument();
   });
 
-  test('skip button calls onCompleted with donationAmount 0', async () => {
+  test('skip button is not present in supporter mode', () => {
     renderDonationPage();
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('skip for now'));
-    });
-
-    await waitFor(() => {
-      expect(mockOnCompleted).toHaveBeenCalledWith(
-        expect.objectContaining({ donationAmount: 0 })
-      );
-    });
+    expect(screen.queryByText('skip for now')).not.toBeInTheDocument();
   });
 
   test('CTA label reflects monthly selection', () => {

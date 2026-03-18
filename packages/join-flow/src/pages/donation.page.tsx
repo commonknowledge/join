@@ -141,21 +141,6 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         </fieldset>
 
         <ContinueButton text={ctaLabel} />
-
-        <div className="mt-2 text-center">
-          <button
-            type="button"
-            className="btn btn-link p-0"
-            onClick={() => {
-              form.setValue("donationAmount", 0);
-              form.handleSubmit((formData) => {
-                onCompleted({ ...formData, donationAmount: 0 });
-              })();
-            }}
-          >
-            skip for now
-          </button>
-        </div>
       </form>
     );
   }
