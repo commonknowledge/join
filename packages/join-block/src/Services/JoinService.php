@@ -347,12 +347,12 @@ class JoinService
         }
     }
 
-    public static function shouldLapseMember($email, $context = [], $default = false)
+    public static function shouldLapseMember($email, $context = [], $default = true)
     {
         return (bool) apply_filters('ck_join_flow_should_lapse_member', $default, $email, $context);
     }
 
-    public static function shouldUnlapseMember($email, $context = [], $default = false)
+    public static function shouldUnlapseMember($email, $context = [], $default = true)
     {
         return (bool) apply_filters('ck_join_flow_should_unlapse_member', $default, $email, $context);
     }

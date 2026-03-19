@@ -657,7 +657,7 @@ class StripeService
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
                             $context = ['provider' => 'stripe', 'trigger' => 'invoice_paid', 'event' => $event];
-                            if (JoinService::shouldUnlapseMember($email, $context, true)) {
+                            if (JoinService::shouldUnlapseMember($email, $context)) {
                                 JoinService::toggleMemberLapsed($email, false, null, $context);
                             }
                         }
@@ -725,13 +725,13 @@ class StripeService
                             if (!$wasActive && $isNowActive) {
                                 $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
-                                if (JoinService::shouldUnlapseMember($email, $context, true)) {
+                                if (JoinService::shouldUnlapseMember($email, $context)) {
                                     JoinService::toggleMemberLapsed($email, false, null, $context);
                                 }
                             } elseif ($isNowLapsed) {
                                 $joinBlockLog->info("Subscription lapsed for $email ($previousStatus -> $currentStatus)");
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
-                                if (JoinService::shouldLapseMember($email, $context, true)) {
+                                if (JoinService::shouldLapseMember($email, $context)) {
                                     JoinService::toggleMemberLapsed($email, true, null, $context);
                                 }
                             }
@@ -748,7 +748,7 @@ class StripeService
                 $email = self::getEmailForCustomer($customerId);
                 if ($email) {
                     $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
-                    if (JoinService::shouldLapseMember($email, $context, true)) {
+                    if (JoinService::shouldLapseMember($email, $context)) {
                         JoinService::toggleMemberLapsed($email, true, null, $context);
                     }
                 }
