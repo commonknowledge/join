@@ -185,4 +185,87 @@ class StripeWebhookTest extends TestCase
         $this->assertSame('Anne-Marie', $result['FNAME']);
         $this->assertSame('Davies-Smith', $result['LNAME']);
     }
+
+    private function callResolveTierTagChanges(array $newPlan, ?array $oldPlan): array
+    {
+        $method = new \ReflectionMethod(StripeService::class, 'resolveTierTagChanges');
+        return $method->invoke(null, $newPlan, $oldPlan);
+    }
+
+    public function testResolveTierTagChangesSharedTagsAreNotRemoved(): void
+    {
+        $oldPlan = ['add_tags' => 'member, low-wage',  'remove_tags' => 'subsidised, min-wage, high-wage'];
+        $newPlan = ['add_tags' => 'member, high-wage', 'remove_tags' => 'subsidised, low-wage, min-wage'];
+
+        $result = $this->callResolveTierTagChanges($newPlan, $oldPlan);
+
+        $this->assertContains('high-wage', $result['addTags']);
+        $this->assertContains('member',    $result['addTags']);
+        $this->assertContains('low-wage',  $result['removeTags']);
+        $this->assertNotContains('member', $result['removeTags'], 'member must not be removed when it is also being added');
+    }
+
+    public function testResolveTierTagChangesNoOldPlanLeavesRemoveTagsFromNewPlanOnly(): void
+    {
+        $newPlan = ['add_tags' => 'member, high-wage', 'remove_tags' => 'subsidised, low-wage, min-wage'];
+
+        $result = $this->callResolveTierTagChanges($newPlan, null);
+
+        $this->assertSame(['member', 'high-wage'], $result['addTags']);
+        $this->assertSame(['subsidised', 'low-wage', 'min-wage'], $result['removeTags']);
+    }
+
+    private function callExtractPriceChange(array $event): ?array
+    {
+        $method = new \ReflectionMethod(StripeService::class, 'extractPriceChange');
+        return $method->invoke(null, $event);
+    }
+
+    public function testExtractPriceChangeReturnsNullWhenNoPreviousItems(): void
+    {
+        $event = [
+            'data' => [
+                'object' => [
+                    'items' => ['data' => [['price' => ['id' => 'price_NEW']]]],
+                ],
+                'previous_attributes' => [],
+            ],
+        ];
+
+        $this->assertNull($this->callExtractPriceChange($event));
+    }
+
+    public function testExtractPriceChangeReturnsNullWhenPriceUnchanged(): void
+    {
+        $event = [
+            'data' => [
+                'object' => [
+                    'items' => ['data' => [['price' => ['id' => 'price_SAME']]]],
+                ],
+                'previous_attributes' => [
+                    'items' => ['data' => [['price' => ['id' => 'price_SAME']]]],
+                ],
+            ],
+        ];
+
+        $this->assertNull($this->callExtractPriceChange($event));
+    }
+
+    public function testExtractPriceChangeReturnsIds(): void
+    {
+        $event = [
+            'data' => [
+                'object' => [
+                    'items' => ['data' => [['price' => ['id' => 'price_NEW']]]],
+                ],
+                'previous_attributes' => [
+                    'items' => ['data' => [['price' => ['id' => 'price_OLD']]]],
+                ],
+            ],
+        ];
+
+        $result = $this->callExtractPriceChange($event);
+
+        $this->assertSame(['previousPriceId' => 'price_OLD', 'currentPriceId' => 'price_NEW'], $result);
+    }
 }

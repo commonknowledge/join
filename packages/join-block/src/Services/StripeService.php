@@ -708,6 +708,7 @@ class StripeService
 
                     $previousStatus = $previousAttributes['status'] ?? null;
                     $currentStatus = $subscription['status'] ?? null;
+                    $email = null;
 
                     // Only act on status changes not already covered by invoice events
                     if ($previousStatus && $previousStatus !== $currentStatus) {
@@ -733,6 +734,66 @@ class StripeService
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
                                 if (JoinService::shouldLapseMember($email, $context)) {
                                     JoinService::toggleMemberLapsed($email, true, null, $context);
+                                }
+                            }
+                        }
+                    }
+
+                    $priceChange = self::extractPriceChange($event);
+                    if ($priceChange) {
+                        $email = $email ?? self::getEmailForCustomer($subscription['customer']);
+                        if (!$email) {
+                            $joinBlockLog->warning("Tier change detected but could not resolve email for customer {$subscription['customer']}");
+                            break;
+                        }
+
+                        ['previousPriceId' => $previousPriceId, 'currentPriceId' => $currentPriceId] = $priceChange;
+                        $newPlan = Settings::getMembershipPlanByPriceId($currentPriceId);
+                        $oldPlan = Settings::getMembershipPlanByPriceId($previousPriceId);
+
+                        if (!$newPlan) {
+                            $joinBlockLog->warning("Tier change for $email: new price $currentPriceId does not match any known membership plan. Tag changes skipped.");
+                            break;
+                        }
+
+                        if (!$oldPlan) {
+                            $joinBlockLog->warning("Tier change for $email: old price $previousPriceId not found — old tier tags will not be removed.");
+                        }
+
+                        ['addTags' => $addTags, 'removeTags' => $removeTags] = self::resolveTierTagChanges($newPlan, $oldPlan);
+
+                        $joinBlockLog->info("Tier change for $email ({$newPlan['label']}): add=[" . implode(',', $addTags) . "] remove=[" . implode(',', $removeTags) . "]");
+
+                        if (Settings::get('USE_ZETKIN')) {
+                            foreach ($addTags as $tag) {
+                                try {
+                                    ZetkinService::addTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Zetkin addTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                            foreach ($removeTags as $tag) {
+                                try {
+                                    ZetkinService::removeTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Zetkin removeTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                        }
+
+                        if (Settings::get('USE_MAILCHIMP')) {
+                            foreach ($addTags as $tag) {
+                                try {
+                                    MailchimpService::addTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Mailchimp addTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                            foreach ($removeTags as $tag) {
+                                try {
+                                    MailchimpService::removeTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Mailchimp removeTag($tag) for $email: " . $e->getMessage());
                                 }
                             }
                         }
@@ -766,5 +827,33 @@ class StripeService
             return null;
         }
         return $customer->email;
+    }
+
+    private static function resolveTierTagChanges(array $newPlan, ?array $oldPlan): array
+    {
+        $parseTags = fn($str) => array_filter(array_map('trim', explode(',', $str ?? '')), fn($t) => $t !== '');
+
+        $addTags    = array_values($parseTags($newPlan['add_tags'] ?? ''));
+        $removeTags = array_values($parseTags($newPlan['remove_tags'] ?? ''));
+
+        if ($oldPlan) {
+            $removeTags = array_unique(array_merge($removeTags, $parseTags($oldPlan['add_tags'] ?? '')));
+            $removeTags = array_values(array_diff($removeTags, $addTags));
+        }
+
+        return ['addTags' => $addTags, 'removeTags' => $removeTags];
+    }
+
+    private static function extractPriceChange(array $event): ?array
+    {
+        $previousAttributes = $event['data']['previous_attributes'] ?? [];
+        $previousPriceId = $previousAttributes['items']['data'][0]['price']['id'] ?? null;
+        $currentPriceId  = $event['data']['object']['items']['data'][0]['price']['id'] ?? null;
+
+        if (!$previousPriceId || !$currentPriceId || $previousPriceId === $currentPriceId) {
+            return null;
+        }
+
+        return ['previousPriceId' => $previousPriceId, 'currentPriceId' => $currentPriceId];
     }
 }
