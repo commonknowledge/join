@@ -201,6 +201,33 @@ class MailchimpService
         }
     }
 
+    /**
+     * Check whether an email address is already subscribed to the Mailchimp audience.
+     * Returns true if found (any status), false if the member does not exist.
+     *
+     * @param string $email
+     * @return bool
+     */
+    public static function memberExists($email)
+    {
+        global $joinBlockLog;
+
+        $mailchimp = self::getClient();
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+        $subscriberHash = md5(strtolower($email));
+
+        try {
+            $mailchimp->lists->getListMember($mailchimp_audience_id, $subscriberHash);
+            return true;
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            if (str_contains($body, "404") || str_contains($body, "Resource Not Found")) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
     public static function addTag($email, $tag)
     {
         global $joinBlockLog;
