@@ -657,7 +657,7 @@ class StripeService
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
                             $context = ['provider' => 'stripe', 'trigger' => 'invoice_paid', 'event' => $event];
-                            if (JoinService::shouldUnlapseMember($email, $context)) {
+                            if (JoinService::shouldUnlapseMember($email, $context, true)) {
                                 JoinService::toggleMemberLapsed($email, false, null, $context);
                             }
                         }
@@ -748,7 +748,7 @@ class StripeService
                 $email = self::getEmailForCustomer($customerId);
                 if ($email) {
                     $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
-                    if (JoinService::shouldLapseMember($email, $context)) {
+                    if (JoinService::shouldLapseMember($email, $context, true)) {
                         JoinService::toggleMemberLapsed($email, true, null, $context);
                     }
                 }
