@@ -757,6 +757,7 @@ if (defined('WP_CLI') && WP_CLI) {
         $errors = 0;
         $zetkinCreated = 0;
         $mailchimpCreated = 0;
+        $createdRecords = []; // [ ['email' => ..., 'plan' => ..., 'zetkin' => bool, 'mailchimp' => bool] ]
 
         foreach ($customers as $customer) {
             $email = $customer->email;
@@ -820,6 +821,9 @@ if (defined('WP_CLI') && WP_CLI) {
 
             WP_CLI::log("Processing $email ({$plan['label']}, subscribed $subscribedAt) ...");
 
+            $addedToZetkin = false;
+            $addedToMailchimp = false;
+
             if ($useZetkin) {
                 try {
                     $zetkinPerson = ZetkinService::findPersonByEmail($email);
@@ -829,6 +833,7 @@ if (defined('WP_CLI') && WP_CLI) {
                             ZetkinService::signup($signupData);
                         }
                         $zetkinCreated++;
+                        $addedToZetkin = true;
                     } else {
                         WP_CLI::log("  Zetkin: already present (ID {$zetkinPerson['id']}) — skipping.");
                     }
@@ -848,6 +853,7 @@ if (defined('WP_CLI') && WP_CLI) {
                             MailchimpService::signup($signupData);
                         }
                         $mailchimpCreated++;
+                        $addedToMailchimp = true;
                     } else {
                         WP_CLI::log("  Mailchimp: already present — skipping.");
                     }
@@ -858,13 +864,36 @@ if (defined('WP_CLI') && WP_CLI) {
                 }
             }
 
+            if ($addedToZetkin || $addedToMailchimp) {
+                $createdRecords[] = [
+                    'email'     => $email,
+                    'plan'      => $plan['label'],
+                    'date'      => $subscribedAt,
+                    'zetkin'    => $addedToZetkin,
+                    'mailchimp' => $addedToMailchimp,
+                ];
+            }
+
             $synced++;
         }
 
         WP_CLI::success(
             "Backfill complete. Processed: $synced | Skipped: $skipped | Errors: $errors" .
-            ($useZetkin    ? " | Zetkin created: $zetkinCreated"       : "") .
+            ($useZetkin    ? " | Zetkin created: $zetkinCreated"          : "") .
             ($useMailchimp ? " | Mailchimp subscribed: $mailchimpCreated" : "")
         );
+
+        if (!empty($createdRecords)) {
+            WP_CLI::log("");
+            WP_CLI::log("--- Members added" . ($dryRun ? " (dry run)" : "") . " ---");
+            foreach ($createdRecords as $record) {
+                $services = implode(', ', array_filter([
+                    $record['zetkin']    ? 'Zetkin'    : null,
+                    $record['mailchimp'] ? 'Mailchimp' : null,
+                ]));
+                WP_CLI::log("  {$record['email']} — {$record['plan']}, subscribed {$record['date']} — added to: $services");
+            }
+            WP_CLI::log("---");
+        }
     });
 }
