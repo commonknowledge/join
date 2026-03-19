@@ -347,14 +347,14 @@ class JoinService
         }
     }
 
-    public static function shouldLapseMember($email, $context = [])
+    public static function shouldLapseMember($email, $context = [], $default = false)
     {
-        return (bool) apply_filters('ck_join_flow_should_lapse_member', false, $email, $context);
+        return (bool) apply_filters('ck_join_flow_should_lapse_member', $default, $email, $context);
     }
 
-    public static function shouldUnlapseMember($email, $context = [])
+    public static function shouldUnlapseMember($email, $context = [], $default = false)
     {
-        return (bool) apply_filters('ck_join_flow_should_unlapse_member', false, $email, $context);
+        return (bool) apply_filters('ck_join_flow_should_unlapse_member', $default, $email, $context);
     }
 
     public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null, $context = [])
@@ -365,7 +365,11 @@ class JoinService
         $done = $lapsed ? "Marked" : "Unmarked";
         $joinBlockLog->info("$action member $email as lapsed");
 
-        if (Settings::get("USE_ACTION_NETWORK")) {
+        if (!Settings::get("LAPSED_TAG")) {
+            $joinBlockLog->warning("Skipping lapsed tag update for $email - no lapsed tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Lapsed Tag.");
+        }
+
+        if (Settings::get("LAPSED_TAG") && Settings::get("USE_ACTION_NETWORK")) {
             $joinBlockLog->info("$action member $email as lapsed in Action Network");
             try {
                 if ($lapsed) {
@@ -383,7 +387,7 @@ class JoinService
             }
         }
 
-        if (Settings::get("USE_MAILCHIMP")) {
+        if (Settings::get("LAPSED_TAG") && Settings::get("USE_MAILCHIMP")) {
             $joinBlockLog->info("$action member $email as lapsed in Mailchimp");
             try {
                 if ($lapsed) {
@@ -398,7 +402,7 @@ class JoinService
             }
         }
 
-        if (Settings::get("USE_ZETKIN")) {
+        if (Settings::get("LAPSED_TAG") && Settings::get("USE_ZETKIN")) {
             $clientId = Settings::get("ZETKIN_CLIENT_ID");
             $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
             $jwt = Settings::get("ZETKIN_JWT");

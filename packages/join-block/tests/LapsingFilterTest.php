@@ -119,6 +119,34 @@ class LapsingFilterTest extends TestCase
         JoinService::shouldLapseMember('test@example.com', ['event' => $event]);
     }
 
+    public function testShouldLapseReturnsTrueWhenDefaultTrue(): void
+    {
+        $this->assertTrue(JoinService::shouldLapseMember('test@example.com', [], true));
+    }
+
+    public function testShouldUnlapseReturnsTrueWhenDefaultTrue(): void
+    {
+        $this->assertTrue(JoinService::shouldUnlapseMember('test@example.com', [], true));
+    }
+
+    public function testFilterCanOverrideTrueDefaultToFalse(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_lapse_member')
+            ->once()
+            ->andReturn(false);
+
+        $this->assertFalse(JoinService::shouldLapseMember('test@example.com', [], true));
+    }
+
+    public function testFilterCanOverrideTrueDefaultToFalseForUnlapse(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_unlapse_member')
+            ->once()
+            ->andReturn(false);
+
+        $this->assertFalse(JoinService::shouldUnlapseMember('test@example.com', [], true));
+    }
+
     // --- toggleMemberLapsed action hooks ---
 
     public function testLapsedActionFiresAfterExecution(): void
