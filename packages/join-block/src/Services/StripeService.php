@@ -725,13 +725,13 @@ class StripeService
                             if (!$wasActive && $isNowActive) {
                                 $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
-                                if (JoinService::shouldUnlapseMember($email, $context)) {
+                                if (JoinService::shouldUnlapseMember($email, $context, true)) {
                                     JoinService::toggleMemberLapsed($email, false, null, $context);
                                 }
                             } elseif ($isNowLapsed) {
                                 $joinBlockLog->info("Subscription lapsed for $email ($previousStatus -> $currentStatus)");
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
-                                if (JoinService::shouldLapseMember($email, $context)) {
+                                if (JoinService::shouldLapseMember($email, $context, true)) {
                                     JoinService::toggleMemberLapsed($email, true, null, $context);
                                 }
                             }
