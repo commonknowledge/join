@@ -517,4 +517,23 @@ class Settings
     {
         return get_option('ck_join_flow_membership_plan_' . $id);
     }
+
+    public static function getMembershipPlanByPriceId($priceId)
+    {
+        global $wpdb;
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $wpdb->esc_like('ck_join_flow_membership_plan_') . '%'
+            ),
+            ARRAY_A
+        );
+        foreach ($rows as $row) {
+            $plan = maybe_unserialize($row['option_value']);
+            if (is_array($plan) && ($plan['stripe_price_id'] ?? null) === $priceId) {
+                return $plan;
+            }
+        }
+        return null;
+    }
 }

@@ -2,13 +2,30 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    // Exit if accessed directly
+    exit;
+}
 
 use MailchimpMarketing\ApiClient;
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    private static function getClient()
+    {
+        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $array_key_parts = explode("-", $mailchimp_api_key);
+        $server = array_pop($array_key_parts);
+        $mailchimp = new ApiClient();
+        $mailchimp->setConfig([
+            'apiKey' => $mailchimp_api_key,
+            'server' => $server,
+        ]);
+        return $mailchimp;
+    }
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -17,16 +34,8 @@ class MailchimpService
 
         $joinBlockLog->info("Adding {$data['email']} to Mailchimp");
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $addTags = $data["membershipPlan"]["add_tags"] ?? "";
         $removeTags = $data["membershipPlan"]["remove_tags"] ?? "";
@@ -51,7 +60,7 @@ class MailchimpService
         // Generic filter applies to all services
         $addTags = apply_filters('ck_join_flow_add_tags', $addTags, $data, 'mailchimp');
         $removeTags = apply_filters('ck_join_flow_remove_tags', $removeTags, $data, 'mailchimp');
-        
+
         // Service-specific filter for Mailchimp-only customization
         $addTags = apply_filters('ck_join_flow_mailchimp_add_tags', $addTags, $data);
         $removeTags = apply_filters('ck_join_flow_mailchimp_remove_tags', $removeTags, $data);
@@ -112,21 +121,21 @@ class MailchimpService
             try {
                 $subscriberHash = md5(strtolower($email));
                 $tagUpdates = [];
-                
+
                 // If member exists, add tags that weren't added during creation
                 if ($memberExists && !empty($addTags)) {
                     foreach ($addTags as $tag) {
                         $tagUpdates[] = ["name" => $tag, "status" => "active"];
                     }
                 }
-                
+
                 // Add tags to remove
                 if (!empty($removeTags)) {
                     foreach ($removeTags as $tag) {
                         $tagUpdates[] = ["name" => $tag, "status" => "inactive"];
                     }
                 }
-                
+
                 if (!empty($tagUpdates)) {
                     $mailchimp->lists->updateListMemberTags(
                         $mailchimp_audience_id,
@@ -142,20 +151,89 @@ class MailchimpService
         }
     }
 
+    /**
+     * Update an existing Mailchimp member's merge fields (name, phone, address, etc.).
+     * Used to sync changes made via the Stripe customer portal.
+     *
+     * @param string      $email         The member's current email
+     * @param array       $mergeFields   Mailchimp merge fields to update (null values are ignored)
+     * @param string|null $previousEmail Previous email if it changed, used as the lookup key
+     */
+    public static function updateMember($email, $mergeFields, $previousEmail = null)
+    {
+        global $joinBlockLog;
+
+        $mailchimp = self::getClient();
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+
+        $lookupEmail = $previousEmail ?? $email;
+        $subscriberHash = md5(strtolower($lookupEmail));
+
+        $filteredMergeFields = Helpers::removeNullOrEmpty($mergeFields);
+
+        $updateData = [];
+
+        if (!empty($filteredMergeFields)) {
+            $updateData['merge_fields'] = $filteredMergeFields;
+        }
+
+        if ($previousEmail && $previousEmail !== $email) {
+            $updateData['email_address'] = $email;
+        }
+
+        if (empty($updateData)) {
+            return;
+        }
+
+        try {
+            $mailchimp->lists->updateListMember($mailchimp_audience_id, $subscriberHash, $updateData);
+            $joinBlockLog->info("Updated member $email in Mailchimp");
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            $notFound = str_contains($body, "404") || str_contains($body, "Resource Not Found");
+
+            if ($notFound) {
+                $joinBlockLog->warning("Cannot update member in Mailchimp - $lookupEmail not found");
+                return;
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Check whether an email address is already subscribed to the Mailchimp audience.
+     * Returns true if found (any status), false if the member does not exist.
+     *
+     * @param string $email
+     * @return bool
+     */
+    public static function memberExists($email)
+    {
+        global $joinBlockLog;
+
+        $mailchimp = self::getClient();
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+        $subscriberHash = md5(strtolower($email));
+
+        try {
+            $mailchimp->lists->getListMember($mailchimp_audience_id, $subscriberHash);
+            return true;
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            if (str_contains($body, "404") || str_contains($body, "Resource Not Found")) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
     public static function addTag($email, $tag)
     {
         global $joinBlockLog;
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $subscriberHash = md5(strtolower($email));
 
@@ -176,16 +254,8 @@ class MailchimpService
     {
         global $joinBlockLog;
 
-        $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
+        $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        # Server name (e.g. us22) is at the end of the API key (e.g. ...-us22)
-        $array_key_parts = explode("-", $mailchimp_api_key);
-        $server = array_pop($array_key_parts);
-        $mailchimp = new ApiClient();
-        $mailchimp->setConfig([
-            'apiKey' => $mailchimp_api_key,
-            'server' => $server
-        ]);
 
         $subscriberHash = md5(strtolower($email));
 

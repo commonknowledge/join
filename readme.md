@@ -170,3 +170,77 @@ yarn run frontend
 ```
 
 - Open <http://localhost:3000>
+
+## Developer Hooks
+
+The plugin exposes filters and actions so you can customise lapsing behaviour without modifying plugin code.
+
+### Filters
+
+#### `ck_join_flow_should_lapse_member`
+
+Controls whether a member should be lapsed when a lapsing event is detected (e.g. a Stripe subscription becomes `unpaid` or `incomplete_expired`). Return `false` to prevent the lapse.
+
+| Argument | Type | Description |
+|---|---|---|
+| `$default` | bool | `true` by default |
+| `$email` | string | The member's email address |
+| `$context` | array | Trigger context: `provider` (e.g. `stripe`), `trigger` (e.g. `invoice_payment_failed`), `event` (raw payload) |
+
+```php
+add_filter('ck_join_flow_should_lapse_member', function ($default, $email, $context) {
+    // Prevent lapsing if triggered by a GoCardless event.
+    if (($context['provider'] ?? '') === 'gocardless') {
+        return false;
+    }
+    return $default;
+}, 10, 3);
+```
+
+#### `ck_join_flow_should_unlapse_member`
+
+Controls whether a member should be unlapsed when a reactivation event is detected (e.g. a Stripe subscription returns to `active`). Return `false` to prevent the unlapse.
+
+| Argument | Type | Description |
+|---|---|---|
+| `$default` | bool | `true` by default |
+| `$email` | string | The member's email address |
+| `$context` | array | Same shape as above |
+
+```php
+add_filter('ck_join_flow_should_unlapse_member', function ($default, $email, $context) {
+    return $default;
+}, 10, 3);
+```
+
+### Actions
+
+#### `ck_join_flow_member_lapsed`
+
+Fired after a member has been successfully marked as lapsed in all configured integrations.
+
+| Argument | Type | Description |
+|---|---|---|
+| `$email` | string | The member's email address |
+| `$context` | array | Trigger context (see above) |
+
+```php
+add_action('ck_join_flow_member_lapsed', function ($email, $context) {
+    // Send an internal notification, update a CRM, etc.
+}, 10, 2);
+```
+
+#### `ck_join_flow_member_unlapsed`
+
+Fired after a member has been successfully unmarked as lapsed in all configured integrations.
+
+| Argument | Type | Description |
+|---|---|---|
+| `$email` | string | The member's email address |
+| `$context` | array | Trigger context (see above) |
+
+```php
+add_action('ck_join_flow_member_unlapsed', function ($email, $context) {
+    // Send a welcome-back notification, etc.
+}, 10, 2);
+```
