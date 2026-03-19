@@ -704,10 +704,16 @@ if (defined('WP_CLI') && WP_CLI) {
     });
 
     /**
-     * Backfill command: sync current Stripe customer contact details to Zetkin and Mailchimp.
+     * Backfill command: ensure every Stripe customer created in the last 3 months
+     * is present in Zetkin and Mailchimp with the correct membership tags.
      *
-     * Intended as a one-time operation to propagate any customer portal changes that occurred
-     * before the customer.updated webhook was configured.
+     * For each customer the command:
+     *  1. Locates their active Stripe subscription and maps it to a known membership plan.
+     *  2. Checks whether they already exist in Zetkin/Mailchimp.
+     *  3. Creates them in any service where they are absent, applying the plan tags.
+     *
+     * Customers whose active subscription does not match a known membership plan price
+     * are skipped with a warning.
      *
      * Usage: wp join backfill_stripe_to_zetkin_mailchimp [--dry-run]
      */
@@ -729,61 +735,136 @@ if (defined('WP_CLI') && WP_CLI) {
             return;
         }
 
-        $customers = StripeService::getCustomers();
+        // Load membership plan data (Stripe price ID → plan) from a local file
+        // that is not committed to Git. See backfill-plans.example.php for the format.
+        $plansFile = __DIR__ . '/backfill-plans.php';
+        if (!file_exists($plansFile)) {
+            WP_CLI::error(
+                "backfill-plans.php not found. Copy backfill-plans.example.php to " .
+                "backfill-plans.php and populate it with your Stripe price IDs before running this command."
+            );
+            return;
+        }
+        $plansByPriceId = require $plansFile;
+
+        $since = strtotime('-3 months');
+        $customers = StripeService::getCustomers(['created' => ['gte' => $since]]);
         $total = count($customers);
-        WP_CLI::log("Found $total customers in Stripe.");
+        WP_CLI::log("Found $total Stripe customers created since " . date('Y-m-d', $since) . ".");
 
         $synced = 0;
         $skipped = 0;
         $errors = 0;
+        $zetkinCreated = 0;
+        $mailchimpCreated = 0;
 
         foreach ($customers as $customer) {
             $email = $customer->email;
             if (!$email) {
+                WP_CLI::log("Skipping customer {$customer->id} — no email address.");
                 $skipped++;
                 continue;
             }
 
-            $customerArray = $customer->toArray();
-            $personData = StripeService::extractPersonDataFromStripeCustomer($customerArray);
-            $mergeFields = StripeService::extractMailchimpMergeFieldsFromStripeCustomer($customerArray);
-
-            if (empty($personData) && empty($mergeFields)) {
-                $skipped++;
-                continue;
-            }
-
-            WP_CLI::log("Syncing $email ...");
-
-            if (!$dryRun) {
-                if ($useZetkin && !empty($personData)) {
-                    try {
-                        ZetkinService::updatePerson($email, $personData);
-                        $joinBlockLog->info("Backfill: updated $email in Zetkin");
-                    } catch (\Exception $e) {
-                        WP_CLI::warning("Zetkin error for $email: " . $e->getMessage());
-                        $joinBlockLog->error("Backfill Zetkin error for $email: " . $e->getMessage());
-                        $errors++;
-                        continue;
+            // Resolve membership plan from active subscription.
+            $plan = null;
+            $subscribedAt = null;
+            try {
+                $subscriptions = \Stripe\Subscription::all([
+                    'customer' => $customer->id,
+                    'status'   => 'active',
+                    'limit'    => 10,
+                ]);
+                foreach ($subscriptions->data as $sub) {
+                    foreach ($sub->items->data as $item) {
+                        $priceId = $item->price->id;
+                        if (isset($plansByPriceId[$priceId])) {
+                            $plan = $plansByPriceId[$priceId];
+                            $subscribedAt = date('d/m/Y', $sub->created);
+                            break 2;
+                        }
                     }
                 }
+            } catch (\Exception $e) {
+                WP_CLI::warning("Could not fetch subscriptions for $email: " . $e->getMessage());
+                $errors++;
+                continue;
+            }
 
-                if ($useMailchimp && !empty($mergeFields)) {
-                    try {
-                        MailchimpService::updateMember($email, $mergeFields);
-                        $joinBlockLog->info("Backfill: updated $email in Mailchimp");
-                    } catch (\Exception $e) {
-                        WP_CLI::warning("Mailchimp error for $email: " . $e->getMessage());
-                        $joinBlockLog->error("Backfill Mailchimp error for $email: " . $e->getMessage());
-                        $errors++;
-                        continue;
+            if (!$plan) {
+                WP_CLI::log("Skipping $email — no active subscription matches a known membership plan price.");
+                $skipped++;
+                continue;
+            }
+
+            // Build signup data from Stripe customer fields (empty strings where unavailable).
+            $customerArray = $customer->toArray();
+            $personData = StripeService::extractPersonDataFromStripeCustomer($customerArray);
+            $address = $customerArray['address'] ?? [];
+
+            $signupData = [
+                'email'              => $email,
+                'firstName'          => $personData['first_name'] ?? '',
+                'lastName'           => $personData['last_name'] ?? '',
+                'phoneNumber'        => $personData['phone'] ?? '',
+                'addressLine1'       => $personData['street_address'] ?? '',
+                'addressLine2'       => $personData['co_address'] ?? '',
+                'addressCity'        => $personData['city'] ?? '',
+                'addressPostcode'    => $personData['zip_code'] ?? '',
+                'addressCountry'     => $personData['country'] ?? '',
+                'membership'         => $plan['slug'],
+                'membershipPlan'     => $plan,
+                'isUpdateFlow'       => false,
+                'customFieldsConfig' => [],
+            ];
+
+            WP_CLI::log("Processing $email ({$plan['label']}, subscribed $subscribedAt) ...");
+
+            if ($useZetkin) {
+                try {
+                    $zetkinPerson = ZetkinService::findPersonByEmail($email);
+                    if (!$zetkinPerson) {
+                        WP_CLI::log("  Zetkin: not found — " . ($dryRun ? "would create" : "creating") . ".");
+                        if (!$dryRun) {
+                            ZetkinService::signup($signupData);
+                        }
+                        $zetkinCreated++;
+                    } else {
+                        WP_CLI::log("  Zetkin: already present (ID {$zetkinPerson['id']}) — skipping.");
                     }
+                } catch (\Exception $e) {
+                    WP_CLI::warning("  Zetkin error for $email: " . $e->getMessage());
+                    $joinBlockLog->error("Backfill Zetkin error for $email: " . $e->getMessage());
+                    $errors++;
+                }
+            }
+
+            if ($useMailchimp) {
+                try {
+                    $exists = MailchimpService::memberExists($email);
+                    if (!$exists) {
+                        WP_CLI::log("  Mailchimp: not found — " . ($dryRun ? "would subscribe" : "subscribing") . ".");
+                        if (!$dryRun) {
+                            MailchimpService::signup($signupData);
+                        }
+                        $mailchimpCreated++;
+                    } else {
+                        WP_CLI::log("  Mailchimp: already present — skipping.");
+                    }
+                } catch (\Exception $e) {
+                    WP_CLI::warning("  Mailchimp error for $email: " . $e->getMessage());
+                    $joinBlockLog->error("Backfill Mailchimp error for $email: " . $e->getMessage());
+                    $errors++;
                 }
             }
 
             $synced++;
         }
 
-        WP_CLI::success("Backfill complete. Synced: $synced | Skipped: $skipped | Errors: $errors");
+        WP_CLI::success(
+            "Backfill complete. Processed: $synced | Skipped: $skipped | Errors: $errors" .
+            ($useZetkin    ? " | Zetkin created: $zetkinCreated"       : "") .
+            ($useMailchimp ? " | Mailchimp subscribed: $mailchimpCreated" : "")
+        );
     });
 }

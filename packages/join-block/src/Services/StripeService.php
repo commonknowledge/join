@@ -18,7 +18,7 @@ class StripeService
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
     }
 
-    public static function getCustomers()
+    public static function getCustomers($extraParams = [])
     {
         global $joinBlockLog;
 
@@ -26,7 +26,7 @@ class StripeService
         $starting_after = null;
 
         do {
-            $params = ['limit' => 100];
+            $params = array_merge(['limit' => 100], $extraParams);
             if ($starting_after) {
                 $params['starting_after'] = $starting_after;
             }
