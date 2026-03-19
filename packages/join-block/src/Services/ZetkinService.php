@@ -446,12 +446,14 @@ class ZetkinService
             }
 
             $people = $responseData["data"] ?? [];
+            $matched = array_filter($people, fn($p) => $p["email"] === $email);
+            if (empty($matched)) {
+                $joinBlockLog->warning("Could not add tag '$tag' in Zetkin: no person found for $email");
+                return;
+            }
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
-            foreach ($people as $person) {
-                if ($person["email"] !== $email) {
-                    continue;
-                }
+            foreach ($matched as $person) {
                 $personId = $person["id"];
                 $tagId = $existingTag["id"];
                 $response = $client->request("PUT", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
@@ -462,14 +464,13 @@ class ZetkinService
                 ]);
                 $responseData = json_decode($response->getBody()->getContents(), true);
                 if (!empty($responseData["error"])) {
-                    $msg = $responseData["error"]["title"] ?? "";
-                    if ($msg !== "404 Not Found") {
-                        $joinBlockLog->error("Could not untag person: " . json_encode($responseData["error"]));
-                    }
+                    $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . json_encode($responseData["error"]));
+                } else {
+                    $joinBlockLog->info("Added tag '$tag' to $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Could not tag $email in Zetkin with $tag: " . $e->getMessage());
+            $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . $e->getMessage());
         }
     }
 
@@ -503,12 +504,14 @@ class ZetkinService
             }
 
             $people = $responseData["data"] ?? [];
+            $matched = array_filter($people, fn($p) => $p["email"] === $email);
+            if (empty($matched)) {
+                $joinBlockLog->warning("Could not remove tag '$tag' in Zetkin: no person found for $email");
+                return;
+            }
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
-            foreach ($people as $person) {
-                if ($person["email"] !== $email) {
-                    continue;
-                }
+            foreach ($matched as $person) {
                 $personId = $person["id"];
                 $tagId = $existingTag["id"];
                 $response = $client->request("DELETE", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
@@ -518,13 +521,18 @@ class ZetkinService
                     ],
                     "http_errors" => false
                 ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                if (!empty($responseData["error"])) {
-                    $joinBlockLog->error("Could not tag person: " . json_encode($responseData["error"]));
+                $statusCode = $response->getStatusCode();
+                if ($statusCode === 404) {
+                    $joinBlockLog->info("Could not remove tag '$tag' from $email in Zetkin: tag does not exist");
+                } elseif ($statusCode >= 400) {
+                    $responseData = json_decode($response->getBody()->getContents(), true);
+                    $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . json_encode($responseData["error"] ?? $statusCode));
+                } else {
+                    $joinBlockLog->info("Removed tag '$tag' from $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Could not tag $email in Zetkin with $tag: " . $e->getMessage());
+            $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . $e->getMessage());
         }
     }
 
