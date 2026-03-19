@@ -114,6 +114,10 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 * Lapse and unlapse membership in Zetkin and Mailchimp when a Stripe subscription status changes.
 * Added WP-CLI backfill command to retroactively sync existing Stripe subscribers into Zetkin and Mailchimp.
 * Improved Zetkin tag operation logging for clarity.
+* Added `ck_join_flow_should_lapse_member` filter to control whether a lapse should proceed.
+* Added `ck_join_flow_should_unlapse_member` filter to control whether an unlapse should proceed.
+* Added `ck_join_flow_member_lapsed` action fired after a member is successfully lapsed.
+* Added `ck_join_flow_member_unlapsed` action fired after a member is successfully unlapsed.
 
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
