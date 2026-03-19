@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.3.18
+Stable tag: 1.3.19
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,14 @@ Data received: all data provided by the user.
 Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowledge.coop).
 
 == Changelog ==
+
+= 1.3.19 =
+* Sync membership tier tag changes to Zetkin and Mailchimp when a member upgrades or downgrades their Stripe subscription plan.
+* Tags shared across tiers (e.g. `member`) are preserved during a tier change and never incorrectly removed.
+* Sync contact detail changes to Zetkin and Mailchimp when a member's Stripe customer record is updated.
+* Lapse and unlapse membership in Zetkin and Mailchimp when a Stripe subscription status changes.
+* Added WP-CLI backfill command to retroactively sync existing Stripe subscribers into Zetkin and Mailchimp.
+* Improved Zetkin tag operation logging for clarity.
 
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
