@@ -261,6 +261,45 @@ class ZetkinService
     }
 
     /**
+     * Search Zetkin for a person by email. Returns the person array or null if not found.
+     * Only available when OAuth credentials (CLIENT_ID, CLIENT_SECRET, JWT) are configured.
+     *
+     * @param string $email
+     * @return array|null
+     */
+    public static function findPersonByEmail($email)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return null;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ],
+            "json" => ["q" => $email],
+        ]);
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        if (!empty($responseData["error"])) {
+            throw new \Exception(json_encode($responseData["error"]));
+        }
+
+        $people = $responseData["data"] ?? [];
+        foreach ($people as $candidate) {
+            if ($candidate["email"] === $email) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Find a person in Zetkin by email and update their contact details.
      * Used to sync changes made via the Stripe customer portal.
      *
