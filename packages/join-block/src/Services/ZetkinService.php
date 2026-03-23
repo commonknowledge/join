@@ -4,6 +4,7 @@ namespace CommonKnowledge\JoinBlock\Services;
 
 if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
 
@@ -260,20 +261,175 @@ class ZetkinService
     }
 
     /**
+     * Search Zetkin for a person by email. Returns the person array or null if not found.
+     * Only available when OAuth credentials (CLIENT_ID, CLIENT_SECRET, JWT) are configured.
+     *
+     * @param string $email
+     * @return array|null
+     */
+    public static function findPersonByEmail($email)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return null;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ],
+            "json" => ["q" => $email],
+        ]);
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        if (!empty($responseData["error"])) {
+            throw new \Exception(json_encode($responseData["error"]));
+        }
+
+        $people = $responseData["data"] ?? [];
+        foreach ($people as $candidate) {
+            if ($candidate["email"] === $email) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find a person in Zetkin by email and update their contact details.
+     * Used to sync changes made via the Stripe customer portal.
+     *
+     * @param string      $email         The person's current email
+     * @param array       $personData    Fields to update (null values are ignored)
+     * @param string|null $previousEmail Previous email if it changed, used as the lookup key
+     */
+    public static function updatePerson($email, $personData, $previousEmail = null)
+    {
+        global $joinBlockLog;
+
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        try {
+            $searchEmail = $previousEmail ?? $email;
+            $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
+                "headers" => [
+                    "Authorization" => "Bearer {$accessToken}",
+                    "Content-type" => "application/json",
+                ],
+                "json" => ["q" => $searchEmail],
+            ]);
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            if (!empty($responseData["error"])) {
+                throw new \Exception(json_encode($responseData["error"]));
+            }
+
+            $people = $responseData["data"] ?? [];
+            $person = null;
+            foreach ($people as $candidate) {
+                if ($candidate["email"] === $searchEmail) {
+                    $person = $candidate;
+                    break;
+                }
+            }
+
+            if (!$person) {
+                $joinBlockLog->warning("Cannot update person in Zetkin - no person found with email $searchEmail");
+                return;
+            }
+
+            $personId = $person["id"];
+
+            // Include new email if it changed
+            if ($previousEmail && $previousEmail !== $email) {
+                $personData['email'] = $email;
+            }
+
+            $updateData = Helpers::removeNullOrEmpty($personData);
+            if (empty($updateData)) {
+                return;
+            }
+
+            $response = $client->request("PATCH", "$baseUrl/orgs/$orgId/people/$personId", [
+                "headers" => [
+                    "Authorization" => "Bearer {$accessToken}",
+                    "Content-type" => "application/json",
+                ],
+                "json" => $updateData,
+            ]);
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            if (!empty($responseData["error"])) {
+                throw new \Exception("Could not update person: " . json_encode($responseData["error"]));
+            }
+
+            $joinBlockLog->info("Updated person $email in Zetkin (person ID $personId)");
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            if ($e->hasResponse()) {
+                if ($e->getResponse()->getStatusCode() === 403) {
+                    throw new \Exception(
+                        "Zetkin API returned 403 Forbidden updating $email. " .
+                        "Check ZETKIN_JWT has not expired. Raw response: " .
+                        $e->getResponse()->getBody()->getContents()
+                    );
+                }
+                throw new \Exception("Bad Zetkin response updating $email: " . $e->getResponse()->getBody()->getContents());
+            }
+            throw new \Exception("Request failed updating $email in Zetkin: " . $e->getMessage());
+        }
+    }
+
+    private static function getZetkinContext()
+    {
+        global $joinBlockLog;
+
+        $clientId = Settings::get("ZETKIN_CLIENT_ID");
+        $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
+        $jwt = Settings::get("ZETKIN_JWT");
+        $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live")
+            ? "https://api.zetk.in/v1"
+            : "http://api.dev.zetkin.org/v1";
+        $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+
+        if (!$clientId || !$clientSecret || !$jwt) {
+            $joinBlockLog->warning("Zetkin API call skipped - missing OAuth credentials");
+            return null;
+        }
+
+        $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
+        $client = new \GuzzleHttp\Client();
+
+        return [
+            'baseUrl'     => $baseUrl,
+            'orgId'       => $orgId,
+            'accessToken' => $accessToken,
+            'client'      => $client,
+        ];
+    }
+
+    /**
      * Standalone function to find a person by email and apply a tag (string)
      */
     public static function addTag($email, $tag)
     {
         global $joinBlockLog;
         try {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
-            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+            $zetkinContext = self::getZetkinContext();
+            if (!$zetkinContext) {
+                return;
+            }
 
-            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
-            $client = new \GuzzleHttp\Client();
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
                     "Authorization" => "Bearer {$accessToken}",
@@ -290,12 +446,14 @@ class ZetkinService
             }
 
             $people = $responseData["data"] ?? [];
+            $matched = array_filter($people, fn($p) => $p["email"] === $email);
+            if (empty($matched)) {
+                $joinBlockLog->warning("Could not add tag '$tag' in Zetkin: no person found for $email");
+                return;
+            }
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
-            foreach ($people as $person) {
-                if ($person["email"] !== $email) {
-                    continue;
-                }
+            foreach ($matched as $person) {
                 $personId = $person["id"];
                 $tagId = $existingTag["id"];
                 $response = $client->request("PUT", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
@@ -306,14 +464,13 @@ class ZetkinService
                 ]);
                 $responseData = json_decode($response->getBody()->getContents(), true);
                 if (!empty($responseData["error"])) {
-                    $msg = $responseData["error"]["title"] ?? "";
-                    if ($msg !== "404 Not Found") {
-                        $joinBlockLog->error("Could not untag person: " . json_encode($responseData["error"]));
-                    }
+                    $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . json_encode($responseData["error"]));
+                } else {
+                    $joinBlockLog->info("Added tag '$tag' to $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Could not tag $email in Zetkin with $tag: " . $e->getMessage());
+            $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . $e->getMessage());
         }
     }
 
@@ -324,14 +481,13 @@ class ZetkinService
     {
         global $joinBlockLog;
         try {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            $baseUrl = (Settings::get("ZETKIN_ENVIRONMENT") === "live") ? "https://api.zetk.in/v1" : "http://api.dev.zetkin.org/v1";
-            $orgId = Settings::get("ZETKIN_ORGANISATION_ID");
+            $zetkinContext = self::getZetkinContext();
+            if (!$zetkinContext) {
+                return;
+            }
 
-            $accessToken = self::getAccessToken($baseUrl, $clientId, $clientSecret, $jwt);
-            $client = new \GuzzleHttp\Client();
+            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
             $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
                 "headers" => [
                     "Authorization" => "Bearer {$accessToken}",
@@ -348,12 +504,14 @@ class ZetkinService
             }
 
             $people = $responseData["data"] ?? [];
+            $matched = array_filter($people, fn($p) => $p["email"] === $email);
+            if (empty($matched)) {
+                $joinBlockLog->warning("Could not remove tag '$tag' in Zetkin: no person found for $email");
+                return;
+            }
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
-            foreach ($people as $person) {
-                if ($person["email"] !== $email) {
-                    continue;
-                }
+            foreach ($matched as $person) {
                 $personId = $person["id"];
                 $tagId = $existingTag["id"];
                 $response = $client->request("DELETE", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
@@ -363,13 +521,18 @@ class ZetkinService
                     ],
                     "http_errors" => false
                 ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                if (!empty($responseData["error"])) {
-                    $joinBlockLog->error("Could not tag person: " . json_encode($responseData["error"]));
+                $statusCode = $response->getStatusCode();
+                if ($statusCode === 404) {
+                    $joinBlockLog->info("Could not remove tag '$tag' from $email in Zetkin: tag does not exist");
+                } elseif ($statusCode >= 400) {
+                    $responseData = json_decode($response->getBody()->getContents(), true);
+                    $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . json_encode($responseData["error"] ?? $statusCode));
+                } else {
+                    $joinBlockLog->info("Removed tag '$tag' from $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Could not tag $email in Zetkin with $tag: " . $e->getMessage());
+            $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . $e->getMessage());
         }
     }
 

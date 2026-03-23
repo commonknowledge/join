@@ -9,7 +9,9 @@
  * License: GPLv2 or later
  */
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
@@ -24,6 +26,7 @@ use CommonKnowledge\JoinBlock\Services\ActionNetworkService;
 use CommonKnowledge\JoinBlock\Services\GocardlessService;
 use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
+use CommonKnowledge\JoinBlock\Services\ZetkinService;
 use CommonKnowledge\JoinBlock\Settings;
 
 Logging::init();
@@ -154,9 +157,9 @@ add_action('rest_api_init', function () {
 
             /**
              * Action: ck_join_flow_step
-             * 
+             *
              * Fired after step data is processed. Use for side effects like analytics or logging.
-             * 
+             *
              * @param array           $data    Form data submitted
              * @param WP_REST_Request $request REST request object
              */
@@ -164,15 +167,15 @@ add_action('rest_api_init', function () {
 
             /**
              * Filter: ck_join_flow_step_response
-             * 
+             *
              * Modify the response returned to the frontend.
              * Can block form progression with custom error message.
-             * 
+             *
              * @param array           $response Response data ['status' => 'ok']
              * @param array           $data     Form data submitted
              * @param WP_REST_Request $request  REST request object
              * @return array Modified response. Set status to 'blocked' with 'message' to stop progression.
-             * 
+             *
              * Example: Block users outside coverage area
              * add_filter('ck_join_flow_step_response', function($response, $data) {
              *     if (!in_coverage_area($data['addressPostcode'])) {
@@ -235,16 +238,16 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Filter: ck_join_flow_postcode_validation
-                 * 
+                 *
                  * Validate postcode and optionally reject it with custom message.
                  * Return modified response with status 'bad_postcode' and message to reject.
-                 * 
+                 *
                  * @param array           $response  ['status' => 'ok', 'data' => $addresses]
                  * @param string          $postcode  The postcode
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
                  * @return array Modified response
-                 * 
+                 *
                  * Example: Geographic restriction
                  * add_filter('ck_join_flow_postcode_validation', function($response, $postcode) {
                  *     if (!in_supported_region($postcode)) {
@@ -271,10 +274,10 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Action: ck_join_flow_postcode_lookup
-                 * 
+                 *
                  * Fired after successful postcode lookup (validation passed).
                  * Use for side effects like analytics or logging.
-                 * 
+                 *
                  * @param string          $postcode  The postcode looked up
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
@@ -283,16 +286,16 @@ add_action('rest_api_init', function () {
 
                 /**
                  * Filter: ck_join_flow_postcode_response
-                 * 
+                 *
                  * Enrich successful responses with additional data or messages.
                  * Can add 'message' field for positive information like local branch details.
-                 * 
+                 *
                  * @param array           $response  Current response ['status' => 'ok', 'data' => $addresses]
                  * @param string          $postcode  The postcode
                  * @param array           $addresses Addresses found
                  * @param WP_REST_Request $request   REST request object
                  * @return array Modified response (can include 'message' field)
-                 * 
+                 *
                  * Example: Show local branch
                  * add_filter('ck_join_flow_postcode_response', function($response, $postcode) {
                  *     if ($response['status'] !== 'ok') return $response;
@@ -699,5 +702,198 @@ if (defined('WP_CLI') && WP_CLI) {
             }
         }
     });
-}
 
+    /**
+     * Backfill command: ensure every Stripe customer created in the last 3 months
+     * is present in Zetkin and Mailchimp with the correct membership tags.
+     *
+     * For each customer the command:
+     *  1. Locates their active Stripe subscription and maps it to a known membership plan.
+     *  2. Checks whether they already exist in Zetkin/Mailchimp.
+     *  3. Creates them in any service where they are absent, applying the plan tags.
+     *
+     * Customers whose active subscription does not match a known membership plan price
+     * are skipped with a warning.
+     *
+     * Usage: wp join backfill_stripe_to_zetkin_mailchimp [--dry-run]
+     */
+    WP_CLI::add_command('join backfill_stripe_to_zetkin_mailchimp', function ($args, $assocArgs) {
+        global $joinBlockLog;
+
+        $dryRun = !empty($assocArgs['dry-run']);
+        if ($dryRun) {
+            WP_CLI::log("DRY RUN — no changes will be written.");
+        }
+
+        StripeService::initialise();
+
+        $useZetkin = Settings::get("USE_ZETKIN");
+        $useMailchimp = Settings::get("USE_MAILCHIMP");
+
+        if (!$useZetkin && !$useMailchimp) {
+            WP_CLI::error("Neither USE_ZETKIN nor USE_MAILCHIMP is enabled. Nothing to sync.");
+            return;
+        }
+
+        // Load membership plan data (Stripe price ID → plan) from a local file
+        // that is not committed to Git. See backfill-plans.example.php for the format.
+        $plansFile = __DIR__ . '/backfill-plans.php';
+        if (!file_exists($plansFile)) {
+            WP_CLI::error(
+                "backfill-plans.php not found. Copy backfill-plans.example.php to " .
+                "backfill-plans.php and populate it with your Stripe price IDs before running this command."
+            );
+            return;
+        }
+        $plansByPriceId = require $plansFile;
+
+        $since = strtotime('-3 months');
+        $customers = StripeService::getCustomers(['created' => ['gte' => $since]]);
+        $total = count($customers);
+        WP_CLI::log("Found $total Stripe customers created since " . date('Y-m-d', $since) . ".");
+
+        $synced = 0;
+        $skipped = 0;
+        $errors = 0;
+        $zetkinCreated = 0;
+        $mailchimpCreated = 0;
+        $createdRecords = []; // [ ['email' => ..., 'plan' => ..., 'zetkin' => bool, 'mailchimp' => bool] ]
+
+        foreach ($customers as $customer) {
+            $email = $customer->email;
+            if (!$email) {
+                WP_CLI::log("Skipping customer {$customer->id} — no email address.");
+                $skipped++;
+                continue;
+            }
+
+            // Resolve membership plan from active subscription.
+            $plan = null;
+            $subscribedAt = null;
+            try {
+                $subscriptions = \Stripe\Subscription::all([
+                    'customer' => $customer->id,
+                    'status'   => 'active',
+                    'limit'    => 10,
+                ]);
+                foreach ($subscriptions->data as $sub) {
+                    foreach ($sub->items->data as $item) {
+                        $priceId = $item->price->id;
+                        if (isset($plansByPriceId[$priceId])) {
+                            $plan = $plansByPriceId[$priceId];
+                            $subscribedAt = date('d/m/Y', $sub->created);
+                            break 2;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                WP_CLI::warning("Could not fetch subscriptions for $email: " . $e->getMessage());
+                $errors++;
+                continue;
+            }
+
+            if (!$plan) {
+                WP_CLI::log("Skipping $email — no active subscription matches a known membership plan price.");
+                $skipped++;
+                continue;
+            }
+
+            // Build signup data from Stripe customer fields (empty strings where unavailable).
+            $customerArray = $customer->toArray();
+            $personData = StripeService::extractPersonDataFromStripeCustomer($customerArray);
+            $address = $customerArray['address'] ?? [];
+
+            $signupData = [
+                'email'              => $email,
+                'firstName'          => $personData['first_name'] ?? '',
+                'lastName'           => $personData['last_name'] ?? '',
+                'phoneNumber'        => $personData['phone'] ?? '',
+                'addressLine1'       => $personData['street_address'] ?? '',
+                'addressLine2'       => $personData['co_address'] ?? '',
+                'addressCity'        => $personData['city'] ?? '',
+                'addressPostcode'    => $personData['zip_code'] ?? '',
+                'addressCountry'     => $personData['country'] ?? '',
+                'membership'         => $plan['slug'],
+                'membershipPlan'     => $plan,
+                'isUpdateFlow'       => false,
+                'customFieldsConfig' => [],
+            ];
+
+            WP_CLI::log("Processing $email ({$plan['label']}, subscribed $subscribedAt) ...");
+
+            $addedToZetkin = false;
+            $addedToMailchimp = false;
+
+            if ($useZetkin) {
+                try {
+                    $zetkinPerson = ZetkinService::findPersonByEmail($email);
+                    if (!$zetkinPerson) {
+                        WP_CLI::log("  Zetkin: not found — " . ($dryRun ? "would create" : "creating") . ".");
+                        if (!$dryRun) {
+                            ZetkinService::signup($signupData);
+                        }
+                        $zetkinCreated++;
+                        $addedToZetkin = true;
+                    } else {
+                        WP_CLI::log("  Zetkin: already present (ID {$zetkinPerson['id']}) — skipping.");
+                    }
+                } catch (\Exception $e) {
+                    WP_CLI::warning("  Zetkin error for $email: " . $e->getMessage());
+                    $joinBlockLog->error("Backfill Zetkin error for $email: " . $e->getMessage());
+                    $errors++;
+                }
+            }
+
+            if ($useMailchimp) {
+                try {
+                    $exists = MailchimpService::memberExists($email);
+                    if (!$exists) {
+                        WP_CLI::log("  Mailchimp: not found — " . ($dryRun ? "would subscribe" : "subscribing") . ".");
+                        if (!$dryRun) {
+                            MailchimpService::signup($signupData);
+                        }
+                        $mailchimpCreated++;
+                        $addedToMailchimp = true;
+                    } else {
+                        WP_CLI::log("  Mailchimp: already present — skipping.");
+                    }
+                } catch (\Exception $e) {
+                    WP_CLI::warning("  Mailchimp error for $email: " . $e->getMessage());
+                    $joinBlockLog->error("Backfill Mailchimp error for $email: " . $e->getMessage());
+                    $errors++;
+                }
+            }
+
+            if ($addedToZetkin || $addedToMailchimp) {
+                $createdRecords[] = [
+                    'email'     => $email,
+                    'plan'      => $plan['label'],
+                    'date'      => $subscribedAt,
+                    'zetkin'    => $addedToZetkin,
+                    'mailchimp' => $addedToMailchimp,
+                ];
+            }
+
+            $synced++;
+        }
+
+        WP_CLI::success(
+            "Backfill complete. Processed: $synced | Skipped: $skipped | Errors: $errors" .
+            ($useZetkin    ? " | Zetkin created: $zetkinCreated"          : "") .
+            ($useMailchimp ? " | Mailchimp subscribed: $mailchimpCreated" : "")
+        );
+
+        if (!empty($createdRecords)) {
+            WP_CLI::log("");
+            WP_CLI::log("--- Members added" . ($dryRun ? " (dry run)" : "") . " ---");
+            foreach ($createdRecords as $record) {
+                $services = implode(', ', array_filter([
+                    $record['zetkin']    ? 'Zetkin'    : null,
+                    $record['mailchimp'] ? 'Mailchimp' : null,
+                ]));
+                WP_CLI::log("  {$record['email']} — {$record['plan']}, subscribed {$record['date']} — added to: $services");
+            }
+            WP_CLI::log("---");
+        }
+    });
+}

@@ -4,6 +4,7 @@ namespace CommonKnowledge\JoinBlock\Services;
 
 if (! defined('ABSPATH')) exit; // Exit if accessed directly
 
+use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
 use Stripe\Stripe;
 use Stripe\Customer;
@@ -17,7 +18,7 @@ class StripeService
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
     }
 
-    public static function getCustomers()
+    public static function getCustomers($extraParams = [])
     {
         global $joinBlockLog;
 
@@ -25,7 +26,7 @@ class StripeService
         $starting_after = null;
 
         do {
-            $params = ['limit' => 100];
+            $params = array_merge(['limit' => 100], $extraParams);
             if ($starting_after) {
                 $params['starting_after'] = $starting_after;
             }
@@ -524,12 +525,75 @@ class StripeService
         ];
     }
 
+    /**
+     * Extract Zetkin person fields from a Stripe Customer object.
+     *
+     * @param array $customer Stripe Customer array
+     * @return array Person data fields (only non-empty values)
+     */
+    private static function splitFullName($name)
+    {
+        if (empty($name)) {
+            return [];
+        }
+        return explode(' ', trim($name), 2);
+    }
+
+    public static function extractPersonDataFromStripeCustomer($customer)
+    {
+        $nameParts = self::splitFullName($customer['name'] ?? null);
+        $address = $customer['address'] ?? [];
+
+        return Helpers::removeNullOrEmpty([
+            'first_name'     => $nameParts[0] ?? null,
+            'last_name'      => $nameParts[1] ?? null,
+            'phone'          => $customer['phone'] ?? null,
+            'street_address' => $address['line1'] ?? null,
+            'co_address'     => $address['line2'] ?? null,
+            'city'           => $address['city'] ?? null,
+            'zip_code'       => $address['postal_code'] ?? null,
+            'country'        => $address['country'] ?? null,
+        ]);
+    }
+
+    /**
+     * Extract Mailchimp merge fields from a Stripe Customer object.
+     *
+     * @param array $customer Stripe Customer array
+     * @return array Mailchimp merge fields (only non-empty values)
+     */
+    public static function extractMailchimpMergeFieldsFromStripeCustomer($customer)
+    {
+        $nameParts = self::splitFullName($customer['name'] ?? null);
+        $address = $customer['address'] ?? [];
+
+        $mergeFields = Helpers::removeNullOrEmpty([
+            'FNAME' => $nameParts[0] ?? null,
+            'LNAME' => $nameParts[1] ?? null,
+            'PHONE' => $customer['phone'] ?? null,
+        ]);
+
+        if (!empty($address['line1'])) {
+            $mergeFields['ADDRESS'] = [
+                'addr1'   => $address['line1'] ?? '',
+                'addr2'   => $address['line2'] ?? '',
+                'city'    => $address['city'] ?? '',
+                'state'   => $address['state'] ?? '',
+                'zip'     => $address['postal_code'] ?? '',
+                'country' => $address['country'] ?? '',
+            ];
+        }
+
+        return $mergeFields;
+    }
+
     public static function handleWebhook($event)
     {
         global $joinBlockLog;
 
         $customerId = null;
         $customerLapsed = false;
+        $lapseTrigger = null;
 
         try {
             switch ($event['type']) {
@@ -566,6 +630,7 @@ class StripeService
                     $joinBlockLog->info("Subscription cancelled for Stripe customer $customerId");
                     if (!empty($subscription['customer'])) {
                         $customerLapsed = true;
+                        $lapseTrigger = 'subscription_deleted';
                     }
                     break;
 
@@ -577,6 +642,7 @@ class StripeService
                         $joinBlockLog->warning("Final payment attempt failed for Stripe customer $customerId. No retries will be attempted.");
                         if (!empty($invoice['customer'])) {
                             $customerLapsed = true;
+                            $lapseTrigger = 'invoice_payment_failed';
                         }
                     } else {
                         $joinBlockLog->info("Payment failed for Stripe customer $customerId, retry scheduled.");
@@ -590,7 +656,146 @@ class StripeService
                     if (!empty($invoice['customer'])) {
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
-                            JoinService::toggleMemberLapsed($email, false);
+                            $context = ['provider' => 'stripe', 'trigger' => 'invoice_paid', 'event' => $event];
+                            if (JoinService::shouldUnlapseMember($email, $context)) {
+                                JoinService::toggleMemberLapsed($email, false, null, $context);
+                            }
+                        }
+                    }
+                    break;
+
+                case 'customer.updated':
+                    $customer = $event['data']['object'] ?? null;
+                    $previousAttributes = $event['data']['previous_attributes'] ?? [];
+
+                    if (!$customer || empty($customer['email'])) {
+                        $joinBlockLog->warning("customer.updated event received with no email, skipping");
+                        return;
+                    }
+
+                    $email = $customer['email'];
+                    $previousEmail = $previousAttributes['email'] ?? null;
+
+                    $joinBlockLog->info("Syncing updated customer details for Stripe customer {$customer['id']} ($email)");
+
+                    $personData = self::extractPersonDataFromStripeCustomer($customer);
+                    $mergeFields = self::extractMailchimpMergeFieldsFromStripeCustomer($customer);
+
+                    if (Settings::get("USE_ZETKIN") && (!empty($personData) || $previousEmail)) {
+                        try {
+                            ZetkinService::updatePerson($email, $personData, $previousEmail);
+                        } catch (\Exception $e) {
+                            $joinBlockLog->error("Zetkin error syncing customer.updated for $email: " . $e->getMessage());
+                        }
+                    }
+
+                    if (Settings::get("USE_MAILCHIMP") && (!empty($mergeFields) || $previousEmail)) {
+                        try {
+                            MailchimpService::updateMember($email, $mergeFields, $previousEmail);
+                        } catch (\Exception $e) {
+                            $joinBlockLog->error("Mailchimp error syncing customer.updated for $email: " . $e->getMessage());
+                        }
+                    }
+                    break;
+
+                case 'customer.subscription.updated':
+                    $subscription = $event['data']['object'] ?? null;
+                    $previousAttributes = $event['data']['previous_attributes'] ?? [];
+
+                    if (!$subscription) {
+                        break;
+                    }
+
+                    $previousStatus = $previousAttributes['status'] ?? null;
+                    $currentStatus = $subscription['status'] ?? null;
+                    $email = null;
+
+                    // Only act on status changes not already covered by invoice events
+                    if ($previousStatus && $previousStatus !== $currentStatus) {
+                        $cid = $subscription['customer'];
+                        $email = self::getEmailForCustomer($cid);
+
+                        if ($email) {
+                            $activeStatuses = ['active', 'trialing'];
+                            $lapsedStatuses = ['unpaid', 'incomplete_expired'];
+
+                            $wasActive = in_array($previousStatus, $activeStatuses);
+                            $isNowActive = in_array($currentStatus, $activeStatuses);
+                            $isNowLapsed = in_array($currentStatus, $lapsedStatuses);
+
+                            if (!$wasActive && $isNowActive) {
+                                $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
+                                $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
+                                if (JoinService::shouldUnlapseMember($email, $context)) {
+                                    JoinService::toggleMemberLapsed($email, false, null, $context);
+                                }
+                            } elseif ($isNowLapsed) {
+                                $joinBlockLog->info("Subscription lapsed for $email ($previousStatus -> $currentStatus)");
+                                $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
+                                if (JoinService::shouldLapseMember($email, $context)) {
+                                    JoinService::toggleMemberLapsed($email, true, null, $context);
+                                }
+                            }
+                        }
+                    }
+
+                    $priceChange = self::extractPriceChange($event);
+                    if ($priceChange) {
+                        $email = $email ?? self::getEmailForCustomer($subscription['customer']);
+                        if (!$email) {
+                            $joinBlockLog->warning("Tier change detected but could not resolve email for customer {$subscription['customer']}");
+                            break;
+                        }
+
+                        ['previousPriceId' => $previousPriceId, 'currentPriceId' => $currentPriceId] = $priceChange;
+                        $newPlan = Settings::getMembershipPlanByPriceId($currentPriceId);
+                        $oldPlan = Settings::getMembershipPlanByPriceId($previousPriceId);
+
+                        if (!$newPlan) {
+                            $joinBlockLog->warning("Tier change for $email: new price $currentPriceId does not match any known membership plan. Tag changes skipped.");
+                            break;
+                        }
+
+                        if (!$oldPlan) {
+                            $joinBlockLog->warning("Tier change for $email: old price $previousPriceId not found — old tier tags will not be removed.");
+                        }
+
+                        ['addTags' => $addTags, 'removeTags' => $removeTags] = self::resolveTierTagChanges($newPlan, $oldPlan);
+
+                        $joinBlockLog->info("Tier change for $email ({$newPlan['label']}): add=[" . implode(',', $addTags) . "] remove=[" . implode(',', $removeTags) . "]");
+
+                        if (Settings::get('USE_ZETKIN')) {
+                            foreach ($addTags as $tag) {
+                                try {
+                                    ZetkinService::addTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Zetkin addTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                            foreach ($removeTags as $tag) {
+                                try {
+                                    ZetkinService::removeTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Zetkin removeTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                        }
+
+                        if (Settings::get('USE_MAILCHIMP')) {
+                            foreach ($addTags as $tag) {
+                                try {
+                                    MailchimpService::addTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Mailchimp addTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
+                            foreach ($removeTags as $tag) {
+                                try {
+                                    MailchimpService::removeTag($email, $tag);
+                                } catch (\Exception $e) {
+                                    $joinBlockLog->error("Mailchimp removeTag($tag) for $email: " . $e->getMessage());
+                                }
+                            }
                         }
                     }
                     break;
@@ -603,7 +808,10 @@ class StripeService
             if ($customerLapsed) {
                 $email = self::getEmailForCustomer($customerId);
                 if ($email) {
-                    JoinService::toggleMemberLapsed($email, true);
+                    $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
+                    if (JoinService::shouldLapseMember($email, $context)) {
+                        JoinService::toggleMemberLapsed($email, true, null, $context);
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -619,5 +827,33 @@ class StripeService
             return null;
         }
         return $customer->email;
+    }
+
+    private static function resolveTierTagChanges(array $newPlan, ?array $oldPlan): array
+    {
+        $parseTags = fn($str) => array_filter(array_map('trim', explode(',', $str ?? '')), fn($t) => $t !== '');
+
+        $addTags    = array_values($parseTags($newPlan['add_tags'] ?? ''));
+        $removeTags = array_values($parseTags($newPlan['remove_tags'] ?? ''));
+
+        if ($oldPlan) {
+            $removeTags = array_unique(array_merge($removeTags, $parseTags($oldPlan['add_tags'] ?? '')));
+            $removeTags = array_values(array_diff($removeTags, $addTags));
+        }
+
+        return ['addTags' => $addTags, 'removeTags' => $removeTags];
+    }
+
+    private static function extractPriceChange(array $event): ?array
+    {
+        $previousAttributes = $event['data']['previous_attributes'] ?? [];
+        $previousPriceId = $previousAttributes['items']['data'][0]['price']['id'] ?? null;
+        $currentPriceId  = $event['data']['object']['items']['data'][0]['price']['id'] ?? null;
+
+        if (!$previousPriceId || !$currentPriceId || $previousPriceId === $currentPriceId) {
+            return null;
+        }
+
+        return ['previousPriceId' => $previousPriceId, 'currentPriceId' => $currentPriceId];
     }
 }
