@@ -230,8 +230,9 @@ class JoinService
                 MailchimpService::signup($data);
                 $joinBlockLog->info("Completed Mailchimp signup request for $email");
             } catch (\Exception $exception) {
+                // A Mailchimp failure should not block a successful join.
+                // The member record can be retro-added to Mailchimp once the underlying issue is resolved.
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-                throw $exception;
             }
         }
 
@@ -398,7 +399,6 @@ class JoinService
                 $joinBlockLog->info("$done member $email as lapsed in Mailchimp");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-                throw $exception;
             }
         }
 
