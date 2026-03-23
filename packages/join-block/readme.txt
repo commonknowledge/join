@@ -112,7 +112,7 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 * Supporter mode: donation frequency (monthly/one-off) and tier selection driven by block-level membership plans
 * Supporter mode: one-off donations processed via Stripe invoice item; recurring donations added as a second subscription item
 * Supporter mode: GoCardless recurring donations added to the DD subscription total; one-off toggle disabled with explanation when Stripe is unavailable
-* Fix: donation amount and recurDonation submitted as native types (number/boolean) rather than strings
+* Supporter mode: donation amount and frequency submitted as correct native types to the payment backend
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
 * Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps.
