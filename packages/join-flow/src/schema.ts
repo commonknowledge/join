@@ -216,7 +216,9 @@ export const getPaymentFrequency = (membership: string | undefined) => {
 
 export const renderPaymentMethod = ({
   paymentMethod,
-  membership
+  membership,
+  recurDonation,
+  donationSupporterMode,
 }: FormSchema) => {
   let paymentFormat = "None";
 
@@ -226,6 +228,11 @@ export const renderPaymentMethod = ({
 
   if (paymentMethod === "directDebit") {
     paymentFormat = "Direct Debit";
+  }
+
+  // One-off supporter donations have no recurring frequency
+  if (donationSupporterMode && !recurDonation) {
+    return paymentFormat;
   }
 
   const frequency = getPaymentFrequency(membership);
