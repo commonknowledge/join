@@ -111,7 +111,7 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 * Add Donation Supporter Mode: a new block setting that puts donation first, before personal details and payment, skipping the membership plan step entirely
 * Supporter mode: donation frequency (monthly/one-off) and tier selection driven by block-level membership plans
 * Supporter mode: one-off donations processed via Stripe invoice item; recurring donations added as a second subscription item
-* Supporter mode: GoCardless recurring donations added to the DD subscription total; one-off toggle disabled with explanation when Stripe is unavailable
+* Supporter mode: GoCardless recurring donations added to the Direct Debit subscription total; one-off toggle disabled with explanation when Stripe is unavailable
 * Supporter mode: donation amount and frequency submitted as correct native types to the payment backend
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
