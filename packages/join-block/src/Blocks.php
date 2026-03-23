@@ -176,7 +176,8 @@ class Blocks
                 Field::make('checkbox', 'hide_address')
                     ->set_help_text('Check to completely hide the address section from the form.'),
                 Field::make('checkbox', 'require_phone_number')->set_default_value(true),
-                Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'ask_for_additional_donation')
+                    ->set_help_text('Has no effect when Donation Supporter Mode is enabled.'),
                 Field::make('checkbox', 'donation_supporter_mode')
                     ->set_help_text(
                         'Enable Supporter Mode: shows donation frequency and amount first, ' .
