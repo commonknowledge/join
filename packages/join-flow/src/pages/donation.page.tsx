@@ -53,6 +53,14 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   const otherDonationAmount = form.watch("otherDonationAmount");
 
   const handleSubmit = form.handleSubmit((formData) => {
+    if (supporterMode) {
+      const amount = (formData.otherDonationAmount != null && formData.otherDonationAmount !== "")
+        ? Number(formData.otherDonationAmount)
+        : selectedTier;
+      delete formData.otherDonationAmount;
+      onCompleted({ ...formData, donationAmount: amount, recurDonation: isMonthly });
+      return;
+    }
     if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
       formData.donationAmount = formData.otherDonationAmount;
       delete formData.otherDonationAmount;
@@ -82,10 +90,6 @@ export const DonationPage: StagerComponent<FormSchema> = ({
 
     return (
       <form className="form-content" onSubmit={handleSubmit}>
-        {/* Hidden registered inputs so values appear in handleSubmit data */}
-        <input type="hidden" name="donationAmount" ref={form.register} defaultValue={selectedTier} />
-        <input type="hidden" name="recurDonation" ref={form.register} defaultValue={isMonthly ? "true" : "false"} />
-
         <div className="form-section">
           <legend className="text-md">
             <h2>Support us</h2>
