@@ -62,6 +62,7 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     mockGetEnv.mockImplementation((key: string) => {
       if (key === 'DONATION_SUPPORTER_MODE') return true;
       if (key === 'MEMBERSHIP_PLANS') return MOCK_PLANS;
+      if (key === 'USE_STRIPE') return true;
       return false;
     });
   });
@@ -169,5 +170,31 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     const submitted = mockOnCompleted.mock.calls[0][0];
     expect(typeof submitted.donationAmount).toBe('number');
     expect(submitted.donationAmount).toBe(5);
+  });
+});
+
+describe('DonationPage — supporter mode, GoCardless only (USE_STRIPE off)', () => {
+  beforeEach(() => {
+    mockGetEnv.mockImplementation((key: string) => {
+      if (key === 'DONATION_SUPPORTER_MODE') return true;
+      if (key === 'MEMBERSHIP_PLANS') return MOCK_PLANS;
+      if (key === 'USE_STRIPE') return false;
+      return false;
+    });
+  });
+
+  test('One-off button is disabled', () => {
+    renderDonationPage();
+    expect(screen.getByText('One-off').closest('button')).toBeDisabled();
+  });
+
+  test('shows explanation that one-off donations are not available', () => {
+    renderDonationPage();
+    expect(screen.getByText(/one-off donations are not available/i)).toBeInTheDocument();
+  });
+
+  test('Monthly button remains enabled', () => {
+    renderDonationPage();
+    expect(screen.getByText('Monthly').closest('button')).not.toBeDisabled();
   });
 });
