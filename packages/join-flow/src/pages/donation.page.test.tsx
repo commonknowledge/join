@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DonationPage } from './donation.page';
 
@@ -135,5 +135,39 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
 
     // Same selected tier (£5), now one-off
     expect(screen.getByText(/Donate £5 now/i)).toBeInTheDocument();
+  });
+
+  test('submitting monthly calls onCompleted with recurDonation as native boolean true', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText(/Donate £5\/month/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(typeof submitted.recurDonation).toBe('boolean');
+    expect(submitted.recurDonation).toBe(true);
+  });
+
+  test('submitting one-off calls onCompleted with recurDonation as native boolean false', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText('One-off'));
+    fireEvent.click(screen.getByText(/Donate £5 now/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(typeof submitted.recurDonation).toBe('boolean');
+    expect(submitted.recurDonation).toBe(false);
+  });
+
+  test('submitting calls onCompleted with donationAmount as a number', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText(/Donate £5\/month/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(typeof submitted.donationAmount).toBe('number');
+    expect(submitted.donationAmount).toBe(5);
   });
 });
