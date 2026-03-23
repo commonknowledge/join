@@ -31,7 +31,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     : [5, 10, 15, 20];
 
   const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
-  const oneOffAvailable = Boolean(getEnv("USE_STRIPE"));
+  const oneOffAvailable = Boolean(getEnv("USE_STRIPE")) && !Boolean(getEnv("STRIPE_DIRECT_DEBIT_ONLY"));
 
   const membershipPlans = (getEnv("MEMBERSHIP_PLANS") as any[]) || [];
   const supporterTiers: number[] = membershipPlans.map((p) => Number(p.amount)).filter((n) => n > 0);
@@ -69,8 +69,12 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         ...formData,
         membership: resolvedPlan?.value ?? formData.membership,
         ...(!matchingPlan && resolvedPlan?.allowCustomAmount ? { customMembershipAmount: amount } : {}),
-        donationAmount: 0,
+        // Recurring: plan price IS the donation — no separate donationAmount item needed
+        // One-off: no subscription is created, so pass the amount for the PaymentIntent
+        donationAmount: isMonthly ? 0 : amount,
         recurDonation: isMonthly,
+        // One-off payments require card — override any stale directDebit from session
+        ...(!isMonthly ? { paymentMethod: "creditCard" } : {}),
       });
       return;
     }
