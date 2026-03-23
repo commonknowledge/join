@@ -78,6 +78,11 @@ class StripeService
         if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
             $product = self::getOrCreateProductForMembershipTier($plan, $isSupporterMode);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
+        } elseif ($isSupporterMode) {
+            // Ensure the product name uses the "Donation:" prefix.
+            // Products are created during plan save (before supporter mode context is known),
+            // so this call triggers a rename if the name still has the "Membership:" prefix.
+            self::getOrCreateProductForMembershipTier($plan, true);
         }
 
         $items = [['price' => $priceId]];
