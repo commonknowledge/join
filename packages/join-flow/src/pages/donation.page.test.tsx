@@ -161,15 +161,36 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
     expect(submitted.recurDonation).toBe(false);
   });
 
-  test('submitting calls onCompleted with donationAmount as a number', async () => {
+  test('submitting calls onCompleted with donationAmount 0 (plan price is the donation)', async () => {
     renderDonationPage();
 
     fireEvent.click(screen.getByText(/Donate £5\/month/i));
 
     await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
     const submitted = mockOnCompleted.mock.calls[0][0];
-    expect(typeof submitted.donationAmount).toBe('number');
-    expect(submitted.donationAmount).toBe(5);
+    expect(submitted.donationAmount).toBe(0);
+  });
+
+  test('submitting with default tier calls onCompleted with membership matching that tier', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText(/Donate £5\/month/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.membership).toBe('plan-a');
+  });
+
+  test('selecting a different tier and submitting calls onCompleted with matching membership', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText('£10'));
+    fireEvent.click(screen.getByText(/Donate £10\/month/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.membership).toBe('plan-b');
+    expect(submitted.donationAmount).toBe(0);
   });
 });
 

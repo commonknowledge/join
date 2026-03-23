@@ -58,7 +58,20 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         ? Number(formData.otherDonationAmount)
         : selectedTier;
       delete formData.otherDonationAmount;
-      onCompleted({ ...formData, donationAmount: amount, recurDonation: isMonthly });
+
+      // Find the plan whose amount matches the selected tier.
+      // The plan price IS the donation — no separate donationAmount item should be created.
+      const matchingPlan = membershipPlans.find((p: any) => Number(p.amount) === amount);
+      const fallbackPlan = membershipPlans.find((p: any) => p.allowCustomAmount) ?? membershipPlans[0];
+      const resolvedPlan = matchingPlan ?? fallbackPlan;
+
+      onCompleted({
+        ...formData,
+        membership: resolvedPlan?.value ?? formData.membership,
+        ...(!matchingPlan && resolvedPlan?.allowCustomAmount ? { customMembershipAmount: amount } : {}),
+        donationAmount: 0,
+        recurDonation: isMonthly,
+      });
       return;
     }
     if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
