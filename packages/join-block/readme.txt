@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.3.18
+Stable tag: 1.4.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,12 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.0 =
+* Add Donation Supporter Mode: a new block setting that puts donation first, before personal details and payment, skipping the membership plan step entirely
+* Supporter mode: donation frequency (monthly/one-off) and tier selection driven by block-level membership plans
+* Supporter mode: one-off donations processed via Stripe invoice item; recurring donations added as a second subscription item
+* Supporter mode: GoCardless recurring donations added to the DD subscription total; one-off toggle disabled with explanation when Stripe is unavailable
+* Fix: donation amount and recurDonation submitted as native types (number/boolean) rather than strings
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
 * Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps.
