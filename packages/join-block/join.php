@@ -504,7 +504,8 @@ add_action('rest_api_init', function () {
                     $plan,
                     $data["customMembershipAmount"] ?? null,
                     $data["donationAmount"] ?? null,
-                    $data["recurDonation"] ?? false
+                    $data["recurDonation"] ?? false,
+                    !empty($data["donationSupporterMode"])
                 );
 
                 return $subscription;
@@ -552,7 +553,8 @@ add_action('rest_api_init', function () {
                 $plan,
                 $data["customMembershipAmount"] ?? null,
                 $data["donationAmount"] ?? null,
-                $data["recurDonation"] ?? false
+                $data["recurDonation"] ?? false,
+                !empty($data["donationSupporterMode"])
             );
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);

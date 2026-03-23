@@ -399,7 +399,7 @@ const getInitialState = (): FormSchema => {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
-    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true } : {}),
+    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true, donationSupporterMode: true } : {}),
     ...getSavedState(),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv("IS_UPDATE_FLOW"),

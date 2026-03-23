@@ -70,13 +70,13 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false)
+    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false, $isSupporterMode = false)
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
         $minAmount = (float) $plan["amount"];
         if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
-            $product = self::getOrCreateProductForMembershipTier($plan);
+            $product = self::getOrCreateProductForMembershipTier($plan, $isSupporterMode);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         }
 
@@ -328,13 +328,14 @@ class StripeService
         return [$newOrExistingProduct, $newOrExistingPrice];
     }
 
-    public static function getOrCreateProductForMembershipTier($membershipPlan)
+    public static function getOrCreateProductForMembershipTier($membershipPlan, $isSupporterMode = false)
     {
         global $joinBlockLog;
 
         $tierID = Settings::getMembershipPlanId($membershipPlan);
 
         $tierDescription = $membershipPlan['description'];
+        $productPrefix = $isSupporterMode ? 'Donation' : 'Membership';
 
         try {
             $joinBlockLog->info("Searching for existing Stripe product for membership tier '{$tierID}'");
@@ -351,10 +352,10 @@ class StripeService
                 $needsUpdate = false;
                 $updateData = [];
 
-                if ($existingProduct->name !== "Membership: {$membershipPlan['label']}") {
+                if ($existingProduct->name !== "{$productPrefix}: {$membershipPlan['label']}") {
                     $joinBlockLog->info("Name changed, updating existing product for membership tier '{$tierID}'");
 
-                    $updateData['name'] = "Membership: {$membershipPlan['label']}";
+                    $updateData['name'] = "{$productPrefix}: {$membershipPlan['label']}";
                     $needsUpdate = true;
                 }
 
@@ -377,7 +378,7 @@ class StripeService
             $joinBlockLog->info("No existing product found for membership tier '{$tierID}', creating new product");
 
             $stripeProduct = [
-                'name' => "Membership: {$membershipPlan['label']}",
+                'name' => "{$productPrefix}: {$membershipPlan['label']}",
                 'type' => 'service',
                 'metadata' => ['membership_plan' => $tierID],
             ];
