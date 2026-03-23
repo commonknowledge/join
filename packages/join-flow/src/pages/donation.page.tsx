@@ -31,6 +31,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     : [5, 10, 15, 20];
 
   const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
+  const oneOffAvailable = Boolean(getEnv("USE_STRIPE"));
 
   const membershipPlans = (getEnv("MEMBERSHIP_PLANS") as any[]) || [];
   const supporterTiers: number[] = membershipPlans.map((p) => Number(p.amount)).filter((n) => n > 0);
@@ -111,6 +112,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             <Button
               type="button"
               variant={!isMonthly ? "dark" : "outline-dark"}
+              disabled={!oneOffAvailable}
               onClick={() => {
                 setIsMonthly(false);
                 form.setValue("recurDonation", false);
@@ -119,6 +121,11 @@ export const DonationPage: StagerComponent<FormSchema> = ({
               One-off
             </Button>
           </div>
+          {!oneOffAvailable && (
+            <p className="text-muted small mb-3">
+              One-off donations are not available with Direct Debit. To make a one-off donation, please contact us.
+            </p>
+          )}
 
           <div className="mb-4">
             {supporterTiers.map((tier) => (
