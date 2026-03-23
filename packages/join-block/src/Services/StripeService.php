@@ -126,6 +126,23 @@ class StripeService
         return $subscription;
     }
 
+    public static function createPaymentIntent($customer, $amount, $currency)
+    {
+        global $joinBlockLog;
+
+        $amountInMinorUnits = (int) round((float) $amount * 100);
+        $currency = strtolower($currency);
+
+        $joinBlockLog->info("Creating one-off PaymentIntent for customer {$customer->id}: {$currency} {$amountInMinorUnits}");
+
+        return \Stripe\PaymentIntent::create([
+            'customer'             => $customer->id,
+            'amount'               => $amountInMinorUnits,
+            'currency'             => $currency,
+            'payment_method_types' => ['card'],
+        ]);
+    }
+
     public static function getOrCreateDonationProduct()
     {
         global $joinBlockLog;
