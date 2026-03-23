@@ -38,7 +38,6 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   const supporterCurrency: string = membershipPlans[0]?.currency || "GBP";
   const defaultSupporterTier = supporterTiers[0] ?? 0;
 
-  // Local state for supporter mode to drive reliable re-renders
   const [isMonthly, setIsMonthly] = useState(true);
   const [selectedTier, setSelectedTier] = useState<number>(defaultSupporterTier);
 

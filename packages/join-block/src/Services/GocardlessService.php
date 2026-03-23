@@ -105,7 +105,6 @@ class GocardlessService
         $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
 
         // Add recurring donation to subscription amount.
-        // One-off donations are not supported for Direct Debit and are silently ignored.
         $donationAmount = (float) ($data['donationAmount'] ?? 0);
         if ($donationAmount > 0 && !empty($data['recurDonation'])) {
             $amountInPence += round($donationAmount * 100);
