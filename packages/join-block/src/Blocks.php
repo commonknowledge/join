@@ -180,7 +180,9 @@ class Blocks
                 Field::make('checkbox', 'donation_supporter_mode')
                     ->set_help_text(
                         'Enable Supporter Mode: shows donation frequency and amount first, ' .
-                        'before personal details and payment. Skips the membership plan step.'
+                        'before personal details and payment. Skips the membership plan step. ' .
+                        'Requires block-level membership plans to be configured (used as donation tiers). ' .
+                        'One-off donations require Stripe — they are not available with Direct Debit only.'
                     ),
                 Field::make('checkbox', 'hide_home_address_copy')
                     ->set_help_text('Check to hide the copy that explains why the address is collected.'),
