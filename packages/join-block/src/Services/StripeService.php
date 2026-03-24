@@ -158,9 +158,8 @@ class StripeService
         $price   = self::getOrCreateOneTimePriceForProduct($product, (float) $amount, $currency);
 
         $invoice = \Stripe\Invoice::create([
-            'customer'           => $customer->id,
-            'collection_method'  => 'charge_automatically',
-            'payment_settings'   => ['payment_method_types' => ['card']],
+            'customer'          => $customer->id,
+            'collection_method' => 'charge_automatically',
         ]);
 
         \Stripe\InvoiceItem::create([
@@ -169,13 +168,12 @@ class StripeService
             'price'    => $price->id,
         ]);
 
-        $finalizedInvoice = \Stripe\Invoice::finalizeInvoice($invoice->id, [
-            'expand' => ['payment_intent'],
-        ]);
+        $finalizedInvoice = \Stripe\Invoice::finalizeInvoice($invoice->id);
+        $paymentIntent    = \Stripe\PaymentIntent::retrieve($finalizedInvoice->payment_intent);
 
         return [
-            'id'            => $finalizedInvoice->payment_intent->id,
-            'client_secret' => $finalizedInvoice->payment_intent->client_secret,
+            'id'            => $paymentIntent->id,
+            'client_secret' => $paymentIntent->client_secret,
             'customer'      => $customer->id,
         ];
     }
