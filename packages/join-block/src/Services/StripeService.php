@@ -75,7 +75,7 @@ class StripeService
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
         $minAmount = (float) $plan["amount"];
-        if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
+        if (($plan["allow_custom_amount"] || $isSupporterMode) && $customAmount && $customAmount > 0) {
             $product = self::getOrCreateProductForMembershipTier($plan, $isSupporterMode);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         } elseif ($isSupporterMode) {

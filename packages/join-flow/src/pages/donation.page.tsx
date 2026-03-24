@@ -68,7 +68,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       onCompleted({
         ...formData,
         membership: resolvedPlan?.value ?? formData.membership,
-        ...(!matchingPlan && resolvedPlan?.allowCustomAmount ? { customMembershipAmount: amount } : {}),
+        ...(!matchingPlan ? { customMembershipAmount: amount } : {}),
         // Recurring: plan price IS the donation — no separate donationAmount item needed
         // One-off: no subscription is created, so pass the amount for the PaymentIntent
         donationAmount: isMonthly ? 0 : amount,
