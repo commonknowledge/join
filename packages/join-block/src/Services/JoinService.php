@@ -189,7 +189,9 @@ class JoinService
         $data['gocardlessMandate'] = $subscription ? $subscription->links->mandate : null;
         $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
-        if (Settings::get("USE_STRIPE")) {
+        $isOneOffSupporterDonation = !empty($data["donationSupporterMode"]) && empty($data["recurDonation"]);
+
+        if (Settings::get("USE_STRIPE") && !$isOneOffSupporterDonation) {
             StripeService::initialise();
             $subscriptionInfo = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
             if ($subscriptionInfo["amount"] !== $membershipAmount) {
