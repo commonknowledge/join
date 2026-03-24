@@ -123,13 +123,8 @@ class StripeService
                 );
                 $items[] = ['price' => $donationPriceId];
             } else {
-                $addInvoiceItems[] = [
-                    'price_data' => [
-                        'currency'    => strtolower($plan['currency']),
-                        'product'     => $donationProduct->id,
-                        'unit_amount' => (int) round($donationAmount * 100),
-                    ]
-                ];
+                $donationPrice = self::getOrCreateOneTimePriceForProduct($donationProduct, $donationAmount, $plan['currency']);
+                $addInvoiceItems[] = ['price' => $donationPrice->id];
             }
         }
 
@@ -155,16 +150,60 @@ class StripeService
     {
         global $joinBlockLog;
 
-        $amountInMinorUnits = (int) round((float) $amount * 100);
         $currency = strtolower($currency);
 
-        $joinBlockLog->info("Creating one-off PaymentIntent for customer {$customer->id}: {$currency} {$amountInMinorUnits}");
+        $joinBlockLog->info("Creating one-off invoice-based payment for customer {$customer->id}: {$currency} {$amount}");
 
-        return \Stripe\PaymentIntent::create([
-            'customer'             => $customer->id,
-            'amount'               => $amountInMinorUnits,
-            'currency'             => $currency,
-            'payment_method_types' => ['card'],
+        $product = self::getOrCreateDonationProduct();
+        $price   = self::getOrCreateOneTimePriceForProduct($product, (float) $amount, $currency);
+
+        $invoice = \Stripe\Invoice::create([
+            'customer'           => $customer->id,
+            'collection_method'  => 'charge_automatically',
+            'payment_settings'   => ['payment_method_types' => ['card']],
+        ]);
+
+        \Stripe\InvoiceItem::create([
+            'customer' => $customer->id,
+            'invoice'  => $invoice->id,
+            'price'    => $price->id,
+        ]);
+
+        $finalizedInvoice = \Stripe\Invoice::finalizeInvoice($invoice->id, [
+            'expand' => ['payment_intent'],
+        ]);
+
+        return [
+            'id'            => $finalizedInvoice->payment_intent->id,
+            'client_secret' => $finalizedInvoice->payment_intent->client_secret,
+            'customer'      => $customer->id,
+        ];
+    }
+
+    public static function getOrCreateOneTimePriceForProduct($product, float $amount, string $currency)
+    {
+        global $joinBlockLog;
+
+        $stripeAmount = (int) round($amount * 100);
+        $currency     = strtolower($currency);
+
+        $existingPrices = \Stripe\Price::search([
+            'query' => "active:'true' AND product:'{$product->id}' AND type:'one_time' AND currency:'{$currency}'",
+        ]);
+
+        foreach ($existingPrices->data as $price) {
+            if ($price->unit_amount === $stripeAmount) {
+                $joinBlockLog->info("One-time price for product '{$product->id}' amount {$stripeAmount} already exists.");
+                return $price;
+            }
+        }
+
+        $joinBlockLog->info("Creating one-time price for product '{$product->id}' amount {$stripeAmount}");
+
+        return \Stripe\Price::create([
+            'product'     => $product->id,
+            'unit_amount' => $stripeAmount,
+            'currency'    => $currency,
         ]);
     }
 
@@ -464,7 +503,7 @@ class StripeService
             foreach ($existingPrices->data as $price) {
                 if ($price->unit_amount === $stripePrice) {
                     $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' and amount {$stripePrice} already exists.");
-                    return $existingPrices->data[0];
+                    return $price;
                 }
             }
 
