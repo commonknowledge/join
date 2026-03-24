@@ -400,8 +400,9 @@ const getInitialState = (): FormSchema => {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
-    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true, donationSupporterMode: true } : {}),
     ...getSavedState(),
+    // Env-driven overrides must come after session restore so config always wins
+    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true, donationSupporterMode: true } : {}),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv("IS_UPDATE_FLOW"),
     webhookUuid: getEnv("WEBHOOK_UUID"),
