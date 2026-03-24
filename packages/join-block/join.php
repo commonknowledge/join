@@ -519,6 +519,49 @@ add_action('rest_api_init', function () {
         }
     ));
 
+    register_rest_route('join/v1', '/stripe/create-payment-intent', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $email = "";
+            try {
+                $data = json_decode($request->get_body(), true);
+                $email = $data['email'];
+
+                $joinBlockLog->info("Received /stripe/create-payment-intent request for $email");
+
+                $plan = Settings::getMembershipPlan($data['membership'] ?? '');
+                if (!$plan) {
+                    return new WP_REST_Response(['error' => 'Invalid membership plan'], 400);
+                }
+
+                $amount = $data['donationAmount'] ?? 0;
+                $currency = $plan['currency'] ?? 'GBP';
+
+                StripeService::initialise();
+                [$customer] = StripeService::upsertCustomer($email);
+
+                $paymentIntent = StripeService::createPaymentIntent($customer, $amount, $currency);
+
+                return new WP_REST_Response([
+                    'id'            => $paymentIntent->id,
+                    'client_secret' => $paymentIntent->client_secret,
+                    'customer'      => $customer->id,
+                ], 200);
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    'Failed to create Stripe PaymentIntent for user ' . $email . ': ' . $e->getMessage(),
+                    ['error' => $e]
+                );
+                throw $e;
+            }
+        }
+    ));
+
     register_rest_route('join/v1', '/stripe/create-confirm-subscription', array(
         'methods' => 'POST',
         'permission_callback' => function ($req) {
