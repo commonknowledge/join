@@ -76,7 +76,9 @@ class StripeService
         $customAmount = (float) $customAmount;
         $minAmount = (float) $plan["amount"];
         if (($plan["allow_custom_amount"] || $isSupporterMode) && $customAmount && $customAmount > 0) {
-            $product = self::getOrCreateProductForMembershipTier($plan, $isSupporterMode);
+            $product = $isSupporterMode
+                ? self::getOrCreateDonationProduct()
+                : self::getOrCreateProductForMembershipTier($plan, false);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         } elseif ($isSupporterMode) {
             // Ensure the product name uses the "Donation:" prefix.
