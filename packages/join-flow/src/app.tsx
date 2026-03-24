@@ -395,6 +395,7 @@ const getInitialState = (): FormSchema => {
     }
   };
 
+  const availableMethods = getPaymentMethods();
   const state = {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
@@ -406,6 +407,11 @@ const getInitialState = (): FormSchema => {
     webhookUuid: getEnv("WEBHOOK_UUID"),
     customFieldsConfig: getEnv("CUSTOM_FIELDS")
   } as any;
+  // Clamp paymentMethod to available methods — session storage may have a stale value
+  // from a previous flow (e.g. "creditCard" persisted when STRIPE_DIRECT_DEBIT_ONLY is now active)
+  if (availableMethods.length && !availableMethods.includes(state.paymentMethod)) {
+    state.paymentMethod = defaultMethod;
+  }
   return state;
 };
 
