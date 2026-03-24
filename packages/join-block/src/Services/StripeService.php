@@ -168,7 +168,7 @@ class StripeService
             'price'    => $price->id,
         ]);
 
-        $finalizedInvoice = \Stripe\Invoice::finalizeInvoice($invoice->id);
+        $finalizedInvoice = $invoice->finalizeInvoice();
         $paymentIntent    = \Stripe\PaymentIntent::retrieve($finalizedInvoice->payment_intent);
 
         return [

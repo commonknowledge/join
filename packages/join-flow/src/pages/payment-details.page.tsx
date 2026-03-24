@@ -409,9 +409,9 @@ const StripeForm = ({
         handleError({ message });
         return;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Create payment error", e);
-      handleError({ message: "Unknown error" });
+      handleError({ message: e?.message || JSON.stringify(e) || "Unknown error" });
       Sentry.captureException(e)
     }
   };
