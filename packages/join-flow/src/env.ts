@@ -155,7 +155,7 @@ export const getPaymentProviders = () => {
         if (!get("STRIPE_DIRECT_DEBIT_ONLY")) {
             stripeMethods.push("creditCard");
         }
-        if (get("STRIPE_DIRECT_DEBIT")) {
+        if (get("STRIPE_DIRECT_DEBIT") || get("STRIPE_DIRECT_DEBIT_ONLY")) {
             stripeMethods.push("directDebit");
         }
         if (stripeMethods.length) {
