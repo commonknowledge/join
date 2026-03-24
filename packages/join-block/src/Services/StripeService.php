@@ -70,15 +70,32 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
+    /**
+     * Determine how a subscription's price should be resolved.
+     *
+     * Returns one of:
+     *   'custom_supporter' — use the generic Donation product at the given custom amount
+     *   'custom_plan'      — use the plan's own product at the given custom amount
+     *   'default'          — use the plan's pre-configured stripe_price_id unchanged
+     */
+    public static function resolveSubscriptionPriceStrategy(array $plan, float $customAmount, bool $isSupporterMode): string
+    {
+        if (($plan['allow_custom_amount'] || $isSupporterMode) && $customAmount > 0) {
+            return $isSupporterMode ? 'custom_supporter' : 'custom_plan';
+        }
+        return 'default';
+    }
+
     public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false, $isSupporterMode = false)
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
-        $minAmount = (float) $plan["amount"];
-        if (($plan["allow_custom_amount"] || $isSupporterMode) && $customAmount && $customAmount > 0) {
-            $product = $isSupporterMode
-                ? self::getOrCreateDonationProduct()
-                : self::getOrCreateProductForMembershipTier($plan, false);
+        $strategy = self::resolveSubscriptionPriceStrategy($plan, $customAmount, $isSupporterMode);
+        if ($strategy === 'custom_supporter') {
+            $product = self::getOrCreateDonationProduct();
+            $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
+        } elseif ($strategy === 'custom_plan') {
+            $product = self::getOrCreateProductForMembershipTier($plan, false);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         } elseif ($isSupporterMode) {
             // Ensure the product name uses the "Donation:" prefix.
