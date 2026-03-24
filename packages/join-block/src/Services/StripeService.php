@@ -77,6 +77,11 @@ class StripeService
      *   'custom_supporter' — use the generic Donation product at the given custom amount
      *   'custom_plan'      — use the plan's own product at the given custom amount
      *   'default'          — use the plan's pre-configured stripe_price_id unchanged
+     *
+     * NOTE: supporter mode custom amounts all share a single "Supporter Donation"
+     * Stripe product (see getOrCreateDonationProduct), with one price per unique
+     * amount. This differs from every other flow, where each membership tier has
+     * its own dedicated Stripe product.
      */
     public static function resolveSubscriptionPriceStrategy(array $plan, float $customAmount, bool $isSupporterMode): string
     {
