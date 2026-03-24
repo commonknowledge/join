@@ -279,29 +279,32 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
   const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
     (plan) => plan.value === data.membership
   );
-  const amount = plan.amount
-    ? convertCurrencyFromMajorToMinorUnits(plan.amount)
-    : 100;
+  const isOneOffDonation = Boolean(getEnv("DONATION_SUPPORTER_MODE")) && !data.recurDonation;
+  // For one-off donations the amount comes from donationAmount (set by donation.page).
+  // For subscriptions the amount is only used by Stripe Elements for display; the
+  // actual charge is determined server-side from the plan / customMembershipAmount.
+  const amountForElements = isOneOffDonation
+    ? convertCurrencyFromMajorToMinorUnits(data.donationAmount as number)
+    : (plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100);
   const currency = plan.currency.toLowerCase() || "gbp";
-  const paymentMethodTypes = getEnv("STRIPE_DIRECT_DEBIT_ONLY") ? ["bacs_debit"] : ["card"];
-  // Add direct debit payment method for GBP only, as it is a UK only feature
-  // Only add if not in Direct Debit-only mode (as it's already the only option)
-  if (currency === "gbp" && getEnv("STRIPE_DIRECT_DEBIT") && !getEnv("STRIPE_DIRECT_DEBIT_ONLY")) {
+  // One-off donations are card-only (bacs_debit is a subscription-only product in the UK)
+  const paymentMethodTypes = (isOneOffDonation || getEnv("STRIPE_DIRECT_DEBIT_ONLY")) ? ["card"] : ["card"];
+  if (!isOneOffDonation && currency === "gbp" && getEnv("STRIPE_DIRECT_DEBIT") && !getEnv("STRIPE_DIRECT_DEBIT_ONLY")) {
     paymentMethodTypes.push("bacs_debit");
   }
-  
+
   return (
     <Elements
       stripe={stripePromise}
       options={{
         paymentMethodCreation: "manual",
-        mode: "subscription",
-        amount,
+        mode: isOneOffDonation ? "payment" : "subscription",
+        amount: amountForElements,
         currency,
         paymentMethodTypes,
       }}
     >
-      <StripeForm data={data} setData={setData} plan={plan} />
+      <StripeForm data={data} setData={setData} plan={plan} isOneOffDonation={isOneOffDonation} />
     </Elements>
   );
 };
@@ -309,11 +312,13 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
 const StripeForm = ({
   data,
   setData,
-  plan
+  plan,
+  isOneOffDonation
 }: {
   data: FormSchema;
   setData: (d: FormSchema) => void;
   plan: { frequency: string };
+  isOneOffDonation: boolean;
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -325,6 +330,10 @@ const StripeForm = ({
       latest_invoice: { payment_intent: { id: string; client_secret: string } };
     }
   >("/stripe/create-subscription");
+  const createPaymentIntent = usePostResource<
+    FormSchema,
+    { id: string; client_secret: string; customer: string }
+  >("/stripe/create-payment-intent");
 
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -351,19 +360,34 @@ const StripeForm = ({
     elements.submit();
 
     try {
-      const subscription = await createSubscription({ ...data });
-      const clientSecret =
-        subscription.latest_invoice.payment_intent.client_secret;
+      let clientSecret: string;
 
-      sessionStorage.setItem(
-        SAVED_STATE_KEY,
-        JSON.stringify({
-          ...data,
-          stripeCustomerId: subscription.customer,
-          stripeSubscriptionId: subscription.id,
-          stripePaymentIntentId: subscription.latest_invoice.payment_intent.id
-        })
-      );
+      if (isOneOffDonation) {
+        const paymentIntent = await createPaymentIntent({ ...data });
+        clientSecret = paymentIntent.client_secret;
+
+        sessionStorage.setItem(
+          SAVED_STATE_KEY,
+          JSON.stringify({
+            ...data,
+            stripeCustomerId: paymentIntent.customer,
+            stripePaymentIntentId: paymentIntent.id
+          })
+        );
+      } else {
+        const subscription = await createSubscription({ ...data });
+        clientSecret = subscription.latest_invoice.payment_intent.client_secret;
+
+        sessionStorage.setItem(
+          SAVED_STATE_KEY,
+          JSON.stringify({
+            ...data,
+            stripeCustomerId: subscription.customer,
+            stripeSubscriptionId: subscription.id,
+            stripePaymentIntentId: subscription.latest_invoice.payment_intent.id
+          })
+        );
+      }
 
       const returnUrl = new URL(window.location.href);
       returnUrl.searchParams.set("stripe_success", "true");
@@ -382,7 +406,7 @@ const StripeForm = ({
         return;
       }
     } catch (e) {
-      console.error("Create subscription error", e);
+      console.error("Create payment error", e);
       handleError({ message: "Unknown error" });
       Sentry.captureException(e)
     }
