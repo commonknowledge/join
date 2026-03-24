@@ -547,11 +547,7 @@ add_action('rest_api_init', function () {
 
                 $paymentIntent = StripeService::createPaymentIntent($customer, $amount, $currency);
 
-                return new WP_REST_Response([
-                    'id'            => $paymentIntent->id,
-                    'client_secret' => $paymentIntent->client_secret,
-                    'customer'      => $customer->id,
-                ], 200);
+                return new WP_REST_Response($paymentIntent, 200);
             } catch (\Exception $e) {
                 $joinBlockLog->error(
                     'Failed to create Stripe PaymentIntent for user ' . $email . ': ' . $e->getMessage(),
