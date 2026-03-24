@@ -194,6 +194,112 @@ describe('DonationPage — supporter mode (DONATION_SUPPORTER_MODE on)', () => {
   });
 });
 
+describe('DonationPage — supporter mode, custom amounts', () => {
+  beforeEach(() => {
+    mockGetEnv.mockImplementation((key: string) => {
+      if (key === 'DONATION_SUPPORTER_MODE') return true;
+      if (key === 'MEMBERSHIP_PLANS') return MOCK_PLANS;
+      if (key === 'USE_STRIPE') return true;
+      return false;
+    });
+  });
+
+  test('entering a custom amount and submitting monthly sets customMembershipAmount to that amount', async () => {
+    renderDonationPage();
+
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '69' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.customMembershipAmount).toBe(69);
+  });
+
+  test('entering a custom amount monthly sets donationAmount to 0 (plan price is the donation)', async () => {
+    renderDonationPage();
+
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '69' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.donationAmount).toBe(0);
+  });
+
+  test('entering a custom amount monthly sets recurDonation to true', async () => {
+    renderDonationPage();
+
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '69' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.recurDonation).toBe(true);
+  });
+
+  test('entering a custom amount one-off sets donationAmount to that amount', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText('One-off'));
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '100' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.donationAmount).toBe(100);
+  });
+
+  test('entering a custom amount one-off forces paymentMethod to creditCard', async () => {
+    renderDonationPage();
+
+    fireEvent.click(screen.getByText('One-off'));
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '100' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.paymentMethod).toBe('creditCard');
+  });
+
+  test('selecting a tier that matches a plan does NOT set customMembershipAmount', async () => {
+    renderDonationPage();
+
+    // £10 matches plan-b exactly — no custom amount should be forwarded
+    fireEvent.click(screen.getByText('£10'));
+    fireEvent.click(screen.getByText(/Donate £10\/month/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    expect(submitted.membership).toBe('plan-b');
+    expect(submitted.customMembershipAmount).toBeUndefined();
+  });
+
+  test('custom amount uses fallback plan as membership when no tier matches', async () => {
+    renderDonationPage();
+
+    fireEvent.change(screen.getByLabelText(/Or enter another amount/i), {
+      target: { value: '999' },
+    });
+    fireEvent.click(screen.getByText(/Donate/i));
+
+    await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
+    const submitted = mockOnCompleted.mock.calls[0][0];
+    // No plan has amount 999, so fallback to first plan
+    expect(submitted.membership).toBe('plan-a');
+    expect(submitted.customMembershipAmount).toBe(999);
+  });
+});
+
 describe('DonationPage — supporter mode, GoCardless only (USE_STRIPE off)', () => {
   beforeEach(() => {
     mockGetEnv.mockImplementation((key: string) => {
