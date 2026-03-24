@@ -539,7 +539,12 @@ add_action('rest_api_init', function () {
                     return new WP_REST_Response(['error' => 'Invalid membership plan'], 400);
                 }
 
-                $amount = $data['donationAmount'] ?? 0;
+                $amount = (float) ($data['donationAmount'] ?? 0);
+                $amountError = StripeService::validateOneOffDonationAmount($amount);
+                if ($amountError) {
+                    return new WP_REST_Response(['error' => $amountError], 400);
+                }
+
                 $currency = $plan['currency'] ?? 'GBP';
 
                 StripeService::initialise();

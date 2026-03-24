@@ -18,6 +18,21 @@ class StripeService
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
     }
 
+    /**
+     * Validates a one-off donation amount.
+     * Returns null if valid, or an error message string if invalid.
+     */
+    public static function validateOneOffDonationAmount(float $amount): ?string
+    {
+        if ($amount <= 0) {
+            return 'Donation amount must be greater than zero';
+        }
+        if ($amount > 10000) {
+            return 'Donation amount must not exceed £10,000';
+        }
+        return null;
+    }
+
     public static function getCustomers($extraParams = [])
     {
         global $joinBlockLog;

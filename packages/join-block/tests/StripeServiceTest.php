@@ -124,4 +124,33 @@ class StripeServiceTest extends TestCase
 
         $this->assertSame('default', $strategy);
     }
+
+    // -------------------------------------------------------------------------
+    // validateOneOffDonationAmount
+    // -------------------------------------------------------------------------
+
+    public function testValidAmountReturnsNull(): void
+    {
+        $this->assertNull(StripeService::validateOneOffDonationAmount(10.0));
+    }
+
+    public function testZeroAmountReturnsError(): void
+    {
+        $this->assertNotNull(StripeService::validateOneOffDonationAmount(0.0));
+    }
+
+    public function testNegativeAmountReturnsError(): void
+    {
+        $this->assertNotNull(StripeService::validateOneOffDonationAmount(-5.0));
+    }
+
+    public function testMaximumBoundaryIsValid(): void
+    {
+        $this->assertNull(StripeService::validateOneOffDonationAmount(10000.0));
+    }
+
+    public function testAboveMaximumReturnsError(): void
+    {
+        $this->assertNotNull(StripeService::validateOneOffDonationAmount(10000.01));
+    }
 }
