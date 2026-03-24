@@ -357,7 +357,11 @@ const StripeForm = ({
 
     setLoading(true);
 
-    elements.submit();
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      handleError(submitError as { message: string });
+      return;
+    }
 
     try {
       let clientSecret: string;
