@@ -186,6 +186,26 @@ export const getPaymentPlan = (name: string | undefined) => {
   return (plans as any[]).filter((p) => p.value === name).pop();
 };
 
+export const renderDonationSummary = (data: FormSchema): string => {
+  const { donationAmount, recurDonation, donationSupporterMode, membership, customMembershipAmount } = data;
+
+  if (donationSupporterMode && recurDonation) {
+    // Monthly supporter mode: amount comes from the plan, not donationAmount
+    const plan = getPaymentPlan(membership);
+    const amount = customMembershipAmount || plan?.amount;
+    if (amount) {
+      const currency = currencyCodeToSymbol(plan?.currency || 'GBP');
+      return `${currency}${amount} a month donation`;
+    }
+  }
+
+  if (donationAmount && donationAmount > 0) {
+    return `£${donationAmount} ${recurDonation ? 'a month donation' : 'one time donation'}`;
+  }
+
+  return 'None right now';
+};
+
 export const renderPaymentPlan = ({
   membership,
   customMembershipAmount
@@ -216,7 +236,9 @@ export const getPaymentFrequency = (membership: string | undefined) => {
 
 export const renderPaymentMethod = ({
   paymentMethod,
-  membership
+  membership,
+  recurDonation,
+  donationSupporterMode,
 }: FormSchema) => {
   let paymentFormat = "None";
 
@@ -226,6 +248,11 @@ export const renderPaymentMethod = ({
 
   if (paymentMethod === "directDebit") {
     paymentFormat = "Direct Debit";
+  }
+
+  // One-off supporter donations have no recurring frequency
+  if (donationSupporterMode && !recurDonation) {
+    return paymentFormat;
   }
 
   const frequency = getPaymentFrequency(membership);

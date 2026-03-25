@@ -69,6 +69,17 @@ const App = () => {
   if (getEnv("IS_UPDATE_FLOW")) {
     stages = stages.filter((s) => s.id !== "enter-details");
   }
+
+  if (getEnv("DONATION_SUPPORTER_MODE")) {
+    stages = [
+      { id: "donation",        label: "Your Donation", breadcrumb: true },
+      { id: "enter-details",   label: "Your Details",  breadcrumb: true },
+      { id: "payment-details", label: "Payment",       breadcrumb: true },
+      { id: "payment-method",  label: "Payment",       breadcrumb: false },
+      { id: "confirm",         label: "Confirm",       breadcrumb: false }
+    ];
+  }
+
   const [data, setData] = useState(getInitialState);
   const [blockingMessage, setBlockingMessage] = useState<string | null>(null);
 
@@ -124,24 +135,39 @@ const App = () => {
 
       let nextStage = router.state.stage;
 
-      if (router.state.stage === "enter-details") {
+      if (getEnv("DONATION_SUPPORTER_MODE")) {
+        if (router.state.stage === "donation") {
+          nextStage = "enter-details";
+        } else if (router.state.stage === "enter-details") {
+          nextStage = "payment-method";
+          const response: any = await recordStep({ ...nextData, stage: "enter-details" });
+          if (response?.status === 'blocked') {
+            setBlockingMessage(response.message || 'Unable to proceed.');
+            return;
+          }
+          setBlockingMessage(null);
+        }
+        // payment-method, payment-details, confirm: fall through to shared logic below
+      } else if (router.state.stage === "enter-details") {
         nextStage = "plan";
         // Send initial details to catch drop off
         const response: any = await recordStep({ ...nextData, stage: "enter-details" });
-        
+
         // Check if the form progression is blocked
         if (response?.status === 'blocked') {
           setBlockingMessage(response.message || 'Unable to proceed with this submission.');
           return; // Stop progression
         }
-        
+
         // Clear any previous blocking message
         setBlockingMessage(null);
       } else if (router.state.stage === "plan") {
         nextStage = "donation";
       } else if (router.state.stage === "donation") {
         nextStage = "payment-method";
-      } else if (router.state.stage === "payment-method") {
+      }
+
+      if (router.state.stage === "payment-method") {
         // Check if this is a zero-price membership before setting next stage
         // This handles the case where the user is ON the payment-method page
         // (e.g., when there are multiple payment methods to choose from)
@@ -369,16 +395,24 @@ const getInitialState = (): FormSchema => {
     }
   };
 
+  const availableMethods = getPaymentMethods();
   const state = {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
     ...getSavedState(),
+    // Env-driven overrides must come after session restore so config always wins
+    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true, donationSupporterMode: true } : {}),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv("IS_UPDATE_FLOW"),
     webhookUuid: getEnv("WEBHOOK_UUID"),
     customFieldsConfig: getEnv("CUSTOM_FIELDS")
   } as any;
+  // Clamp paymentMethod to available methods — session storage may have a stale value
+  // from a previous flow (e.g. "creditCard" persisted when STRIPE_DIRECT_DEBIT_ONLY is now active)
+  if (availableMethods.length && !availableMethods.includes(state.paymentMethod)) {
+    state.paymentMethod = defaultMethod;
+  }
   return state;
 };
 

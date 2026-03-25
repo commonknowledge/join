@@ -189,7 +189,9 @@ class JoinService
         $data['gocardlessMandate'] = $subscription ? $subscription->links->mandate : null;
         $data['gocardlessCustomer'] = $subscription ? $subscription->links->customer : null;
 
-        if (Settings::get("USE_STRIPE")) {
+        $isOneOffSupporterDonation = !empty($data["donationSupporterMode"]) && empty($data["recurDonation"]);
+
+        if (Settings::get("USE_STRIPE") && !$isOneOffSupporterDonation) {
             StripeService::initialise();
             $subscriptionInfo = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
             if ($subscriptionInfo["amount"] !== $membershipAmount) {
@@ -230,8 +232,9 @@ class JoinService
                 MailchimpService::signup($data);
                 $joinBlockLog->info("Completed Mailchimp signup request for $email");
             } catch (\Exception $exception) {
+                // A Mailchimp failure should not block a successful join.
+                // The member record can be retro-added to Mailchimp once the underlying issue is resolved.
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-                throw $exception;
             }
         }
 
@@ -398,7 +401,6 @@ class JoinService
                 $joinBlockLog->info("$done member $email as lapsed in Mailchimp");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-                throw $exception;
             }
         }
 

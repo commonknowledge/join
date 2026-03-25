@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema } from "../schema";
+import { FormSchema, currencyCodeToSymbol } from "../schema";
+import { get as getEnv } from "../env";
 
 const membershipToDonationTiers = (membership: string): Array<number> => {
   switch (membership) {
@@ -29,28 +30,159 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     ? membershipToDonationTiers(data.membership)
     : [5, 10, 15, 20];
 
+  const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
+  const oneOffAvailable = Boolean(getEnv("USE_STRIPE")) && !Boolean(getEnv("STRIPE_DIRECT_DEBIT_ONLY"));
+
+  const membershipPlans = (getEnv("MEMBERSHIP_PLANS") as any[]) || [];
+  const supporterTiers: number[] = membershipPlans.map((p) => Number(p.amount)).filter((n) => n > 0);
+  const supporterCurrency: string = membershipPlans[0]?.currency || "GBP";
+  const defaultSupporterTier = supporterTiers[0] ?? 0;
+
+  const [isMonthly, setIsMonthly] = useState(true);
+  const [selectedTier, setSelectedTier] = useState<number>(defaultSupporterTier);
+
   const form = useForm({
     defaultValues: {
-      donationAmount: donationTiers[1],
+      donationAmount: supporterMode ? defaultSupporterTier : donationTiers[1],
+      recurDonation: supporterMode ? true : false,
       ...data
     }
   });
 
   const selectedDonationAmount = form.watch("donationAmount");
+  const otherDonationAmount = form.watch("otherDonationAmount");
+
+  const handleSubmit = form.handleSubmit((formData) => {
+    if (supporterMode) {
+      const amount = (formData.otherDonationAmount != null && formData.otherDonationAmount !== "")
+        ? Number(formData.otherDonationAmount)
+        : selectedTier;
+      delete formData.otherDonationAmount;
+
+      // Find the plan whose amount matches the selected tier.
+      // The plan price IS the donation — no separate donationAmount item should be created.
+      const matchingPlan = membershipPlans.find((p: any) => Number(p.amount) === amount);
+      const fallbackPlan = membershipPlans.find((p: any) => p.allowCustomAmount) ?? membershipPlans[0];
+      const resolvedPlan = matchingPlan ?? fallbackPlan;
+
+      onCompleted({
+        ...formData,
+        membership: resolvedPlan?.value ?? formData.membership,
+        ...(!matchingPlan ? { customMembershipAmount: amount } : {}),
+        // Recurring: plan price IS the donation — no separate donationAmount item needed
+        // One-off: no subscription is created, so pass the amount for the PaymentIntent
+        donationAmount: isMonthly ? 0 : amount,
+        recurDonation: isMonthly,
+        // One-off payments require card — override any stale directDebit from session
+        ...(!isMonthly ? { paymentMethod: "creditCard" } : {}),
+      });
+      return;
+    }
+    if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
+      formData.donationAmount = formData.otherDonationAmount;
+      delete formData.otherDonationAmount;
+    }
+    onCompleted(formData);
+  });
+
+  if (supporterMode && supporterTiers.length === 0) {
+    return (
+      <div className="alert alert-warning m-4" role="alert">
+        <strong>No donation amounts configured.</strong>
+        <p className="mb-0 mt-1">
+          Add membership plans to this block in the WordPress editor. Their amounts will be used as the donation tiers shown to supporters.
+        </p>
+      </div>
+    );
+  }
+
+  if (supporterMode) {
+    const currencySymbol = currencyCodeToSymbol(supporterCurrency);
+    const activeAmount = (otherDonationAmount != null && otherDonationAmount !== "")
+      ? Number(otherDonationAmount)
+      : selectedTier;
+    const ctaLabel = activeAmount > 0
+      ? (isMonthly ? `Donate ${currencySymbol}${activeAmount}/month` : `Donate ${currencySymbol}${activeAmount} now`)
+      : (isMonthly ? "Donate monthly" : "Donate now");
+
+    return (
+      <form className="form-content" onSubmit={handleSubmit}>
+        <div className="form-section">
+          <legend className="text-md">
+            <h2>Support us</h2>
+          </legend>
+        </div>
+
+        <fieldset className="mt-3">
+          <div className="btn-group mb-4" role="group">
+            <Button
+              type="button"
+              variant={isMonthly ? "dark" : "outline-dark"}
+              onClick={() => {
+                setIsMonthly(true);
+                form.setValue("recurDonation", true);
+              }}
+            >
+              Monthly
+            </Button>
+            <Button
+              type="button"
+              variant={!isMonthly ? "dark" : "outline-dark"}
+              disabled={!oneOffAvailable}
+              onClick={() => {
+                setIsMonthly(false);
+                form.setValue("recurDonation", false);
+              }}
+            >
+              One-off
+            </Button>
+          </div>
+          {!oneOffAvailable && (
+            <p className="text-muted small mb-3">
+              One-off donations are not available with Direct Debit. To make a one-off donation, please contact us.
+            </p>
+          )}
+
+          <div className="mb-4">
+            {supporterTiers.map((tier) => (
+              <Button
+                key={tier}
+                type="button"
+                className="mr-2 mb-2"
+                variant={
+                  (otherDonationAmount == null || otherDonationAmount === "") &&
+                  selectedTier === tier ? "dark" : "outline-dark"
+                }
+                onClick={() => {
+                  setSelectedTier(tier);
+                  form.setValue("donationAmount", tier);
+                  form.setValue("otherDonationAmount", null);
+                }}
+              >
+                {currencySymbol}{tier}
+              </Button>
+            ))}
+          </div>
+
+          <FormItem
+            label="Or enter another amount"
+            name="otherDonationAmount"
+            form={form}
+            className="mt-3"
+          >
+            <Form.Control type="number" min="1" />
+          </FormItem>
+        </fieldset>
+
+        <ContinueButton text={ctaLabel} />
+      </form>
+    );
+  }
 
   return (
     <form
       className="form-content"
-      onSubmit={form.handleSubmit((data) => {
-        // From the perspective of the form schema, keep things clean with only having one variable for donation amount
-        // So remove the otherDonationAmount if we have it and copy it across.
-        if (data.otherDonationAmount !== "") {
-          data.donationAmount = data.otherDonationAmount;
-          delete data.otherDonationAmount;
-        }
-
-        onCompleted(data);
-      })}
+      onSubmit={handleSubmit}
     >
       <div>
         <Summary data={data} />
@@ -61,12 +193,12 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           <h2>Can you chip in?</h2>
         </legend>
         <p className="text-secondary">
-          We rely on our members' generosity to build our movement, 
-          particularly as we look ahead to the next General Election and 
+          We rely on our members' generosity to build our movement,
+          particularly as we look ahead to the next General Election and
           the work that needs to be done to gain more MPs.
         </p>
         <p className="text-secondary">
-          Many of our members top up their membership, which forms a vital part of our income. 
+          Many of our members top up their membership, which forms a vital part of our income.
           We'd be very grateful if you would consider doing the same.
         </p>
       </div>

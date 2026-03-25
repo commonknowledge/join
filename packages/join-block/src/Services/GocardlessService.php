@@ -104,6 +104,12 @@ class GocardlessService
         }
         $amountInPence = round(((float) $data['membershipPlan']['amount']) * 100);
 
+        // Add recurring donation to subscription amount.
+        $donationAmount = (float) ($data['donationAmount'] ?? 0);
+        if ($donationAmount > 0 && !empty($data['recurDonation'])) {
+            $amountInPence += round($donationAmount * 100);
+        }
+
         $subscriptions = $client->subscriptions()->list([
             "params" => ["mandate" => $mandate->id]
         ]);

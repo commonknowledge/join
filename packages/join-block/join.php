@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.3.19
+ * Version:         1.4.0
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -499,12 +499,63 @@ add_action('rest_api_init', function () {
                 StripeService::initialise();
                 [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-                $subscription = StripeService::createSubscription($customer, $plan, $data["customMembershipAmount"] ?? null);
+                $subscription = StripeService::createSubscription(
+                    $customer,
+                    $plan,
+                    $data["customMembershipAmount"] ?? null,
+                    $data["donationAmount"] ?? null,
+                    $data["recurDonation"] ?? false,
+                    !empty($data["donationSupporterMode"])
+                );
 
                 return $subscription;
             } catch (\Exception $e) {
                 $joinBlockLog->error(
                     'Failed to create Stripe subscription for user ' . $email . ": " . $e->getMessage(),
+                    ['error' => $e]
+                );
+                throw $e;
+            }
+        }
+    ));
+
+    register_rest_route('join/v1', '/stripe/create-payment-intent', array(
+        'methods' => 'POST',
+        'permission_callback' => function ($req) {
+            return true;
+        },
+        'callback' => function (WP_REST_Request $request) {
+            global $joinBlockLog;
+
+            $email = "";
+            try {
+                $data = json_decode($request->get_body(), true);
+                $email = $data['email'];
+
+                $joinBlockLog->info("Received /stripe/create-payment-intent request for $email");
+
+                $plan = Settings::getMembershipPlan($data['membership'] ?? '');
+                if (!$plan) {
+                    return new WP_REST_Response(['error' => 'Invalid membership plan'], 400);
+                }
+
+                $amount = (float) ($data['donationAmount'] ?? 0);
+                $amountError = StripeService::validateOneOffDonationAmount($amount);
+                if ($amountError) {
+                    return new WP_REST_Response(['error' => $amountError], 400);
+                }
+
+                $currency = $plan['currency'] ?? 'GBP';
+
+                StripeService::initialise();
+                [$customer] = StripeService::upsertCustomer($email);
+
+                $paymentIntent = StripeService::createPaymentIntent($customer, $amount, $currency);
+
+                return new WP_REST_Response($paymentIntent, 200);
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    'Failed to create Stripe PaymentIntent for user ' . $email . ': ' . $e->getMessage(),
                     ['error' => $e]
                 );
                 throw $e;
@@ -541,7 +592,14 @@ add_action('rest_api_init', function () {
             StripeService::initialise();
             [$customer, $newCustomer] = StripeService::upsertCustomer($email);
 
-            $subscription = StripeService::createSubscription($customer, $plan);
+            $subscription = StripeService::createSubscription(
+                $customer,
+                $plan,
+                $data["customMembershipAmount"] ?? null,
+                $data["donationAmount"] ?? null,
+                $data["recurDonation"] ?? false,
+                !empty($data["donationSupporterMode"])
+            );
 
             $confirmedPaymentIntent = StripeService::confirmSubscriptionPaymentIntent($subscription, $data['confirmationTokenId']);
 

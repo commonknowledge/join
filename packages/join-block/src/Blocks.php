@@ -36,7 +36,8 @@ class Blocks
                 Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
             }
             $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
-            Settings::saveMembershipPlans($custom_membership_plans);
+            $is_supporter_mode = !empty($block['attrs']['data']['donation_supporter_mode']);
+            Settings::saveMembershipPlans($custom_membership_plans, $is_supporter_mode);
             $innerBlocks = $block["innerBlocks"] ?? [];
             self::processBlocks($innerBlocks);
         }
@@ -176,7 +177,15 @@ class Blocks
                 Field::make('checkbox', 'hide_address')
                     ->set_help_text('Check to completely hide the address section from the form.'),
                 Field::make('checkbox', 'require_phone_number')->set_default_value(true),
-                Field::make('checkbox', 'ask_for_additional_donation'),
+                Field::make('checkbox', 'ask_for_additional_donation')
+                    ->set_help_text('Has no effect when Donation Supporter Mode is enabled.'),
+                Field::make('checkbox', 'donation_supporter_mode')
+                    ->set_help_text(
+                        'Enable Supporter Mode: shows donation frequency and amount first, ' .
+                        'before personal details and payment. Skips the membership plan step. ' .
+                        'Requires block-level membership plans to be configured (used as donation tiers). ' .
+                        'One-off donations require Stripe. They are not available with Direct Debit only.'
+                    ),
                 Field::make('checkbox', 'hide_home_address_copy')
                     ->set_help_text('Check to hide the copy that explains why the address is collected.'),
                 Field::make('checkbox', 'include_skip_payment_button')
@@ -327,7 +336,8 @@ class Blocks
         }
 
         $membership_plans = $fields['custom_membership_plans'] ?? [];
-        if (!$membership_plans) {
+        $is_supporter_mode = !empty($fields['donation_supporter_mode']);
+        if (!$membership_plans && !$is_supporter_mode) {
             $membership_plans = Settings::get("MEMBERSHIP_PLANS") ?? [];
         }
 
@@ -414,6 +424,7 @@ class Blocks
             'ABOUT_YOU_COPY' => wpautop(Settings::get("ABOUT_YOU_COPY")),
             'ABOUT_YOU_HEADING' => Settings::get("ABOUT_YOU_HEADING"),
             "ASK_FOR_ADDITIONAL_DONATION" => $fields['ask_for_additional_donation'] ?? false,
+            "DONATION_SUPPORTER_MODE" => $fields['donation_supporter_mode'] ?? false,
             'CHARGEBEE_SITE_NAME' => Settings::get('CHARGEBEE_SITE_NAME'),
             "CHARGEBEE_API_PUBLISHABLE_KEY" => Settings::get('CHARGEBEE_API_PUBLISHABLE_KEY'),
             "COLLECT_COUNTY" => Settings::get("COLLECT_COUNTY"),

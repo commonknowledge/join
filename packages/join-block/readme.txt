@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.3.19
+Stable tag: 1.4.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,12 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.0 =
+* Add Donation Supporter Mode: a new block setting that puts donation first, before personal details and payment, skipping the membership plan step entirely
+* Supporter mode: donation frequency (monthly/one-off) and tier selection driven by block-level membership plans
+* Supporter mode: one-off donations processed via Stripe invoice item; recurring donations added as a second subscription item
+* Supporter mode: GoCardless recurring donations added to the Direct Debit subscription total; one-off toggle disabled with explanation when Stripe is unavailable
+* Supporter mode: donation amount and frequency submitted as correct native types to the payment backend
 = 1.3.19 =
 * Sync membership tier tag changes to Zetkin and Mailchimp when a member upgrades or downgrades their Stripe subscription plan.
 * Tags shared across tiers (e.g. `member`) are preserved during a tier change and never incorrectly removed.
@@ -118,7 +124,6 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 * Added `ck_join_flow_should_unlapse_member` filter to control whether an unlapse should proceed.
 * Added `ck_join_flow_member_lapsed` action fired after a member is successfully lapsed.
 * Added `ck_join_flow_member_unlapsed` action fired after a member is successfully unlapsed.
-
 = 1.3.18 =
 * Make Zetkin errors non-fatal so a Zetkin failure does not block a successful join.
 * Improve Zetkin 403 error message to indicate expired JWT credentials and remediation steps.

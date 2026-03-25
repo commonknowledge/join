@@ -2,6 +2,7 @@ interface StaticEnv {
     ABOUT_YOU_COPY: string;
     ABOUT_YOU_HEADING: string;
     ASK_FOR_ADDITIONAL_DONATION: boolean;
+    DONATION_SUPPORTER_MODE: boolean;
     CHARGEBEE_API_PUBLISHABLE_KEY: string;
     CHARGEBEE_SITE_NAME: string;
     COLLECT_COUNTY: boolean;
@@ -70,6 +71,7 @@ const staticEnv: StaticEnv = {
     ABOUT_YOU_COPY: process.env.REACT_APP_ABOUT_YOU_COPY || '',
     ABOUT_YOU_HEADING: process.env.REACT_APP_ABOUT_YOU_HEADING || '',
     ASK_FOR_ADDITIONAL_DONATION: parseBooleanEnvVar("REACT_APP_ASK_FOR_ADDITIONAL_DONATION"),
+    DONATION_SUPPORTER_MODE: parseBooleanEnvVar("REACT_APP_DONATION_SUPPORTER_MODE"),
     CHARGEBEE_API_PUBLISHABLE_KEY: process.env.REACT_APP_CHARGEBEE_API_PUBLISHABLE_KEY || '',
     CHARGEBEE_SITE_NAME: process.env.REACT_APP_CHARGEBEE_SITE_NAME || '',
     COLLECT_COUNTY: parseBooleanEnvVar("REACT_APP_COLLECT_COUNTY"),
@@ -153,7 +155,7 @@ export const getPaymentProviders = () => {
         if (!get("STRIPE_DIRECT_DEBIT_ONLY")) {
             stripeMethods.push("creditCard");
         }
-        if (get("STRIPE_DIRECT_DEBIT")) {
+        if (get("STRIPE_DIRECT_DEBIT") || get("STRIPE_DIRECT_DEBIT_ONLY")) {
             stripeMethods.push("directDebit");
         }
         if (stripeMethods.length) {
@@ -166,6 +168,31 @@ export const getPaymentProviders = () => {
         // TODO: Add ChargeBee direct debit settings
     }
     return paymentProviders;
+};
+
+/**
+ * Returns the Stripe Elements paymentMethodTypes array for the current config.
+ *
+ * - One-off donations are always card-only (bacs_debit is a UK subscription product).
+ * - Subscriptions with STRIPE_DIRECT_DEBIT_ONLY use bacs_debit.
+ * - Subscriptions with STRIPE_DIRECT_DEBIT (non-only) in GBP offer both.
+ * - Otherwise card only.
+ */
+export const resolveStripePaymentMethodTypes = (
+  isOneOffDonation: boolean,
+  currency: string
+): string[] => {
+  if (isOneOffDonation) {
+    return ['card'];
+  }
+  if (get('STRIPE_DIRECT_DEBIT_ONLY')) {
+    return ['bacs_debit'];
+  }
+  const types = ['card'];
+  if (currency === 'gbp' && get('STRIPE_DIRECT_DEBIT')) {
+    types.push('bacs_debit');
+  }
+  return types;
 };
 
 export const getPaymentMethods = () => {

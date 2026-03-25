@@ -18,6 +18,21 @@ class StripeService
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
     }
 
+    /**
+     * Validates a one-off donation amount.
+     * Returns null if valid, or an error message string if invalid.
+     */
+    public static function validateOneOffDonationAmount(float $amount): ?string
+    {
+        if ($amount <= 0) {
+            return 'Donation amount must be greater than zero';
+        }
+        if ($amount > 10000) {
+            return 'Donation amount must not exceed £10,000';
+        }
+        return null;
+    }
+
     public static function getCustomers($extraParams = [])
     {
         global $joinBlockLog;
@@ -70,29 +85,160 @@ class StripeService
         return [$customer, $newCustomer];
     }
 
-    public static function createSubscription($customer, $plan, $customAmount = null)
+    /**
+     * Determine how a subscription's price should be resolved.
+     *
+     * Returns one of:
+     *   'custom_supporter' — use the generic Donation product at the given custom amount
+     *   'custom_plan'      — use the plan's own product at the given custom amount
+     *   'default'          — use the plan's pre-configured stripe_price_id unchanged
+     *
+     * NOTE: all donation amounts — supporter mode custom amounts and standard-flow
+     * donation upsells alike — share a single "Supporter Donation" Stripe product
+     * (see getOrCreateDonationProduct), with one price per unique amount. This
+     * contrasts with membership tiers, where each tier has its own dedicated
+     * Stripe product.
+     */
+    public static function resolveSubscriptionPriceStrategy(array $plan, float $customAmount, bool $isSupporterMode): string
+    {
+        if (($plan['allow_custom_amount'] || $isSupporterMode) && $customAmount > 0) {
+            return $isSupporterMode ? 'custom_supporter' : 'custom_plan';
+        }
+        return 'default';
+    }
+
+    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false, $isSupporterMode = false)
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
-        $minAmount = (float) $plan["amount"];
-        if ($plan["allow_custom_amount"] && $customAmount && $customAmount > $minAmount) {
-            $product = self::getOrCreateProductForMembershipTier($plan);
+        $strategy = self::resolveSubscriptionPriceStrategy($plan, $customAmount, $isSupporterMode);
+        if ($strategy === 'custom_supporter') {
+            $product = self::getOrCreateDonationProduct();
+            $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
+        } elseif ($strategy === 'custom_plan') {
+            $product = self::getOrCreateProductForMembershipTier($plan, false);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
         }
-        $subscription = Subscription::create([
-            'customer' => $customer->id,
-            'items' => [
-                [
-                    'price' => $priceId,
-                ],
-            ],
+
+        $items = [['price' => $priceId]];
+        $addInvoiceItems = [];
+
+        $donationAmount = (float) $donationAmount;
+        if ($donationAmount > 0) {
+            $donationProduct = self::getOrCreateDonationProduct();
+            if ($recurDonation) {
+                $interval = self::convertFrequencyToStripeInterval($plan['frequency']);
+                $donationPriceId = self::getOrCreatePriceForProduct(
+                    $donationProduct, $donationAmount, $plan['currency'], $interval
+                );
+                $items[] = ['price' => $donationPriceId];
+            } else {
+                $donationPrice = self::getOrCreateOneTimePriceForProduct($donationProduct, $donationAmount, $plan['currency']);
+                $addInvoiceItems[] = ['price' => $donationPrice->id];
+            }
+        }
+
+        $subscriptionPayload = [
+            'customer'         => $customer->id,
+            'items'            => $items,
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',
             'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => ['card', 'bacs_debit']],
-            'expand' => ['latest_invoice.payment_intent'],
-        ]);
+            'expand'           => ['latest_invoice.payment_intent'],
+        ];
+
+        if (!empty($addInvoiceItems)) {
+            $subscriptionPayload['add_invoice_items'] = $addInvoiceItems;
+        }
+
+        $subscription = Subscription::create($subscriptionPayload);
 
         return $subscription;
+    }
+
+    public static function createPaymentIntent($customer, $amount, $currency)
+    {
+        global $joinBlockLog;
+
+        $currency = strtolower($currency);
+
+        $joinBlockLog->info("Creating one-off invoice-based payment for customer {$customer->id}: {$currency} {$amount}");
+
+        $product = self::getOrCreateDonationProduct();
+        $price   = self::getOrCreateOneTimePriceForProduct($product, (float) $amount, $currency);
+
+        $invoice = \Stripe\Invoice::create([
+            'customer'          => $customer->id,
+            'collection_method' => 'charge_automatically',
+        ]);
+
+        \Stripe\InvoiceItem::create([
+            'customer' => $customer->id,
+            'invoice'  => $invoice->id,
+            'price'    => $price->id,
+        ]);
+
+        $finalizedInvoice = $invoice->finalizeInvoice();
+        $paymentIntent    = \Stripe\PaymentIntent::retrieve($finalizedInvoice->payment_intent);
+
+        return [
+            'id'            => $paymentIntent->id,
+            'client_secret' => $paymentIntent->client_secret,
+            'customer'      => $customer->id,
+        ];
+    }
+
+    public static function getOrCreateOneTimePriceForProduct($product, float $amount, string $currency)
+    {
+        global $joinBlockLog;
+
+        $stripeAmount = (int) round($amount * 100);
+        $currency     = strtolower($currency);
+
+        $existingPrices = \Stripe\Price::search([
+            'query' => "active:'true' AND product:'{$product->id}' AND type:'one_time' AND currency:'{$currency}'",
+        ]);
+
+        foreach ($existingPrices->data as $price) {
+            if ($price->unit_amount === $stripeAmount) {
+                $joinBlockLog->info("One-time price for product '{$product->id}' amount {$stripeAmount} already exists.");
+                return $price;
+            }
+        }
+
+        $joinBlockLog->info("Creating one-time price for product '{$product->id}' amount {$stripeAmount}");
+
+        return \Stripe\Price::create([
+            'product'     => $product->id,
+            'unit_amount' => $stripeAmount,
+            'currency'    => $currency,
+        ]);
+    }
+
+    public static function getOrCreateDonationProduct()
+    {
+        global $joinBlockLog;
+
+        try {
+            $existingProducts = \Stripe\Product::search([
+                'query' => "active:'true' AND metadata['type']:'supporter_donation'",
+            ]);
+
+            if (count($existingProducts->data) > 0) {
+                return $existingProducts->data[0];
+            }
+
+            $joinBlockLog->info("Creating Stripe product for supporter donations");
+
+            return \Stripe\Product::create([
+                'name'     => 'Supporter Donation',
+                'type'     => 'service',
+                'metadata' => ['type' => 'supporter_donation'],
+            ]);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            $joinBlockLog->error("Error creating/retrieving donation product: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public static function getSubscriptionsForCSVOutput()
@@ -266,23 +412,34 @@ class StripeService
         }
     }
 
-    public static function createMembershipPlanIfItDoesNotExist($membershipPlan)
+    /**
+     * Returns the expected Stripe product name for a membership plan.
+     * Standard mode uses "Membership: X"; supporter mode uses "Donation: X".
+     */
+    public static function getExpectedProductName(array $plan, bool $isSupporterMode): string
+    {
+        $prefix = $isSupporterMode ? 'Donation' : 'Membership';
+        return "{$prefix}: {$plan['label']}";
+    }
+
+    public static function createMembershipPlanIfItDoesNotExist($membershipPlan, $isSupporterMode = false)
     {
         global $joinBlockLog;
 
-        $newOrExistingProduct = self::getOrCreateProductForMembershipTier($membershipPlan);
+        $newOrExistingProduct = self::getOrCreateProductForMembershipTier($membershipPlan, $isSupporterMode);
         $newOrExistingPrice = self::getOrCreatePriceForProduct($newOrExistingProduct, $membershipPlan['amount'], $membershipPlan['currency'], self::convertFrequencyToStripeInterval($membershipPlan['frequency']));
 
         return [$newOrExistingProduct, $newOrExistingPrice];
     }
 
-    public static function getOrCreateProductForMembershipTier($membershipPlan)
+    public static function getOrCreateProductForMembershipTier($membershipPlan, $isSupporterMode = false)
     {
         global $joinBlockLog;
 
         $tierID = Settings::getMembershipPlanId($membershipPlan);
 
         $tierDescription = $membershipPlan['description'];
+        $expectedName = self::getExpectedProductName($membershipPlan, $isSupporterMode);
 
         try {
             $joinBlockLog->info("Searching for existing Stripe product for membership tier '{$tierID}'");
@@ -295,28 +452,8 @@ class StripeService
                 $existingProduct = $existingProducts->data[0];
                 $joinBlockLog->info("Product for membership tier '{$tierID}' already exists, with Stripe ID {$existingProduct->id}");
 
-                // Check if the product needs to be updated
-                $needsUpdate = false;
-                $updateData = [];
-
-                if ($existingProduct->name !== "Membership: {$membershipPlan['label']}") {
-                    $joinBlockLog->info("Name changed, updating existing product for membership tier '{$tierID}'");
-
-                    $updateData['name'] = "Membership: {$membershipPlan['label']}";
-                    $needsUpdate = true;
-                }
-
-                if ($existingProduct->description !== $tierDescription) {
-                    $joinBlockLog->info("Description changed, updating existing product for membership tier '{$tierID}'");
-
-                    $updateData['description'] = $tierDescription;
-                    $needsUpdate = true;
-                }
-
-                if ($needsUpdate) {
-                    $updatedProduct = \Stripe\Product::update($existingProduct->id, $updateData);
-                    $joinBlockLog->info("Product updated for membership tier '{$tierID}', with Stripe ID {$updatedProduct->id}");
-                    return $updatedProduct;
+                if ($existingProduct->name !== $expectedName) {
+                    $joinBlockLog->warning("Stripe product name mismatch for tier '{$tierID}': expected '{$expectedName}', found '{$existingProduct->name}'. The block's supporter mode setting may not match how this plan was originally created.");
                 }
 
                 return $existingProduct;
@@ -325,7 +462,7 @@ class StripeService
             $joinBlockLog->info("No existing product found for membership tier '{$tierID}', creating new product");
 
             $stripeProduct = [
-                'name' => "Membership: {$membershipPlan['label']}",
+                'name' => $expectedName,
                 'type' => 'service',
                 'metadata' => ['membership_plan' => $tierID],
             ];
@@ -364,7 +501,7 @@ class StripeService
             foreach ($existingPrices->data as $price) {
                 if ($price->unit_amount === $stripePrice) {
                     $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' and amount {$stripePrice} already exists.");
-                    return $existingPrices->data[0];
+                    return $price;
                 }
             }
 
