@@ -412,6 +412,16 @@ class StripeService
         }
     }
 
+    /**
+     * Returns the expected Stripe product name for a membership plan.
+     * Standard mode uses "Membership: X"; supporter mode uses "Donation: X".
+     */
+    public static function getExpectedProductName(array $plan, bool $isSupporterMode): string
+    {
+        $prefix = $isSupporterMode ? 'Donation' : 'Membership';
+        return "{$prefix}: {$plan['label']}";
+    }
+
     public static function createMembershipPlanIfItDoesNotExist($membershipPlan, $isSupporterMode = false)
     {
         global $joinBlockLog;
@@ -429,7 +439,7 @@ class StripeService
         $tierID = Settings::getMembershipPlanId($membershipPlan);
 
         $tierDescription = $membershipPlan['description'];
-        $productPrefix = $isSupporterMode ? 'Donation' : 'Membership';
+        $expectedName = self::getExpectedProductName($membershipPlan, $isSupporterMode);
 
         try {
             $joinBlockLog->info("Searching for existing Stripe product for membership tier '{$tierID}'");
@@ -442,7 +452,6 @@ class StripeService
                 $existingProduct = $existingProducts->data[0];
                 $joinBlockLog->info("Product for membership tier '{$tierID}' already exists, with Stripe ID {$existingProduct->id}");
 
-                $expectedName = "{$productPrefix}: {$membershipPlan['label']}";
                 if ($existingProduct->name !== $expectedName) {
                     $joinBlockLog->warning("Stripe product name mismatch for tier '{$tierID}': expected '{$expectedName}', found '{$existingProduct->name}'. The block's supporter mode setting may not match how this plan was originally created.");
                 }
@@ -453,7 +462,7 @@ class StripeService
             $joinBlockLog->info("No existing product found for membership tier '{$tierID}', creating new product");
 
             $stripeProduct = [
-                'name' => "{$productPrefix}: {$membershipPlan['label']}",
+                'name' => $expectedName,
                 'type' => 'service',
                 'metadata' => ['membership_plan' => $tierID],
             ];
