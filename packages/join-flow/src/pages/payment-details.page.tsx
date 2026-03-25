@@ -22,7 +22,7 @@ import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
 import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
-import { get as getEnv, getStr as getEnvStr, getPaymentProviders, PaymentMethod, PaymentProvider } from "../env";
+import { get as getEnv, getStr as getEnvStr, getPaymentProviders, resolveStripePaymentMethodTypes, PaymentMethod, PaymentProvider } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
 import { usePostResource } from "../services/rest-resource.service";
 import { SAVED_STATE_KEY } from "../services/router.service";
@@ -287,11 +287,7 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
     ? convertCurrencyFromMajorToMinorUnits(data.donationAmount as number)
     : (plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100);
   const currency = plan.currency.toLowerCase() || "gbp";
-  // One-off donations are card-only (bacs_debit is a subscription-only product in the UK)
-  const paymentMethodTypes = (isOneOffDonation || getEnv("STRIPE_DIRECT_DEBIT_ONLY")) ? ["card"] : ["card"];
-  if (!isOneOffDonation && currency === "gbp" && getEnv("STRIPE_DIRECT_DEBIT") && !getEnv("STRIPE_DIRECT_DEBIT_ONLY")) {
-    paymentMethodTypes.push("bacs_debit");
-  }
+  const paymentMethodTypes = resolveStripePaymentMethodTypes(isOneOffDonation, currency);
 
   return (
     <Elements

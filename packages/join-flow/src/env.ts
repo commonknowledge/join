@@ -170,6 +170,31 @@ export const getPaymentProviders = () => {
     return paymentProviders;
 };
 
+/**
+ * Returns the Stripe Elements paymentMethodTypes array for the current config.
+ *
+ * - One-off donations are always card-only (bacs_debit is a UK subscription product).
+ * - Subscriptions with STRIPE_DIRECT_DEBIT_ONLY use bacs_debit.
+ * - Subscriptions with STRIPE_DIRECT_DEBIT (non-only) in GBP offer both.
+ * - Otherwise card only.
+ */
+export const resolveStripePaymentMethodTypes = (
+  isOneOffDonation: boolean,
+  currency: string
+): string[] => {
+  if (isOneOffDonation) {
+    return ['card'];
+  }
+  if (get('STRIPE_DIRECT_DEBIT_ONLY')) {
+    return ['bacs_debit'];
+  }
+  const types = ['card'];
+  if (currency === 'gbp' && get('STRIPE_DIRECT_DEBIT')) {
+    types.push('bacs_debit');
+  }
+  return types;
+};
+
 export const getPaymentMethods = () => {
     const paymentProviders = getPaymentProviders();
     const paymentMethods: Partial<Record<PaymentMethod, boolean>> = {};
