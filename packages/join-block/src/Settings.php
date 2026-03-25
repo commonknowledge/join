@@ -378,7 +378,7 @@ class Settings
             }
         }, 10, 2);
 
-        add_action('ck_join_flow_membership_plan_saved', function ($membershipPlan) {
+        add_action('ck_join_flow_membership_plan_saved', function ($membershipPlan, $isSupporterMode = false) {
             global $joinBlockLog;
 
             if (!Settings::get('USE_STRIPE')) {
@@ -388,7 +388,7 @@ class Settings
             $joinBlockLog->info('Creating or retrieving membership plan in Stripe', $membershipPlan);
 
             StripeService::initialise();
-            [$newOrExistingProduct, $newOrExistingPrice] = StripeService::createMembershipPlanIfItDoesNotExist($membershipPlan);
+            [$newOrExistingProduct, $newOrExistingPrice] = StripeService::createMembershipPlanIfItDoesNotExist($membershipPlan, $isSupporterMode);
 
             $joinBlockLog->info('Membership plan created or retrieved from Stripe', [
                 'product' => $newOrExistingProduct->id,
@@ -406,7 +406,7 @@ class Settings
             $joinBlockLog->info('Membership plan retrieved from options', self::getMembershipPlan($membershipPlanID));
 
             wp_cache_delete('ck_join_flow_membership_plan_' . $membershipPlanID, 'options');
-        });
+        }, 10, 2);
     }
 
     public static function createMembershipPlansField($name = 'membership_plans')
@@ -493,7 +493,7 @@ class Settings
         return get_option('ck_join_flow_webhook_url_' . $webhook_uuid);
     }
 
-    public static function saveMembershipPlans($membership_plans)
+    public static function saveMembershipPlans($membership_plans, $isSupporterMode = false)
     {
         global $joinBlockLog;
 
@@ -503,7 +503,7 @@ class Settings
             $joinBlockLog->info("Saving membership plan: $slug");
             update_option('ck_join_flow_membership_plan_' . $slug, $plan);
 
-            do_action('ck_join_flow_membership_plan_saved', $plan);
+            do_action('ck_join_flow_membership_plan_saved', $plan, $isSupporterMode);
             $joinBlockLog->info("Saved membership plan: $slug");
         }
     }

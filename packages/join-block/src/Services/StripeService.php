@@ -118,11 +118,6 @@ class StripeService
         } elseif ($strategy === 'custom_plan') {
             $product = self::getOrCreateProductForMembershipTier($plan, false);
             $priceId = self::getOrCreatePriceForProduct($product, $customAmount, $plan['currency'], self::convertFrequencyToStripeInterval($plan['frequency']));
-        } elseif ($isSupporterMode) {
-            // Ensure the product name uses the "Donation:" prefix.
-            // Products are created during plan save (before supporter mode context is known),
-            // so this call triggers a rename if the name still has the "Membership:" prefix.
-            self::getOrCreateProductForMembershipTier($plan, true);
         }
 
         $items = [['price' => $priceId]];
@@ -417,11 +412,11 @@ class StripeService
         }
     }
 
-    public static function createMembershipPlanIfItDoesNotExist($membershipPlan)
+    public static function createMembershipPlanIfItDoesNotExist($membershipPlan, $isSupporterMode = false)
     {
         global $joinBlockLog;
 
-        $newOrExistingProduct = self::getOrCreateProductForMembershipTier($membershipPlan);
+        $newOrExistingProduct = self::getOrCreateProductForMembershipTier($membershipPlan, $isSupporterMode);
         $newOrExistingPrice = self::getOrCreatePriceForProduct($newOrExistingProduct, $membershipPlan['amount'], $membershipPlan['currency'], self::convertFrequencyToStripeInterval($membershipPlan['frequency']));
 
         return [$newOrExistingProduct, $newOrExistingPrice];
@@ -447,28 +442,9 @@ class StripeService
                 $existingProduct = $existingProducts->data[0];
                 $joinBlockLog->info("Product for membership tier '{$tierID}' already exists, with Stripe ID {$existingProduct->id}");
 
-                // Check if the product needs to be updated
-                $needsUpdate = false;
-                $updateData = [];
-
-                if ($existingProduct->name !== "{$productPrefix}: {$membershipPlan['label']}") {
-                    $joinBlockLog->info("Name changed, updating existing product for membership tier '{$tierID}'");
-
-                    $updateData['name'] = "{$productPrefix}: {$membershipPlan['label']}";
-                    $needsUpdate = true;
-                }
-
-                if ($existingProduct->description !== $tierDescription) {
-                    $joinBlockLog->info("Description changed, updating existing product for membership tier '{$tierID}'");
-
-                    $updateData['description'] = $tierDescription;
-                    $needsUpdate = true;
-                }
-
-                if ($needsUpdate) {
-                    $updatedProduct = \Stripe\Product::update($existingProduct->id, $updateData);
-                    $joinBlockLog->info("Product updated for membership tier '{$tierID}', with Stripe ID {$updatedProduct->id}");
-                    return $updatedProduct;
+                $expectedName = "{$productPrefix}: {$membershipPlan['label']}";
+                if ($existingProduct->name !== $expectedName) {
+                    $joinBlockLog->warning("Stripe product name mismatch for tier '{$tierID}': expected '{$expectedName}', found '{$existingProduct->name}'. The block's supporter mode setting may not match how this plan was originally created.");
                 }
 
                 return $existingProduct;

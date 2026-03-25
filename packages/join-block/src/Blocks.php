@@ -36,7 +36,8 @@ class Blocks
                 Settings::ensureWebhookUrlIsSaved($custom_webhook_url);
             }
             $custom_membership_plans = $block['attrs']['data']['custom_membership_plans'] ?? [];
-            Settings::saveMembershipPlans($custom_membership_plans);
+            $is_supporter_mode = !empty($block['attrs']['data']['donation_supporter_mode']);
+            Settings::saveMembershipPlans($custom_membership_plans, $is_supporter_mode);
             $innerBlocks = $block["innerBlocks"] ?? [];
             self::processBlocks($innerBlocks);
         }
