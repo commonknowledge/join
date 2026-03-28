@@ -1,5 +1,5 @@
 {
-  "core": "WordPress/WordPress#6.5",
+  "core": "https://wordpress.org/wordpress-6.5.zip",
   "plugins": ["../../packages/join-block"],
   "mappings": {
     "wp-content/e2e-scripts": "../../packages/join-e2e/scripts"
