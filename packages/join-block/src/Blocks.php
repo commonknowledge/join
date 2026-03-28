@@ -168,49 +168,58 @@ class Blocks
 
         $custom_fields = self::createCustomFieldsField();
 
+        $block_fields = [
+            Field::make('separator', 'ck_join_form', 'CK Join Form'),
+            $joined_page_association,
+            Field::make('checkbox', 'require_address')->set_default_value(true),
+            Field::make('checkbox', 'hide_address')
+                ->set_help_text('Check to completely hide the address section from the form.'),
+            Field::make('checkbox', 'require_phone_number')->set_default_value(true),
+            Field::make('checkbox', 'ask_for_additional_donation')
+                ->set_help_text('Has no effect when Donation Supporter Mode is enabled.'),
+            Field::make('checkbox', 'donation_supporter_mode')
+                ->set_help_text(
+                    'Enable Supporter Mode: shows donation frequency and amount first, ' .
+                    'before personal details and payment. Skips the membership plan step. ' .
+                    'Requires block-level membership plans to be configured (used as donation tiers). ' .
+                    'One-off donations require Stripe. They are not available with Direct Debit only.'
+                ),
+            Field::make('checkbox', 'hide_home_address_copy')
+                ->set_help_text('Check to hide the copy that explains why the address is collected.'),
+            Field::make('checkbox', 'include_skip_payment_button')
+                ->set_help_text(
+                    'Check to include an additional button on the first page to skip to the thank you page ' .
+                        '(which could include a form for additional questions)'
+                ),
+            Field::make('checkbox', 'is_update_flow', 'Is Update Flow (e.g. for existing members)')
+                ->set_help_text(
+                    'Check to skip collecting member details (e.g. name, address). If checked, this page must ' .
+                        'be linked to with the email URL search parameter set, e.g. /become-paid-member/?email=someone@example.com. ' .
+                        'This can be achieved by using the CK Join Form Link block on a landing page, and linking to this page.'
+                ),
+            $custom_fields,
+            $custom_membership_plans,
+            Field::make('text', 'custom_webhook_url')
+                ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
+            Field::make('text', 'custom_sidebar_heading')
+                ->set_help_text('Leave blank to use the default from settings page.'),
+            Field::make('text', 'custom_membership_stage_label')
+                ->set_help_text('Leave blank to use the default from settings page.'),
+            Field::make('text', 'custom_joining_verb')
+                ->set_help_text('Leave blank to use the default from settings page (e.g., "Joining").'),
+        ];
+
+        if (Settings::get("STRIPE_DIRECT_DEBIT_ONLY")) {
+            $block_fields[] = Field::make('checkbox', 'allow_cards_override')
+                ->set_help_text(
+                    'Override the global "Direct Debit Only" setting for this block, ' .
+                    'allowing card payments alongside direct debit.'
+                );
+        }
+
         /** @var Block_Container $join_form_block */
         $join_form_block = Block::make(__('CK Join Form', 'common-knowledge-join-flow'))
-            ->add_fields(array(
-                Field::make('separator', 'ck_join_form', 'CK Join Form'),
-                $joined_page_association,
-                Field::make('checkbox', 'require_address')->set_default_value(true),
-                Field::make('checkbox', 'hide_address')
-                    ->set_help_text('Check to completely hide the address section from the form.'),
-                Field::make('checkbox', 'require_phone_number')->set_default_value(true),
-                Field::make('checkbox', 'ask_for_additional_donation')
-                    ->set_help_text('Has no effect when Donation Supporter Mode is enabled.'),
-                Field::make('checkbox', 'donation_supporter_mode')
-                    ->set_help_text(
-                        'Enable Supporter Mode: shows donation frequency and amount first, ' .
-                        'before personal details and payment. Skips the membership plan step. ' .
-                        'Requires block-level membership plans to be configured (used as donation tiers). ' .
-                        'One-off donations require Stripe. They are not available with Direct Debit only.'
-                    ),
-                Field::make('checkbox', 'hide_home_address_copy')
-                    ->set_help_text('Check to hide the copy that explains why the address is collected.'),
-                Field::make('checkbox', 'include_skip_payment_button')
-                    ->set_help_text(
-                        'Check to include an additional button on the first page to skip to the thank you page ' .
-                            '(which could include a form for additional questions)'
-                    ),
-                Field::make('checkbox', 'is_update_flow', 'Is Update Flow (e.g. for existing members)')
-                    ->set_help_text(
-                        'Check to skip collecting member details (e.g. name, address). If checked, this page must ' .
-                            'be linked to with the email URL search parameter set, e.g. /become-paid-member/?email=someone@example.com. ' .
-                            'This can be achieved by using the CK Join Form Link block on a landing page, and linking to this page.'
-                    ),
-                $custom_fields,
-                $custom_membership_plans,
-                Field::make('text', 'custom_webhook_url')
-                    ->set_help_text('Leave blank to use the default Join Complete webhook from the settings page.'),
-                Field::make('text', 'custom_sidebar_heading')
-                    ->set_help_text('Leave blank to use the default from settings page.'),
-                Field::make('text', 'custom_membership_stage_label')
-                    ->set_help_text('Leave blank to use the default from settings page.'),
-                Field::make('text', 'custom_joining_verb')
-                    ->set_help_text('Leave blank to use the default from settings page (e.g., "Joining").'),
-
-            ));
+            ->add_fields($block_fields);
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             self::enqueueBlockCss();
             self::echoEnvironment($fields, self::NORMAL_BLOCK_MODE);
@@ -463,7 +472,9 @@ class Blocks
             "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? true,
             "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
-            "STRIPE_DIRECT_DEBIT_ONLY" => Settings::get("STRIPE_DIRECT_DEBIT_ONLY"),
+            "STRIPE_DIRECT_DEBIT_ONLY" => !empty($fields['allow_cards_override'])
+                ? false
+                : Settings::get("STRIPE_DIRECT_DEBIT_ONLY"),
             "STRIPE_PUBLISHABLE_KEY" => Settings::get("STRIPE_PUBLISHABLE_KEY"),
             "SUBSCRIPTION_DAY_OF_MONTH_COPY" => Settings::get("SUBSCRIPTION_DAY_OF_MONTH_COPY"),
             "USE_CHARGEBEE" => Settings::get("USE_CHARGEBEE"),
