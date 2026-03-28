@@ -59,7 +59,7 @@ test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true',
 
   test('Monthly tab still works and advances the form', async ({ page }) => {
     await page.locator('.btn-group button:has-text("Monthly")').click();
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
 
     await page.waitForSelector('input#firstName');
@@ -86,7 +86,7 @@ test.describe('7.2 — No plans configured warning', () => {
 
   test('no tier buttons or frequency toggle are rendered', async ({ page }) => {
     await expect(page.locator('.btn-group button:has-text("Monthly")')).not.toBeVisible();
-    await expect(page.locator('button:has-text("£5")')).not.toBeVisible();
+    await expect(page.locator('button[type="button"]:has-text("£5")')).not.toBeVisible();
   });
 });
 
@@ -128,7 +128,7 @@ test.describe('7.4 — Product naming: supporter mode monthly', () => {
     await page.waitForSelector('h2:has-text("Support us")');
 
     // Monthly is default — select a tier and advance.
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
     await page.locator(CONTINUE).click();
@@ -154,7 +154,7 @@ test.describe('7.5 — Product naming: supporter mode one-off', () => {
     await page.waitForSelector('h2:has-text("Support us")');
 
     await page.locator('.btn-group button:has-text("One-off")').click();
-    await page.locator('button:has-text("£10")').click();
+    await page.locator('button[type="button"]:has-text("£10")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
     await page.locator(CONTINUE).click();

@@ -47,7 +47,7 @@ test.describe('6.2 — Selecting One-off updates CTA', () => {
     await loadSupporterPage(page);
 
     await page.locator('.btn-group button:has-text("One-off")').click();
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
 
     const cta = page.locator('button[type="submit"]');
     await expect(cta).toContainText('Donate £5 now');
@@ -69,7 +69,7 @@ test.describe('6.3 — /join body for one-off supporter donation', () => {
 
     // Switch to one-off and select a tier.
     await page.locator('.btn-group button:has-text("One-off")').click();
-    await page.locator('button:has-text("£10")').click();
+    await page.locator('button[type="button"]:has-text("£10")').click();
     await page.locator('button[type="submit"]').click();
 
     // Advance through details.
@@ -86,7 +86,7 @@ test.describe('6.3 — /join body for one-off supporter donation', () => {
     await loadSupporterPage(page);
 
     await page.locator('.btn-group button:has-text("One-off")').click();
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
     await page.locator(CONTINUE).click();

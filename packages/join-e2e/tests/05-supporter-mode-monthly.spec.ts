@@ -55,19 +55,19 @@ test.describe('5.2 — Monthly selected by default', () => {
 
 test.describe('5.3 — Tier selection updates CTA', () => {
   test('selecting the £5 tier shows "Donate £5/month" CTA', async ({ page }) => {
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     const cta = page.locator('button[type="submit"]');
     await expect(cta).toContainText('Donate £5/month');
   });
 
   test('selecting the £10 tier shows "Donate £10/month" CTA', async ({ page }) => {
-    await page.locator('button:has-text("£10")').click();
+    await page.locator('button[type="button"]:has-text("£10")').click();
     const cta = page.locator('button[type="submit"]');
     await expect(cta).toContainText('Donate £10/month');
   });
 
   test('selecting the £20 tier shows "Donate £20/month" CTA', async ({ page }) => {
-    await page.locator('button:has-text("£20")').click();
+    await page.locator('button[type="button"]:has-text("£20")').click();
     const cta = page.locator('button[type="submit"]');
     await expect(cta).toContainText('Donate £20/month');
   });
@@ -75,7 +75,7 @@ test.describe('5.3 — Tier selection updates CTA', () => {
 
 test.describe('5.4 — Advancing from donation goes to details', () => {
   test('continuing from donation page advances to the details stage', async ({ page }) => {
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
 
     // In supporter mode: donation -> enter-details.
@@ -87,7 +87,7 @@ test.describe('5.4 — Advancing from donation goes to details', () => {
 test.describe('5.5 — /join body for monthly supporter donation', () => {
   test('membership field contains the plan value and donationAmount is 0 for monthly', async ({ page }) => {
     // Select the £5 tier and advance through donation -> details.
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
 
@@ -108,7 +108,7 @@ test.describe('5.5 — /join body for monthly supporter donation', () => {
 
 test.describe('5.6 — Product naming: supporter mode produces a Donation product', () => {
   test('/join body signals a recurring supporter donation (recurDonation=true, donationAmount=0)', async ({ page }) => {
-    await page.locator('button:has-text("£5")').click();
+    await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
     await page.locator(CONTINUE).click();

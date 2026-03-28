@@ -42,7 +42,7 @@ test.describe('4.1 — Donation upsell page appears', () => {
 
     await expect(page.locator('h2:has-text("Can you chip in?")')).toBeVisible();
     // The donation tier buttons should be rendered.
-    await expect(page.locator('button:has-text("£25")')).toBeVisible();
+    await expect(page.locator('button[type="button"]:has-text("£25")')).toBeVisible();
   });
 });
 
@@ -68,7 +68,7 @@ test.describe('4.3 — One-off donation amount sent in /join', () => {
     await advanceToDonationPage(page);
 
     // Select the £25 tier.
-    await page.locator('button:has-text("£25")').click();
+    await page.locator('button[type="button"]:has-text("£25")').click();
 
     // Do NOT tick "Make this donation recurring" — one-off donation.
     await page.locator('button[type="submit"]:has-text("Yes I\'ll chip in")').click();
@@ -82,7 +82,7 @@ test.describe('4.3 — One-off donation amount sent in /join', () => {
     // Capture the session state by inspecting sessionStorage after advancing.
     await advanceToDonationPage(page);
 
-    await page.locator('button:has-text("£25")').click();
+    await page.locator('button[type="button"]:has-text("£25")').click();
     // Ensure the recurring checkbox is unchecked.
     const recurCheckbox = page.locator('input[type="checkbox"]');
     if (await recurCheckbox.isChecked()) {
@@ -105,7 +105,7 @@ test.describe('4.4 — Recurring donation', () => {
   test('ticking "Make this donation recurring" sets recurDonation=true in session state', async ({ page }) => {
     await advanceToDonationPage(page);
 
-    await page.locator('button:has-text("£25")').click();
+    await page.locator('button[type="button"]:has-text("£25")').click();
 
     const recurCheckbox = page.locator('input[type="checkbox"]');
     await recurCheckbox.check();
