@@ -4,19 +4,26 @@ import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides
 /**
  * Phase 7 — Supporter mode edge cases and product naming
  *
- * PR #59 test plan sections 9, 10, and 13.
+ * One-off tab disabled when Direct Debit Only is active:
+ *   When STRIPE_DIRECT_DEBIT_ONLY=true, the One-off tab is disabled and an
+ *   explanatory note is shown. Monthly donations remain available.
  *
- * Section 9:  One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true.
- * Section 10: No plans configured shows a warning.
- * Section 13: Product naming — /join request body carries the correct
- *             membership value prefix for standard vs supporter mode.
+ * No plans configured:
+ *   When a Supporter Mode block has no membership plans set, the donation page
+ *   shows a "No donation amounts configured" warning instead of tier buttons.
  *
- * Note: Section 11 (free membership) is already covered by Phase 3
- * (03-free-membership.spec.ts). Section 12 (Mailchimp non-fatal errors)
- * is a backend concern verified by PHP unit tests; the frontend always
- * receives success:true regardless of Mailchimp state.
- * Section 6 (supporter mode monthly via Direct Debit) requires a live
- * GoCardless integration and is covered by manual testing.
+ * Product naming in /join request body:
+ *   - Standard join: membership field holds a plan ID (not prefixed "Donation:").
+ *     The backend names the Stripe product "Membership: <plan label>".
+ *   - Supporter mode monthly: recurDonation=true and donationAmount=0 signal
+ *     that the plan price IS the donation; backend names it "Donation: <label>".
+ *   - Supporter mode one-off: recurDonation=false and donationAmount>0 signal
+ *     a one-time PaymentIntent; backend uses the "Supporter Donation" product.
+ *
+ * Note: Free membership (payment skipped for zero-price plans) is covered by
+ * Phase 3 (03-free-membership.spec.ts). Mailchimp non-fatal error handling is
+ * a backend concern covered by JoinServiceMailchimpTest.php. Supporter mode
+ * monthly via Direct Debit requires a live GoCardless integration.
  */
 
 const SUPPORTER_PAGE = '/e2e-supporter/';
@@ -27,7 +34,7 @@ const STANDARD_PAGE = '/e2e-standard-join/';
 // Section 9 — One-off disabled when Direct Debit only
 // ---------------------------------------------------------------------------
 
-test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true (PR #59 section 9)', () => {
+test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
   test.beforeEach(async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,
@@ -64,7 +71,7 @@ test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true (
 // Section 10 — No plans configured
 // ---------------------------------------------------------------------------
 
-test.describe('7.2 — No plans configured warning (PR #59 section 10)', () => {
+test.describe('7.2 — No plans configured warning', () => {
   test.beforeEach(async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_NO_PLANS_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);
@@ -87,7 +94,7 @@ test.describe('7.2 — No plans configured warning (PR #59 section 10)', () => {
 // Section 13 — Product naming
 // ---------------------------------------------------------------------------
 
-test.describe('7.3 — Product naming: standard join (PR #59 section 13)', () => {
+test.describe('7.3 — Product naming: standard join', () => {
   test('/join body membership does not contain "Donation:" prefix for standard join', async ({ page }) => {
     await injectEnvOverrides(page, `**${STANDARD_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);
@@ -110,7 +117,7 @@ test.describe('7.3 — Product naming: standard join (PR #59 section 13)', () =>
   });
 });
 
-test.describe('7.4 — Product naming: supporter mode monthly (PR #59 section 13)', () => {
+test.describe('7.4 — Product naming: supporter mode monthly', () => {
   test('/join body signals a recurring donation (recurDonation=true, donationAmount=0)', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,
@@ -136,7 +143,7 @@ test.describe('7.4 — Product naming: supporter mode monthly (PR #59 section 13
   });
 });
 
-test.describe('7.5 — Product naming: supporter mode one-off (PR #59 section 13)', () => {
+test.describe('7.5 — Product naming: supporter mode one-off', () => {
   test('/join body signals a one-off donation (recurDonation=false, donationAmount>0)', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,

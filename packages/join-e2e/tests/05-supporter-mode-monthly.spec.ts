@@ -4,11 +4,16 @@ import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides
 /**
  * Phase 5 — Supporter mode, monthly donations
  *
- * PR #59 test plan sections 5 and 7.
+ * Tests the Donation Supporter Mode flow where the donation step comes first
+ * (before personal details and payment). Members choose a giving tier or enter
+ * a custom amount, with monthly recurring selected by default.
  *
- * Config: DONATION_SUPPORTER_MODE=true, USE_STRIPE=true (injected).
- * The donation page is the FIRST step (not the details page).
- * Monthly frequency is selected by default.
+ * Covers: first-step rendering, tier/custom-amount CTA updates, advancing
+ * through donation → details, and the /join request body for a monthly
+ * recurring supporter donation (donationAmount=0 because the plan price IS
+ * the donation; recurDonation=true).
+ *
+ * Config: DONATION_SUPPORTER_MODE=true, USE_STRIPE=true (injected via env override).
  */
 
 const SUPPORTER_PAGE = '/e2e-supporter/';
@@ -101,8 +106,8 @@ test.describe('5.5 — /join body for monthly supporter donation', () => {
   });
 });
 
-test.describe('5.6 — Product naming: Donation prefix for supporter mode', () => {
-  test('/join body membership starts with the plan value (not "Membership:")', async ({ page }) => {
+test.describe('5.6 — Product naming: supporter mode produces a Donation product', () => {
+  test('/join body signals a recurring supporter donation (recurDonation=true, donationAmount=0)', async ({ page }) => {
     await page.locator('button:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
     await page.waitForSelector('input#firstName');
@@ -118,10 +123,10 @@ test.describe('5.6 — Product naming: Donation prefix for supporter mode', () =
 });
 
 // ---------------------------------------------------------------------------
-// Section 7 — Custom amount
+// Custom amount (plan with allow_custom_amount enabled)
 // ---------------------------------------------------------------------------
 
-test.describe('5.7 — Custom amount updates CTA (PR #59 section 7)', () => {
+test.describe('5.7 — Custom amount updates CTA', () => {
   test('entering a custom amount updates CTA to reflect the custom value', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_CUSTOM_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);

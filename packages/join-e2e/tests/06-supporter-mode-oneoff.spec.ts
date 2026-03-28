@@ -4,17 +4,20 @@ import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides
 /**
  * Phase 6 — Supporter mode, one-off donations
  *
- * PR #59 test plan sections 8 and 8a.
+ * Tests the one-off donation path within Supporter Mode. When Stripe card
+ * payments are available (USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false),
+ * the One-off tab is enabled. Selecting it changes the CTA to "Donate £X now"
+ * (no "/month" suffix) and sets paymentMethod to creditCard.
  *
- * Config: DONATION_SUPPORTER_MODE=true, USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false.
- * The One-off tab must be enabled and selecting it changes the CTA to "Donate £X now".
+ * Because Stripe does not create a subscription for one-off donations, the
+ * proxy assertion used here is the /join request body:
+ *   - recurDonation: false  — the frontend signals a one-off intent
+ *   - donationAmount: N     — the PaymentIntent amount (not 0)
+ * The backend routes this through createPaymentIntent rather than a
+ * subscription, which is the equivalent server-side check.
  *
- * Verifying "no subscription created" in Stripe is not possible without live
- * credentials. As a proxy, the /join request body is inspected:
- *   - recurDonation: false  → the frontend signals a one-off intent
- *   - donationAmount: N     → the amount for the PaymentIntent (not 0)
- * The backend routes this through createPaymentIntent rather than creating a
- * subscription, which is the equivalent server-side assertion.
+ * Config: DONATION_SUPPORTER_MODE=true, USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false
+ * (all injected via env override since these are global plugin settings).
  */
 
 const SUPPORTER_PAGE = '/e2e-supporter/';
@@ -60,7 +63,7 @@ test.describe('6.2 — Selecting One-off updates CTA', () => {
   });
 });
 
-test.describe('6.3 — /join body for one-off supporter donation (PR #59 section 8)', () => {
+test.describe('6.3 — /join body for one-off supporter donation', () => {
   test('recurDonation=false and donationAmount>0 in /join body for one-off', async ({ page }) => {
     await loadSupporterPage(page);
 
@@ -95,7 +98,7 @@ test.describe('6.3 — /join body for one-off supporter donation (PR #59 section
   });
 });
 
-test.describe('6.4 — One-off custom amount (PR #59 section 8a)', () => {
+test.describe('6.4 — One-off custom amount', () => {
   test('custom amount on one-off updates CTA to "Donate £X now"', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_CUSTOM_PAGE}`, {
       USE_STRIPE: true,

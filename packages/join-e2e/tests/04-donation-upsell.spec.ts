@@ -2,12 +2,14 @@ import { test, expect } from '@playwright/test';
 import { mockRestEndpoints, CONTINUE } from './helpers';
 
 /**
- * Phase 4 — Donation upsell (standard join flow with ASK_FOR_ADDITIONAL_DONATION on)
+ * Phase 4 — Donation upsell
  *
- * PR #59 test plan sections 2, 3, 4.
+ * Tests the standard join flow when ASK_FOR_ADDITIONAL_DONATION is enabled.
+ * After the member selects a plan, an optional donation upsell page is shown
+ * before the payment step. Members can choose an amount, optionally make it
+ * recurring, or skip the donation entirely with "Not right now".
  *
  * Config: ASK_FOR_ADDITIONAL_DONATION=true, DONATION_SUPPORTER_MODE=false.
- * The upsell donation page appears after plan selection.
  *
  * All REST endpoints are mocked. The bundle is built with USE_TEST_DATA=true
  * so all personal-detail fields are pre-filled.
