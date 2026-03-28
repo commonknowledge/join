@@ -28,7 +28,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForSelector('h2:has-text("Support us")');
 });
 
-test.describe('5.1 — Donation page is the first step', () => {
+test.describe('Donation page is the first step', () => {
   test('supporter mode renders the donation page first, not the details page', async ({ page }) => {
     await expect(page.locator('h2:has-text("Support us")')).toBeVisible();
     // The details page input must NOT be visible yet.
@@ -40,7 +40,7 @@ test.describe('5.1 — Donation page is the first step', () => {
   });
 });
 
-test.describe('5.2 — Monthly selected by default', () => {
+test.describe('Monthly selected by default', () => {
   test('Monthly button has the active (dark) variant on load', async ({ page }) => {
     const monthlyBtn = page.locator('.btn-group button:has-text("Monthly")');
     await expect(monthlyBtn).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('5.2 — Monthly selected by default', () => {
   });
 });
 
-test.describe('5.3 — Tier selection updates CTA', () => {
+test.describe('Tier selection updates CTA', () => {
   test('selecting the £5 tier shows "Donate £5/month" CTA', async ({ page }) => {
     await page.locator('button[type="button"]:has-text("£5")').click();
     const cta = page.locator('button[type="submit"]');
@@ -73,7 +73,7 @@ test.describe('5.3 — Tier selection updates CTA', () => {
   });
 });
 
-test.describe('5.4 — Advancing from donation goes to details', () => {
+test.describe('Advancing from donation goes to details', () => {
   test('continuing from donation page advances to the details stage', async ({ page }) => {
     await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
@@ -84,7 +84,7 @@ test.describe('5.4 — Advancing from donation goes to details', () => {
   });
 });
 
-test.describe('5.5 — /join body for monthly supporter donation', () => {
+test.describe('/join body for monthly supporter donation', () => {
   test('membership field contains the plan value and donationAmount is 0 for monthly', async ({ page }) => {
     // Select the £5 tier and advance through donation -> details.
     await page.locator('button[type="button"]:has-text("£5")').click();
@@ -106,7 +106,7 @@ test.describe('5.5 — /join body for monthly supporter donation', () => {
   });
 });
 
-test.describe('5.6 — Product naming: supporter mode produces a Donation product', () => {
+test.describe('Product naming: supporter mode produces a Donation product', () => {
   test('/join body signals a recurring supporter donation (recurDonation=true, donationAmount=0)', async ({ page }) => {
     await page.locator('button[type="button"]:has-text("£5")').click();
     await page.locator('button[type="submit"]').click();
@@ -126,7 +126,7 @@ test.describe('5.6 — Product naming: supporter mode produces a Donation produc
 // Custom amount (plan with allow_custom_amount enabled)
 // ---------------------------------------------------------------------------
 
-test.describe('5.7 — Custom amount updates CTA', () => {
+test.describe('Custom amount updates CTA', () => {
   test('entering a custom amount updates CTA to reflect the custom value', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_CUSTOM_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);

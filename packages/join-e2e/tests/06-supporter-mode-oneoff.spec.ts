@@ -33,7 +33,7 @@ async function loadSupporterPage(page: import('@playwright/test').Page, url = SU
   await page.waitForSelector('h2:has-text("Support us")');
 }
 
-test.describe('6.1 — One-off tab is enabled when USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false', () => {
+test.describe('One-off tab is enabled when USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false', () => {
   test('One-off button is not disabled', async ({ page }) => {
     await loadSupporterPage(page);
     const oneOffBtn = page.locator('.btn-group button:has-text("One-off")');
@@ -42,7 +42,7 @@ test.describe('6.1 — One-off tab is enabled when USE_STRIPE=true, STRIPE_DIREC
   });
 });
 
-test.describe('6.2 — Selecting One-off updates CTA', () => {
+test.describe('Selecting One-off updates CTA', () => {
   test('clicking One-off changes the CTA to "Donate £X now"', async ({ page }) => {
     await loadSupporterPage(page);
 
@@ -63,7 +63,7 @@ test.describe('6.2 — Selecting One-off updates CTA', () => {
   });
 });
 
-test.describe('6.3 — /join body for one-off supporter donation', () => {
+test.describe('/join body for one-off supporter donation', () => {
   test('recurDonation=false and donationAmount>0 in /join body for one-off', async ({ page }) => {
     await loadSupporterPage(page);
 
@@ -98,7 +98,7 @@ test.describe('6.3 — /join body for one-off supporter donation', () => {
   });
 });
 
-test.describe('6.4 — One-off custom amount', () => {
+test.describe('One-off custom amount', () => {
   test('custom amount on one-off updates CTA to "Donate £X now"', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_CUSTOM_PAGE}`, {
       USE_STRIPE: true,

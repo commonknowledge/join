@@ -10,8 +10,8 @@ import { test, expect } from '@playwright/test';
 
 const STANDARD_PAGE = '/e2e-standard-join/';
 
-test.describe('1 — Rendering', () => {
-  test('1.1 — form container and env script are present', async ({ page }) => {
+test.describe('Rendering', () => {
+  test('form container and env script are present', async ({ page }) => {
     await page.goto(STANDARD_PAGE);
 
     // React mounts into .ck-join-form; the outer .ck-join-flow wrapper is
@@ -33,7 +33,7 @@ test.describe('1 — Rendering', () => {
     expect(env.MEMBERSHIP_PLANS.length).toBeGreaterThan(0);
   });
 
-  test('1.2 — first name input is visible and no console errors', async ({ page }) => {
+  test('first name input is visible and no console errors', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -52,7 +52,7 @@ test.describe('1 — Rendering', () => {
     ).toHaveLength(0);
   });
 
-  test('1.3 — progress steps rendered with Your Details as current', async ({ page }) => {
+  test('progress steps rendered with Your Details as current', async ({ page }) => {
     await page.goto(STANDARD_PAGE);
 
     await expect(page.locator('.progress-steps')).toBeVisible();

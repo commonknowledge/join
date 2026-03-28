@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForSelector('input#firstName');
 });
 
-test.describe('3.1 — Confirm stage reached without payment', () => {
+test.describe('Confirm stage reached without payment', () => {
   test('continuing through Details and Plan skips payment and shows confirm stage', async ({
     page,
   }) => {
@@ -51,7 +51,7 @@ test.describe('3.1 — Confirm stage reached without payment', () => {
   });
 });
 
-test.describe('3.2 — Confirm stage summary', () => {
+test.describe('Confirm stage summary', () => {
   test('confirm stage shows member email and a Confirm button', async ({ page }) => {
     await page.route('**/wp-json/join/v1/join', async (route) => {
       await route.fulfill({
@@ -77,7 +77,7 @@ test.describe('3.2 — Confirm stage summary', () => {
   });
 });
 
-test.describe('3.3 — Join request body', () => {
+test.describe('Join request body', () => {
   test('clicking Confirm POSTs the expected fields to /join', async ({ page }) => {
     let capturedBody: Record<string, unknown> | null = null;
 

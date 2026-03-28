@@ -34,7 +34,7 @@ const STANDARD_PAGE = '/e2e-standard-join/';
 // Section 9 — One-off disabled when Direct Debit only
 // ---------------------------------------------------------------------------
 
-test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
+test.describe('One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
   test.beforeEach(async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,
@@ -71,7 +71,7 @@ test.describe('7.1 — One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true',
 // Section 10 — No plans configured
 // ---------------------------------------------------------------------------
 
-test.describe('7.2 — No plans configured warning', () => {
+test.describe('No plans configured warning', () => {
   test.beforeEach(async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_NO_PLANS_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);
@@ -94,7 +94,7 @@ test.describe('7.2 — No plans configured warning', () => {
 // Section 13 — Product naming
 // ---------------------------------------------------------------------------
 
-test.describe('7.3 — Product naming: standard join', () => {
+test.describe('Product naming: standard join', () => {
   test('/join body membership does not contain "Donation:" prefix for standard join', async ({ page }) => {
     await injectEnvOverrides(page, `**${STANDARD_PAGE}`, { USE_STRIPE: true });
     await mockRestEndpoints(page);
@@ -117,7 +117,7 @@ test.describe('7.3 — Product naming: standard join', () => {
   });
 });
 
-test.describe('7.4 — Product naming: supporter mode monthly', () => {
+test.describe('Product naming: supporter mode monthly', () => {
   test('/join body signals a recurring donation (recurDonation=true, donationAmount=0)', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,
@@ -143,7 +143,7 @@ test.describe('7.4 — Product naming: supporter mode monthly', () => {
   });
 });
 
-test.describe('7.5 — Product naming: supporter mode one-off', () => {
+test.describe('Product naming: supporter mode one-off', () => {
   test('/join body signals a one-off donation (recurDonation=false, donationAmount>0)', async ({ page }) => {
     await injectEnvOverrides(page, `**${SUPPORTER_PAGE}`, {
       USE_STRIPE: true,

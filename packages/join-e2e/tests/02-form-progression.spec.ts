@@ -40,7 +40,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForSelector('input#firstName');
 });
 
-test.describe('2.1 — Pre-filled values', () => {
+test.describe('Pre-filled values', () => {
   test('form is pre-filled with test data', async ({ page }) => {
     await expect(page.locator('input#firstName')).toHaveValue('Test');
     await expect(page.locator('input#lastName')).toHaveValue('Person');
@@ -49,7 +49,7 @@ test.describe('2.1 — Pre-filled values', () => {
   });
 });
 
-test.describe('2.2 — Validation', () => {
+test.describe('Validation', () => {
   /**
    * Helper: clear a field, click Continue, assert at least one .invalid-feedback
    * is shown, and the stage has NOT advanced past details.
@@ -73,19 +73,19 @@ test.describe('2.2 — Validation', () => {
     await page.locator(fieldSelector).fill(restoreValue);
   }
 
-  test('2.2a — first name required', async ({ page }) => {
+  test('first name required', async ({ page }) => {
     await assertRequiredValidation(page, 'input#firstName', 'Test');
   });
 
-  test('2.2b — last name required', async ({ page }) => {
+  test('last name required', async ({ page }) => {
     await assertRequiredValidation(page, 'input#lastName', 'Person');
   });
 
-  test('2.2c — email required', async ({ page }) => {
+  test('email required', async ({ page }) => {
     await assertRequiredValidation(page, 'input#email', 'someone@example.com');
   });
 
-  test('2.2d — email format validated', async ({ page }) => {
+  test('email format validated', async ({ page }) => {
     await page.locator('input#email').fill('notanemail');
     await page.locator(CONTINUE).click();
     await expect(page.locator('input#email.is-invalid')).toBeVisible();
@@ -93,23 +93,23 @@ test.describe('2.2 — Validation', () => {
     await page.locator('input#email').fill('someone@example.com');
   });
 
-  test('2.2e — phone number required (requirePhoneNumber=true)', async ({ page }) => {
+  test('phone number required (requirePhoneNumber=true)', async ({ page }) => {
     await assertRequiredValidation(page, 'input#phoneNumber', '02036919400');
   });
 
-  test('2.2f — address line 1 required (requireAddress=true)', async ({ page }) => {
+  test('address line 1 required (requireAddress=true)', async ({ page }) => {
     await assertRequiredValidation(page, 'input#addressLine1', '54 Abingdon Road');
   });
 
-  test('2.2g — address city required', async ({ page }) => {
+  test('address city required', async ({ page }) => {
     await assertRequiredValidation(page, 'input#addressCity', 'Oxford');
   });
 
-  test('2.2h — postcode required', async ({ page }) => {
+  test('postcode required', async ({ page }) => {
     await assertRequiredValidation(page, 'input#addressPostcode', 'OX14PE');
   });
 
-  test('2.2i — country field is present and pre-filled to GB', async ({ page }) => {
+  test('country field is present and pre-filled to GB', async ({ page }) => {
     // The country select has no empty option so a truly empty value cannot be
     // triggered.  Assert instead that the field is present and defaults to GB
     // (confirming it participates in the form).
@@ -119,7 +119,7 @@ test.describe('2.2 — Validation', () => {
   });
 });
 
-test.describe('2.3 — Advance details to plan', () => {
+test.describe('Advance details to plan', () => {
   test('clicking Continue advances to the plan stage', async ({ page }) => {
     await page.locator(CONTINUE).click();
 
@@ -130,7 +130,7 @@ test.describe('2.3 — Advance details to plan', () => {
   });
 });
 
-test.describe('2.4 — Select plan and advance', () => {
+test.describe('Select plan and advance', () => {
   test('selecting the Standard plan and clicking Continue advances the stage', async ({ page }) => {
     // Advance from details to plan.
     await page.locator(CONTINUE).click();
@@ -150,7 +150,7 @@ test.describe('2.4 — Select plan and advance', () => {
   });
 });
 
-test.describe('2.5 — /step request body', () => {
+test.describe('/step request body', () => {
   test('continuing from details POSTs the expected fields to /step', async ({ page }) => {
     // Override the /step route so we can inspect the request body.
     let stepBody: Record<string, unknown> | null = null;

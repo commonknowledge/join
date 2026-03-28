@@ -36,7 +36,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForSelector('input#firstName');
 });
 
-test.describe('4.1 — Donation upsell page appears', () => {
+test.describe('Donation upsell page appears', () => {
   test('donation upsell page is shown after plan selection', async ({ page }) => {
     await advanceToDonationPage(page);
 
@@ -46,7 +46,7 @@ test.describe('4.1 — Donation upsell page appears', () => {
   });
 });
 
-test.describe('4.2 — "Not right now" skips donation', () => {
+test.describe('"Not right now" skips donation', () => {
   test('clicking "Not right now" advances to payment without a donation', async ({ page }) => {
     await advanceToDonationPage(page);
 
@@ -57,7 +57,7 @@ test.describe('4.2 — "Not right now" skips donation', () => {
   });
 });
 
-test.describe('4.3 — One-off donation amount sent in /join', () => {
+test.describe('One-off donation amount sent in /join', () => {
   test('selecting a donation amount sends donationAmount in the /join request', async ({ page }) => {
     let stepBody: Record<string, unknown> | null = null;
     await page.route('**/wp-json/join/v1/step', async (route) => {
@@ -101,7 +101,7 @@ test.describe('4.3 — One-off donation amount sent in /join', () => {
   });
 });
 
-test.describe('4.4 — Recurring donation', () => {
+test.describe('Recurring donation', () => {
   test('ticking "Make this donation recurring" sets recurDonation=true in session state', async ({ page }) => {
     await advanceToDonationPage(page);
 
@@ -123,7 +123,7 @@ test.describe('4.4 — Recurring donation', () => {
   });
 });
 
-test.describe('4.5 — Both ASK_FOR_ADDITIONAL_DONATION and DONATION_SUPPORTER_MODE on', () => {
+test.describe('Both ASK_FOR_ADDITIONAL_DONATION and DONATION_SUPPORTER_MODE on', () => {
   test('supporter mode takes precedence — donation page uses supporter layout', async ({ page }) => {
     // Override env to enable DONATION_SUPPORTER_MODE on this page as well.
     // We navigate to the supporter page (which has donation_supporter_mode=true)
