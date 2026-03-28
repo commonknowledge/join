@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.1 =
+* Allow cards on individual forms when Direct Debit Only is set globally
 = 1.4.0 =
 * Add Donation Supporter Mode: a new block setting that puts donation first, before personal details and payment, skipping the membership plan step entirely
 * Supporter mode: donation frequency (monthly/one-off) and tier selection driven by block-level membership plans
