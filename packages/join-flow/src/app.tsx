@@ -389,9 +389,15 @@ const getInitialState = (): FormSchema => {
 
   const getProvidedStateFromQueryParams = () => {
     if (queryParams) {
-      return FormSchema.cast(queryParams, {
-        strict: true
-      });
+      const cast = FormSchema.cast(queryParams, { strict: true });
+      // FormSchema.cast() fills in schema defaults for every field absent from
+      // the query string (e.g. recurDonation: false, membership: "").  Those
+      // defaults must not override the session-restored state or the
+      // DONATION_SUPPORTER_MODE env override above.  Only pass through values
+      // that were explicitly present in the URL.
+      return Object.fromEntries(
+        Object.entries(cast).filter(([k]) => k in queryParams)
+      );
     }
   };
 
