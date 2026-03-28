@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Phase 1 — Rendering
+ * Rendering
  *
  * Verifies that the join form block renders correctly: the React mount point
  * is present, the environment JSON is injected and parseable, the first step's

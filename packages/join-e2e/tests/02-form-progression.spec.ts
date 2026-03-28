@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Phase 2 — Form progression
+ * Form progression
  *
  * All tests start on the standard test page.  Because the bundle is built with
  * REACT_APP_USE_TEST_DATA=true, getTestDataIfEnabled() pre-fills every field

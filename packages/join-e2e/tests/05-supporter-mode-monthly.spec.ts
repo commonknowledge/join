@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides, CONTINUE } from './helpers';
 
 /**
- * Phase 5 — Supporter mode, monthly donations
+ * Supporter mode, monthly donations
  *
  * Tests the Donation Supporter Mode flow where the donation step comes first
  * (before personal details and payment). Members choose a giving tier or enter

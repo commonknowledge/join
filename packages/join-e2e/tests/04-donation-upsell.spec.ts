@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockRestEndpoints, CONTINUE } from './helpers';
 
 /**
- * Phase 4 — Donation upsell
+ * Donation upsell
  *
  * Tests the standard join flow when ASK_FOR_ADDITIONAL_DONATION is enabled.
  * After the member selects a plan, an optional donation upsell page is shown

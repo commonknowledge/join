@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides, CONTINUE } from './helpers';
 
 /**
- * Phase 6 — Supporter mode, one-off donations
+ * Supporter mode, one-off donations
  *
  * Tests the one-off donation path within Supporter Mode. When Stripe card
  * payments are available (USE_STRIPE=true, STRIPE_DIRECT_DEBIT_ONLY=false),

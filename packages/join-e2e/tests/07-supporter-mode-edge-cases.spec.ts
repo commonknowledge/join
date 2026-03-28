@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides, CONTINUE } from './helpers';
 
 /**
- * Phase 7 — Supporter mode edge cases and product naming
+ * Supporter mode edge cases and product naming
  *
  * One-off tab disabled when Direct Debit Only is active:
  *   When STRIPE_DIRECT_DEBIT_ONLY=true, the One-off tab is disabled and an
@@ -21,7 +21,7 @@ import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides
  *     a one-time PaymentIntent; backend uses the "Supporter Donation" product.
  *
  * Note: Free membership (payment skipped for zero-price plans) is covered by
- * Phase 3 (03-free-membership.spec.ts). Mailchimp non-fatal error handling is
+ * 03-free-membership.spec.ts. Mailchimp non-fatal error handling is
  * a backend concern covered by JoinServiceMailchimpTest.php. Supporter mode
  * monthly via Direct Debit requires a live GoCardless integration.
  */

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Phase 3 — Free membership happy path
+ * Free membership happy path
  *
  * Uses the free-membership test page (amount="0").  Because the plan amount is
  * zero and no additional donation is requested, shouldSkipPayment fires in
