@@ -51,13 +51,13 @@ The suite currently contains 52 passing tests across 7 spec files.
 
 | Spec file | Area | Tests | What it verifies |
 |-----------|------|------:|------------------|
-| `01-render.spec.ts` | Rendering | 3 | Form container present, env script injected, first name input visible, no console errors, progress breadcrumb renders |
-| `02-form-progression.spec.ts` | Form progression | 7 | Test data pre-fill, required field validation (name, email, phone, address), email format validation, country defaults to GB, details-to-plan advancement, plan selection, `/step` request body |
-| `03-free-membership.spec.ts` | Free membership | 4 | Payment stages skipped for GBP 0 plans, confirm stage reached from plan, confirm page content, `/join` request body |
-| `04-donation-upsell.spec.ts` | Donation upsell | 6 | Upsell page appears when enabled, "Not right now" skips to payment, tier selection advances, `recurDonation` flag toggling, supporter mode takes precedence over upsell |
-| `05-supporter-mode-monthly.spec.ts` | Supporter monthly | 9 | Donation page is first step, breadcrumb text, monthly toggle default, tier selection updates CTA text, donation-to-details progression, `/join` body fields, custom amount input |
-| `06-supporter-mode-oneoff.spec.ts` | Supporter one-off | 6 | One-off tab enabled under correct env flags, CTA text changes, `/join` body contains `recurDonation=false`, `paymentMethod=creditCard` forced, custom one-off amounts |
-| `07-supporter-mode-edge-cases.spec.ts` | Edge cases | 7 | One-off disabled under `STRIPE_DIRECT_DEBIT_ONLY`, explanatory note shown, monthly still works with DD-only, "no amounts configured" warning, standard vs supporter `/join` body differences |
+| `render.spec.ts` | Rendering | 3 | Form container present, env script injected, first name input visible, no console errors, progress breadcrumb renders |
+| `form-progression.spec.ts` | Form progression | 7 | Test data pre-fill, required field validation (name, email, phone, address), email format validation, country defaults to GB, details-to-plan advancement, plan selection, `/step` request body |
+| `free-membership.spec.ts` | Free membership | 4 | Payment stages skipped for GBP 0 plans, confirm stage reached from plan, confirm page content, `/join` request body |
+| `donation-upsell.spec.ts` | Donation upsell | 6 | Upsell page appears when enabled, "Not right now" skips to payment, tier selection advances, `recurDonation` flag toggling, supporter mode takes precedence over upsell |
+| `supporter-mode-monthly.spec.ts` | Supporter monthly | 9 | Donation page is first step, breadcrumb text, monthly toggle default, tier selection updates CTA text, donation-to-details progression, `/join` body fields, custom amount input |
+| `supporter-mode-oneoff.spec.ts` | Supporter one-off | 6 | One-off tab enabled under correct env flags, CTA text changes, `/join` body contains `recurDonation=false`, `paymentMethod=creditCard` forced, custom one-off amounts |
+| `supporter-mode-edge-cases.spec.ts` | Edge cases | 7 | One-off disabled under `STRIPE_DIRECT_DEBIT_ONLY`, explanatory note shown, monthly still works with DD-only, "no amounts configured" warning, standard vs supporter `/join` body differences |
 
 ### Coverage strengths
 
@@ -252,7 +252,7 @@ cd packages/join-e2e
 npx playwright test
 
 # Run a specific spec
-npx playwright test tests/03-free-membership.spec.ts
+npx playwright test tests/free-membership.spec.ts
 
 # View the HTML report after a run
 npx playwright show-report

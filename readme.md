@@ -44,6 +44,10 @@ Results in deployable artifacts:
 
 - `packages/join-block`: Join block plugin
 
+## End-to-End Testing
+
+See [docs/e2e-testing.md](docs/e2e-testing.md) for the full testing plan, current coverage, known gaps, and instructions for running the Playwright suite.
+
 ## Auth0 Setup
 
 You must create an Auth0 machine-to-machine application, and then authorize this application for the Auth0 Management API.

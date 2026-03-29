@@ -21,7 +21,7 @@ import { mockRestEndpoints, captureJoinBodyViaStripeRedirect, injectEnvOverrides
  *     a one-time PaymentIntent; backend uses the "Supporter Donation" product.
  *
  * Note: Free membership (payment skipped for zero-price plans) is covered by
- * 03-free-membership.spec.ts. Mailchimp non-fatal error handling is
+ * free-membership.spec.ts. Mailchimp non-fatal error handling is
  * a backend concern covered by JoinServiceMailchimpTest.php. Supporter mode
  * monthly via Direct Debit requires a live GoCardless integration.
  */
