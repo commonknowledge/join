@@ -31,7 +31,7 @@ const SUPPORTER_NO_PLANS_PAGE = '/e2e-supporter-no-plans/';
 const STANDARD_PAGE = '/e2e-standard-join/';
 
 // ---------------------------------------------------------------------------
-// Section 9 — One-off disabled when Direct Debit only
+// One-off disabled when Direct Debit only
 // ---------------------------------------------------------------------------
 
 test.describe('One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
@@ -68,7 +68,7 @@ test.describe('One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Section 10 — No plans configured
+// No plans configured
 // ---------------------------------------------------------------------------
 
 test.describe('No plans configured warning', () => {
@@ -91,7 +91,7 @@ test.describe('No plans configured warning', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Section 13 — Product naming
+// Product naming
 // ---------------------------------------------------------------------------
 
 test.describe('Product naming: standard join', () => {
