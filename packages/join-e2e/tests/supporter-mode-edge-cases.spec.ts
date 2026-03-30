@@ -109,6 +109,7 @@ test.describe('Product naming: standard join', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, STANDARD_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // Standard join: membership value is the plan ID, not prefixed with "Donation:".
     // The backend uses "Membership: <plan label>" as the product name.
     const membership = String(joinBody.membership ?? '');
@@ -135,6 +136,7 @@ test.describe('Product naming: supporter mode monthly', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // Monthly supporter: the plan price IS the donation — donationAmount=0 signals
     // to the backend to use the plan's price directly (no separate donation line).
     // The backend will name the Stripe product "Donation: <tier label>".
@@ -161,6 +163,7 @@ test.describe('Product naming: supporter mode one-off', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // One-off: recurDonation=false signals no subscription; donationAmount>0 is
     // used to create a one-time PaymentIntent. The backend uses the
     // "Supporter Donation" product (no subscription created).

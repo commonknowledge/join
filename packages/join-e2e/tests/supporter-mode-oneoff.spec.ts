@@ -78,6 +78,7 @@ test.describe('/join body for one-off supporter donation', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     expect(joinBody.recurDonation).toBe(false);
     expect(Number(joinBody.donationAmount)).toBeGreaterThan(0);
   });
@@ -93,6 +94,7 @@ test.describe('/join body for one-off supporter donation', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // The donation page forces paymentMethod: "creditCard" for one-off.
     expect(joinBody.paymentMethod).toBe('creditCard');
   });
@@ -132,6 +134,7 @@ test.describe('One-off custom amount', () => {
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_CUSTOM_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     expect(Number(joinBody.donationAmount)).toBe(7);
     expect(joinBody.recurDonation).toBe(false);
   });

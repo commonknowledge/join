@@ -97,8 +97,9 @@ test.describe('/join body for monthly supporter donation', () => {
     // Simulate Stripe payment completion and capture the /join request body.
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // Monthly supporter: donationAmount should be 0 (plan price IS the donation).
-    expect(Number(joinBody.donationAmount ?? 0)).toBe(0);
+    expect(Number(joinBody.donationAmount)).toBe(0);
     expect(joinBody.recurDonation).toBe(true);
     // The membership value should correspond to the selected plan.
     expect(typeof joinBody.membership).toBe('string');
@@ -115,10 +116,11 @@ test.describe('Product naming: supporter mode produces a Donation product', () =
 
     const joinBody = await captureJoinBodyViaStripeRedirect(page, SUPPORTER_PAGE);
 
+    expect(Object.keys(joinBody).length).toBeGreaterThan(0);
     // In supporter mode the product prefix on the backend will be "Donation:".
     // The membership field holds the plan ID resolved by the frontend.
     expect(typeof joinBody.membership).toBe('string');
-    expect(joinBody.donationSupporterMode ?? joinBody.recurDonation).toBeTruthy();
+    expect(joinBody.donationSupporterMode).toBeTruthy();
   });
 });
 
