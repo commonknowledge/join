@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - 'feature/**'
   pull_request:
 
 jobs:
@@ -23,7 +22,7 @@ jobs:
 
       - name: Build join-flow bundle (E2E mode)
         working-directory: packages/join-flow
-        run: REACT_APP_USE_TEST_DATA=true npm run build
+        run: npm run test:build
 
       - name: Install E2E deps
         working-directory: packages/join-e2e
