@@ -227,6 +227,10 @@ $allow_cards_override_page_id = ck_e2e_upsert_page(
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the
 // override would produce no observable difference.
+// NOTE: this is a persistent global side-effect. Any future spec that relies
+// on STRIPE_DIRECT_DEBIT_ONLY=false without injecting it via injectEnvOverrides
+// will unexpectedly receive true. Always inject the value explicitly in specs
+// that care about it.
 carbon_set_theme_option('stripe_direct_debit_only', true);
 
 // Persist URLs as options so get-page-url.sh can retrieve them.

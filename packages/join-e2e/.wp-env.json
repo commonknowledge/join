@@ -1,0 +1,12 @@
+{
+  "core": "https://wordpress.org/wordpress-6.9.4.zip",
+  "plugins": ["../../packages/join-block"],
+  "mappings": {
+    "wp-content/e2e-scripts": "../../packages/join-e2e/scripts"
+  },
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true
+  }
+}
