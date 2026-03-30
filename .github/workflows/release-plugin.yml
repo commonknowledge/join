@@ -3,10 +3,93 @@ on:
   push:
     tags:
     - "*"
+
 jobs:
+  php-tests:
+    name: PHP tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Install PHP dependencies
+        working-directory: packages/join-block
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPUnit
+        working-directory: packages/join-block
+        run: ./vendor/bin/phpunit
+
+  jest-tests:
+    name: Jest tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps
+        run: yarn install
+
+      - name: Run Jest
+        working-directory: packages/join-flow
+        run: npm test
+
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps
+        run: yarn install
+
+      - name: Build join-flow bundle (E2E mode)
+        working-directory: packages/join-flow
+        run: npm run test:build
+
+      - name: Install E2E deps
+        working-directory: packages/join-e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: packages/join-e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Start wp-env
+        working-directory: packages/join-e2e
+        run: npx wp-env start
+
+      - name: Seed WordPress test environment
+        working-directory: packages/join-e2e
+        run: |
+          npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+          npx wp-env run tests-cli wp rewrite flush --hard
+
+      - name: Run E2E tests
+        working-directory: packages/join-e2e
+        run: npm test -- --reporter=list,html
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: packages/join-e2e/playwright-report/
+
   tag:
     name: Build plugin and deploy to WordPress.org
     runs-on: ubuntu-latest
+    needs: [php-tests, jest-tests, e2e]
     steps:
     - uses: actions/checkout@master
 
