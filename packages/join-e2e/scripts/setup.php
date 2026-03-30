@@ -212,6 +212,27 @@ $supporter_no_plans_page_id = ck_e2e_upsert_page(
     ck_e2e_make_block_content([], ['donation_supporter_mode' => true])
 );
 
+// Supporter mode page with allow_cards_override enabled.
+// Used to test that a per-block override of the global STRIPE_DIRECT_DEBIT_ONLY
+// setting is reflected in the env JSON emitted by the PHP render callback.
+$allow_cards_override_page_id = ck_e2e_upsert_page(
+    'e2e-allow-cards-override-supporter',
+    'E2E Allow Cards Override Test',
+    ck_e2e_make_block_content($supporter_plans, [
+        'donation_supporter_mode' => true,
+        'allow_cards_override'    => true,
+    ])
+);
+
+// Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
+// something to override. Without this the global default is false and the
+// override would produce no observable difference.
+// NOTE: this is a persistent global side-effect. Any future spec that relies
+// on STRIPE_DIRECT_DEBIT_ONLY=false without injecting it via injectEnvOverrides
+// will unexpectedly receive true. Always inject the value explicitly in specs
+// that care about it.
+carbon_set_theme_option('stripe_direct_debit_only', true);
+
 // Persist URLs as options so get-page-url.sh can retrieve them.
 update_option('ck_e2e_standard_page_url', get_permalink($standard_page_id));
 update_option('ck_e2e_free_page_url', get_permalink($free_page_id));
@@ -219,11 +240,13 @@ update_option('ck_e2e_donation_upsell_page_url', get_permalink($donation_upsell_
 update_option('ck_e2e_supporter_page_url', get_permalink($supporter_page_id));
 update_option('ck_e2e_supporter_custom_page_url', get_permalink($supporter_custom_page_id));
 update_option('ck_e2e_supporter_no_plans_page_url', get_permalink($supporter_no_plans_page_id));
+update_option('ck_e2e_allow_cards_override_page_url', get_permalink($allow_cards_override_page_id));
 
-echo 'Standard page URL: '           . get_permalink($standard_page_id)          . "\n";
-echo 'Free page URL: '                . get_permalink($free_page_id)               . "\n";
-echo 'Donation upsell page URL: '     . get_permalink($donation_upsell_page_id)    . "\n";
-echo 'Supporter page URL: '           . get_permalink($supporter_page_id)          . "\n";
-echo 'Supporter custom page URL: '    . get_permalink($supporter_custom_page_id)   . "\n";
-echo 'Supporter no-plans page URL: '  . get_permalink($supporter_no_plans_page_id) . "\n";
+echo 'Standard page URL: '                . get_permalink($standard_page_id)              . "\n";
+echo 'Free page URL: '                    . get_permalink($free_page_id)                   . "\n";
+echo 'Donation upsell page URL: '         . get_permalink($donation_upsell_page_id)        . "\n";
+echo 'Supporter page URL: '               . get_permalink($supporter_page_id)              . "\n";
+echo 'Supporter custom page URL: '        . get_permalink($supporter_custom_page_id)       . "\n";
+echo 'Supporter no-plans page URL: '      . get_permalink($supporter_no_plans_page_id)     . "\n";
+echo 'Allow cards override page URL: '    . get_permalink($allow_cards_override_page_id)   . "\n";
 echo "Setup complete.\n";

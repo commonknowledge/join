@@ -42,6 +42,20 @@ describe('getPaymentProviders — Stripe direct debit flags', () => {
       expect(getPaymentProviders().stripe).toEqual(['creditCard']);
     });
   });
+
+  it('STRIPE_DIRECT_DEBIT_ONLY explicitly false (allow_cards_override) produces creditCard only', () => {
+    withEnv({ USE_STRIPE: true, STRIPE_DIRECT_DEBIT_ONLY: false }, () => {
+      expect(getPaymentProviders().stripe).toEqual(['creditCard']);
+    });
+  });
+
+  it('STRIPE_DIRECT_DEBIT_ONLY explicitly false with STRIPE_DIRECT_DEBIT true produces both methods', () => {
+    withEnv({ USE_STRIPE: true, STRIPE_DIRECT_DEBIT_ONLY: false, STRIPE_DIRECT_DEBIT: true }, () => {
+      const methods = getPaymentProviders().stripe;
+      expect(methods).toContain('creditCard');
+      expect(methods).toContain('directDebit');
+    });
+  });
 });
 
 describe('getPaymentMethods — STRIPE_DIRECT_DEBIT_ONLY', () => {
@@ -88,6 +102,12 @@ describe('resolveStripePaymentMethodTypes', () => {
   it('subscription with STRIPE_DIRECT_DEBIT in non-GBP currency does not include bacs_debit', () => {
     withEnv({ STRIPE_DIRECT_DEBIT: true }, () => {
       expect(resolveStripePaymentMethodTypes(false, 'eur')).toEqual(['card']);
+    });
+  });
+
+  it('subscription with STRIPE_DIRECT_DEBIT_ONLY explicitly false (allow_cards_override) returns card-only', () => {
+    withEnv({ STRIPE_DIRECT_DEBIT_ONLY: false }, () => {
+      expect(resolveStripePaymentMethodTypes(false, 'gbp')).toEqual(['card']);
     });
   });
 });
