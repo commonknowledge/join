@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { CONTINUE, mockRestEndpoints } from './helpers';
 
 /**
  * Form progression
@@ -13,25 +14,6 @@ import { test, expect } from '@playwright/test';
  */
 
 const STANDARD_PAGE = '/e2e-standard-join/';
-const CONTINUE = 'button[type="submit"]:has-text("Continue")';
-
-/** Intercepts both REST endpoints that the form calls during navigation. */
-async function mockRestEndpoints(page: import('@playwright/test').Page) {
-  await page.route('**/wp-json/join/v1/step', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({}),
-    });
-  });
-  await page.route('**/wp-json/join/v1/join', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true }),
-    });
-  });
-}
 
 test.beforeEach(async ({ page }) => {
   await mockRestEndpoints(page);
