@@ -213,7 +213,7 @@ class Blocks
             $block_fields[] = Field::make('checkbox', 'allow_cards_override')
                 ->set_help_text(
                     'Override the global "Direct Debit Only" setting for this block, ' .
-                    'allowing card payments alongside direct debit.'
+                    'allowing card payments alongside Direct Debit.'
                 );
         }
 
