@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CK Join Form plugin ships with a Playwright end-to-end test suite that exercises the React join flow inside a real WordPress environment. Tests run against a wp-env (Docker WordPress) instance seeded with purpose-built test pages.
+Join ships with a Playwright end-to-end test suite that exercises the React join flow inside a real WordPress environment. Tests run against a wp-env (Docker WordPress) instance seeded with purpose-built test pages.
 
 ### Test approach
 
@@ -15,7 +15,7 @@ This is a deliberate trade-off: payment provider SDKs require live credentials, 
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | Test suite | `packages/join-e2e/tests/` | Playwright spec files |
-| Helpers | `packages/join-e2e/tests/helpers.ts` | Shared utilities for mocking, env injection, and payment simulation |
+| Helpers | `packages/join-e2e/tests/helpers.ts` | Shared utilities for mocking, environment injection, and payment simulation |
 | Seed script | `packages/join-e2e/scripts/setup.php` | Creates test pages with specific block configurations in WordPress |
 | Playwright config | `packages/join-e2e/playwright.config.ts` | Single Chromium project, serial execution, base URL `localhost:8889` |
 
@@ -24,6 +24,8 @@ This is a deliberate trade-off: payment provider SDKs require live credentials, 
 **`mockRestEndpoints(page)`** intercepts `/wp-json/join/v1/step` and `/wp-json/join/v1/join` with empty 200 responses so network errors never block form progression.
 
 **`injectEnvOverrides(page, urlPattern, overrides)`** intercepts the page HTML response and patches the `<script id="env">` JSON block before the browser receives it. This lets tests toggle feature flags (e.g. `USE_STRIPE`, `STRIPE_DIRECT_DEBIT_ONLY`) without changing WordPress plugin settings.
+
+Note: this approach only affects what the frontend receives. The WordPress database and PHP backend still hold the real plugin settings. Any backend behaviour that reads those settings directly (e.g. server-side feature gating, REST endpoint logic) will not be affected by overrides applied here. For true end-to-end coverage of backend-gated behaviour, the settings would need to be written to the database directly, for example via `wp option update` in the seed script.
 
 **`captureJoinBodyViaStripeRedirect(page, pageUrl)`** simulates a completed Stripe payment by injecting a fake `stripePaymentIntentId` into `sessionStorage` and reloading with `?stripe_success=true`. The app detects this and jumps to the confirm stage. The helper intercepts the resulting `/join` POST and returns its body for assertions.
 
@@ -224,7 +226,16 @@ Flags to cover: `COLLECT_DATE_OF_BIRTH`, `COLLECT_COUNTY`, `COLLECT_HEAR_ABOUT_U
 - [ ] Type a postcode and verify the autocomplete dropdown appears with mocked results
 - [ ] Select an address and verify the address fields are populated
 
-### 10. Skip payment button
+### 10. WordPress version compatibility
+
+**Value:** Medium. The test suite currently pins WordPress to a specific version. Regressions caused by WordPress core updates would not be caught until the pin is moved.
+
+**What is needed:**
+- [ ] Configure the CI matrix to run the suite against the current stable WordPress release and the previous major version
+- [ ] Update `.wp-env.json` when a new WordPress major is released and confirm the suite passes
+- [ ] Consider running nightly or weekly against WordPress trunk to catch regressions before stable release
+
+### 11. Skip payment button
 
 **Value:** Low. Single feature flag toggle.
 
