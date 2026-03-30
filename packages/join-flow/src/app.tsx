@@ -389,9 +389,15 @@ const getInitialState = (): FormSchema => {
 
   const getProvidedStateFromQueryParams = () => {
     if (queryParams) {
-      return FormSchema.cast(queryParams, {
-        strict: true
-      });
+      const cast = FormSchema.cast(queryParams, { strict: true });
+      // FormSchema.cast() fills in schema defaults for every field absent from
+      // the query string (e.g. recurDonation: false, membership: "").  Those
+      // defaults must not override the session-restored state or the
+      // DONATION_SUPPORTER_MODE env override above.  Only pass through values
+      // that were explicitly present in the URL.
+      return Object.fromEntries(
+        Object.entries(cast).filter(([k]) => k in queryParams)
+      );
     }
   };
 
@@ -400,9 +406,16 @@ const getInitialState = (): FormSchema => {
     sessionToken: uuid.v4(),
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
+    // recurDonation: true is the *default* for supporter mode (monthly is selected
+    // first), but the saved session must be able to override it — a user who
+    // explicitly chose the one-off tab has recurDonation: false in sessionStorage
+    // and that choice must survive the Stripe return-redirect page reload.
+    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true } : {}),
     ...getSavedState(),
-    // Env-driven overrides must come after session restore so config always wins
-    ...(getEnv("DONATION_SUPPORTER_MODE") ? { recurDonation: true, donationSupporterMode: true } : {}),
+    // donationSupporterMode is a page-level flag derived from the block config;
+    // always apply it after session restore so a stale session from a different
+    // form type cannot suppress it.
+    ...(getEnv("DONATION_SUPPORTER_MODE") ? { donationSupporterMode: true } : {}),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv("IS_UPDATE_FLOW"),
     webhookUuid: getEnv("WEBHOOK_UUID"),
