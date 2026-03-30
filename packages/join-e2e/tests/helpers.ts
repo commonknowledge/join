@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 export const SAVED_STATE_KEY = 'ck_join_state_flow';
 export const CONTINUE = 'button[type="submit"]:has-text("Continue")';
@@ -90,14 +90,15 @@ export async function captureJoinBodyViaStripeRedirect(
   // Reload with stripe_success=true — the app jumps to confirm and auto-submits.
   await page.goto(`${pageUrl}?stripe_success=true`);
 
-  // Wait until the /join body has been captured.
+  // Wait for the confirm page heading to appear.
   await page.waitForFunction(
     () => document.querySelector('h2') !== null,
     { timeout: 10000 },
   );
 
-  // Poll briefly for the body (the confirm page fires /join on mount).
-  await page.waitForTimeout(500);
+  // Poll until /join fires — the confirm page auto-submits on mount and the
+  // POST may arrive slightly after the heading renders.
+  await expect.poll(() => joinBody, { timeout: 10000 }).not.toBeNull();
 
-  return joinBody ?? {};
+  return joinBody!;
 }
