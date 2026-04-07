@@ -135,7 +135,7 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
     let address: Address | null = null;
 
     // ideal-postcodes address lookups have all the required data
-    if (id.startsWith('idealpostcodes')) {
+    if (id.startsWith('idealpostcodes') || id.startsWith('paf_')) {
       address = hit
     }
     // however getAddress.io lookups require another request to populate
