@@ -247,7 +247,7 @@ class Settings
             }
 
             if (!($container instanceof CK_Theme_Options_Container)) {
-                return;
+                return $valid;
             }
 
             $errors = [];
