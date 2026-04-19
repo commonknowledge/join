@@ -105,11 +105,35 @@ All integrations are optional. Enable and configure them via environment variabl
 
 ## Membership Lapsing
 
-The plugin handles member lapsing automatically in response to payment provider webhooks.
+The plugin handles member lapsing automatically in response to payment provider webhooks. When a payment fails or a subscription is cancelled, the member is marked as lapsed across all configured integrations. When payment recovers, they are automatically unlapsed.
 
-- A Stripe subscription entering `unpaid` or `incomplete_expired` triggers a lapse.
-- A Stripe subscription returning to `active` triggers an unlapse.
-- Lapsed/unlapsed status is reflected in all configured integrations (e.g. "lapsed" tag in Action Network, Mailchimp, Zetkin).
+### Stripe webhook setup
+
+Register the following endpoint URL in the Stripe dashboard under **Developers > Webhooks**:
+
+```
+https://your-site.com/wp-json/join/v1/stripe/webhook
+```
+
+Subscribe to these events:
+
+| Event | Effect |
+|---|---|
+| `customer.subscription.deleted` | Lapses the member when a subscription is cancelled |
+| `customer.subscription.updated` | Lapses/unlapses when subscription status changes to/from `unpaid` or `incomplete_expired` |
+| `invoice.payment_failed` | Lapses the member when all payment retries are exhausted |
+| `invoice.paid` | Unlapses the member when payment succeeds |
+| `mandate.updated` | Finalises direct debit subscriptions when a mandate becomes active |
+
+### Lapsed tag
+
+In **WordPress Admin > Settings > CK Join Flow**, set the **Lapsed Tag** field (defaults to `"Lapsed - failed payment"`). This tag is added to and removed from the member record in each enabled integration (Action Network, Mailchimp, Zetkin) as they lapse and unlapse.
+
+### How lapsing works
+
+- A member is **lapsed** when a Stripe subscription enters `unpaid` or `incomplete_expired` status, when a subscription is deleted, or when a final invoice payment fails with no further retries scheduled.
+- A member is **unlapsed** when a subscription returns to `active` or `trialing`, or when an invoice is paid successfully.
+- The lapsed tag is synced to whichever integrations are enabled.
 
 ---
 
