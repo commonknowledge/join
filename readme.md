@@ -8,7 +8,7 @@ This is a monorepo containing packages that together provide a full membership a
 - `packages/join-block` — A WordPress Gutenberg plugin containing the join form block(s) and the backend logic that processes memberships, payments, and CRM integrations.
 - `packages/join-e2e` — End-to-end tests (Puppeteer).
 
-**Current version:** 1.4.0
+**Current version:** 1.4.2
 
 ---
 
