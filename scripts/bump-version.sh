@@ -20,7 +20,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 README_TXT="$PROJECT_ROOT/packages/join-block/readme.txt"
 JOIN_PHP="$PROJECT_ROOT/packages/join-block/join.php"
 INDEX_TSX="$PROJECT_ROOT/packages/join-flow/src/index.tsx"
-README_MD="$PROJECT_ROOT/README.md"
+README_MD="$PROJECT_ROOT/readme.md"
 
 if [ ! -f "$README_TXT" ]; then
     print_error "readme.txt not found at $README_TXT"
@@ -38,7 +38,7 @@ if [ ! -f "$INDEX_TSX" ]; then
 fi
 
 if [ ! -f "$README_MD" ]; then
-    print_error "README.md not found at $README_MD"
+    print_error "readme.md not found at $README_MD"
     exit 1
 fi
 
@@ -118,7 +118,7 @@ print_step "3. Updating index.tsx (Sentry release)"
 sed -i.bak "s/release: \".*\"/release: \"$NEW_VERSION\"/" "$INDEX_TSX"
 rm -f "$INDEX_TSX.bak"
 
-print_step "4. Updating README.md (Current version)"
+print_step "4. Updating readme.md (Current version)"
 sed -i.bak "s/^\*\*Current version:\*\* .*/**Current version:** $NEW_VERSION/" "$README_MD"
 rm -f "$README_MD.bak"
 
@@ -128,7 +128,7 @@ echo "Files updated:"
 echo "  - packages/join-block/readme.txt"
 echo "  - packages/join-block/join.php"
 echo "  - packages/join-flow/src/index.tsx"
-echo "  - README.md"
+echo "  - readme.md"
 echo ""
 echo "Next steps:"
 echo "  1. Review changes: git diff"
