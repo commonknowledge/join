@@ -152,7 +152,6 @@ class ZetkinService
 
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
 
-            $addTags[] = "Unconfirmed";
             $addTagIds = [];
             foreach ($addTags as $tag) {
                 $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
