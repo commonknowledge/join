@@ -13,6 +13,48 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    public static function buildMergeFields(array $data): array
+    {
+        if ($data['isUpdateFlow']) {
+            return [];
+        }
+
+        $mergeFields = [];
+
+        if (!empty($data['firstName'])) {
+            $mergeFields['FNAME'] = $data['firstName'];
+        }
+        if (!empty($data['lastName'])) {
+            $mergeFields['LNAME'] = $data['lastName'];
+        }
+        if (!empty($data['phoneNumber'])) {
+            $mergeFields['PHONE'] = $data['phoneNumber'];
+        }
+
+        // ADDRESS is a structured Mailchimp merge field. Only emit it when we
+        // have a street address to send — supporter-mode forms don't collect
+        // an address, and Mailchimp rejects the whole request with 400 if the
+        // ADDRESS sub-fields arrive as nulls against a required merge field.
+        if (!empty($data['addressLine1'])) {
+            $mergeFields['ADDRESS'] = [
+                'addr1'   => $data['addressLine1'],
+                'addr2'   => $data['addressLine2'] ?? '',
+                'city'    => $data['addressCity'] ?? '',
+                'state'   => '',
+                'zip'     => $data['addressPostcode'] ?? '',
+                'country' => $data['addressCountry'] ?? '',
+            ];
+        }
+
+        $customFieldsConfig = $data['customFieldsConfig'] ?? [];
+        foreach ($customFieldsConfig as $customField) {
+            $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField['id']));
+            $mergeFields[$mergeField] = $data[$customField['id']] ?? '';
+        }
+
+        return $mergeFields;
+    }
+
     private static function getClient()
     {
         $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
@@ -65,29 +107,7 @@ class MailchimpService
         $addTags = apply_filters('ck_join_flow_mailchimp_add_tags', $addTags, $data);
         $removeTags = apply_filters('ck_join_flow_mailchimp_remove_tags', $removeTags, $data);
 
-        if ($data['isUpdateFlow']) {
-            $mergeFields = [];
-        } else {
-            $mergeFields = [
-                "FNAME" => $data['firstName'],
-                "LNAME" => $data['lastName'],
-                "PHONE" => $data['phoneNumber'],
-                "ADDRESS" => [
-                    "addr1" => $data["addressLine1"],
-                    "addr2" => $data["addressLine2"],
-                    "city" => $data["addressCity"],
-                    "state" => "",
-                    "zip" => $data["addressPostcode"],
-                    "country" => $data["addressCountry"]
-                ]
-            ];
-
-            $customFieldsConfig = $data['customFieldsConfig'] ?? [];
-            foreach ($customFieldsConfig as $customField) {
-                $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField["id"]));
-                $mergeFields[$mergeField] = $data[$customField["id"]] ?? "";
-            }
-        }
+        $mergeFields = self::buildMergeFields($data);
 
         $memberData = [
             "email_address" => $email,

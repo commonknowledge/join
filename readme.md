@@ -95,7 +95,7 @@ All integrations are optional. Enable and configure them via environment variabl
 | **Auth0** | Creates user accounts with email, name, and role assignment on successful join. Requires an M2M application — see [Auth0 Setup](#auth0-setup). |
 | **Zetkin** | Adds members to campaigns, applies plan-specific tags, syncs custom fields (DOB, "hear about us", contact preferences). |
 | **Action Network** | Adds or updates people in Action Network; applies and removes tags; syncs custom fields. |
-| **Mailchimp** | Adds subscribers to mailing lists with plan-specific tags. Manages "lapsed" tag on payment failure/recovery. |
+| **Mailchimp** | Adds subscribers to mailing lists with plan-specific tags. Manages "lapsed" tag on payment failure/recovery. **Supporter-mode forms**: the flow does not collect a postal address, so the Mailchimp audience must have the `ADDRESS` merge field marked optional (not required); otherwise Mailchimp will reject new-member requests with a 400. |
 | **Sentry** | Real-time error tracking for both frontend and backend. |
 | **Google Cloud Logging** | Centralised log aggregation. |
 | **Microsoft Teams** | Error alert notifications via incoming webhook. |
