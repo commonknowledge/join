@@ -13,7 +13,7 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
-    public static function buildMergeFields($data): array
+    public static function buildMergeFields(array $data): array
     {
         if ($data['isUpdateFlow']) {
             return [];
