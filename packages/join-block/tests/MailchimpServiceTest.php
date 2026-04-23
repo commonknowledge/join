@@ -140,6 +140,59 @@ class MailchimpServiceTest extends TestCase
     }
 
     /**
+     * A donor with a full postal address but no phone number must receive
+     * ADDRESS while PHONE is omitted. The two fields are gated independently.
+     */
+    public function testAddressEmittedWhenPhoneMissing(): void
+    {
+        $data = [
+            'isUpdateFlow'    => '',
+            'firstName'       => 'Test',
+            'lastName'        => 'Person',
+            'phoneNumber'     => '',
+            'addressLine1'    => '1 Test Street',
+            'addressLine2'    => 'Flat 2',
+            'addressCity'     => 'London',
+            'addressPostcode' => 'SW1A 1AA',
+            'addressCountry'  => 'GB',
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertArrayNotHasKey('PHONE', $result);
+        $this->assertArrayHasKey('ADDRESS', $result);
+        $this->assertSame('1 Test Street', $result['ADDRESS']['addr1']);
+    }
+
+    /**
+     * When addressLine1 is present but the optional sub-fields (addressLine2
+     * and the rest) are missing from $data, each optional sub-field must
+     * fall through to an empty string rather than null, so Mailchimp never
+     * sees a null in the ADDRESS payload.
+     */
+    public function testAddressSubFieldsDefaultToEmptyStringWhenMissing(): void
+    {
+        $data = [
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+            'addressLine1' => '1 Test Street',
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertSame([
+            'addr1'   => '1 Test Street',
+            'addr2'   => '',
+            'city'    => '',
+            'state'   => '',
+            'zip'     => '',
+            'country' => '',
+        ], $result['ADDRESS']);
+    }
+
+    /**
      * Custom fields from customFieldsConfig are uppercased, non-letter
      * characters stripped, and the value passed through verbatim.
      */
