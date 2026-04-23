@@ -64,6 +64,82 @@ class MailchimpServiceTest extends TestCase
     }
 
     /**
+     * Supporter-flow data has no address keys at all — those fields are
+     * never collected in supporter mode. The resulting merge fields must
+     * contain FNAME and LNAME only, with no ADDRESS or PHONE block. Before
+     * this fix, buildMergeFields included an ADDRESS sub-array of nulls,
+     * which Mailchimp rejected with a 400 "Invalid Resource" when the
+     * audience had ADDRESS marked required — the member was never created
+     * and tags were never applied. Regression test for that signup path.
+     */
+    public function testSupporterFlowDataOmitsMissingFields(): void
+    {
+        $data = [
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertSame('Test', $result['FNAME']);
+        $this->assertSame('Person', $result['LNAME']);
+        $this->assertArrayNotHasKey('ADDRESS', $result);
+        $this->assertArrayNotHasKey('PHONE', $result);
+    }
+
+    /**
+     * Partial address data (addressLine1 missing) must not emit an ADDRESS
+     * merge field at all. Either we have a meaningful postal address to
+     * send or we don't send the field.
+     */
+    public function testPartialAddressOmitsAddressBlock(): void
+    {
+        $data = [
+            'isUpdateFlow'    => '',
+            'firstName'       => 'Test',
+            'lastName'        => 'Person',
+            'phoneNumber'     => '',
+            'addressCity'     => 'London',
+            'addressPostcode' => 'SW1A 1AA',
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertArrayNotHasKey('ADDRESS', $result);
+    }
+
+    /**
+     * Empty-string and missing-key inputs must produce identical merge
+     * fields. Defensive against PHP-8 implicit-null behaviour that lets
+     * nulls reach Mailchimp's JSON payload.
+     */
+    public function testEmptyStringInputsMatchMissingKeyInputs(): void
+    {
+        $withMissingKeys = MailchimpService::buildMergeFields([
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+        ]);
+
+        $withEmptyStrings = MailchimpService::buildMergeFields([
+            'isUpdateFlow'    => '',
+            'firstName'       => 'Test',
+            'lastName'        => 'Person',
+            'phoneNumber'     => '',
+            'addressLine1'    => '',
+            'addressLine2'    => '',
+            'addressCity'     => '',
+            'addressPostcode' => '',
+            'addressCountry'  => '',
+        ]);
+
+        $this->assertSame($withMissingKeys, $withEmptyStrings);
+    }
+
+    /**
      * Custom fields from customFieldsConfig are uppercased, non-letter
      * characters stripped, and the value passed through verbatim.
      */
