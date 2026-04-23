@@ -13,6 +13,35 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    public static function buildMergeFields($data): array
+    {
+        if ($data['isUpdateFlow']) {
+            return [];
+        }
+
+        $mergeFields = [
+            "FNAME" => $data['firstName'],
+            "LNAME" => $data['lastName'],
+            "PHONE" => $data['phoneNumber'],
+            "ADDRESS" => [
+                "addr1" => $data["addressLine1"],
+                "addr2" => $data["addressLine2"],
+                "city" => $data["addressCity"],
+                "state" => "",
+                "zip" => $data["addressPostcode"],
+                "country" => $data["addressCountry"]
+            ]
+        ];
+
+        $customFieldsConfig = $data['customFieldsConfig'] ?? [];
+        foreach ($customFieldsConfig as $customField) {
+            $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField["id"]));
+            $mergeFields[$mergeField] = $data[$customField["id"]] ?? "";
+        }
+
+        return $mergeFields;
+    }
+
     private static function getClient()
     {
         $mailchimp_api_key = Settings::get("MAILCHIMP_API_KEY");
@@ -65,29 +94,7 @@ class MailchimpService
         $addTags = apply_filters('ck_join_flow_mailchimp_add_tags', $addTags, $data);
         $removeTags = apply_filters('ck_join_flow_mailchimp_remove_tags', $removeTags, $data);
 
-        if ($data['isUpdateFlow']) {
-            $mergeFields = [];
-        } else {
-            $mergeFields = [
-                "FNAME" => $data['firstName'],
-                "LNAME" => $data['lastName'],
-                "PHONE" => $data['phoneNumber'],
-                "ADDRESS" => [
-                    "addr1" => $data["addressLine1"],
-                    "addr2" => $data["addressLine2"],
-                    "city" => $data["addressCity"],
-                    "state" => "",
-                    "zip" => $data["addressPostcode"],
-                    "country" => $data["addressCountry"]
-                ]
-            ];
-
-            $customFieldsConfig = $data['customFieldsConfig'] ?? [];
-            foreach ($customFieldsConfig as $customField) {
-                $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField["id"]));
-                $mergeFields[$mergeField] = $data[$customField["id"]] ?? "";
-            }
-        }
+        $mergeFields = self::buildMergeFields($data);
 
         $memberData = [
             "email_address" => $email,
