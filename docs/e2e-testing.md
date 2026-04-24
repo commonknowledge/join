@@ -49,7 +49,7 @@ The setup script (`scripts/setup.php`) creates these WordPress pages:
 
 ## What is covered
 
-The suite currently contains 52 passing tests across 7 spec files.
+The suite currently contains 59 passing tests across 9 spec files.
 
 | Spec file | Area | Tests | What it verifies |
 |-----------|------|------:|------------------|
@@ -60,6 +60,8 @@ The suite currently contains 52 passing tests across 7 spec files.
 | `supporter-mode-monthly.spec.ts` | Supporter monthly | 9 | Donation page is first step, breadcrumb text, monthly toggle default, tier selection updates CTA text, donation-to-details progression, `/join` body fields, custom amount input |
 | `supporter-mode-oneoff.spec.ts` | Supporter one-off | 6 | One-off tab enabled under correct env flags, CTA text changes, `/join` body contains `recurDonation=false`, `paymentMethod=creditCard` forced, custom one-off amounts |
 | `supporter-mode-edge-cases.spec.ts` | Edge cases | 7 | One-off disabled under `STRIPE_DIRECT_DEBIT_ONLY`, explanatory note shown, monthly still works with DD-only, "no amounts configured" warning, standard vs supporter `/join` body differences |
+| `allow-cards-override.spec.ts` | Per-block card override | 5 | `allow_cards_override` causes the PHP env JSON to emit `STRIPE_DIRECT_DEBIT_ONLY=false`, one-off tab enabled on override page, `/join` body for one-off donation on override page |
+| `wp-admin-smoke.spec.ts` | wp-admin backend | 2 | All 6 CK Join settings-page tabs load without a PHP error or 5xx; updating a Carbon Fields text field and clicking Save persists the value across a page reload |
 
 ### Coverage strengths
 
@@ -127,6 +129,10 @@ Network errors, server validation errors, Stripe card declines, and GoCardless m
 ### Backend integrations (out of scope)
 
 Mailchimp, Action Network, Zetkin, Auth0, and lapsing/unlapsing webhooks are backend concerns. Mailchimp is covered by PHPUnit (`JoinServiceMailchimpTest.php`). These are not appropriate for frontend e2e tests.
+
+### Gutenberg block editor
+
+`wp-admin-smoke.spec.ts` covers the plugin's settings-page surface only. The block editor experience (inserting the CK Join block into a page, configuring per-block fields, switching between variations, saving the post) is not exercised. This is a known future-tier item if backend regressions land inside the block editor rather than the settings page.
 
 
 ## Future coverage workstreams
