@@ -233,6 +233,28 @@ $allow_cards_override_page_id = ck_e2e_upsert_page(
 // that care about it.
 carbon_set_theme_option('stripe_direct_debit_only', true);
 
+// Pre-populate the required Copy-tab fields and a single membership plan so
+// the CK Join settings page can reach a saveable state in admin-surface e2e
+// tests. Without these, the Carbon Fields save button stays disabled (empty
+// required fields) and the cross-validator rejects the save (no plans).
+carbon_set_theme_option('organisation_name', 'CK E2E Test Org');
+carbon_set_theme_option('organisation_bank_name', 'CK E2E Test Bank');
+carbon_set_theme_option('organisation_email_address', 'e2e-test@example.com');
+carbon_set_theme_option('membership_plans', [
+    [
+        '_type'               => '_',
+        'label'               => 'Admin E2E Plan',
+        'id'                  => 'admin-e2e-plan',
+        'amount'              => '5',
+        'allow_custom_amount' => '',
+        'frequency'           => 'monthly',
+        'currency'            => 'GBP',
+        'description'         => '',
+        'add_tags'            => '',
+        'remove_tags'         => '',
+    ],
+]);
+
 // Persist URLs as options so get-page-url.sh can retrieve them.
 update_option('ck_e2e_standard_page_url', get_permalink($standard_page_id));
 update_option('ck_e2e_free_page_url', get_permalink($free_page_id));
