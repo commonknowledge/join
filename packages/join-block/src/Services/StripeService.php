@@ -143,7 +143,7 @@ class StripeService
             'items'            => $items,
             'payment_behavior' => 'default_incomplete',
             'collection_method' => 'charge_automatically',
-            'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => ['card', 'bacs_debit']],
+            'payment_settings' => ['save_default_payment_method' => 'on_subscription', 'payment_method_types' => strtolower($plan['currency']) === 'gbp' ? ['card', 'bacs_debit'] : ['card']],
             'expand'           => ['latest_invoice.payment_intent'],
         ];
 

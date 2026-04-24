@@ -510,7 +510,17 @@ class Settings
 
     public static function getMembershipPlanId($membership_plan)
     {
-        return empty($membership_plan["id"]) ? sanitize_title($membership_plan["label"]) : $membership_plan["id"];
+        if (!empty($membership_plan["id"])) {
+            return $membership_plan["id"];
+        }
+        $parts = [sanitize_title($membership_plan["label"] ?? '')];
+        if (!empty($membership_plan["frequency"])) {
+            $parts[] = sanitize_title($membership_plan["frequency"]);
+        }
+        if (!empty($membership_plan["currency"])) {
+            $parts[] = sanitize_title(strtolower($membership_plan["currency"]));
+        }
+        return implode('_', array_filter($parts));
     }
 
     public static function getMembershipPlan($id)

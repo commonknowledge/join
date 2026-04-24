@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,9 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.4 =
+* Fix Stripe bug with USD - direct debit is not supported
+* Fix multi-currency without explicit plan IDs
 = 1.4.3 =
 * Fix Mailchimp 400 on supporter-mode signups by omitting empty address merge fields
 = 1.4.2 =
