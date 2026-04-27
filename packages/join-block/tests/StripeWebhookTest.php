@@ -194,8 +194,8 @@ class StripeWebhookTest extends TestCase
 
     public function testResolveTierTagChangesSharedTagsAreNotRemoved(): void
     {
-        $oldPlan = ['add_tags' => 'member, low-wage',  'remove_tags' => 'subsidised, min-wage, high-wage'];
-        $newPlan = ['add_tags' => 'member, high-wage', 'remove_tags' => 'subsidised, low-wage, min-wage'];
+        $oldPlan = ['add_tags' => 'member, low-wage'];
+        $newPlan = ['add_tags' => 'member, high-wage'];
 
         $result = $this->callResolveTierTagChanges($newPlan, $oldPlan);
 
@@ -205,14 +205,14 @@ class StripeWebhookTest extends TestCase
         $this->assertNotContains('member', $result['removeTags'], 'member must not be removed when it is also being added');
     }
 
-    public function testResolveTierTagChangesNoOldPlanLeavesRemoveTagsFromNewPlanOnly(): void
+    public function testResolveTierTagChangesNoOldPlanProducesNoRemovals(): void
     {
-        $newPlan = ['add_tags' => 'member, high-wage', 'remove_tags' => 'subsidised, low-wage, min-wage'];
+        $newPlan = ['add_tags' => 'member, high-wage'];
 
         $result = $this->callResolveTierTagChanges($newPlan, null);
 
         $this->assertSame(['member', 'high-wage'], $result['addTags']);
-        $this->assertSame(['subsidised', 'low-wage', 'min-wage'], $result['removeTags']);
+        $this->assertSame([], $result['removeTags']);
     }
 
     private function callExtractPriceChange(array $event): ?array

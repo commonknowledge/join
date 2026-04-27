@@ -437,8 +437,7 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
-            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin."),
-            Field::make('text', 'remove_tags')->set_help_text("Comma-separated tags to remove from this member in Action Network, Mailchimp and Zetkin.")
+            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin.")
         ])->set_min(1);
         return $membership_plans;
     }
@@ -545,5 +544,44 @@ class Settings
             }
         }
         return null;
+    }
+
+    public static function computeTagsToRemove(array $currentPlan): string
+    {
+        global $wpdb;
+
+        $parseTags = fn($str) => array_filter(
+            array_map('trim', explode(',', $str ?? '')),
+            fn($t) => $t !== ''
+        );
+
+        $currentPlanId  = self::getMembershipPlanId($currentPlan);
+        $currentAddTags = array_flip($parseTags($currentPlan['add_tags'] ?? ''));
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $wpdb->esc_like('ck_join_flow_membership_plan_') . '%'
+            ),
+            ARRAY_A
+        );
+
+        $tagsToRemove = [];
+        foreach ($rows as $row) {
+            $plan = maybe_unserialize($row['option_value']);
+            if (!is_array($plan)) {
+                continue;
+            }
+            if (self::getMembershipPlanId($plan) === $currentPlanId) {
+                continue;
+            }
+            foreach ($parseTags($plan['add_tags'] ?? '') as $tag) {
+                if (!isset($currentAddTags[$tag])) {
+                    $tagsToRemove[$tag] = true;
+                }
+            }
+        }
+
+        return implode(', ', array_keys($tagsToRemove));
     }
 }

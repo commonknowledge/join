@@ -154,6 +154,7 @@ class JoinService
             $joinBlockLog->error($error);
             throw new \Exception(esc_html($error));
         }
+        $data['membershipPlan']['remove_tags'] = Settings::computeTagsToRemove($data['membershipPlan']);
 
         $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 0;
         if ($data['membershipPlan']['allow_custom_amount']) {

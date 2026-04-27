@@ -93,7 +93,6 @@ $standard_plans = [
         'currency'           => 'GBP',
         'description'        => '',
         'add_tags'           => '',
-        'remove_tags'        => '',
     ],
 ];
 
@@ -109,7 +108,6 @@ $free_plans = [
         'currency'           => 'GBP',
         'description'        => '',
         'add_tags'           => '',
-        'remove_tags'        => '',
     ],
 ];
 
@@ -125,7 +123,6 @@ $supporter_plans = [
         'currency'            => 'GBP',
         'description'         => '',
         'add_tags'            => '',
-        'remove_tags'         => '',
     ],
     [
         '_type'               => '',
@@ -137,7 +134,6 @@ $supporter_plans = [
         'currency'            => 'GBP',
         'description'         => '',
         'add_tags'            => '',
-        'remove_tags'         => '',
     ],
     [
         '_type'               => '',
@@ -149,7 +145,6 @@ $supporter_plans = [
         'currency'            => 'GBP',
         'description'         => '',
         'add_tags'            => '',
-        'remove_tags'         => '',
     ],
 ];
 
@@ -165,7 +160,6 @@ $supporter_custom_plans = [
         'currency'            => 'GBP',
         'description'         => '',
         'add_tags'            => '',
-        'remove_tags'         => '',
     ],
 ];
 
@@ -224,6 +218,40 @@ $allow_cards_override_page_id = ck_e2e_upsert_page(
     ])
 );
 
+// Multi-currency plans: two "Standard" plans sharing the same label but with
+// different currencies (GBP and EUR).  The frontend groups them by label and
+// renders a <select> so the user can pick a currency.
+$multi_currency_plans = [
+    [
+        '_type'              => '',
+        'label'              => 'Standard',
+        'id'                 => 'standard-gbp',
+        'amount'             => '5',
+        'allow_custom_amount' => '',
+        'frequency'          => 'monthly',
+        'currency'           => 'GBP',
+        'description'        => '',
+        'add_tags'           => '',
+    ],
+    [
+        '_type'              => '',
+        'label'              => 'Standard',
+        'id'                 => 'standard-eur',
+        'amount'             => '7',
+        'allow_custom_amount' => '',
+        'frequency'          => 'monthly',
+        'currency'           => 'EUR',
+        'description'        => '',
+        'add_tags'           => '',
+    ],
+];
+
+$multi_currency_page_id = ck_e2e_upsert_page(
+    'e2e-multi-currency-join',
+    'E2E Multi-Currency Plans Test',
+    ck_e2e_make_block_content($multi_currency_plans)
+);
+
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the
 // override would produce no observable difference.
@@ -241,6 +269,7 @@ update_option('ck_e2e_supporter_page_url', get_permalink($supporter_page_id));
 update_option('ck_e2e_supporter_custom_page_url', get_permalink($supporter_custom_page_id));
 update_option('ck_e2e_supporter_no_plans_page_url', get_permalink($supporter_no_plans_page_id));
 update_option('ck_e2e_allow_cards_override_page_url', get_permalink($allow_cards_override_page_id));
+update_option('ck_e2e_multi_currency_page_url', get_permalink($multi_currency_page_id));
 
 echo 'Standard page URL: '                . get_permalink($standard_page_id)              . "\n";
 echo 'Free page URL: '                    . get_permalink($free_page_id)                   . "\n";
@@ -249,4 +278,5 @@ echo 'Supporter page URL: '               . get_permalink($supporter_page_id)   
 echo 'Supporter custom page URL: '        . get_permalink($supporter_custom_page_id)       . "\n";
 echo 'Supporter no-plans page URL: '      . get_permalink($supporter_no_plans_page_id)     . "\n";
 echo 'Allow cards override page URL: '    . get_permalink($allow_cards_override_page_id)   . "\n";
+echo 'Multi-currency page URL: '          . get_permalink($multi_currency_page_id)         . "\n";
 echo "Setup complete.\n";

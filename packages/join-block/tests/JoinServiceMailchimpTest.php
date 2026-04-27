@@ -53,7 +53,6 @@ class JoinServiceMailchimpTest extends TestCase
         'currency'           => 'GBP',
         'stripe_price_id'    => '',
         'add_tags'           => '',
-        'remove_tags'        => '',
     ];
 
     protected function setUp(): void
@@ -68,6 +67,24 @@ class JoinServiceMailchimpTest extends TestCase
         Monkey\Functions\when('apply_filters')->returnArg(2);
         Monkey\Functions\when('do_action')->justReturn(null);
         Monkey\Functions\when('get_temp_dir')->justReturn(sys_get_temp_dir());
+
+        // Stub $wpdb so Settings::computeTagsToRemove() can run (no other plans = nothing to remove).
+        global $wpdb;
+        $wpdb = new class {
+            public string $options = 'wp_options';
+            public function prepare(string $query, ...$args): string
+            {
+                return $query;
+            }
+            public function esc_like(string $text): string
+            {
+                return $text;
+            }
+            public function get_results(string $query, $output = null): array
+            {
+                return [];
+            }
+        };
 
         // Return the plan from wp_options so the membership validation passes.
         Monkey\Functions\when('get_option')
@@ -103,8 +120,9 @@ class JoinServiceMailchimpTest extends TestCase
 
     protected function tearDown(): void
     {
-        global $joinBlockLog;
+        global $joinBlockLog, $wpdb;
         $joinBlockLog = null;
+        $wpdb = null;
         Monkey\tearDown();
         parent::tearDown();
     }

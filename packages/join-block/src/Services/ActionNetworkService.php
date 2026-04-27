@@ -52,11 +52,11 @@ class ActionNetworkService
         if ($data['isUpdateFlow']) {
             $anData = [
                 "person" => [
-                    "email_addresses" => [
+                    "email_addresses" => [[
                         "address" => $data["email"],
                         "primary" => true,
                         "status" => $data["contactByEmail"] ? "subscribed" : "unsubscribed"
-                    ],
+                    ]],
                 ],
                 "add_tags" => $addTags,
                 "remove_tags" => $removeTags,

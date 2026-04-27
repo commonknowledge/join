@@ -971,7 +971,7 @@ class StripeService
         $parseTags = fn($str) => array_filter(array_map('trim', explode(',', $str ?? '')), fn($t) => $t !== '');
 
         $addTags    = array_values($parseTags($newPlan['add_tags'] ?? ''));
-        $removeTags = array_values($parseTags($newPlan['remove_tags'] ?? ''));
+        $removeTags = [];
 
         if ($oldPlan) {
             $removeTags = array_unique(array_merge($removeTags, $parseTags($oldPlan['add_tags'] ?? '')));
