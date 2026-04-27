@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.4.4
+Stable tag: 1.4.5
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,9 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.5 =
+* Fix layout bug
+* Add setting for consent checked by default
 = 1.4.4 =
 * Fix Stripe bug with USD - direct debit is not supported
 * Fix multi-currency without explicit plan IDs

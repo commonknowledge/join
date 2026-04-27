@@ -59,14 +59,7 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
     return <p>Error: no payment providers available. Please contact us.</p>;
   };
 
-  return (
-    <div className="ml-4">
-      <div className="mb-4">
-        <Summary data={data} />
-      </div>
-      {renderForm()}
-    </div>
-  );
+  return renderForm();
 };
 
 const GocardlessPaymentPage: StagerComponent<FormSchema> = ({
@@ -88,6 +81,9 @@ const GocardlessPaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(onCompleted)}
     >
+      <div className="mb-4">
+        <Summary data={data} />
+      </div>
       <section className="form-section">
         <h2>Your bank details</h2>
         <FormItem form={form} label="Account Name" name="ddAccountHolderName">
@@ -220,6 +216,9 @@ const ChargebeePaymentPage: StagerComponent<FormSchema> = ({
       noValidate
       onSubmit={form.handleSubmit(handleCompleted)}
     >
+      <div className="mb-4">
+        <Summary data={data} />
+      </div>
       <CardComponent
         className="form-section"
         styles={{ base: inputStyle }}
@@ -432,8 +431,11 @@ const StripeForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
+    <form className="form-content" onSubmit={handleSubmit}>
+      <div className="mb-4">
+        <Summary data={data} />
+      </div>
+      <div className="mb-4">
         <PaymentElement options={{defaultValues, paymentMethodOrder: paymentMethodOrder.current}} onChange={(e) => {
           const stripePaymentMethod = e.value.type;
           setData({ ...data, paymentMethod: stripePaymentMethod === "bacs_debit" ? "directDebit" : "creditCard" });

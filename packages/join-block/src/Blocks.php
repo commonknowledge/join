@@ -440,6 +440,7 @@ class Blocks
             "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
             "COLLECT_HEAR_ABOUT_US" => Settings::get("COLLECT_HEAR_ABOUT_US"),
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
+            "CONSENT_CHECKED_BY_DEFAULT" => Settings::get("CONSENT_CHECKED_BY_DEFAULT"),
             "CONTACT_CONSENT_COPY" => wpautop(Settings::get("CONTACT_CONSENT_COPY")),
             "CONTACT_DETAILS_COPY" => wpautop(Settings::get("CONTACT_DETAILS_COPY")),
             "CONTACT_DETAILS_HEADING" => Settings::get("CONTACT_DETAILS_HEADING"),

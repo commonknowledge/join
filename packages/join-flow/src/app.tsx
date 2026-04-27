@@ -361,9 +361,9 @@ const getInitialState = (): FormSchema => {
   const getDefaultState = () => ({
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
     paymentMethod: defaultMethod,
-    // Default contact flags to true if not collecting consent, otherwise false
-    contactByEmail: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
-    contactByPhone: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT")
+    // Default contact flags to true if not collecting consent, or if consent is checked by default
+    contactByEmail: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") || !!getEnv("CONSENT_CHECKED_BY_DEFAULT"),
+    contactByPhone: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") || !!getEnv("CONSENT_CHECKED_BY_DEFAULT")
   });
 
   const getSavedState = () => {
