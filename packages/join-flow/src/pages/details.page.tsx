@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { get as getEnv, getStr as getEnvStr } from "../env";
 import { StagerComponent } from "../components/stager";
-import { DetailsSchema, FormSchema, validate } from "../schema";
+import { DetailsSchema, FormSchema, parseTriggerValues, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { sortedCountries } from "../constants";
@@ -280,63 +280,7 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <section className="form-section">
           {customFieldsHeading ? <h2>{customFieldsHeading}</h2> : null}
           {customFields.map((field) => (
-            <React.Fragment key={field.id}>
-              {field.field_type === "checkbox" ? (
-                <FormItem name={field.id} form={form} required={field.required}>
-                  <Form.Check label={field.label} />
-                </FormItem>
-              ) : field.field_type === "select" ? (
-                <FormItem label={field.label} name={field.id} form={form} required={field.required}>
-                  <Form.Control as="select" custom className="form-control">
-                    <option value="">Choose an option</option>
-                    {parseCustomFieldOptions(field.options).map(
-                      (o: { label: string; value: string }) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      )
-                    )}
-                  </Form.Control>
-                </FormItem>
-              ) : field.field_type === "radio" ? (
-                <>
-                  <FormItem
-                    name={field.id}
-                    form={form}
-                    style={{ marginTop: "0.125rem" }}
-                    label={field.label}
-                    required={field.required}
-                    isRadio
-                  >
-                    {parseCustomFieldOptions(field.options).map(
-                      (o: { label: string; value: string }) => (
-                        <Form.Check
-                          key={o.value}
-                          value={o.value}
-                          name={field.id}
-                          type="radio"
-                          id={`${field.id}-${o.value}`}
-                          label={o.label}
-                        />
-                      )
-                    )}
-                  </FormItem>
-                </>
-              ) : (
-                <FormItem label={field.label} name={field.id} form={form} required={field.required}>
-                  <Form.Control
-                    autoComplete={field.id}
-                    type={field.field_type}
-                  />
-                </FormItem>
-              )}
-              {field.instructions && (
-                <div
-                  className="text-secondary"
-                  dangerouslySetInnerHTML={{ __html: field.instructions }}
-                ></div>
-              )}
-            </React.Fragment>
+            <CustomField key={field.id} field={field} form={form} />
           ))}
         </section>
       ) : null}
@@ -435,6 +379,164 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         </button>
       ) : null}
     </form>
+  );
+};
+
+const CustomField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
+  const triggerField = field.conditional_trigger_field;
+  const triggerValues = parseTriggerValues(field.conditional_trigger_values);
+  const triggerValue = form.watch(triggerField || "");
+  const visible =
+    !triggerField ||
+    triggerValues.length === 0 ||
+    triggerValues.includes(triggerValue);
+
+  useEffect(() => {
+    if (!visible) {
+      const current = form.getValues(field.id);
+      if (current !== undefined && current !== "" && current !== false) {
+        form.setValue(field.id, field.field_type === "checkbox" ? false : "");
+      }
+    }
+  }, [visible]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <>
+      {field.field_type === "checkbox" ? (
+        <FormItem name={field.id} form={form} required={field.required}>
+          <Form.Check label={field.label} />
+        </FormItem>
+      ) : field.field_type === "select" ? (
+        <FormItem label={field.label} name={field.id} form={form} required={field.required}>
+          <Form.Control as="select" custom className="form-control">
+            <option value="">Choose an option</option>
+            {parseCustomFieldOptions(field.options).map(
+              (o: { label: string; value: string }) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              )
+            )}
+          </Form.Control>
+        </FormItem>
+      ) : field.field_type === "radio" ? (
+        <FormItem
+          name={field.id}
+          form={form}
+          style={{ marginTop: "0.125rem" }}
+          label={field.label}
+          required={field.required}
+          isRadio
+        >
+          {parseCustomFieldOptions(field.options).map(
+            (o: { label: string; value: string }) => (
+              <Form.Check
+                key={o.value}
+                value={o.value}
+                name={field.id}
+                type="radio"
+                id={`${field.id}-${o.value}`}
+                label={o.label}
+              />
+            )
+          )}
+        </FormItem>
+      ) : field.field_type === "month_year" ? (
+        <MonthYearField field={field} form={form} />
+      ) : (
+        <FormItem label={field.label} name={field.id} form={form} required={field.required}>
+          <Form.Control
+            autoComplete={field.id}
+            type={field.field_type}
+          />
+        </FormItem>
+      )}
+      {field.instructions && (
+        <div
+          className="text-secondary"
+          dangerouslySetInnerHTML={{ __html: field.instructions }}
+        ></div>
+      )}
+    </>
+  );
+};
+
+const MonthYearField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
+  const monthName = `${field.id}Month`;
+  const yearName = `${field.id}Year`;
+  const month = form.watch(monthName);
+  const year = form.watch(yearName);
+
+  useEffect(() => {
+    const mm = month ? String(month).padStart(2, "0") : "";
+    const yyyy = year ? String(year) : "";
+    const next = mm && /^\d{4}$/.test(yyyy) ? `${mm}/${yyyy}` : "";
+    form.setValue(field.id, next, {
+      shouldValidate: form.formState.isSubmitted
+    });
+  }, [month, year]);
+
+  const error = form.errors?.[field.id];
+  const isInvalid = !!error;
+
+  return (
+    <Form.Group>
+      <fieldset>
+        <legend className="form-label">
+          {field.label}
+          {field.required ? (
+            <>
+              {" "}
+              <span aria-hidden="true">*</span>{" "}
+              <div className="sr-only">required</div>
+            </>
+          ) : null}
+        </legend>
+        <input type="hidden" name={field.id} ref={form.register} />
+        <Row>
+          <Col>
+            <Form.Label htmlFor={monthName}>Month</Form.Label>
+            <Form.Control
+              as="select"
+              custom
+              id={monthName}
+              name={monthName}
+              ref={form.register}
+              isInvalid={isInvalid}
+            >
+              <option value="">MM</option>
+              {Array.from({ length: 12 }).map((_, i) => {
+                const v = String(i + 1).padStart(2, "0");
+                return (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                );
+              })}
+            </Form.Control>
+          </Col>
+          <Col>
+            <Form.Label htmlFor={yearName}>Year</Form.Label>
+            <Form.Control
+              type="number"
+              placeholder="YYYY"
+              maxLength={4}
+              id={yearName}
+              name={yearName}
+              ref={form.register}
+              isInvalid={isInvalid}
+            />
+          </Col>
+        </Row>
+        {isInvalid && (
+          <div className="invalid-feedback d-block">{error?.message}</div>
+        )}
+      </fieldset>
+    </Form.Group>
   );
 };
 

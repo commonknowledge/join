@@ -1,3 +1,11 @@
+// Bootstrap's form-validation-state-selector mixin expands & to .ck-join-flow
+// when imported inside that selector, producing .ck-join-flow.is-invalid which
+// never matches. Override explicitly so the sibling rule is correct.
+.was-validated :invalid ~ .invalid-feedback,
+.is-invalid ~ .invalid-feedback {
+  display: block;
+}
+
 .form-control,
 .form-label {
   @include text-body;

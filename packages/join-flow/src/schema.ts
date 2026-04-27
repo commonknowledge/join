@@ -3,6 +3,7 @@ import {
   BaseSchema,
   boolean,
   InferType,
+  mixed,
   number,
   object,
   ObjectSchema,
@@ -52,6 +53,13 @@ function isInPast(value: number | null | undefined | object) {
 }
 
 const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
+
+export const parseTriggerValues = (raw: string | undefined): string[] =>
+  (raw || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
 const CustomFieldsSchema = customFields.reduce((o, field) => {
   let def: BaseSchema = string();
   if (field.field_type === "checkbox") {
@@ -62,8 +70,30 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
     }
   } else if (field.field_type === "number") {
     def = number();
+  } else if (field.field_type === "month_year") {
+    def = string().matches(/^(0[1-9]|1[0-2])\/\d{4}$/, {
+      message: "Please enter a month and year",
+      excludeEmptyString: true
+    });
   }
-  return { ...o, [field.id]: field.required ? def.required() : def };
+
+  if (field.label) {
+    def = def.label(field.label);
+  }
+
+  let validator: BaseSchema = field.required ? def.required() : def;
+
+  const triggerField = field.conditional_trigger_field;
+  const triggerValues = parseTriggerValues(field.conditional_trigger_values);
+  if (triggerField && triggerValues.length) {
+    validator = mixed().when(triggerField, {
+      is: (v: string) => triggerValues.includes(v),
+      then: validator,
+      otherwise: mixed().notRequired()
+    });
+  }
+
+  return { ...o, [field.id]: validator };
 }, {});
 
 const requireAddress = Boolean(getEnv("REQUIRE_ADDRESS"));
