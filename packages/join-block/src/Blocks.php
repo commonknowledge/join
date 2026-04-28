@@ -262,10 +262,24 @@ class Blocks
                     'compare' => 'IN',
                 ]
             ]),
+            Field::make('checkbox', 'display_conditionally', 'Display conditionally')
+                ->set_help_text("Only show this field when another custom field has specific value(s)."),
             Field::make('text', 'conditional_trigger_field', "Conditional trigger field")
-                ->set_help_text("Optional. Enter the ID of another (Select-type) custom field. This field will only display when that field's value matches one of the trigger values below."),
+                ->set_help_text("Enter the ID of another (Select-type) custom field. This field will only display when that field's value matches one of the trigger values below.")
+                ->set_conditional_logic([
+                    [
+                        'field' => 'display_conditionally',
+                        'value' => true,
+                    ],
+                ]),
             Field::make('text', 'conditional_trigger_values', "Conditional trigger values")
-                ->set_help_text("Comma-separated list of values that, when matched against the trigger field, cause this field to display. Match against option values (left side of <code>value : label</code>), not labels."),
+                ->set_help_text("Comma-separated list of values that, when matched against the trigger field, cause this field to display. Match against option values (left side of <code>value : label</code>), not labels.")
+                ->set_conditional_logic([
+                    [
+                        'field' => 'display_conditionally',
+                        'value' => true,
+                    ],
+                ]),
             Field::make('rich_text', 'instructions')->set_help_text("Text to display below the field."),
         ]);
         return $custom_fields;
