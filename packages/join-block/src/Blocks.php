@@ -281,7 +281,12 @@ class Blocks
                     ],
                 ]),
             Field::make('rich_text', 'instructions')->set_help_text("Text to display below the field."),
-        ]);
+        ])
+        ->set_header_template('
+            <% if (label || id) { %>
+                <%- label || id %><% if (label && id) { %> (<%- id %>)<% } %>
+            <% } %>
+        ');
         return $custom_fields;
     }
 

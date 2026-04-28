@@ -440,7 +440,12 @@ class Settings
             $payment_currency_select,
             Field::make('text', 'description'),
             Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin.")
-        ])->set_min(1);
+        ])->set_min(1)
+        ->set_header_template('
+            <% if (label) { %>
+                <%- label %><% if (amount) { %> — <%- amount %><% if (currency) { %> <%- currency %><% } %><% if (frequency) { %> / <%- frequency %><% } %><% } %>
+            <% } %>
+        ');
         return $membership_plans;
     }
 
