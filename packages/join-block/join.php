@@ -707,7 +707,11 @@ add_action('init', function () {
 // Run any pending data migrations after a plugin version bump. Hooked to
 // `init` so Carbon Fields theme options are populated when migrations run
 // (Settings::get depends on Carbon Fields, which boots on after_setup_theme).
-add_action('init', [Upgrade::class, 'check']);
+// Wrapped in a closure so WordPress's default accepted_args=1 doesn't pass
+// an empty-string positional arg into check()'s ?array parameter.
+add_action('init', function () {
+    Upgrade::check();
+});
 
 add_action('ck_join_block_gocardless_cron_hook', function () {
     global $wpdb;
