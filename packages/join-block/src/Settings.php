@@ -531,7 +531,36 @@ class Settings
 
     public static function getMembershipPlan($id)
     {
-        return get_option('ck_join_flow_membership_plan_' . $id);
+        $plan = get_option('ck_join_flow_membership_plan_' . $id);
+        if ($plan) {
+            return $plan;
+        }
+
+        // Self-healing fallback for the v1.4.4 slug-format change.
+        // Plans saved before commit 0161e59 live under label-only keys
+        // (e.g. ck_join_flow_membership_plan_low-wage-payment-level) but the
+        // frontend now requests them by label_frequency_currency. Until an
+        // admin re-saves the settings page (which re-keys via
+        // saveMembershipPlans()), scan all stored plans and match by
+        // recomputed ID so create-subscription keeps working.
+        global $wpdb;
+        if (!$wpdb) {
+            return $plan;
+        }
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $wpdb->esc_like('ck_join_flow_membership_plan_') . '%'
+            ),
+            ARRAY_A
+        );
+        foreach ($rows as $row) {
+            $candidate = maybe_unserialize($row['option_value']);
+            if (is_array($candidate) && self::getMembershipPlanId($candidate) === $id) {
+                return $candidate;
+            }
+        }
+        return $plan;
     }
 
     public static function getMembershipPlanByPriceId($priceId)
