@@ -13,6 +13,10 @@ if (! defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
+if (!defined('CK_JOIN_FLOW_VERSION')) {
+    define('CK_JOIN_FLOW_VERSION', '1.4.9');
+}
+
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
 use ChargeBee\ChargeBee\Environment;
@@ -28,6 +32,7 @@ use CommonKnowledge\JoinBlock\Services\StripeService;
 use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Services\ZetkinService;
 use CommonKnowledge\JoinBlock\Settings;
+use CommonKnowledge\JoinBlock\Upgrade;
 
 Logging::init();
 global $joinBlockLog;
@@ -697,6 +702,15 @@ add_action('init', function () {
     $chargebee_site_name = Settings::get('CHARGEBEE_SITE_NAME');
     $chargebee_api_key = Settings::get('CHARGEBEE_API_KEY');
     Environment::configure($chargebee_site_name, $chargebee_api_key);
+});
+
+// Run any pending data migrations after a plugin version bump. Hooked to
+// `init` so Carbon Fields theme options are populated when migrations run
+// (Settings::get depends on Carbon Fields, which boots on after_setup_theme).
+// Wrapped in a closure so WordPress's default accepted_args=1 doesn't pass
+// an empty-string positional arg into check()'s ?array parameter.
+add_action('init', function () {
+    Upgrade::check();
 });
 
 add_action('ck_join_block_gocardless_cron_hook', function () {

@@ -18,11 +18,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 README_TXT="$PROJECT_ROOT/packages/join-block/readme.txt"
+README_MD="$PROJECT_ROOT/readme.md"
 JOIN_PHP="$PROJECT_ROOT/packages/join-block/join.php"
 INDEX_TSX="$PROJECT_ROOT/packages/join-flow/src/index.tsx"
 
 if [ ! -f "$README_TXT" ]; then
     print_error "readme.txt not found at $README_TXT"
+    exit 1
+fi
+
+if [ ! -f "$README_MD" ]; then
+    print_error "readme.md not found at $README_MD"
     exit 1
 fi
 
@@ -73,7 +79,7 @@ if [ ${#CHANGELOG_ENTRIES[@]} -eq 0 ]; then
     print_warning "No changelog entries provided"
 fi
 
-print_step "Updating version to $NEW_VERSION in 3 files..."
+print_step "Updating version to $NEW_VERSION in 4 files..."
 
 print_step "1. Updating readme.txt (Stable tag and changelog)"
 sed -i.bak "s/^Stable tag: .*/Stable tag: $NEW_VERSION/" "$README_TXT"
@@ -104,11 +110,16 @@ fi
 
 rm -f "$README_TXT.bak"
 
-print_step "2. Updating join.php (Version)"
+print_step "2. Updating join.php (Version header and CK_JOIN_FLOW_VERSION constant)"
 sed -i.bak "s/^ \* Version: .*/ * Version:         $NEW_VERSION/" "$JOIN_PHP"
+sed -i.bak "s/define('CK_JOIN_FLOW_VERSION', '[^']*')/define('CK_JOIN_FLOW_VERSION', '$NEW_VERSION')/" "$JOIN_PHP"
 rm -f "$JOIN_PHP.bak"
 
-print_step "3. Updating index.tsx (Sentry release)"
+print_step "3. Updating readme.md (Current version)"
+sed -i.bak "s/\*\*Current version:\*\* .*/\*\*Current version:\*\* $NEW_VERSION/" "$README_MD"
+rm -f "$README_MD.bak"
+
+print_step "4. Updating index.tsx (Sentry release)"
 sed -i.bak "s/release: \".*\"/release: \"$NEW_VERSION\"/" "$INDEX_TSX"
 rm -f "$INDEX_TSX.bak"
 
@@ -117,6 +128,7 @@ echo ""
 echo "Files updated:"
 echo "  - packages/join-block/readme.txt"
 echo "  - packages/join-block/join.php"
+echo "  - readme.md"
 echo "  - packages/join-flow/src/index.tsx"
 echo ""
 echo "Next steps:"
