@@ -18,7 +18,11 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
     });
 
     if (!res.ok) {
-      throw Error(await res.text());
+      const body = await res.text();
+      const err = new Error(body) as Error & { status: number; resource: string };
+      err.status = res.status;
+      err.resource = resource;
+      throw err;
     }
 
     return res.json();

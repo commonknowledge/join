@@ -24,8 +24,37 @@ import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
 
 import { get as getEnv, getStr as getEnvStr, getPaymentProviders, resolveStripePaymentMethodTypes, PaymentMethod, PaymentProvider } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
+import type { StripeError } from "@stripe/stripe-js";
 import { usePostResource } from "../services/rest-resource.service";
 import { SAVED_STATE_KEY } from "../services/router.service";
+
+const STRIPE_CODE_MESSAGES: Partial<Record<string, string>> = {
+  payment_intent_authentication_failure:
+    "We were unable to authenticate your payment. Please try a different payment method.",
+  payment_intent_timeout: "Payment timed out. Please try again.",
+};
+
+const TECHNICAL_ERROR_TYPES = new Set([
+  "api_error",
+  "invalid_request_error",
+  "authentication_error",
+  "rate_limit_error",
+  "idempotency_error",
+  "stripe_invalid_response_error",
+]);
+
+const GENERIC_PAYMENT_ERROR =
+  "An error occurred processing your payment. Please try again.";
+
+function formatStripeError(error: StripeError): string {
+  if (error.code && STRIPE_CODE_MESSAGES[error.code]) {
+    return STRIPE_CODE_MESSAGES[error.code]!;
+  }
+  if (!TECHNICAL_ERROR_TYPES.has(error.type)) {
+    return error.message ?? GENERIC_PAYMENT_ERROR;
+  }
+  return GENERIC_PAYMENT_ERROR;
+}
 
 export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
   data,
@@ -400,14 +429,19 @@ const StripeForm = ({
       });
 
       if (error) {
-        const message = JSON.stringify(error)
-        handleError({ message });
+        Sentry.captureMessage("Stripe confirmPayment error", {
+          level: "error",
+          extra: { stripeError: error },
+        });
+        setLoading(false);
+        setErrorMessage(formatStripeError(error));
         return;
       }
     } catch (e: any) {
       console.error("Create payment error", e);
-      handleError({ message: e?.message || JSON.stringify(e) || "Unknown error" });
-      Sentry.captureException(e)
+      Sentry.captureException(e);
+      setLoading(false);
+      setErrorMessage(GENERIC_PAYMENT_ERROR);
     }
   };
 
@@ -441,7 +475,7 @@ const StripeForm = ({
           setData({ ...data, paymentMethod: stripePaymentMethod === "bacs_debit" ? "directDebit" : "creditCard" });
         }}/>
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
-        {errorMessage && <div>{errorMessage}</div>}
+        {errorMessage && <div className="invalid-feedback d-block mt-3">{errorMessage}</div>}
       </div>
     </form>
   );
