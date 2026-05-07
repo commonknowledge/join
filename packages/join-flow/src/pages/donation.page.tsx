@@ -170,7 +170,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             form={form}
             className="mt-3"
           >
-            <Form.Control type="number" min="1" />
+            <Form.Control type="number" min="0.01" step="0.01" />
           </FormItem>
         </fieldset>
 

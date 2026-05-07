@@ -324,7 +324,7 @@ const PaymentDetailsSchema = PaymentMethodDDSchema.concat(
 );
 
 const DonationSchema = object({
-  donationAmount: number().positive().integer(),
+  donationAmount: number().positive(),
   recurDonation: boolean().default(false)
 }).required();
 

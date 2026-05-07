@@ -176,7 +176,8 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                         <Form.Control
                           id={`${currentPlan.value}-amount`}
                           type="number"
-                          min={currentPlan.amount || 1}
+                          min={currentPlan.amount || 0.01}
+                          step="0.01"
                           max="1000"
                         />
                       </FormItem>
@@ -227,7 +228,8 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                           <Form.Control
                             id={`${currentPlan.value}-amount`}
                             type="number"
-                            min={currentPlan.amount || 1}
+                            min={currentPlan.amount || 0.01}
+                            step="0.01"
                             max="1000"
                           />
                         </FormItem>
