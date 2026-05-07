@@ -497,6 +497,7 @@ class Blocks
             "REQUIRE_ADDRESS" => $fields["require_address"] ?? true,
             "HIDE_ADDRESS" => $fields["hide_address"] ?? false,
             "REQUIRE_PHONE_NUMBER" => $fields["require_phone_number"] ?? true,
+            "ENABLE_INTERNATIONAL_PHONE_NUMBERS" => Settings::get("ENABLE_INTERNATIONAL_PHONE_NUMBERS"),
             "SENTRY_DSN" => Settings::get("SENTRY_DSN"),
             "STRIPE_DIRECT_DEBIT" => Settings::get("STRIPE_DIRECT_DEBIT"),
             "STRIPE_DIRECT_DEBIT_ONLY" => !empty($fields['allow_cards_override'])
