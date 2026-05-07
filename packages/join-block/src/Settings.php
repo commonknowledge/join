@@ -63,7 +63,7 @@ class Settings
                 ->set_help_text(
                     'When enabled, phone numbers are validated against the country selected in the address. ' .
                     'If the address section is hidden, members must enter a number in international format ' .
-                    '(e.g. +44...). Otherwise, only UK numbers are accepted.'
+                    '(e.g. +44...). When disabled, only UK numbers are accepted.'
                 ),
             Field::make('checkbox', 'hide_zero_price_display', 'Hide price display for zero-price items')
                 ->set_help_text('When enabled, membership tiers with a price of zero will not show a price label'),
