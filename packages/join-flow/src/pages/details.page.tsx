@@ -303,10 +303,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               className="text-secondary"
               dangerouslySetInnerHTML={{ __html: contactConsentCopy }}
             ></div>
-            <FormItem form={form} name="contactByEmail">
+            <FormItem form={form} name="contactByEmail" required={Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))}>
               <Form.Check label="Email" />
             </FormItem>
-            <FormItem form={form} name="contactByPhone">
+            <FormItem form={form} name="contactByPhone" required={Boolean(getEnv("REQUIRE_PHONE_CONSENT"))}>
               <Form.Check label="Phone" />
             </FormItem>
           </>

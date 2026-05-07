@@ -55,6 +55,10 @@ class Settings
                 ->set_help_text('May or may not be necessary for your organisation to be given this explicit consent'),
             Field::make('checkbox', 'consent_checked_by_default', 'Consent checkboxes checked by default')
                 ->set_help_text('When collecting phone and email contact consent, pre-tick the consent checkboxes.'),
+            Field::make('checkbox', 'require_email_consent', 'Email consent required')
+                ->set_help_text('When collecting email contact consent, require the user to check the box.'),
+            Field::make('checkbox', 'require_phone_consent', 'Phone consent required')
+                ->set_help_text('When collecting phone contact consent, require the user to check the box.'),
             Field::make('checkbox', 'hide_zero_price_display', 'Hide price display for zero-price items')
                 ->set_help_text('When enabled, membership tiers with a price of zero will not show a price label'),
             Field::make('checkbox', 'create_auth0_account'),

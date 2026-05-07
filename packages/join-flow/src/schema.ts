@@ -171,8 +171,12 @@ export const DetailsSchema = object({
         "Please enter a valid UK phone number",
         (value) => !value || string().phone("GB", false).isValidSync(value)
       ),
-  contactByEmail: boolean(),
-  contactByPhone: boolean(),
+  contactByEmail: Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))
+    ? boolean().oneOf([true], "Email consent is required")
+    : boolean(),
+  contactByPhone: Boolean(getEnv("REQUIRE_PHONE_CONSENT"))
+    ? boolean().oneOf([true], "Phone consent is required")
+    : boolean(),
   ...CustomFieldsSchema
 }).required();
 

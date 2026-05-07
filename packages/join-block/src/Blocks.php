@@ -465,6 +465,8 @@ class Blocks
             "COLLECT_HEAR_ABOUT_US" => Settings::get("COLLECT_HEAR_ABOUT_US"),
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
             "CONSENT_CHECKED_BY_DEFAULT" => Settings::get("CONSENT_CHECKED_BY_DEFAULT"),
+            "REQUIRE_EMAIL_CONSENT" => Settings::get("REQUIRE_EMAIL_CONSENT"),
+            "REQUIRE_PHONE_CONSENT" => Settings::get("REQUIRE_PHONE_CONSENT"),
             "CONTACT_CONSENT_COPY" => wpautop(Settings::get("CONTACT_CONSENT_COPY")),
             "CONTACT_DETAILS_COPY" => wpautop(Settings::get("CONTACT_DETAILS_COPY")),
             "CONTACT_DETAILS_HEADING" => Settings::get("CONTACT_DETAILS_HEADING"),
