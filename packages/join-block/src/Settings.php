@@ -59,6 +59,12 @@ class Settings
                 ->set_help_text('When collecting email contact consent, require the user to check the box.'),
             Field::make('checkbox', 'require_phone_consent', 'Phone consent required')
                 ->set_help_text('When collecting phone contact consent, require the user to check the box.'),
+            Field::make('checkbox', 'enable_international_phone_numbers', 'Enable international phone numbers')
+                ->set_help_text(
+                    'When enabled, phone numbers are validated against the country selected in the address. ' .
+                    'If the address section is hidden, members must enter a number in international format ' .
+                    '(e.g. +44...). Otherwise, only UK numbers are accepted.'
+                ),
             Field::make('checkbox', 'hide_zero_price_display', 'Hide price display for zero-price items')
                 ->set_help_text('When enabled, membership tiers with a price of zero will not show a price label'),
             Field::make('checkbox', 'create_auth0_account'),

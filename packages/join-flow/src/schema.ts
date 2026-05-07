@@ -9,23 +9,30 @@ import {
   ObjectSchema,
   string
 } from "yup";
-import "yup-phone";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { PhoneNumberUtil } from "google-libphonenumber";
+
+const phoneUtil = PhoneNumberUtil.getInstance();
+
+const isValidInternationalPhone = (
+  value: string | undefined,
+  country: string | undefined
+): boolean => {
+  if (!value) return true;
+  try {
+    const parsed = phoneUtil.parse(value, country || undefined);
+    return country
+      ? phoneUtil.isValidNumberForRegion(parsed, country)
+      : phoneUtil.isValidNumber(parsed);
+  } catch {
+    return false;
+  }
+};
 
 import { getDaysInMonth, isPast } from "date-fns";
 import { get as getEnv } from "./env";
 
 // Typescript support for Yup phone validation
-declare module "yup" {
-  export interface StringSchema {
-    phone(
-      countryCode?: string,
-      strict?: boolean,
-      errorMessage?: string
-    ): StringSchema;
-  }
-}
-
 const Prerequesites = object({
   /** Email passed in via query param */
   email: string().required(),
@@ -96,7 +103,8 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
   return { ...o, [field.id]: validator };
 }, {});
 
-const requireAddress = Boolean(getEnv("REQUIRE_ADDRESS"));
+const requireAddress =
+  Boolean(getEnv("REQUIRE_ADDRESS")) && !Boolean(getEnv("HIDE_ADDRESS"));
 
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
@@ -161,15 +169,31 @@ export const DetailsSchema = object({
         )
         .required()
     : string(),
-  phoneNumber: Boolean(getEnv("REQUIRE_PHONE_NUMBER"))
+  phoneNumber: Boolean(getEnv("ENABLE_INTERNATIONAL_PHONE_NUMBERS"))
+    ? string().when("addressCountry", (country: string, schema) => {
+        const required = Boolean(getEnv("REQUIRE_PHONE_NUMBER"));
+        const message = country
+          ? "Please enter a valid phone number"
+          : "Please enter a valid phone number, including the country code (e.g. +44...)";
+        const test = schema.test(
+          "is-valid-phone",
+          message,
+          (value: string | undefined) => isValidInternationalPhone(value, country)
+        );
+        return required ? test.required("Phone number is required") : test;
+      })
+    : Boolean(getEnv("REQUIRE_PHONE_NUMBER"))
     ? string()
-        .phone("GB", false, "A valid UK phone number is required")
-        .required()
+        .test(
+          "is-valid-phone",
+          "A valid UK phone number is required",
+          (value) => isValidInternationalPhone(value, "GB")
+        )
+        .required("Phone number is required")
     : string().test(
-        // .test() used because .phone() forces .required()
         "is-valid-phone",
         "Please enter a valid UK phone number",
-        (value) => !value || string().phone("GB", false).isValidSync(value)
+        (value) => isValidInternationalPhone(value, "GB")
       ),
   contactByEmail: Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))
     ? boolean().oneOf([true], "Email consent is required")
