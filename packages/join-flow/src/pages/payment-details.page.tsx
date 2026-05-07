@@ -360,6 +360,8 @@ const StripeForm = ({
   >("/stripe/create-payment-intent");
 
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [errorDetails, setErrorDetails] = useState<string | undefined>();
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Use ref for paymentMethodOrder so that it is fixed when the component is first rendered
@@ -435,6 +437,8 @@ const StripeForm = ({
         });
         setLoading(false);
         setErrorMessage(formatStripeError(error));
+        setErrorDetails(JSON.stringify(error, null, 2));
+        setShowErrorDetails(false);
         return;
       }
     } catch (e: any) {
@@ -442,6 +446,8 @@ const StripeForm = ({
       Sentry.captureException(e);
       setLoading(false);
       setErrorMessage(GENERIC_PAYMENT_ERROR);
+      setErrorDetails(JSON.stringify(e, null, 2));
+      setShowErrorDetails(false);
     }
   };
 
@@ -475,7 +481,28 @@ const StripeForm = ({
           setData({ ...data, paymentMethod: stripePaymentMethod === "bacs_debit" ? "directDebit" : "creditCard" });
         }}/>
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
-        {errorMessage && <div className="invalid-feedback d-block mt-3">{errorMessage}</div>}
+        {errorMessage && (
+          <div className="invalid-feedback d-block mt-3">
+            {errorMessage}
+            {errorDetails && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() => setShowErrorDetails((v) => !v)}
+                  style={{ background: "none", border: "none", padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit" }}
+                >
+                  {showErrorDetails ? "Hide details" : "Show details"}
+                </button>
+                {showErrorDetails && (
+                  <pre style={{ marginTop: "0.5rem", whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.8em" }}>
+                    {errorDetails}
+                  </pre>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </form>
   );
