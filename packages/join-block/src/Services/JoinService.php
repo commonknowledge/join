@@ -132,9 +132,13 @@ class JoinService
 
         $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
 
-        if (!empty($data['phoneNumber'] && !empty($data['addressCountry']))) {
-            $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], $data['addressCountry']);
-            $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+        if (!empty($data['phoneNumber'])) {
+            try {
+                $phoneNumberDetails = $phoneUtil->parse($data['phoneNumber'], null);
+                $data['phoneNumber'] = $phoneUtil->format($phoneNumberDetails, \libphonenumber\PhoneNumberFormat::E164);
+            } catch (\libphonenumber\NumberParseException $e) {
+                // Frontend should always send E.164. Leave as-is if parsing fails.
+            }
         }
 
         $billingAddress = [

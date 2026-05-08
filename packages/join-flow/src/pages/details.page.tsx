@@ -7,7 +7,7 @@ import { StagerComponent } from "../components/stager";
 import { DetailsSchema, FormSchema, parseTriggerValues, validate } from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { ContinueButton, FormItem } from "../components/atoms";
-import { sortedCountries } from "../constants";
+import { phoneCountries, sortedCountries } from "../constants";
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -294,9 +294,30 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         <FormItem label="Email Address" name="email" form={form} required>
           <Form.Control autoComplete="email" type="email" />
         </FormItem>
-        <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
-          <Form.Control autoComplete="tel-national" type="tel" />
-        </FormItem>
+        {Boolean(getEnv("ENABLE_INTERNATIONAL_PHONE_NUMBERS")) ? (
+          <Row>
+            <Col xs={5} sm={4}>
+              <FormItem label="Country code" name="phoneCountry" form={form} required>
+                <Form.Control as="select">
+                  {phoneCountries.map((c) => (
+                    <option key={c.alpha2} value={c.alpha2}>
+                      {c.name} (+{c.dialingCode})
+                    </option>
+                  ))}
+                </Form.Control>
+              </FormItem>
+            </Col>
+            <Col>
+              <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
+                <Form.Control autoComplete="tel-national" type="tel" />
+              </FormItem>
+            </Col>
+          </Row>
+        ) : (
+          <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
+            <Form.Control autoComplete="tel-national" type="tel" />
+          </FormItem>
+        )}
         {getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ? (
           <>
             <div

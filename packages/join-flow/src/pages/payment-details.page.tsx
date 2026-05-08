@@ -20,7 +20,7 @@ import { Summary } from "../components/summary";
 import { sortedCountries } from "../constants";
 import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
-import { PaymentMethodDDSchema, FormSchema, validate } from "../schema";
+import { PaymentMethodDDSchema, FormSchema, formatPhoneE164, validate } from "../schema";
 
 import { get as getEnv, getStr as getEnvStr, getPaymentProviders, resolveStripePaymentMethodTypes, PaymentMethod, PaymentProvider } from "../env";
 import { loadStripe } from "@stripe/stripe-js";
@@ -459,7 +459,7 @@ const StripeForm = ({
         ? `${data.firstName} ${data.lastName}`
         : undefined,
       email: data.email || undefined,
-      phone: data.phoneNumber || undefined,
+      phone: formatPhoneE164(data.phoneNumber, data.phoneCountry),
       address: {
         line1: data.addressLine1 || undefined,
         line2: data.addressLine2 || undefined,

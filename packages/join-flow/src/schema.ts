@@ -10,7 +10,7 @@ import {
   string
 } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { PhoneNumberUtil } from "google-libphonenumber";
+import { PhoneNumberFormat, PhoneNumberUtil } from "google-libphonenumber";
 
 const phoneUtil = PhoneNumberUtil.getInstance();
 
@@ -26,6 +26,19 @@ const isValidInternationalPhone = (
       : phoneUtil.isValidNumber(parsed);
   } catch {
     return false;
+  }
+};
+
+export const formatPhoneE164 = (
+  value: string | undefined,
+  country: string | undefined
+): string | undefined => {
+  if (!value) return undefined;
+  try {
+    const parsed = phoneUtil.parse(value, country || "GB");
+    return phoneUtil.format(parsed, PhoneNumberFormat.E164);
+  } catch {
+    return value;
   }
 };
 
@@ -169,32 +182,20 @@ export const DetailsSchema = object({
         )
         .required()
     : string(),
-  phoneNumber: Boolean(getEnv("ENABLE_INTERNATIONAL_PHONE_NUMBERS"))
-    ? string().when("addressCountry", (country: string, schema) => {
-        const required = Boolean(getEnv("REQUIRE_PHONE_NUMBER"));
-        const message = country
-          ? "Please enter a valid phone number"
-          : "Please enter a valid phone number, including the country code (e.g. +44...)";
-        const test = schema.test(
-          "is-valid-phone",
-          message,
-          (value: string | undefined) => isValidInternationalPhone(value, country)
-        );
-        return required ? test.required("Phone number is required") : test;
-      })
-    : Boolean(getEnv("REQUIRE_PHONE_NUMBER"))
-    ? string()
-        .test(
-          "is-valid-phone",
-          "A valid UK phone number is required",
-          (value) => isValidInternationalPhone(value, "GB")
-        )
-        .required("Phone number is required")
-    : string().test(
-        "is-valid-phone",
-        "Please enter a valid UK phone number",
-        (value) => isValidInternationalPhone(value, "GB")
-      ),
+  phoneCountry: string().default("GB"),
+  phoneNumber: string().when("phoneCountry", (country: string, schema) => {
+    const region = country || "GB";
+    const required = Boolean(getEnv("REQUIRE_PHONE_NUMBER"));
+    const message = Boolean(getEnv("ENABLE_INTERNATIONAL_PHONE_NUMBERS"))
+      ? "Please enter a valid phone number"
+      : "Please enter a valid UK phone number";
+    const test = schema.test(
+      "is-valid-phone",
+      message,
+      (value: string | undefined) => isValidInternationalPhone(value, region)
+    );
+    return required ? test.required("Phone number is required") : test;
+  }),
   contactByEmail: Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))
     ? boolean().oneOf([true], "Email consent is required")
     : boolean(),
@@ -411,7 +412,8 @@ export const getTestDataIfEnabled = (): FormSchema => {
       paymentMethod: "directDebit",
       ddAccountNumber: "55779911",
       ddSortCode: "200000",
-      phoneNumber: "02036919400"
+      phoneNumber: "02036919400",
+      phoneCountry: "GB"
     };
   } else {
     return {};

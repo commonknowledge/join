@@ -404,6 +404,7 @@ const getInitialState = (): FormSchema => {
   const availableMethods = getPaymentMethods();
   const state = {
     sessionToken: uuid.v4(),
+    phoneCountry: "GB",
     ...getTestDataIfEnabled(),
     ...getDefaultState(),
     // recurDonation: true is the *default* for supporter mode (monthly is selected
