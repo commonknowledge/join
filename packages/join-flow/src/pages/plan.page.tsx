@@ -15,6 +15,7 @@ const membershipTiersHeading = getEnvStr("MEMBERSHIP_TIERS_HEADING");
 const membershipTiersCopy =
   getEnvStr("MEMBERSHIP_TIERS_COPY") ||
   "You can change or cancel whenever you want.";
+const currencySelectionCopy = getEnvStr("CURRENCY_SELECTION_COPY");
 
 export const PlanPage: StagerComponent<FormSchema> = ({
   data,
@@ -32,6 +33,11 @@ export const PlanPage: StagerComponent<FormSchema> = ({
     groupedPlans[plan.label] = group;
   }
 
+  // A currency selector is only rendered for plans available in more than one currency.
+  const hasCurrencyChoice = Object.values(groupedPlans).some(
+    (group) => group.length > 1
+  );
+
   return (
     <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
       <div>
@@ -46,6 +52,13 @@ export const PlanPage: StagerComponent<FormSchema> = ({
           className="text-secondary"
           dangerouslySetInnerHTML={{ __html: membershipTiersCopy }}
         ></div>
+
+        {hasCurrencyChoice && currencySelectionCopy && (
+          <div
+            className="text-secondary"
+            dangerouslySetInnerHTML={{ __html: currencySelectionCopy }}
+          ></div>
+        )}
 
         {Object.keys(groupedPlans).map((label) => (
           <PlanRadioPanel

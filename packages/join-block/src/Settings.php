@@ -138,6 +138,8 @@ class Settings
                 ->set_default_value("Choose the plan that's right for you"),
             Field::make('rich_text', 'membership_tiers_copy')
                 ->set_help_text("E.G. Choose tier X if you are Y, otherwise choose tier Z."),
+            Field::make('rich_text', 'currency_selection_copy')
+                ->set_help_text("Shown next to the currency selector when a plan is available in more than one currency. E.G. \"Not sure? We recommend GBP — it's our home currency.\""),
             Field::make('text', 'subscription_day_of_month_copy', 'Only valid for monthly subscriptions')->set_default_value("Day of month to take payment"),
             Field::make('text', 'join_form_sidebar_heading')
                 ->set_default_value("Join Us")

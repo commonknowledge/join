@@ -482,6 +482,7 @@ class Blocks
             "HOME_ADDRESS_COPY" => wpautop(Settings::get("HOME_ADDRESS_COPY")),
             "MEMBERSHIP_TIERS_HEADING" => Settings::get("MEMBERSHIP_TIERS_HEADING"),
             "MEMBERSHIP_TIERS_COPY" => wpautop(Settings::get("MEMBERSHIP_TIERS_COPY")),
+            "CURRENCY_SELECTION_COPY" => wpautop(Settings::get("CURRENCY_SELECTION_COPY")),
             "IS_UPDATE_FLOW" => $fields['is_update_flow'] ?? false,
             "INCLUDE_SKIP_PAYMENT_BUTTON" => $fields['include_skip_payment_button'] ?? false,
             "JOIN_FORM_SIDEBAR_HEADING" => $sidebar_heading,
