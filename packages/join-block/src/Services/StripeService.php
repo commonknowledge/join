@@ -523,6 +523,12 @@ class StripeService
         }
     }
 
+    /**
+     * Cancels the customer's existing subscriptions, except for $subscriptionId, which is the
+     * subscription that was just created via the browser Stripe client during this join flow.
+     * That current subscription is left in place, and its amount is returned so the caller can
+     * verify it against the amount claimed in the join request.
+     */
     public static function removeExistingSubscriptions($email, $customerId, $subscriptionId)
     {
         global $joinBlockLog;
@@ -605,7 +611,7 @@ class StripeService
             "firstSubscription" => $firstSubscriptionDate,
             "firstPayment"      => $firstPayment,
             "lastPayment"       => $lastPayment,
-            "amount"            => round($amount / 100),
+            "amount"            => round($amount / 100, 2),
         ];
     }
 

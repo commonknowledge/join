@@ -513,7 +513,9 @@ class Settings
     {
         global $joinBlockLog;
 
-        $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
+        if (count($membership_plans) > 0) {
+            $joinBlockLog->info("Saving " . count($membership_plans) . " membership plans");
+        }
         foreach ($membership_plans as $plan) {
             $slug = Settings::getMembershipPlanId($plan);
             $joinBlockLog->info("Saving membership plan: $slug");

@@ -201,7 +201,7 @@ class JoinService
             $subscriptionInfo = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
             if ($subscriptionInfo["amount"] !== $membershipAmount) {
                 $email = $data['email'];
-                $subAmount = round($subscriptionInfo["unitAmount"] / 100, 2);
+                $subAmount = $subscriptionInfo["amount"];
                 $joinBlockLog->error("Found mismatched subscription amounts for $email - claimed: $membershipAmount, found in stripe: $subAmount");
                 throw new JoinBlockException("Invalid subscription amount", 8);
             }
