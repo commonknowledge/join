@@ -14,10 +14,14 @@
   padding: 0.5rem 2rem 0.5rem 1rem;
   position: relative;
 
+  // The chevron is drawn as a masked element so its colour is controlled by
+  // a single `color` (or `--btn-chevron-color`) declaration, rather than by
+  // swapping out the SVG file.
   &::after {
     content: "";
-    background-image: url('graphics/chevron.svg');
-    background-repeat: no-repeat;
+    background-color: var(--btn-chevron-color, currentColor);
+    -webkit-mask: url('graphics/chevron.svg') no-repeat 0 0;
+    mask: url('graphics/chevron.svg') no-repeat 0 0;
     height: 30px;
     position: absolute;
     right: -8px;
@@ -27,5 +31,5 @@
 }
 
 .btn.btn-outline-dark::after {
-  background-image: url('graphics/chevron-inverse.svg');
+  background-color: var(--btn-chevron-color, #000);
 }
