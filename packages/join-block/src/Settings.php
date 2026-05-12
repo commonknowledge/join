@@ -85,6 +85,9 @@ class Settings
             Field::make('text', 'lapsed_tag')
                 ->set_default_value("Lapsed - failed payment")
                 ->set_help_text("Will be applied to members in Action Network, Mailchimp and Zetkin if they delete or do not pay their subscription"),
+            Field::make('text', 'lapsing_tag')
+                ->set_default_value("Lapsing")
+                ->set_help_text("Will be applied to members in Action Network, Mailchimp and Zetkin when their payments start failing, before they reach the lapsed state. Removed once they recover or become fully lapsed."),
             Field::make('separator', 'membership_plans_sep', 'Membership Plans'),
             $membership_plans,
         ];

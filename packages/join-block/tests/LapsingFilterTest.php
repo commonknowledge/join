@@ -165,4 +165,74 @@ class LapsingFilterTest extends TestCase
 
         JoinService::toggleMemberLapsed('test@example.com', true, null, ['provider' => 'stripe']);
     }
+
+    // --- shouldMarkMemberLapsing ---
+
+    public function testShouldMarkLapsingReturnsTrueByDefault(): void
+    {
+        $this->assertTrue(JoinService::shouldMarkMemberLapsing('test@example.com'));
+    }
+
+    public function testLapsingFilterCanOverrideTrueDefaultToFalse(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_mark_member_lapsing')
+            ->once()
+            ->andReturn(false);
+
+        $this->assertFalse(JoinService::shouldMarkMemberLapsing('test@example.com', [], true));
+    }
+
+    public function testLapsingFilterReceivesContext(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_mark_member_lapsing')
+            ->once()
+            ->with(true, 'test@example.com', \Mockery::on(fn($c) => $c['trigger'] === 'invoice_payment_failed_retry_scheduled'))
+            ->andReturn(true);
+
+        JoinService::shouldMarkMemberLapsing('test@example.com', ['trigger' => 'invoice_payment_failed_retry_scheduled']);
+    }
+
+    // --- toggleMemberLapsing action hooks ---
+
+    public function testLapsingTagSkippedWhenNotConfigured(): void
+    {
+        Actions\expectDone('ck_join_flow_member_lapsing')->never();
+
+        JoinService::toggleMemberLapsing('test@example.com', true, []);
+    }
+
+    public function testLapsingActionFiresWhenConfigured(): void
+    {
+        Monkey\Functions\when('carbon_get_theme_option')
+            ->alias(fn($key) => $key === 'lapsing_tag' ? 'Lapsing' : '');
+
+        Actions\expectDone('ck_join_flow_member_lapsing')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberLapsing('test@example.com', true, []);
+    }
+
+    public function testUnlapsingActionFiresWhenConfigured(): void
+    {
+        Monkey\Functions\when('carbon_get_theme_option')
+            ->alias(fn($key) => $key === 'lapsing_tag' ? 'Lapsing' : '');
+
+        Actions\expectDone('ck_join_flow_member_unlapsing')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberLapsing('test@example.com', false, []);
+    }
+
+    public function testTogglingLapsedClearsLapsingTag(): void
+    {
+        Monkey\Functions\when('carbon_get_theme_option')
+            ->alias(fn($key) => $key === 'lapsing_tag' ? 'Lapsing' : '');
+
+        Actions\expectDone('ck_join_flow_member_unlapsing')->once();
+        Actions\expectDone('ck_join_flow_member_lapsed')->once();
+
+        JoinService::toggleMemberLapsed('test@example.com', true, null, []);
+    }
 }
