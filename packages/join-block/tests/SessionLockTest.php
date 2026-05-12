@@ -34,13 +34,17 @@ class SessionLockTest extends TestCase
 
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
         $logs = file_get_contents($logFile);
-        # Ensure that logs print:
-        #    WORKING -> DONE -> Unlocked ... $sessionId -> WORKING -> DONE -> Unlocked ... $sessionId
-        # Proving sequential execution
+        # The two processes use the same session lock, so they must not overlap.
+        # If they ran in parallel the log would read WORKING -> WORKING -> DONE -> DONE.
+        # Sequential execution instead reads WORKING -> DONE -> WORKING -> DONE
+        # (the second process can only start WORKING once the first has released the lock).
+        # The session id is included on each line to scope the match to this test run.
+        # We don't assert on the "Unlocked" line here: it is logged after flock() releases
+        # the lock, so the next process can legitimately log "WORKING" before it appears.
         $matched = preg_match(
-            "#WORKING.*DONE.*Unlocked.*$sessionId.*WORKING.*DONE.*Unlocked.*$sessionId#s",
+            "#WORKING $sessionId.*DONE $sessionId.*WORKING $sessionId.*DONE $sessionId#s",
             $logs
         );
-        $this->assertTrue((bool) $matched, "Should have expected sequence of logs");
+        $this->assertTrue((bool) $matched, "Should have expected sequence of logs:\n$logs");
     }
 }

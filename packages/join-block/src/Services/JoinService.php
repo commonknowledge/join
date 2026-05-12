@@ -365,6 +365,11 @@ class JoinService
         return (bool) apply_filters('ck_join_flow_should_unlapse_member', $default, $email, $context);
     }
 
+    public static function shouldMarkMemberLapsing($email, $context = [], $default = true)
+    {
+        return (bool) apply_filters('ck_join_flow_should_mark_member_lapsing', $default, $email, $context);
+    }
+
     public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null, $context = [])
     {
         global $joinBlockLog;
@@ -431,10 +436,91 @@ class JoinService
             }
         }
 
+        // Whether the member is recovering or progressing to fully lapsed, the
+        // transient "lapsing" state is over - clear that tag if it is set.
+        if (Settings::get("LAPSING_TAG")) {
+            try {
+                self::toggleMemberLapsing($email, false, $context);
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Error clearing lapsing tag for $email: " . $exception->getMessage());
+            }
+        }
+
         if ($lapsed) {
             do_action('ck_join_flow_member_lapsed', $email, $context);
         } else {
             do_action('ck_join_flow_member_unlapsed', $email, $context);
+        }
+    }
+
+    public static function toggleMemberLapsing($email, $lapsing = true, $context = [])
+    {
+        global $joinBlockLog;
+
+        $action = $lapsing ? "Marking" : "Unmarking";
+        $done = $lapsing ? "Marked" : "Unmarked";
+        $joinBlockLog->info("$action member $email as lapsing");
+
+        if (!Settings::get("LAPSING_TAG")) {
+            $joinBlockLog->warning("Skipping lapsing tag update for $email - no lapsing tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Lapsing Tag.");
+            return;
+        }
+
+        if (Settings::get("USE_ACTION_NETWORK")) {
+            $joinBlockLog->info("$action member $email as lapsing in Action Network");
+            try {
+                if ($lapsing) {
+                    ActionNetworkService::addTag($email, Settings::get("LAPSING_TAG"));
+                } else {
+                    ActionNetworkService::removeTag($email, Settings::get("LAPSING_TAG"));
+                }
+                $joinBlockLog->info("$done member $email as lapsing in Action Network");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
+                throw $exception;
+            }
+        }
+
+        if (Settings::get("USE_MAILCHIMP")) {
+            $joinBlockLog->info("$action member $email as lapsing in Mailchimp");
+            try {
+                if ($lapsing) {
+                    MailchimpService::addTag($email, Settings::get("LAPSING_TAG"));
+                } else {
+                    MailchimpService::removeTag($email, Settings::get("LAPSING_TAG"));
+                }
+                $joinBlockLog->info("$done member $email as lapsing in Mailchimp");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
+            }
+        }
+
+        if (Settings::get("USE_ZETKIN")) {
+            $clientId = Settings::get("ZETKIN_CLIENT_ID");
+            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
+            $jwt = Settings::get("ZETKIN_JWT");
+            if ($clientId && $clientSecret && $jwt) {
+                $joinBlockLog->info("$action member $email as lapsing in Zetkin");
+                try {
+                    if ($lapsing) {
+                        ZetkinService::addTag($email, Settings::get("LAPSING_TAG"));
+                    } else {
+                        ZetkinService::removeTag($email, Settings::get("LAPSING_TAG"));
+                    }
+                    $joinBlockLog->info("$done member $email as lapsing in Zetkin");
+                } catch (\Exception $exception) {
+                    $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
+                    throw $exception;
+                }
+            } else {
+                $joinBlockLog->warning("Can't $action member $email as lapsing in Zetkin - need OAuth credentials");
+            }
+        }
+
+        if ($lapsing) {
+            do_action('ck_join_flow_member_lapsing', $email, $context);
+        } else {
+            do_action('ck_join_flow_member_unlapsing', $email, $context);
         }
     }
 

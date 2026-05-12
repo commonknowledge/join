@@ -789,6 +789,15 @@ class StripeService
                         }
                     } else {
                         $joinBlockLog->info("Payment failed for Stripe customer $customerId, retry scheduled.");
+                        if (!empty($invoice['customer'])) {
+                            $email = self::getEmailForCustomer($customerId);
+                            if ($email) {
+                                $context = ['provider' => 'stripe', 'trigger' => 'invoice_payment_failed_retry_scheduled', 'event' => $event];
+                                if (JoinService::shouldMarkMemberLapsing($email, $context)) {
+                                    JoinService::toggleMemberLapsing($email, true, $context);
+                                }
+                            }
+                        }
                     }
                     break;
 
@@ -861,10 +870,12 @@ class StripeService
                         if ($email) {
                             $activeStatuses = ['active', 'trialing'];
                             $lapsedStatuses = ['unpaid', 'incomplete_expired'];
+                            $lapsingStatuses = ['past_due'];
 
                             $wasActive = in_array($previousStatus, $activeStatuses);
                             $isNowActive = in_array($currentStatus, $activeStatuses);
                             $isNowLapsed = in_array($currentStatus, $lapsedStatuses);
+                            $isNowLapsing = in_array($currentStatus, $lapsingStatuses);
 
                             if (!$wasActive && $isNowActive) {
                                 $joinBlockLog->info("Subscription reactivated for $email ($previousStatus -> $currentStatus)");
@@ -877,6 +888,12 @@ class StripeService
                                 $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
                                 if (JoinService::shouldLapseMember($email, $context)) {
                                     JoinService::toggleMemberLapsed($email, true, null, $context);
+                                }
+                            } elseif ($isNowLapsing) {
+                                $joinBlockLog->info("Subscription lapsing for $email ($previousStatus -> $currentStatus)");
+                                $context = ['provider' => 'stripe', 'trigger' => 'subscription_status_changed', 'event' => $event];
+                                if (JoinService::shouldMarkMemberLapsing($email, $context)) {
+                                    JoinService::toggleMemberLapsing($email, true, $context);
                                 }
                             }
                         }

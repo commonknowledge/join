@@ -34,9 +34,9 @@ $joinBlockLog->info("Testing lock with sessionId $sessionId");
 
 $lockFile = JoinService::lockSession($sessionId);
 
-$joinBlockLog->info("WORKING");
+$joinBlockLog->info("WORKING $sessionId");
 // Simulate work
 sleep(1);
-$joinBlockLog->info("DONE");
+$joinBlockLog->info("DONE $sessionId");
 
 JoinService::unlockSession($lockFile);
