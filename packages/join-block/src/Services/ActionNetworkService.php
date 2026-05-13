@@ -93,7 +93,8 @@ class ActionNetworkService
             ];
         }
 
-        $joinBlockLog->info("Action Network payload for {$data['email']}: " . json_encode($anData));
+        // TODO: remove after REI debugging complete
+        $joinBlockLog->info("Action Network signup request payload: " . json_encode($anData));
 
         try {
             $client = new Client();
@@ -117,7 +118,16 @@ class ActionNetworkService
 
     public static function personExists($email)
     {
+        global $joinBlockLog;
+
         $client = new Client();
+
+        $query = [
+            "filter" => "email_address eq '" . $email . "'"
+        ];
+
+        // TODO: remove after REI debugging complete
+        $joinBlockLog->info("Action Network personExists request query: " . json_encode($query));
 
         $response = $client->request(
             "GET",
@@ -126,9 +136,7 @@ class ActionNetworkService
                 "headers" => [
                     "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
                 ],
-                "query" => [
-                    "filter" => "email_address eq '" . $email . "'"
-                ]
+                "query" => $query
             ]
         );
 
@@ -158,6 +166,9 @@ class ActionNetworkService
                 ]
             ]
         ];
+
+        // TODO: remove after REI debugging complete
+        $joinBlockLog->info("Action Network addTag request payload: " . json_encode($data));
 
         $client->request(
             "POST",
@@ -194,6 +205,9 @@ class ActionNetworkService
             ]
         ];
 
+        // TODO: remove after REI debugging complete
+        $joinBlockLog->info("Action Network removeTag request payload: " . json_encode($data));
+
         $client->request(
             "POST",
             "https://actionnetwork.org/api/v2/people/",
@@ -225,6 +239,9 @@ class ActionNetworkService
                 "custom_fields" => $fields,
             ],
         ];
+
+        // TODO: remove after REI debugging complete
+        $joinBlockLog->info("Action Network updateCustomFields request payload: " . json_encode($data));
 
         $client->request(
             "POST",
