@@ -252,6 +252,11 @@ class MailchimpService
     {
         global $joinBlockLog;
 
+        if (!self::memberExists($email)) {
+            $joinBlockLog->warning("Skipping Mailchimp addTag('$tag') for $email: member does not exist");
+            return;
+        }
+
         $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
 
@@ -273,6 +278,11 @@ class MailchimpService
     public static function removeTag($email, $tag)
     {
         global $joinBlockLog;
+
+        if (!self::memberExists($email)) {
+            $joinBlockLog->warning("Skipping Mailchimp removeTag('$tag') for $email: member does not exist");
+            return;
+        }
 
         $mailchimp = self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");

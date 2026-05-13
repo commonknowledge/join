@@ -93,6 +93,8 @@ class ActionNetworkService
             ];
         }
 
+        $joinBlockLog->info("Action Network payload for {$data['email']}: " . json_encode($anData));
+
         try {
             $client = new Client();
             $client->request(
@@ -113,8 +115,36 @@ class ActionNetworkService
         }
     }
 
+    public static function personExists($email)
+    {
+        $client = new Client();
+
+        $response = $client->request(
+            "GET",
+            "https://actionnetwork.org/api/v2/people/",
+            [
+                "headers" => [
+                    "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
+                ],
+                "query" => [
+                    "filter" => "email_address eq '" . $email . "'"
+                ]
+            ]
+        );
+
+        $data = json_decode($response->getBody()->getContents(), true);
+        return !empty($data["_embedded"]["osdi:people"]);
+    }
+
     public static function addTag($email, $tag)
     {
+        global $joinBlockLog;
+
+        if (!self::personExists($email)) {
+            $joinBlockLog->warning("Skipping Action Network addTag('$tag') for $email: person does not exist");
+            return;
+        }
+
         $client = new Client();
 
         $data = [
@@ -143,6 +173,13 @@ class ActionNetworkService
 
     public static function removeTag($email, $tag)
     {
+        global $joinBlockLog;
+
+        if (!self::personExists($email)) {
+            $joinBlockLog->warning("Skipping Action Network removeTag('$tag') for $email: person does not exist");
+            return;
+        }
+
         $client = new Client();
 
         $data = [
