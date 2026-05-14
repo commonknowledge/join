@@ -22,51 +22,68 @@ class JoinService
 
     public static function handleJoin($data)
     {
+        global $joinBlockLog;
+
         $lockFile = null;
         try {
-            $sessionToken = $data['sessionToken'] ?? null;
-            $lockFile = self::lockSession($sessionToken);
+            $lockKey = $data['email'] ?? null;
+            if (!$lockKey) {
+                $lockKey = $data['sessionToken'] ?? null;
+                if ($lockKey) {
+                    $joinBlockLog->warning("handleJoin called without email; falling back to sessionToken for lock key");
+                }
+            }
+            $lockFile = self::acquireLock($lockKey);
             $chargebeeCustomer = self::tryHandleJoin($data);
             do_action('ck_join_flow_success', $data, $chargebeeCustomer);
         } catch (\Exception $e) {
             do_action('ck_join_flow_error', $data, $e);
             throw $e;
         } finally {
-            self::unlockSession($lockFile);
+            self::releaseLock($lockFile);
         }
         return $chargebeeCustomer;
     }
 
     /**
-     * This is a BLOCKING lock, which means threads will sleep
-     * until they can get the lock. This forces sequential execution,
-     * which means no race conditions.
+     * Acquire a BLOCKING exclusive lock keyed by an opaque string (typically
+     * an email address). Threads sleep until they can get the lock, forcing
+     * sequential execution and avoiding race conditions on per-person CRM
+     * mutations across the /join endpoint and webhook handlers.
      *
      * We still need to handle duplicate join requests, by
      * e.g. making sure the code doesn't create a subscription
      * if one already exists.
-     * 
+     *
+     * NOTE: flock() is per-host. If this app is ever deployed across multiple
+     * PHP-FPM hosts, this lock no longer protects — a distributed lock
+     * (Redis, DB row lock) would be needed.
+     *
      * @return resource The file handle of the lock file
      */
-    public static function lockSession($sessionToken)
+    public static function acquireLock($key)
     {
         global $joinBlockLog;
 
-        if (!$sessionToken) {
-            throw new \Exception("Unable to lock session: no token provided");
+        if (!$key) {
+            throw new \Exception("Unable to acquire lock: no key provided");
         }
 
-        $joinBlockLog->info("Locking session $sessionToken");
+        // Normalize so emails with differing case / whitespace collide on the
+        // same lock, and so the resulting filename is safe for any tmp dir.
+        $normalizedKey = sha1(strtolower(trim((string) $key)));
+
+        $joinBlockLog->info("Locking key $normalizedKey");
 
         // Use WordPress get_temp_dir() as lock directory, this must be writable
         // otherwise many WordPress features do not work (e.g. file uploads)
-        $lockFilepath = get_temp_dir() . '/' . $sessionToken;
+        $lockFilepath = get_temp_dir() . '/join-lock-' . $normalizedKey;
         // Ignore fopen() error, as it is necessary for flock()
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
         $lockFile = fopen($lockFilepath, 'w');
 
         if (!$lockFile) {
-            $joinBlockLog->error("Could not use lockfile for session $sessionToken");
+            $joinBlockLog->error("Could not use lockfile for key $normalizedKey");
             throw new \Exception("Unable to open lock file: " . esc_html($lockFilepath));
         }
 
@@ -78,11 +95,11 @@ class JoinService
         if (!$lockSuccess) {
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
             fclose($lockFile);
-            $joinBlockLog->error("Could not lock session $sessionToken");
-            throw new \Exception("Unable to lock session: " . esc_html($sessionToken));
+            $joinBlockLog->error("Could not lock key $normalizedKey");
+            throw new \Exception("Unable to acquire lock: " . esc_html($normalizedKey));
         }
 
-        $joinBlockLog->info("Locked session $sessionToken");
+        $joinBlockLog->info("Locked key $normalizedKey");
 
         // Lock acquired
         return $lockFile;
@@ -91,7 +108,7 @@ class JoinService
     /**
      * @param resource $lockFile The file handle of the lock file
      */
-    public static function unlockSession($lockFile)
+    public static function releaseLock($lockFile)
     {
         global $joinBlockLog;
 
@@ -111,7 +128,7 @@ class JoinService
         // See: https://www.man7.org/linux/man-pages/man2/flock.2.html
         // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
         @unlink($fileInfo['uri']);
-        $joinBlockLog->info("Unlocked session {$fileInfo['uri']}");
+        $joinBlockLog->info("Unlocked {$fileInfo['uri']}");
     }
 
     /**

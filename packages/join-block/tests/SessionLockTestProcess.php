@@ -2,7 +2,7 @@
 
 require_once(__DIR__ . "/../vendor/autoload.php");
 
-// Load WordPress functions required by JoinService::lockSession()
+// Load WordPress functions required by JoinService::acquireLock()
 define( 'ABSPATH', __DIR__ . '/../wordpress/' );
 define( 'WPINC', 'wp-includes' );
 require_once(__DIR__ . "/../wordpress/wp-includes/formatting.php");
@@ -28,15 +28,15 @@ $joinBlockLogLocation = __DIR__ . '/../logs/tests.log';
 $joinBlockLogFile = fopen($joinBlockLogLocation, 'a');
 $joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, Level::Info));
 
-$sessionId = $argv[1];
+$lockKey = $argv[1];
 
-$joinBlockLog->info("Testing lock with sessionId $sessionId");
+$joinBlockLog->info("Testing lock with key $lockKey");
 
-$lockFile = JoinService::lockSession($sessionId);
+$lockFile = JoinService::acquireLock($lockKey);
 
-$joinBlockLog->info("WORKING $sessionId");
+$joinBlockLog->info("WORKING $lockKey");
 // Simulate work
 sleep(1);
-$joinBlockLog->info("DONE $sessionId");
+$joinBlockLog->info("DONE $lockKey");
 
-JoinService::unlockSession($lockFile);
+JoinService::releaseLock($lockFile);
