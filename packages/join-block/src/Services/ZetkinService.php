@@ -48,7 +48,14 @@ class ZetkinService
 
         $customFieldsConfig = $data['customFieldsConfig'] ?? [];
         foreach ($customFieldsConfig as $customField) {
-            $personData[$customField["id"]] = $data[$customField["id"]] ?? "";
+            $value = $data[$customField["id"]] ?? "";
+            if (
+                ($customField["field_type"] ?? "") === "checkbox"
+                && !empty($customField["send_as_string"])
+            ) {
+                $value = $value ? "true" : "false";
+            }
+            $personData[$customField["id"]] = $value;
         }
 
         if (!$data['isUpdateFlow']) {

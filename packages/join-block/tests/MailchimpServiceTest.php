@@ -221,4 +221,74 @@ class MailchimpServiceTest extends TestCase
         $this->assertSame('1990-01-01', $result['DATE_OF_BIRTH']);
         $this->assertSame('Friend', $result['HOW_HEARD']);
     }
+
+    /**
+     * Checkbox custom fields without send_as_string pass the raw boolean
+     * through unchanged.
+     */
+    public function testCheckboxCustomFieldPassesBooleanByDefault(): void
+    {
+        $data = [
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+            'customFieldsConfig' => [
+                ['id' => 'opt_in', 'field_type' => 'checkbox'],
+            ],
+            'opt_in' => true,
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertTrue($result['OPT_IN']);
+    }
+
+    /**
+     * When send_as_string is enabled on a checkbox custom field, the value
+     * is sent as the literal string "true" or "false" rather than a boolean.
+     */
+    public function testCheckboxCustomFieldWithSendAsStringConvertsToString(): void
+    {
+        $base = [
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+            'customFieldsConfig' => [
+                ['id' => 'opt_in', 'field_type' => 'checkbox', 'send_as_string' => true],
+            ],
+        ];
+
+        $trueResult = MailchimpService::buildMergeFields($base + ['opt_in' => true]);
+        $falseResult = MailchimpService::buildMergeFields($base + ['opt_in' => false]);
+        $missingResult = MailchimpService::buildMergeFields($base);
+
+        $this->assertSame('true', $trueResult['OPT_IN']);
+        $this->assertSame('false', $falseResult['OPT_IN']);
+        $this->assertSame('false', $missingResult['OPT_IN']);
+    }
+
+    /**
+     * send_as_string is gated on field_type === 'checkbox'. A text-type
+     * custom field with the flag set is left alone, so freeform values
+     * like "true" / "yes" / "" aren't silently coerced.
+     */
+    public function testSendAsStringOnlyAppliesToCheckboxFieldType(): void
+    {
+        $data = [
+            'isUpdateFlow' => '',
+            'firstName'    => 'Test',
+            'lastName'     => 'Person',
+            'phoneNumber'  => '',
+            'customFieldsConfig' => [
+                ['id' => 'notes', 'field_type' => 'text', 'send_as_string' => true],
+            ],
+            'notes' => '',
+        ];
+
+        $result = MailchimpService::buildMergeFields($data);
+
+        $this->assertSame('', $result['NOTES']);
+    }
 }

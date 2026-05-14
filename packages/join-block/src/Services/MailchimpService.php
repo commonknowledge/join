@@ -49,7 +49,14 @@ class MailchimpService
         $customFieldsConfig = $data['customFieldsConfig'] ?? [];
         foreach ($customFieldsConfig as $customField) {
             $mergeField = strtoupper(preg_replace('/[^A-Z_]/i', '_', $customField['id']));
-            $mergeFields[$mergeField] = $data[$customField['id']] ?? '';
+            $value = $data[$customField['id']] ?? '';
+            if (
+                ($customField['field_type'] ?? '') === 'checkbox'
+                && !empty($customField['send_as_string'])
+            ) {
+                $value = $value ? 'true' : 'false';
+            }
+            $mergeFields[$mergeField] = $value;
         }
 
         return $mergeFields;

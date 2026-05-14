@@ -253,6 +253,14 @@ class Blocks
             Field::make('text', 'id', "ID")->set_required(true)->set_help_text("The ID or name of the custom field in your membership system."),
             Field::make("checkbox", "required"),
             $field_type,
+            Field::make('checkbox', 'send_as_string', 'Send boolean value as string ("true"/"false") to CRMs')
+                ->set_help_text("When enabled, the checkbox value is sent to CRMs as the string \"true\" or \"false\" instead of a boolean.")
+                ->set_conditional_logic([
+                    [
+                        'field' => 'field_type',
+                        'value' => 'checkbox',
+                    ],
+                ]),
             Field::make('textarea', 'options', "Options")
                 ->set_help_text("The allowed field values (separated by new lines). The 'value : label' format is also supported if required, e.g. <br /><pre>red : Red\nblue : Blue</pre>")
                 ->set_conditional_logic([
