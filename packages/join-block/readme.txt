@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 6.8
-Stable tag: 1.4.23
+Stable tag: 1.4.24
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.24 =
+* Add "send as string" option for boolean custom fields
 = 1.4.23 =
 * Ignore Stripe webhooks caused by subscription creation (these are handled by the form)
 = 1.4.22 =
