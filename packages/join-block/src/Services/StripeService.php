@@ -786,6 +786,11 @@ class StripeService
                     $invoice = $event['data']['object'] ?? null;
                     $customerId = $invoice['customer'] ?? '(unknown)';
 
+                    if (($invoice['billing_reason'] ?? null) === 'subscription_create') {
+                        $joinBlockLog->info("Skipping invoice.payment_failed lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
+                        break;
+                    }
+
                     if (empty($invoice['next_payment_attempt'])) {
                         $joinBlockLog->warning("Final payment attempt failed for Stripe customer $customerId. No retries will be attempted.");
                         if (!empty($invoice['customer'])) {
@@ -811,6 +816,10 @@ class StripeService
                     $invoice = $event['data']['object'] ?? null;
                     $customerId = $invoice['customer'] ?? '(unknown)';
                     $joinBlockLog->info("Invoice paid for Stripe customer $customerId");
+                    if (($invoice['billing_reason'] ?? null) === 'subscription_create') {
+                        $joinBlockLog->info("Skipping invoice.paid un-lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
+                        break;
+                    }
                     if (!empty($invoice['customer'])) {
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
