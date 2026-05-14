@@ -529,7 +529,7 @@ class StripeService
      * That current subscription is left in place, and its amount is returned so the caller can
      * verify it against the amount claimed in the join request.
      */
-    public static function removeExistingSubscriptions($email, $customerId, $subscriptionId)
+    public static function cancelPreviousAndGetCurrentSubscription($email, $customerId, $subscriptionId)
     {
         global $joinBlockLog;
 

@@ -215,7 +215,7 @@ class JoinService
 
         if (Settings::get("USE_STRIPE") && !$isOneOffSupporterDonation) {
             StripeService::initialise();
-            $subscriptionInfo = StripeService::removeExistingSubscriptions($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
+            $subscriptionInfo = StripeService::cancelPreviousAndGetCurrentSubscription($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
             if ($subscriptionInfo["amount"] !== $membershipAmount) {
                 $email = $data['email'];
                 $subAmount = $subscriptionInfo["amount"];

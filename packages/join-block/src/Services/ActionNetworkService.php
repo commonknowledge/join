@@ -153,7 +153,9 @@ class ActionNetworkService
                 "headers" => [
                     "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
                 ],
-                "query" => $query
+                "query" => $query,
+                "timeout" => self::HTTP_TIMEOUT_SECONDS,
+                "connect_timeout" => self::HTTP_TIMEOUT_SECONDS,
             ]
         );
 
@@ -333,11 +335,45 @@ class ActionNetworkService
         );
     }
 
+    // Callers must hold the per-email JoinService lock — see JoinService::acquireLock().
+    // The get/diff/post sequence is otherwise a TOCTOU race.
     public static function updateCustomFields($email, $fields)
     {
         global $joinBlockLog;
 
         $joinBlockLog->info("Updating " . $email . " in Action Network with fields " . json_encode($fields));
+
+        $diff = $fields;
+        try {
+            $person = self::getPerson($email);
+            if ($person === null) {
+                $joinBlockLog->warning("Skipping Action Network updateCustomFields for $email: person does not exist");
+                return;
+            }
+            $currentFields = $person["custom_fields"] ?? [];
+            $diff = [];
+            foreach ($fields as $key => $value) {
+                $current = $currentFields[$key] ?? null;
+                // Compare as strings to side-step type differences in the API response
+                // (e.g. dates round-tripped through JSON).
+                if ((string) $current !== (string) $value) {
+                    $diff[$key] = $value;
+                }
+            }
+            if (empty($diff)) {
+                $joinBlockLog->info("Skipping Action Network updateCustomFields for $email: all fields already up to date");
+                return;
+            }
+        } catch (\Exception $e) {
+            // Pre-check failed (timeout, transient error). Fall through and POST
+            // all fields anyway — Action Network treats unchanged custom fields
+            // as a no-op, so we preserve correctness and just lose the optimization.
+            $joinBlockLog->warning(
+                "Action Network updateCustomFields($email): pre-check failed (" . $e->getMessage() .
+                ") — falling back to un-optimised path"
+            );
+            $diff = $fields;
+        }
 
         $client = new Client();
 
@@ -349,7 +385,7 @@ class ActionNetworkService
                         "primary" => true
                     ]
                 ],
-                "custom_fields" => $fields,
+                "custom_fields" => $diff,
             ],
         ];
 
@@ -363,7 +399,9 @@ class ActionNetworkService
                 "headers" => [
                     "OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")
                 ],
-                "json" => $data
+                "json" => $data,
+                "timeout" => self::HTTP_TIMEOUT_SECONDS,
+                "connect_timeout" => self::HTTP_TIMEOUT_SECONDS,
             ]
         );
     }
