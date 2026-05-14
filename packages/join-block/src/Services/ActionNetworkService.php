@@ -118,6 +118,11 @@ class ActionNetworkService
 
     public static function personExists($email)
     {
+        return self::getPerson($email) !== null;
+    }
+
+    private static function getPerson($email)
+    {
         global $joinBlockLog;
 
         $client = new Client();
@@ -127,7 +132,7 @@ class ActionNetworkService
         ];
 
         // TODO: remove after REI debugging complete
-        $joinBlockLog->info("Action Network personExists request query: " . json_encode($query));
+        $joinBlockLog->info("Action Network getPerson request query: " . json_encode($query));
 
         $response = $client->request(
             "GET",
@@ -141,15 +146,64 @@ class ActionNetworkService
         );
 
         $data = json_decode($response->getBody()->getContents(), true);
-        return !empty($data["_embedded"]["osdi:people"]);
+        $people = $data["_embedded"]["osdi:people"] ?? [];
+        return $people[0] ?? null;
     }
 
+    /**
+     * Returns the names of tags applied to the person, or null if the person does not exist.
+     */
+    private static function getPersonTagNames($email)
+    {
+        $person = self::getPerson($email);
+        if ($person === null) {
+            return null;
+        }
+
+        $taggingsHref = $person["_links"]["osdi:taggings"]["href"] ?? null;
+        if (!$taggingsHref) {
+            return [];
+        }
+
+        $client = new Client();
+        $headers = ["OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")];
+
+        $tagNames = [];
+        $nextHref = $taggingsHref;
+        while ($nextHref) {
+            $response = $client->request("GET", $nextHref, ["headers" => $headers]);
+            $body = json_decode($response->getBody()->getContents(), true);
+            $taggings = $body["_embedded"]["osdi:taggings"] ?? [];
+            foreach ($taggings as $tagging) {
+                $tagHref = $tagging["_links"]["osdi:tag"]["href"] ?? null;
+                if (!$tagHref) {
+                    continue;
+                }
+                $tagResponse = $client->request("GET", $tagHref, ["headers" => $headers]);
+                $tagBody = json_decode($tagResponse->getBody()->getContents(), true);
+                if (!empty($tagBody["name"])) {
+                    $tagNames[] = $tagBody["name"];
+                }
+            }
+            $nextHref = $body["_links"]["next"]["href"] ?? null;
+        }
+
+        return $tagNames;
+    }
+
+    // Callers must hold the per-email JoinService lock — see JoinService::acquireLock().
+    // The get/check/post sequence is otherwise a TOCTOU race.
     public static function addTag($email, $tag)
     {
         global $joinBlockLog;
 
-        if (!self::personExists($email)) {
+        $tagNames = self::getPersonTagNames($email);
+        if ($tagNames === null) {
             $joinBlockLog->warning("Skipping Action Network addTag('$tag') for $email: person does not exist");
+            return;
+        }
+        if (in_array($tag, $tagNames, true)) {
+            $joinBlockLog->info("Skipping Action Network addTag('$tag') for $email: tag already applied");
             return;
         }
 
@@ -182,12 +236,19 @@ class ActionNetworkService
         );
     }
 
+    // Callers must hold the per-email JoinService lock — see JoinService::acquireLock().
+    // The get/check/post sequence is otherwise a TOCTOU race.
     public static function removeTag($email, $tag)
     {
         global $joinBlockLog;
 
-        if (!self::personExists($email)) {
+        $tagNames = self::getPersonTagNames($email);
+        if ($tagNames === null) {
             $joinBlockLog->warning("Skipping Action Network removeTag('$tag') for $email: person does not exist");
+            return;
+        }
+        if (!in_array($tag, $tagNames, true)) {
+            $joinBlockLog->info("Skipping Action Network removeTag('$tag') for $email: tag not applied");
             return;
         }
 

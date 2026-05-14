@@ -737,6 +737,11 @@ class StripeService
         $customerId = null;
         $customerLapsed = false;
         $lapseTrigger = null;
+        // Per-email lock acquired lazily when we resolve the customer's
+        // email. Serialises CRM mutations against the /join endpoint and
+        // other concurrent webhook deliveries for the same person.
+        // See JoinService::acquireLock().
+        $lockFile = null;
 
         try {
             switch ($event['type']) {
@@ -792,6 +797,7 @@ class StripeService
                         if (!empty($invoice['customer'])) {
                             $email = self::getEmailForCustomer($customerId);
                             if ($email) {
+                                $lockFile = JoinService::acquireLock($email);
                                 $context = ['provider' => 'stripe', 'trigger' => 'invoice_payment_failed_retry_scheduled', 'event' => $event];
                                 if (JoinService::shouldMarkMemberLapsing($email, $context)) {
                                     JoinService::toggleMemberLapsing($email, true, $context);
@@ -808,6 +814,7 @@ class StripeService
                     if (!empty($invoice['customer'])) {
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
+                            $lockFile = JoinService::acquireLock($email);
                             $context = ['provider' => 'stripe', 'trigger' => 'invoice_paid', 'event' => $event];
                             if (JoinService::shouldUnlapseMember($email, $context)) {
                                 JoinService::toggleMemberLapsed($email, false, null, $context);
@@ -829,6 +836,8 @@ class StripeService
                     $previousEmail = $previousAttributes['email'] ?? null;
 
                     $joinBlockLog->info("Syncing updated customer details for Stripe customer {$customer['id']} ($email)");
+
+                    $lockFile = JoinService::acquireLock($email);
 
                     $personData = self::extractPersonDataFromStripeCustomer($customer);
                     $mergeFields = self::extractMailchimpMergeFieldsFromStripeCustomer($customer);
@@ -868,6 +877,7 @@ class StripeService
                         $email = self::getEmailForCustomer($cid);
 
                         if ($email) {
+                            $lockFile = JoinService::acquireLock($email);
                             $activeStatuses = ['active', 'trialing'];
                             $lapsedStatuses = ['unpaid', 'incomplete_expired'];
                             $lapsingStatuses = ['past_due'];
@@ -906,6 +916,7 @@ class StripeService
                             $joinBlockLog->warning("Tier change detected but could not resolve email for customer {$subscription['customer']}");
                             break;
                         }
+                        $lockFile = $lockFile ?: JoinService::acquireLock($email);
 
                         ['previousPriceId' => $previousPriceId, 'currentPriceId' => $currentPriceId] = $priceChange;
                         $newPlan = Settings::getMembershipPlanByPriceId($currentPriceId);
@@ -968,6 +979,7 @@ class StripeService
             if ($customerLapsed) {
                 $email = self::getEmailForCustomer($customerId);
                 if ($email) {
+                    $lockFile = $lockFile ?: JoinService::acquireLock($email);
                     $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
                     if (JoinService::shouldLapseMember($email, $context)) {
                         JoinService::toggleMemberLapsed($email, true, null, $context);
@@ -977,6 +989,8 @@ class StripeService
         } catch (\Exception $e) {
             $c = $customerId ?: "(unknown)";
             $joinBlockLog->error("Error handling Stripe webhook for customer $c: " . $e->getMessage());
+        } finally {
+            JoinService::releaseLock($lockFile);
         }
     }
 
