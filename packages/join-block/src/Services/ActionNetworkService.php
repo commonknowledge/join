@@ -10,6 +10,18 @@ use GuzzleHttp\Exception\RequestException;
 
 class ActionNetworkService
 {
+    // Bounds for getPersonTagNames(). Action Network's default page size is 25,
+    // so 10 pages covers people with up to ~250 taggings. People with more than
+    // that fall back to the un-optimised path (just call the API and let
+    // Action Network handle the no-op).
+    private const MAX_TAGGING_PAGES = 10;
+    private const HTTP_TIMEOUT_SECONDS = 10;
+
+    // Sentinel returned by getPersonTagNames() when enumeration was aborted
+    // (page cap hit, HTTP failure). Distinct from null (person not found) and
+    // from [] (person has zero tags).
+    private const TAG_ENUMERATION_ABORTED = false;
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -151,10 +163,15 @@ class ActionNetworkService
     }
 
     /**
-     * Returns the names of tags applied to the person, or null if the person does not exist.
+     * Returns the names of tags applied to the person, or null if the person
+     * does not exist, or self::TAG_ENUMERATION_ABORTED (false) if we hit the
+     * page cap or an HTTP error. Callers should treat the aborted sentinel as
+     * "unknown" and fall back to calling the underlying API anyway.
      */
     private static function getPersonTagNames($email)
     {
+        global $joinBlockLog;
+
         $person = self::getPerson($email);
         if ($person === null) {
             return null;
@@ -166,26 +183,57 @@ class ActionNetworkService
         }
 
         $client = new Client();
-        $headers = ["OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")];
+        $requestOptions = [
+            "headers" => ["OSDI-API-Token" => Settings::get("ACTION_NETWORK_API_KEY")],
+            "timeout" => self::HTTP_TIMEOUT_SECONDS,
+            "connect_timeout" => self::HTTP_TIMEOUT_SECONDS,
+        ];
 
         $tagNames = [];
         $nextHref = $taggingsHref;
-        while ($nextHref) {
-            $response = $client->request("GET", $nextHref, ["headers" => $headers]);
-            $body = json_decode($response->getBody()->getContents(), true);
-            $taggings = $body["_embedded"]["osdi:taggings"] ?? [];
-            foreach ($taggings as $tagging) {
-                $tagHref = $tagging["_links"]["osdi:tag"]["href"] ?? null;
-                if (!$tagHref) {
-                    continue;
+        $page = 0;
+        try {
+            while ($nextHref) {
+                if ($page >= self::MAX_TAGGING_PAGES) {
+                    $joinBlockLog->warning(
+                        "Action Network getPersonTagNames($email): aborting enumeration after " .
+                        self::MAX_TAGGING_PAGES . " pages — falling back to un-optimised path"
+                    );
+                    return self::TAG_ENUMERATION_ABORTED;
                 }
-                $tagResponse = $client->request("GET", $tagHref, ["headers" => $headers]);
-                $tagBody = json_decode($tagResponse->getBody()->getContents(), true);
-                if (!empty($tagBody["name"])) {
-                    $tagNames[] = $tagBody["name"];
+                $page++;
+
+                $response = $client->request("GET", $nextHref, $requestOptions);
+                $body = json_decode($response->getBody()->getContents(), true);
+                $taggings = $body["_embedded"]["osdi:taggings"] ?? [];
+                foreach ($taggings as $tagging) {
+                    $tagHref = $tagging["_links"]["osdi:tag"]["href"] ?? null;
+                    if (!$tagHref) {
+                        continue;
+                    }
+                    $tagResponse = $client->request("GET", $tagHref, $requestOptions);
+                    $tagBody = json_decode($tagResponse->getBody()->getContents(), true);
+                    if (!empty($tagBody["name"])) {
+                        $tagNames[] = $tagBody["name"];
+                    }
                 }
+                $candidateNext = $body["_links"]["next"]["href"] ?? null;
+                // Defensive: Action Network shouldn't return a cyclic next link,
+                // but guard against it explicitly rather than spinning.
+                if ($candidateNext === $nextHref) {
+                    $joinBlockLog->warning(
+                        "Action Network getPersonTagNames($email): next link did not advance — aborting enumeration"
+                    );
+                    return self::TAG_ENUMERATION_ABORTED;
+                }
+                $nextHref = $candidateNext;
             }
-            $nextHref = $body["_links"]["next"]["href"] ?? null;
+        } catch (\Exception $e) {
+            $joinBlockLog->warning(
+                "Action Network getPersonTagNames($email): enumeration failed (" . $e->getMessage() .
+                ") — falling back to un-optimised path"
+            );
+            return self::TAG_ENUMERATION_ABORTED;
         }
 
         return $tagNames;
@@ -202,10 +250,12 @@ class ActionNetworkService
             $joinBlockLog->warning("Skipping Action Network addTag('$tag') for $email: person does not exist");
             return;
         }
-        if (in_array($tag, $tagNames, true)) {
+        if (is_array($tagNames) && in_array($tag, $tagNames, true)) {
             $joinBlockLog->info("Skipping Action Network addTag('$tag') for $email: tag already applied");
             return;
         }
+        // $tagNames === TAG_ENUMERATION_ABORTED falls through and we apply the
+        // tag anyway — Action Network treats a repeat add as a no-op.
 
         $client = new Client();
 
@@ -247,10 +297,12 @@ class ActionNetworkService
             $joinBlockLog->warning("Skipping Action Network removeTag('$tag') for $email: person does not exist");
             return;
         }
-        if (!in_array($tag, $tagNames, true)) {
+        if (is_array($tagNames) && !in_array($tag, $tagNames, true)) {
             $joinBlockLog->info("Skipping Action Network removeTag('$tag') for $email: tag not applied");
             return;
         }
+        // $tagNames === TAG_ENUMERATION_ABORTED falls through and we send the
+        // remove anyway — Action Network treats removing an absent tag as a no-op.
 
         $client = new Client();
 
