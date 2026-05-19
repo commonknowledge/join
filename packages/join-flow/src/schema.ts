@@ -72,6 +72,20 @@ function isInPast(value: number | null | undefined | object) {
   );
 }
 
+function isAtLeast18(value: number | null | undefined | object) {
+  const { dobYear, dobMonth, dobDay } = this.options.parent;
+  if (!dobYear || !dobMonth || !dobDay) {
+    return true;
+  }
+  const dob = new Date(dobYear, dobMonth - 1, dobDay);
+  const eighteenthBirthday = new Date(
+    dob.getFullYear() + 18,
+    dob.getMonth(),
+    dob.getDate()
+  );
+  return eighteenthBirthday.getTime() <= Date.now();
+}
+
 const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
 
 export const parseTriggerValues = (raw: string | undefined): string[] =>
@@ -162,6 +176,16 @@ export const DetailsSchema = object({
           "is-not-in-future",
           "The date of your birth should not be in the future",
           isInPast
+        )
+        .test(
+          "is-at-least-18",
+          "You must be at least 18 years old to sign up",
+          function (value) {
+            if (!getEnv("REQUIRE_AGE_18_OR_OVER")) {
+              return true;
+            }
+            return isAtLeast18.call(this, value);
+          }
         )
         .required()
     : number(),
