@@ -239,8 +239,8 @@ class Settings
         /** @var Html_Field $logField */
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
-            $joinBlockLogLocation = __DIR__ . "/../logs";
-            $logfiles = scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) ?: [];
+            $joinBlockLogLocation = Logging::getLogDirectory();
+            $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : [];
             $logfiles = array_values(array_filter($logfiles, function ($file) use ($joinBlockLogLocation) {
                 return str_starts_with($file, 'debug-') && is_file($joinBlockLogLocation . '/' . $file);
             }));

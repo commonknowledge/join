@@ -18,7 +18,7 @@ class SessionLockTest extends TestCase
         $scriptPath = __DIR__ . "/SessionLockTestProcess.php";
         // Use an email-shaped key to cover the typical webhook/join lock-key form.
         $lockKey = "test+" . microtime(true) . "@example.com";
-        $logFile = __DIR__ . "/../logs/tests.log";
+        $logFile = sys_get_temp_dir() . "/join-block-tests.log";
         // Ensure clean log file output
         // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
         @unlink($logFile);
