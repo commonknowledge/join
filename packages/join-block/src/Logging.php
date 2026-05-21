@@ -49,7 +49,10 @@ class Logging
         $joinBlockLog = new Logger('join-block');
         $logFilenameHash = null;
         $logLocation = self::getLogDirectory();
-        $logFiles = scandir($logLocation);
+        $logFiles = [];
+        if (is_dir($logLocation) && is_readable($logLocation)) {
+            $logFiles = scandir($logLocation) ?: [];
+        }
         foreach ($logFiles as $logFile) {
             if (str_starts_with($logFile, "debug-")) {
                 $parts = explode("-", $logFile);
