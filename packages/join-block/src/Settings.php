@@ -240,7 +240,7 @@ class Settings
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
             $joinBlockLogLocation = Logging::getLogDirectory();
-            $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : false;
+            $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : [];
             $logfiles = array_values(array_filter($logfiles, function ($file) use ($joinBlockLogLocation) {
                 return str_starts_with($file, 'debug-') && is_file($joinBlockLogLocation . '/' . $file);
             }));
