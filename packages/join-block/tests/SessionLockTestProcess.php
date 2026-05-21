@@ -23,7 +23,7 @@ use Monolog\Logger;
 // Set up log file so SessionLockTest can monitor progress of this script
 global $joinBlockLog;
 $joinBlockLog = new Logger('join-block-test');
-$joinBlockLogLocation = __DIR__ . '/../logs/tests.log';
+$joinBlockLogLocation = sys_get_temp_dir() . '/join-block-tests.log';
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 $joinBlockLogFile = fopen($joinBlockLogLocation, 'a');
 $joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, Level::Info));
