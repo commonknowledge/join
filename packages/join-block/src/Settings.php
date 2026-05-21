@@ -240,7 +240,7 @@ class Settings
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
             $joinBlockLogLocation = Logging::getLogDirectory();
-            $logfiles = scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING);
+            $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : false;
             // Ignore file_get_contents error because this will always be a local file
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
             $log = $logfiles ? @file_get_contents($joinBlockLogLocation . '/' . $logfiles[0]) : "";
