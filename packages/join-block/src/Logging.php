@@ -13,12 +13,42 @@ use Monolog\Level;
 
 class Logging
 {
+    public static function getLogDirectory()
+    {
+        $uploads = wp_upload_dir();
+        $logLocation = $uploads['basedir'] . '/join-block-logs';
+
+        if (!is_dir($logLocation)) {
+            wp_mkdir_p($logLocation);
+
+            // Migrate any pre-existing logs from the old in-plugin location.
+            // Pre-1.4.26 the plugin wrote logs to packages/join-block/logs/,
+            // which WordPress wipes on plugin update.
+            $legacyLocation = __DIR__ . '/../logs';
+            if (is_dir($legacyLocation)) {
+                $legacyFiles = scandir($legacyLocation) ?: [];
+                foreach ($legacyFiles as $file) {
+                    if ($file === '.' || $file === '..') {
+                        continue;
+                    }
+                    $src = $legacyLocation . '/' . $file;
+                    $dst = $logLocation . '/' . $file;
+                    if (is_file($src) && !file_exists($dst)) {
+                        @copy($src, $dst);
+                    }
+                }
+            }
+        }
+
+        return $logLocation;
+    }
+
     public static function init()
     {
         global $joinBlockLog;
         $joinBlockLog = new Logger('join-block');
         $logFilenameHash = null;
-        $logLocation = __DIR__ . "/../logs";
+        $logLocation = self::getLogDirectory();
         $logFiles = scandir($logLocation);
         foreach ($logFiles as $logFile) {
             if (str_starts_with($logFile, "debug-")) {
