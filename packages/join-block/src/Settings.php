@@ -241,6 +241,9 @@ class Settings
         $logField->set_html(function () {
             $joinBlockLogLocation = Logging::getLogDirectory();
             $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : false;
+            $logfiles = array_values(array_filter($logfiles, function ($file) use ($joinBlockLogLocation) {
+                return str_starts_with($file, 'debug-') && is_file($joinBlockLogLocation . '/' . $file);
+            }));
             // Ignore file_get_contents error because this will always be a local file
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
             $log = $logfiles ? @file_get_contents($joinBlockLogLocation . '/' . $logfiles[0]) : "";
