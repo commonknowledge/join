@@ -471,6 +471,7 @@ class Blocks
             "COLLECT_COUNTY" => Settings::get("COLLECT_COUNTY"),
             "COLLECT_DATE_OF_BIRTH" => Settings::get("COLLECT_DATE_OF_BIRTH"),
             "REQUIRE_AGE_18_OR_OVER" => Settings::get("REQUIRE_AGE_18_OR_OVER"),
+            "MINIMUM_AGE" => (int) (Settings::get("MINIMUM_AGE") ?: 18),
             "COLLECT_HEAR_ABOUT_US" => Settings::get("COLLECT_HEAR_ABOUT_US"),
             "COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT" => Settings::get("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
             "CONSENT_CHECKED_BY_DEFAULT" => Settings::get("CONSENT_CHECKED_BY_DEFAULT"),
