@@ -77,13 +77,14 @@ function isAtLeast18(value: number | null | undefined | object) {
   if (!dobYear || !dobMonth || !dobDay) {
     return true;
   }
+  const minimumAge = Number(getEnv('MINIMUM_AGE')) || 18;
   const dob = new Date(dobYear, dobMonth - 1, dobDay);
-  const eighteenthBirthday = new Date(
-    dob.getFullYear() + 18,
+  const minimumAgeBirthday = new Date(
+    dob.getFullYear() + minimumAge,
     dob.getMonth(),
     dob.getDate()
   );
-  return eighteenthBirthday.getTime() <= Date.now();
+  return minimumAgeBirthday.getTime() <= Date.now();
 }
 
 const customFields = (getEnv("CUSTOM_FIELDS") || []) as any[];
@@ -179,7 +180,7 @@ export const DetailsSchema = object({
         )
         .test(
           "is-at-least-18",
-          "You must be at least 18 years old to sign up",
+          `You must be at least ${Number(getEnv("MINIMUM_AGE")) || 18} years old to sign up`,
           function (value) {
             if (!getEnv("REQUIRE_AGE_18_OR_OVER")) {
               return true;

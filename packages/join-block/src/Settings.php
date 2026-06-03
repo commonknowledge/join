@@ -50,6 +50,14 @@ class Settings
             Field::make('checkbox', 'collect_date_of_birth'),
             Field::make('checkbox', 'require_age_18_or_over', 'Require age 18 or over')
                 ->set_help_text('When enabled, the date of birth must be at least 18 years in the past for the sign-up to be accepted.'),
+            Field::make('text', 'minimum_age', 'Minimum Age')
+                ->set_attribute('type', 'number')
+                ->set_default_value('18')
+                ->set_help_text('The minimum age required for sign-up.')
+                ->set_conditional_logic([[
+                    'field' => 'require_age_18_or_over',
+                    'value' => true
+                ]]),
             Field::make('checkbox', 'collect_hear_about_us', "Ask 'How did you hear about us?'")
             ->set_help_text("If using Zetkin, make sure to create the 'hear_about_us' and 'hear_about_us_details' custom fields and add them to your join form"),
             Field::make('checkbox', 'collect_county'),
