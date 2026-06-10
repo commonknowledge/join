@@ -818,6 +818,17 @@ class StripeService
                     $joinBlockLog->info("Invoice paid for Stripe customer $customerId");
                     if (($invoice['billing_reason'] ?? null) === 'subscription_create') {
                         $joinBlockLog->info("Skipping invoice.paid un-lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
+                        // If the member paid but never returned to the site, the /join
+                        // endpoint is never hit, so complete the join from the saved
+                        // form data instead. NOTE: this must run without acquiring the
+                        // per-email lock here — handleJoin() acquires it itself, and
+                        // flock blocks on a second handle even within one process.
+                        $subscriptionId = $invoice['subscription']
+                            ?? $invoice['parent']['subscription_details']['subscription']
+                            ?? null;
+                        if ($subscriptionId) {
+                            JoinService::ensureStripeSubscriptionsCreated($subscriptionId);
+                        }
                         break;
                     }
                     if (!empty($invoice['customer'])) {

@@ -35,6 +35,11 @@ class JoinService
             }
             $lockFile = self::acquireLock($lockKey);
             $chargebeeCustomer = self::tryHandleJoin($data);
+            // The join is complete, so it no longer needs to be picked up by
+            // ensureStripeSubscriptionsCreated() (the webhook/cron recovery path)
+            if (!empty($data['stripeSubscriptionId'])) {
+                delete_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$data['stripeSubscriptionId']}");
+            }
             do_action('ck_join_flow_success', $data, $chargebeeCustomer);
         } catch (\Exception $e) {
             do_action('ck_join_flow_error', $data, $e);
@@ -368,6 +373,89 @@ class JoinService
                 $joinBlockLog->info("ensureSubscriptionsCreated: success, deleting option {$result->option_name}");
             } catch (\Exception $e) {
                 $joinBlockLog->error("ensureSubscriptionsCreated: could not process {$result->option_value}: {$e->getMessage()}");
+            }
+        }
+    }
+
+    /**
+     * Complete joins where the member paid via Stripe but the /join endpoint was
+     * never hit (e.g. they closed the tab after the card payment succeeded).
+     * The /stripe/create-subscription endpoint saves the join form data in a
+     * JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{subscriptionId} option, which is
+     * deleted by handleJoin() on success.
+     *
+     * Called with a subscription ID from the invoice.paid webhook (to complete
+     * a specific join immediately), and without one from the hourly cron (to
+     * sweep up anything the webhook missed).
+     *
+     * @param string|null $subscriptionId Process only this subscription, or all if null
+     */
+    public static function ensureStripeSubscriptionsCreated($subscriptionId = null)
+    {
+        global $wpdb;
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Running ensureStripeSubscriptionsCreated");
+
+        if ($subscriptionId) {
+            $optionName = "JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscriptionId}";
+            $optionValue = get_option($optionName);
+            if (!$optionValue) {
+                return;
+            }
+            $results = [(object) ['option_name' => $optionName, 'option_value' => $optionValue]];
+        } else {
+            $results = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE %s",
+                    'JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_%'
+                )
+            );
+        }
+
+        StripeService::initialise();
+
+        foreach ($results as $result) {
+            $name = $result->option_name;
+            $joinBlockLog->info("ensureStripeSubscriptionsCreated: processing {$name}: {$result->option_value}");
+            try {
+                $data = json_decode($result->option_value, true);
+                $createdAt = $data['createdAt'] ?? 0;
+
+                $subscription = null;
+                try {
+                    $subscription = \Stripe\Subscription::retrieve($data['stripeSubscriptionId']);
+                } catch (\Stripe\Exception\InvalidRequestException $e) {
+                    $joinBlockLog->info(
+                        "ensureStripeSubscriptionsCreated: subscription missing in Stripe for {$name}: " .
+                        $e->getMessage()
+                    );
+                }
+
+                if ($subscription && in_array($subscription->status, ['active', 'trialing'])) {
+                    self::handleJoin($data);
+                    delete_option($name);
+                    $joinBlockLog->info("ensureStripeSubscriptionsCreated: success, deleting option {$name}");
+                    continue;
+                }
+
+                // The subscription is unpaid. Stripe expires incomplete subscriptions
+                // after ~23 hours, so after a day there is nothing left to wait for.
+                $day = 24 * 60 * 60;
+                $expired = !$subscription
+                    || in_array($subscription->status, ['incomplete_expired', 'canceled']);
+
+                if ($expired || (time() - $createdAt) > $day) {
+                    $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");
+                    delete_option($name);
+                } else {
+                    $joinBlockLog->info("ensureStripeSubscriptionsCreated: not yet paid, will retry {$name}");
+                }
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    "ensureStripeSubscriptionsCreated: could not process {$result->option_value}: " .
+                    $e->getMessage()
+                );
             }
         }
     }
