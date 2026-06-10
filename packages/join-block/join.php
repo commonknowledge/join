@@ -512,6 +512,17 @@ add_action('rest_api_init', function () {
                     !empty($data["donationSupporterMode"])
                 );
 
+                // Save this data in the database so if the user pays but never returns to
+                // the site (so the /join endpoint is never hit), the join can be completed
+                // when we receive the invoice.paid Stripe webhook, or by the hourly cron
+                $data['stripeCustomerId'] = $customer->id;
+                $data['stripeSubscriptionId'] = $subscription->id;
+                $data['createdAt'] = time();
+                // Make stage = "confirm" to match the normal flow
+                // (the user returns from the payment step and submits their data to the /join endpoint)
+                $data['stage'] = "confirm";
+                update_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscription->id}", wp_json_encode($data));
+
                 return $subscription;
             } catch (\Exception $e) {
                 $joinBlockLog->error(
@@ -747,6 +758,15 @@ add_action('ck_join_block_gocardless_cron_hook', function () {
 
 if (!wp_next_scheduled('ck_join_block_gocardless_cron_hook')) {
     wp_schedule_event(time(), 'hourly', 'ck_join_block_gocardless_cron_hook');
+}
+
+// Catch-all for incomplete Stripe joins, in case the invoice.paid webhook is missed
+add_action('ck_join_block_stripe_cron_hook', function () {
+    JoinService::ensureStripeSubscriptionsCreated();
+});
+
+if (!wp_next_scheduled('ck_join_block_stripe_cron_hook')) {
+    wp_schedule_event(time(), 'hourly', 'ck_join_block_stripe_cron_hook');
 }
 
 if (defined('WP_CLI') && WP_CLI) {
