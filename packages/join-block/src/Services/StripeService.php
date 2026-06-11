@@ -13,9 +13,47 @@ use Stripe\Exception\ApiErrorException;
 
 class StripeService
 {
+    /**
+     * How long after a subscription's first invoice is created its webhooks
+     * keep deferring to the /join endpoint for Action Network state. Within
+     * this window first-invoice webhooks race the /join request, and
+     * concurrent Action Network writes mangle the webhook payloads Action
+     * Network sends to downstream consumers (e.g. Make). Card payments
+     * resolve in seconds, so anything older is a delayed-settlement payment
+     * method (e.g. Bacs, which takes days) or a webhook redelivery — /join
+     * finished long ago and there is nothing left to race.
+     */
+    public const FIRST_INVOICE_RACE_WINDOW = 3600;
+
     public static function initialise()
     {
         Stripe::setApiKey(Settings::get('STRIPE_SECRET_KEY'));
+    }
+
+    /**
+     * Decide how to treat a webhook for a subscription_create (first) invoice.
+     *
+     * @param bool $hasUnprocessedJoinData The JOIN_FORM_UNPROCESSED_STRIPE_REQUEST
+     *                                     option still exists, i.e. /join has not run.
+     * @param int $invoiceCreated Invoice creation timestamp.
+     * @param int|null $now Current timestamp, injectable for tests.
+     * @return string 'recover' — the join never completed: run the saved-data
+     *                            recovery path (invoice.paid only);
+     *                'defer'   — /join may still be in flight: leave Action
+     *                            Network state alone;
+     *                'settle'  — late settlement: /join is long done, act on
+     *                            the member's state directly.
+     */
+    public static function classifyFirstInvoiceEvent($hasUnprocessedJoinData, $invoiceCreated, $now = null)
+    {
+        $now = $now ?? time();
+        if ($hasUnprocessedJoinData) {
+            return 'recover';
+        }
+        if (($now - (int) $invoiceCreated) < self::FIRST_INVOICE_RACE_WINDOW) {
+            return 'defer';
+        }
+        return 'settle';
     }
 
     /**
@@ -776,10 +814,46 @@ class StripeService
                     $customerId = $subscription['customer'] ?? '(unknown)';
 
                     $joinBlockLog->info("Subscription cancelled for Stripe customer $customerId");
-                    if (!empty($subscription['customer'])) {
-                        $customerLapsed = true;
-                        $lapseTrigger = 'subscription_deleted';
+                    if (empty($subscription['customer'])) {
+                        break;
                     }
+
+                    // Cancelling a subscription does not stop a first payment
+                    // that is still settling (delayed methods such as Bacs):
+                    // it can land days later against the dead subscription.
+                    $latestInvoiceId = $subscription['latest_invoice'] ?? null;
+                    if ($latestInvoiceId) {
+                        try {
+                            $latestInvoice = \Stripe\Invoice::retrieve($latestInvoiceId);
+                            if ($latestInvoice->status === 'open') {
+                                $joinBlockLog->error(
+                                    "Subscription {$subscription['id']} for Stripe customer $customerId was cancelled"
+                                    . " with open invoice {$latestInvoice->id}. If its payment is still processing it"
+                                    . " will settle against the dead subscription — void the invoice or refund the"
+                                    . " payment."
+                                );
+                            }
+                        } catch (\Exception $e) {
+                            $joinBlockLog->warning(
+                                "Could not inspect latest invoice for cancelled subscription {$subscription['id']}: "
+                                . $e->getMessage()
+                            );
+                        }
+                    }
+
+                    // Cancelling one subscription must not lapse a member who
+                    // still has another live one — e.g. /join cancels the
+                    // previous subscription moments after creating its
+                    // replacement during a re-join or tier change.
+                    if (self::customerHasActiveSubscription($customerId, $subscription['id'] ?? null)) {
+                        $joinBlockLog->info(
+                            "Skipping lapsing for Stripe customer $customerId: another active subscription exists."
+                        );
+                        break;
+                    }
+
+                    $customerLapsed = true;
+                    $lapseTrigger = 'subscription_deleted';
                     break;
 
                 case 'invoice.payment_failed':
@@ -787,8 +861,25 @@ class StripeService
                     $customerId = $invoice['customer'] ?? '(unknown)';
 
                     if (($invoice['billing_reason'] ?? null) === 'subscription_create') {
-                        $joinBlockLog->info("Skipping invoice.payment_failed lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
-                        break;
+                        $subscriptionId = $invoice['subscription']
+                            ?? $invoice['parent']['subscription_details']['subscription']
+                            ?? null;
+                        $hasUnprocessedJoinData = $subscriptionId
+                            && get_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscriptionId}");
+
+                        if (self::classifyFirstInvoiceEvent($hasUnprocessedJoinData, $invoice['created'] ?? 0) !== 'settle') {
+                            $joinBlockLog->info("Skipping invoice.payment_failed lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
+                            break;
+                        }
+
+                        // A first invoice failing this long after signup means a
+                        // delayed-settlement payment (e.g. Bacs) bounced after the
+                        // join completed: the member is tagged but never paid.
+                        // Fall through to the normal failed-payment handling.
+                        $joinBlockLog->warning(
+                            "Late first-invoice payment failure for Stripe customer $customerId"
+                            . " (invoice {$invoice['id']}): the join completed but the payment has now failed."
+                        );
                     }
 
                     if (empty($invoice['next_payment_attempt'])) {
@@ -817,18 +908,31 @@ class StripeService
                     $customerId = $invoice['customer'] ?? '(unknown)';
                     $joinBlockLog->info("Invoice paid for Stripe customer $customerId");
                     if (($invoice['billing_reason'] ?? null) === 'subscription_create') {
-                        $joinBlockLog->info("Skipping invoice.paid un-lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
-                        // If the member paid but never returned to the site, the /join
-                        // endpoint is never hit, so complete the join from the saved
-                        // form data instead. NOTE: this must run without acquiring the
-                        // per-email lock here — handleJoin() acquires it itself, and
-                        // flock blocks on a second handle even within one process.
                         $subscriptionId = $invoice['subscription']
                             ?? $invoice['parent']['subscription_details']['subscription']
                             ?? null;
-                        if ($subscriptionId) {
+                        $hasUnprocessedJoinData = $subscriptionId
+                            && get_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscriptionId}");
+                        $classification = self::classifyFirstInvoiceEvent($hasUnprocessedJoinData, $invoice['created'] ?? 0);
+
+                        if ($classification === 'recover') {
+                            // The member paid but never returned to the site, so the
+                            // /join endpoint was never hit: complete the join from the
+                            // saved form data instead. NOTE: this must run without
+                            // acquiring the per-email lock here — handleJoin() acquires
+                            // it itself, and flock blocks on a second handle even
+                            // within one process.
+                            $joinBlockLog->info("Skipping invoice.paid un-lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
                             JoinService::ensureStripeSubscriptionsCreated($subscriptionId);
+                            break;
                         }
+
+                        if ($classification === 'defer') {
+                            $joinBlockLog->info("Skipping invoice.paid un-lapsing for Stripe customer $customerId: subscription_create invoice, /join endpoint will handle Action Network state.");
+                            break;
+                        }
+
+                        self::handleLateFirstInvoicePaid($invoice, $subscriptionId, $event);
                         break;
                     }
                     if (!empty($invoice['customer'])) {
@@ -891,8 +995,20 @@ class StripeService
                     $currentStatus = $subscription['status'] ?? null;
                     $email = null;
 
-                    // Only act on status changes not already covered by invoice events
-                    if ($previousStatus && $previousStatus !== $currentStatus) {
+                    // A new subscription's incomplete -> active flip happens
+                    // seconds before /join writes to Action Network: acting on
+                    // it here recreates exactly the concurrent-write problem
+                    // the subscription_create invoice guard exists to prevent.
+                    $subscriptionAge = time() - (int) ($subscription['created'] ?? 0);
+                    if (
+                        $previousStatus && $previousStatus !== $currentStatus
+                        && $subscriptionAge < self::FIRST_INVOICE_RACE_WINDOW
+                    ) {
+                        $joinBlockLog->info(
+                            "Skipping status change handling for new subscription {$subscription['id']}"
+                            . " ($previousStatus -> $currentStatus): /join endpoint will handle Action Network state."
+                        );
+                    } elseif ($previousStatus && $previousStatus !== $currentStatus) {
                         $cid = $subscription['customer'];
                         $email = self::getEmailForCustomer($cid);
 
@@ -1021,6 +1137,211 @@ class StripeService
             return null;
         }
         return $customer->email;
+    }
+
+    private static function customerHasActiveSubscription($customerId, $excludeSubscriptionId = null)
+    {
+        global $joinBlockLog;
+
+        try {
+            foreach (['active', 'trialing'] as $status) {
+                $subscriptions = Subscription::all([
+                    'customer' => $customerId,
+                    'status' => $status,
+                    'limit' => 10,
+                ]);
+                foreach ($subscriptions->data as $subscription) {
+                    if ($subscription->id !== $excludeSubscriptionId) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $joinBlockLog->warning(
+                "Could not list subscriptions for Stripe customer $customerId: " . $e->getMessage()
+            );
+        }
+        return false;
+    }
+
+    /**
+     * A subscription_create invoice was paid long after it was created — a
+     * delayed-settlement payment method (e.g. Bacs direct debit, ~6 working
+     * days) or a webhook redelivery. Unlike fresh first invoices this cannot
+     * race the /join endpoint, so act on the member's state directly: un-lapse
+     * them if their subscription is live, or raise an alert if money has been
+     * collected for a subscription that no longer exists.
+     */
+    private static function handleLateFirstInvoicePaid($invoice, $subscriptionId, $event)
+    {
+        global $joinBlockLog;
+
+        $customerId = $invoice['customer'];
+
+        $subscription = null;
+        if ($subscriptionId) {
+            try {
+                $subscription = Subscription::retrieve($subscriptionId);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                $joinBlockLog->warning(
+                    "Late first-invoice settlement: could not retrieve subscription $subscriptionId: "
+                    . $e->getMessage()
+                );
+            }
+        }
+        $status = $subscription->status ?? 'missing';
+
+        if (!in_array($status, ['active', 'trialing'])) {
+            $joinBlockLog->error(
+                "Payment collected for dead subscription: first invoice {$invoice['id']} of Stripe customer"
+                . " $customerId settled late, but subscription " . ($subscriptionId ?: '(unknown)') . " is $status."
+                . " Refund the payment or reinstate the membership manually."
+            );
+            return;
+        }
+
+        $email = self::getEmailForCustomer($customerId);
+        if (!$email) {
+            $joinBlockLog->error(
+                "Late first-invoice settlement for Stripe customer $customerId: could not resolve an email"
+                . " address, cannot reconcile Action Network state."
+            );
+            return;
+        }
+
+        $joinBlockLog->info(
+            "Late first-invoice settlement for $email: subscription $subscriptionId is $status,"
+            . " ensuring the member is not marked lapsed."
+        );
+
+        $lockFile = JoinService::acquireLock($email);
+        try {
+            $context = ['provider' => 'stripe', 'trigger' => 'late_first_invoice_paid', 'event' => $event];
+            if (JoinService::shouldUnlapseMember($email, $context)) {
+                JoinService::toggleMemberLapsed($email, false, null, $context);
+            }
+        } finally {
+            JoinService::releaseLock($lockFile);
+        }
+    }
+
+    /**
+     * Level-triggered safety net, run daily by cron: converge Action Network
+     * state with Stripe for customers with recent subscription activity,
+     * catching webhooks that were missed, suppressed or arrived out of order.
+     *
+     * Only the unambiguous divergence is fixed automatically (a lapsed tag on
+     * a paying member with a live subscription, at most one Action Network
+     * write per person, under the per-email lock). Everything else — money
+     * collected with no CRM record, money collected with no live subscription,
+     * a member whose email is bouncing — is alerted via error/warning-level
+     * logs, which reach Sentry, because fixing those requires either full join
+     * data or a human decision (refund vs reinstate).
+     */
+    public static function reconcileRecentMemberships($sinceDays = 7)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Running reconcileRecentMemberships");
+
+        if (!Settings::get("USE_ACTION_NETWORK")) {
+            $joinBlockLog->info("reconcileRecentMemberships: Action Network integration disabled, nothing to do");
+            return;
+        }
+
+        $subscriptions = Subscription::all([
+            'created' => ['gte' => time() - $sinceDays * 86400],
+            'status' => 'all',
+            'limit' => 100,
+        ]);
+
+        // Group by customer so a re-join sequence (cancelled subscription
+        // followed by its live replacement) is judged as one membership.
+        $customerIds = [];
+        foreach ($subscriptions->autoPagingIterator() as $subscription) {
+            $customerIds[$subscription->customer] = true;
+        }
+
+        foreach (array_keys($customerIds) as $customerId) {
+            try {
+                self::reconcileCustomerMembership($customerId);
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    "reconcileRecentMemberships: failed for Stripe customer $customerId: " . $e->getMessage()
+                );
+            }
+        }
+    }
+
+    private static function reconcileCustomerMembership($customerId)
+    {
+        global $joinBlockLog;
+
+        $paidInvoices = \Stripe\Invoice::all([
+            'customer' => $customerId,
+            'status' => 'paid',
+            'limit' => 1,
+        ]);
+        if (count($paidInvoices->data) === 0) {
+            // Abandoned signup (incomplete payment, no charge): correctly has
+            // no membership, nothing to reconcile.
+            return;
+        }
+
+        $email = self::getEmailForCustomer($customerId);
+        if (!$email) {
+            $joinBlockLog->warning(
+                "reconcileRecentMemberships: could not resolve email for Stripe customer $customerId"
+            );
+            return;
+        }
+
+        $hasLiveSubscription = self::customerHasActiveSubscription($customerId);
+        $lapsedTag = Settings::get("LAPSED_TAG");
+
+        $person = ActionNetworkService::getPersonSnapshot($email);
+        $isLapsed = $person !== null
+            && $lapsedTag
+            && is_array($person['tags'])
+            && in_array($lapsedTag, $person['tags'], true);
+
+        if ($hasLiveSubscription) {
+            if ($person === null) {
+                $joinBlockLog->error(
+                    "reconcileRecentMemberships: $email has a paid, active Stripe subscription but no Action"
+                    . " Network record — the join never completed. Investigate and backfill."
+                );
+                return;
+            }
+
+            if ($isLapsed) {
+                $joinBlockLog->error(
+                    "reconcileRecentMemberships: $email has an active Stripe subscription but carries the"
+                    . " '$lapsedTag' tag — removing it."
+                );
+                $lockFile = JoinService::acquireLock($email);
+                try {
+                    $context = ['provider' => 'stripe', 'trigger' => 'reconciliation', 'event' => null];
+                    if (JoinService::shouldUnlapseMember($email, $context)) {
+                        JoinService::toggleMemberLapsed($email, false, null, $context);
+                    }
+                } finally {
+                    JoinService::releaseLock($lockFile);
+                }
+            }
+
+            if (($person['email_status'] ?? null) === 'bouncing') {
+                $joinBlockLog->warning(
+                    "reconcileRecentMemberships: paying member $email has a bouncing email address in Action"
+                    . " Network — they are not receiving membership emails. Possible typo at signup."
+                );
+            }
+        } elseif ($person !== null && !$isLapsed && is_array($person['tags'])) {
+            $joinBlockLog->error(
+                "reconcileRecentMemberships: $email has paid Stripe invoices but no live subscription, and is"
+                . " not marked lapsed in Action Network. Refund or reinstate manually."
+            );
+        }
     }
 
     private static function resolveTierTagChanges(array $newPlan, ?array $oldPlan): array

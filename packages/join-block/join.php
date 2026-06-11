@@ -769,6 +769,71 @@ if (!wp_next_scheduled('ck_join_block_stripe_cron_hook')) {
     wp_schedule_event(time(), 'hourly', 'ck_join_block_stripe_cron_hook');
 }
 
+// Level-triggered safety net: converge Action Network state with Stripe for
+// recent subscriptions, catching webhooks that were missed, suppressed or
+// arrived out of order. Alerts (error-level logs, which reach Sentry)
+// whenever it finds a divergence it cannot fix itself.
+add_action('ck_join_block_reconciliation_cron_hook', function () {
+    StripeService::initialise();
+    StripeService::reconcileRecentMemberships();
+});
+
+if (!wp_next_scheduled('ck_join_block_reconciliation_cron_hook')) {
+    wp_schedule_event(time(), 'daily', 'ck_join_block_reconciliation_cron_hook');
+}
+
+// Heartbeat for the downstream CRM pipeline (Action Network -> Make ->
+// Airtable, etc.), which the join flow cannot observe directly. Completed
+// joins are recorded on success and a daily digest is logged and emailed, so
+// a silent downstream outage shows up within a day instead of surfacing weeks
+// later as missing records.
+add_action('ck_join_flow_success', function ($data) {
+    $joins = get_option('CK_JOIN_FLOW_COMPLETED_JOINS', []);
+    if (!is_array($joins)) {
+        $joins = [];
+    }
+    $joins[] = [
+        'email' => $data['email'] ?? '(unknown)',
+        'time' => gmdate('c'),
+    ];
+    $cutoff = time() - 30 * 86400;
+    $joins = array_values(array_filter($joins, function ($join) use ($cutoff) {
+        return strtotime($join['time'] ?? '') >= $cutoff;
+    }));
+    update_option('CK_JOIN_FLOW_COMPLETED_JOINS', $joins, false);
+});
+
+add_action('ck_join_block_heartbeat_cron_hook', function () {
+    global $joinBlockLog;
+
+    $joins = get_option('CK_JOIN_FLOW_COMPLETED_JOINS', []);
+    $dayAgo = time() - 86400;
+    $recent = array_values(array_filter(is_array($joins) ? $joins : [], function ($join) use ($dayAgo) {
+        return strtotime($join['time'] ?? '') >= $dayAgo;
+    }));
+
+    $count = count($recent);
+    $joinBlockLog->info("Join heartbeat: $count completed join(s) in the last 24 hours");
+
+    $recipient = apply_filters('ck_join_flow_heartbeat_recipient', get_option('admin_email'));
+    if (!$recipient) {
+        return;
+    }
+
+    $lines = array_map(function ($join) {
+        return ($join['time'] ?? '(unknown time)') . '  ' . ($join['email'] ?? '(unknown)');
+    }, $recent);
+    $body = "Completed joins in the last 24 hours: $count\n\n"
+        . ($lines ? implode("\n", $lines) . "\n\n" : "")
+        . "Compare against the CRM pipeline (e.g. Action Network -> Make -> Airtable). "
+        . "If joins are listed here but missing downstream, the pipeline is broken.\n";
+    wp_mail($recipient, "[CK Join Flow] Daily join heartbeat: $count join(s)", $body);
+});
+
+if (!wp_next_scheduled('ck_join_block_heartbeat_cron_hook')) {
+    wp_schedule_event(time(), 'daily', 'ck_join_block_heartbeat_cron_hook');
+}
+
 if (defined('WP_CLI') && WP_CLI) {
     WP_CLI::add_command('join update_an_from_stripe', function () {
         StripeService::initialise();

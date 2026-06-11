@@ -272,7 +272,13 @@ class JoinService
                 ActionNetworkService::signup($data);
                 $joinBlockLog->info("Completed Action Network signup request for $email");
             } catch (\Exception $exception) {
-                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
+                // The payment has already been taken by this point, so this is
+                // money collected with no CRM record. The saved join data lets
+                // ensureStripeSubscriptionsCreated() retry.
+                $joinBlockLog->error(
+                    "Action Network error for email $email after successful payment — money taken with no CRM"
+                    . " record yet: " . $exception->getMessage()
+                );
                 throw $exception;
             }
         }
@@ -446,7 +452,31 @@ class JoinService
                     || in_array($subscription->status, ['incomplete_expired', 'canceled']);
 
                 if ($expired || (time() - $createdAt) > $day) {
-                    $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");
+                    // If money was actually collected (e.g. the subscription was
+                    // cancelled after a successful or still-settling payment),
+                    // discarding the join data silently would strand a paid
+                    // member outside the CRM.
+                    $paidInvoice = false;
+                    if ($subscription && !empty($subscription->latest_invoice)) {
+                        try {
+                            $latestInvoice = \Stripe\Invoice::retrieve($subscription->latest_invoice);
+                            $paidInvoice = $latestInvoice->status === 'paid';
+                        } catch (\Exception $e) {
+                            $joinBlockLog->warning(
+                                "ensureStripeSubscriptionsCreated: could not inspect latest invoice for {$name}: "
+                                . $e->getMessage()
+                            );
+                        }
+                    }
+                    if ($paidInvoice) {
+                        $joinBlockLog->error(
+                            "ensureStripeSubscriptionsCreated: discarding {$name}, but subscription"
+                            . " {$data['stripeSubscriptionId']} has a paid invoice — payment collected without a"
+                            . " completed join. Complete the join manually or refund."
+                        );
+                    } else {
+                        $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");
+                    }
                     delete_option($name);
                 } else {
                     $joinBlockLog->info("ensureStripeSubscriptionsCreated: not yet paid, will retry {$name}");
