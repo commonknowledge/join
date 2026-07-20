@@ -260,7 +260,21 @@ class Settings
             }
             return "<pre style=\"max-width:150ch\">$log</pre>";
         });
+        /** @var Html_Field $logRetentionField */
+        $logRetentionField = Field::make('html', 'ck_join_flow_log_retention');
+        $logRetentionField->set_html(function () {
+            $days = Logging::getLogRetentionDays();
+            // Ignore sanitization error, consistent with Settings::get().
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $envValue = $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] ?? null;
+            $source = $envValue === null
+                ? 'default, as JOIN_FLOW_LOG_RETENTION_DAYS is not set'
+                : 'from JOIN_FLOW_LOG_RETENTION_DAYS=' . esc_html($envValue);
+            return '<p>Logs are retained for <strong>' . esc_html($days) . '</strong> days (' . $source . ').</p>';
+        });
+
         $logging_fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
+        $logging_fields[] = $logRetentionField;
         $logging_fields[] = $logField;
 
         CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')

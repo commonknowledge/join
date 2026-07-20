@@ -13,6 +13,8 @@ use Monolog\Level;
 
 class Logging
 {
+    private const DEFAULT_LOG_RETENTION_DAYS = 10;
+
     public static function getLogDirectory()
     {
         // Prefer the uploads dir (survives plugin updates), but fall back to
@@ -76,6 +78,22 @@ class Logging
         return $logLocation;
     }
 
+    /**
+     * Number of days of rotated log files to keep.
+     *
+     * Read straight from the environment rather than via Settings::get(),
+     * because init() runs before Carbon Fields boots (see join.php), so the
+     * settings page is not available at this point. Bedrock loads the root
+     * .env at wp-config time, so $_ENV is already populated.
+     */
+    public static function getLogRetentionDays()
+    {
+        // Ignore sanitization error, consistent with Settings::get().
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $days = (int) ($_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] ?? 0);
+        return $days > 0 ? $days : self::DEFAULT_LOG_RETENTION_DAYS;
+    }
+
     public static function init()
     {
         global $joinBlockLog;
@@ -95,7 +113,11 @@ class Logging
                 $logFilenameHash = bin2hex(random_bytes(18));
             }
             $logFilename = "debug-$logFilenameHash.log";
-            $joinBlockLog->pushHandler(new RotatingFileHandler("$logLocation/$logFilename", 10, Level::Info));
+            $joinBlockLog->pushHandler(new RotatingFileHandler(
+                "$logLocation/$logFilename",
+                self::getLogRetentionDays(),
+                Level::Info
+            ));
         }
         $joinBlockLog->pushProcessor(new WebProcessor());
     }
