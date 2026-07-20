@@ -396,7 +396,12 @@ add_action('rest_api_init', function () {
             // Make stage = "confirm" to match the normal flow
             // (the user is redirected back from GoCardless and submits their data to the /join endpoint)
             $data['stage'] = "confirm";
-            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", wp_json_encode($data));
+            // autoload disabled: full join payload, see the Stripe equivalent below.
+            update_option(
+                "JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}",
+                wp_json_encode($data),
+                false
+            );
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
         }
@@ -458,7 +463,12 @@ add_action('rest_api_init', function () {
                 // Make stage = "confirm" to match the normal flow
                 // (the user is redirected back from ChargeBee and submits their data to the /join endpoint)
                 $data['stage'] = "confirm";
-                update_option("JOIN_FORM_UNPROCESSED_CHARGEBEE_REQUEST_{$hostedPageId}", wp_json_encode($data));
+                // autoload disabled: full join payload, see the Stripe equivalent below.
+                update_option(
+                    "JOIN_FORM_UNPROCESSED_CHARGEBEE_REQUEST_{$hostedPageId}",
+                    wp_json_encode($data),
+                    false
+                );
 
                 return ["href" => $hostedPageUrl, "cbHostedPageId" => $hostedPageId];
             } catch (\Exception $e) {
@@ -522,7 +532,14 @@ add_action('rest_api_init', function () {
                 // Make stage = "confirm" to match the normal flow
                 // (the user returns from the payment step and submits their data to the /join endpoint)
                 $data['stage'] = "confirm";
-                update_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscription->id}", wp_json_encode($data));
+                // autoload disabled: this holds the full join payload, and a
+                // backlog of unprocessed requests would otherwise be read into
+                // memory on every page request.
+                update_option(
+                    "JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscription->id}",
+                    wp_json_encode($data),
+                    false
+                );
 
                 return $subscription;
             } catch (\Exception $e) {

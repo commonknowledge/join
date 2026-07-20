@@ -38,17 +38,35 @@ class JoinService
 
     /**
      * Option name for a pending CRM push. Keyed on the Stripe subscription
-     * where there is one, falling back to a hash of the email so a GoCardless
-     * or Chargebee join still gets exactly one record per member.
+     * where there is one, falling back to the email so a GoCardless or
+     * Chargebee join still gets exactly one record per member.
+     *
+     * Each fallback must be non-empty before it is used. handleJoin() can be
+     * called without an email — it falls back to sessionToken for its lock —
+     * and hashing an empty string would give every such record the same option
+     * name, so each would silently overwrite the last.
      */
-    private static function crmRetryKey($data)
+    public static function crmRetryKey($data)
     {
-        $subscriptionId = $data['stripeSubscriptionId'] ?? '';
-        if ($subscriptionId) {
+        $subscriptionId = trim((string) ($data['stripeSubscriptionId'] ?? ''));
+        if ($subscriptionId !== '') {
             return self::CRM_RETRY_OPTION_PREFIX . $subscriptionId;
         }
+
         $email = strtolower(trim((string) ($data['email'] ?? '')));
-        return self::CRM_RETRY_OPTION_PREFIX . 'email_' . sha1($email);
+        if ($email !== '') {
+            return self::CRM_RETRY_OPTION_PREFIX . 'email_' . sha1($email);
+        }
+
+        $sessionToken = trim((string) ($data['sessionToken'] ?? ''));
+        if ($sessionToken !== '') {
+            return self::CRM_RETRY_OPTION_PREFIX . 'session_' . sha1($sessionToken);
+        }
+
+        // Last resort: the payload itself. Two identical payloads collapsing to
+        // one record is correct de-duplication; two different ones must not
+        // collide, which hashing a missing identifier would guarantee.
+        return self::CRM_RETRY_OPTION_PREFIX . 'payload_' . sha1((string) wp_json_encode($data));
     }
 
     /**
@@ -77,13 +95,16 @@ class JoinService
             $attempts = (int) ($decoded['attempts'] ?? 0) + 1;
         }
 
+        // autoload disabled: each record carries the full join payload, and a
+        // backlog of them would otherwise be read into memory on every single
+        // page request.
         update_option($optionName, wp_json_encode([
             'data' => $data,
             'services' => $services,
             'reason' => $reason,
             'attempts' => $attempts,
             'lastAttemptAt' => time(),
-        ]));
+        ]), false);
 
         $email = $data['email'] ?? 'unknown';
         $label = $services ? implode(', ', $services) : 'all configured CRMs';
@@ -185,7 +206,8 @@ class JoinService
             $data['createdAt'] = time();
         }
 
-        update_option($optionName, wp_json_encode($data));
+        // autoload disabled — see queueCrmRetry(): full join payload.
+        update_option($optionName, wp_json_encode($data), false);
     }
 
     public static function handleJoin($data)
@@ -716,6 +738,30 @@ class JoinService
     }
 
     /**
+     * Stop retrying a record, without ever deleting it.
+     *
+     * Parking is how the worker makes progress on something it cannot finish.
+     * The record is the only copy of what the member submitted, so it stays for
+     * a human to pick up — but it is not re-attempted, and not re-logged on
+     * every subsequent run.
+     */
+    private static function parkCrmRetry($optionName, $record, $reason)
+    {
+        global $joinBlockLog;
+
+        $record['parked'] = true;
+        $record['parkedReason'] = $reason;
+        $record['parkedAt'] = time();
+
+        update_option($optionName, wp_json_encode($record), false);
+
+        $joinBlockLog->error(
+            "ensureCrmPushesCompleted: parked $optionName — $reason. The submitted details are preserved in"
+            . " that option; complete the CRM record manually."
+        );
+    }
+
+    /**
      * Retry outstanding CRM pushes for members whose payment already succeeded.
      *
      * Complements reconcileRecentMemberships(), which can detect a member who
@@ -743,11 +789,15 @@ class JoinService
             $name = $result->option_name;
             try {
                 $record = json_decode($result->option_value, true);
-                $data = $record['data'] ?? null;
-                $email = $data['email'] ?? '';
 
-                if (!$data || !$email) {
-                    $joinBlockLog->error("ensureCrmPushesCompleted: $name holds no usable join data, skipping");
+                if (!is_array($record)) {
+                    // Keep the raw value: it is still the only copy of whatever
+                    // was written here, and may be recoverable by hand.
+                    self::parkCrmRetry(
+                        $name,
+                        ['raw' => $result->option_value],
+                        'record could not be decoded'
+                    );
                     continue;
                 }
 
@@ -755,14 +805,20 @@ class JoinService
                     continue;
                 }
 
+                $data = $record['data'] ?? null;
+                $email = $data['email'] ?? '';
+
+                if (!$data || !$email) {
+                    // Without an email there is no CRM to push to and no lock to
+                    // take, so this can never succeed. Park it rather than
+                    // re-reading and re-logging it on every run forever.
+                    self::parkCrmRetry($name, $record, 'no usable join data (missing payload or email)');
+                    continue;
+                }
+
                 $attempts = (int) ($record['attempts'] ?? 0);
                 if ($attempts >= self::CRM_RETRY_MAX_ATTEMPTS) {
-                    $record['parked'] = true;
-                    update_option($name, wp_json_encode($record));
-                    $joinBlockLog->error(
-                        "ensureCrmPushesCompleted: giving up on $email after $attempts attempts. Their submitted"
-                        . " details are preserved in the $name option — complete the CRM record manually."
-                    );
+                    self::parkCrmRetry($name, $record, "gave up after $attempts attempts");
                     continue;
                 }
 
@@ -780,12 +836,7 @@ class JoinService
                     continue;
                 }
                 if ($paymentStands === false) {
-                    $record['parked'] = true;
-                    update_option($name, wp_json_encode($record));
-                    $joinBlockLog->error(
-                        "ensureCrmPushesCompleted: $email has no surviving payment, so has not been added to the"
-                        . " CRM. Parked in $name — refund or complete manually."
-                    );
+                    self::parkCrmRetry($name, $record, "no surviving payment for $email — refund or complete by hand");
                     continue;
                 }
 
@@ -811,7 +862,7 @@ class JoinService
                 $record['services'] = $failed;
                 $record['attempts'] = $attempts + 1;
                 $record['lastAttemptAt'] = time();
-                update_option($name, wp_json_encode($record));
+                update_option($name, wp_json_encode($record), false);
                 $joinBlockLog->warning(
                     "ensureCrmPushesCompleted: still outstanding for $email (" . implode(', ', $failed) . "),"
                     . " attempt " . ($attempts + 1) . " of " . self::CRM_RETRY_MAX_ATTEMPTS
