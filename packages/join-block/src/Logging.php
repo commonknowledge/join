@@ -83,8 +83,9 @@ class Logging
      *
      * Read straight from the environment rather than via Settings::get(),
      * because init() runs before Carbon Fields boots (see join.php), so the
-     * settings page is not available at this point. Bedrock loads the root
-     * .env at wp-config time, so $_ENV is already populated.
+     * settings page is not available at this point. join.php loads the
+     * plugin's own .env before calling init(), so $_ENV is already populated.
+     * Do not rely on Bedrock to populate it — production runs stock WordPress.
      */
     public static function getLogRetentionDays()
     {

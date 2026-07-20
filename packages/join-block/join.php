@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.4.31
+ * Version:         1.4.32
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -29,16 +29,23 @@ use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Services\ZetkinService;
 use CommonKnowledge\JoinBlock\Settings;
 
-Logging::init();
-global $joinBlockLog;
-
+// Load the .env before Logging::init(), which reads JOIN_FLOW_LOG_RETENTION_DAYS
+// from $_ENV. The logger does not exist yet, so hold any failure until it does.
+$dotenvError = null;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 try {
     $dotenv->load();
 } catch (\Throwable $e) {
     // Ignore missing .env as all settings are also available in the
     // plugin settings page
-    $joinBlockLog->debug("Could not load environment variables from .env file: " . $e->getMessage());
+    $dotenvError = $e->getMessage();
+}
+
+Logging::init();
+global $joinBlockLog;
+
+if ($dotenvError !== null) {
+    $joinBlockLog->debug("Could not load environment variables from .env file: " . $dotenvError);
 }
 
 add_action('after_setup_theme', function () {
