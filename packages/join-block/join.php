@@ -509,7 +509,8 @@ add_action('rest_api_init', function () {
                     $data["customMembershipAmount"] ?? null,
                     $data["donationAmount"] ?? null,
                     $data["recurDonation"] ?? false,
-                    !empty($data["donationSupporterMode"])
+                    !empty($data["donationSupporterMode"]),
+                    StripeService::buildSubscriptionIdempotencyKey($data, $plan)
                 );
 
                 // Save this data in the database so if the user pays but never returns to

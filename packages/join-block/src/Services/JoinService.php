@@ -10,6 +10,17 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class JoinService
 {
+    // Membership amounts are money in major units, held as floats. Compare with
+    // a tolerance rather than == / === so that a value which has been through
+    // Stripe's minor-unit integers and back cannot fail on representation
+    // alone. Half a penny is far below the smallest real price difference.
+    public const AMOUNT_EPSILON = 0.005;
+
+    // Join data whose CRM push failed after the payment succeeded. The member
+    // has paid and is a member; only the CRM write is outstanding, so this is
+    // kept for retry rather than surfaced as a failure to them.
+    public const CRM_RETRY_OPTION_PREFIX = 'JOIN_FORM_PENDING_CRM_';
+
     // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
     // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
     private static function formatDob($day, $month, $year)
@@ -18,6 +29,87 @@ class JoinService
         $date = new \DateTime('1970-01-01T12:00:00Z');
         $date->setDate($year, $month, $day);
         return $date->format('Y-m-d');
+    }
+
+    /**
+     * Option name for a pending CRM push. Keyed on the Stripe subscription
+     * where there is one, falling back to a hash of the email so a GoCardless
+     * or Chargebee join still gets exactly one record per member.
+     */
+    private static function crmRetryKey($data)
+    {
+        $subscriptionId = $data['stripeSubscriptionId'] ?? '';
+        if ($subscriptionId) {
+            return self::CRM_RETRY_OPTION_PREFIX . $subscriptionId;
+        }
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        return self::CRM_RETRY_OPTION_PREFIX . 'email_' . sha1($email);
+    }
+
+    /**
+     * Durably record that a CRM push is still outstanding for a member whose
+     * payment has already succeeded.
+     *
+     * This record is the only copy of what the member submitted — the join
+     * form data is not otherwise persisted — so losing it means their details
+     * can only be recovered by asking them again.
+     */
+    public static function queueCrmRetry($data, $service, $reason)
+    {
+        global $joinBlockLog;
+
+        $optionName = self::crmRetryKey($data);
+
+        $attempts = 1;
+        $existing = get_option($optionName);
+        if ($existing) {
+            $decoded = json_decode($existing, true);
+            $attempts = (int) ($decoded['attempts'] ?? 0) + 1;
+        }
+
+        update_option($optionName, wp_json_encode([
+            'data' => $data,
+            'service' => $service,
+            'reason' => $reason,
+            'attempts' => $attempts,
+            'lastAttemptAt' => time(),
+        ]));
+
+        $email = $data['email'] ?? 'unknown';
+        $joinBlockLog->error("Queued $service CRM retry for $email (attempt $attempts): $reason");
+    }
+
+    /**
+     * Refresh the recovery snapshot with the payload we were actually handed.
+     *
+     * join.php writes this at create-subscription time, before the member has
+     * finished the form, so the stored copy can be missing fields that the
+     * final /join request carries. Any replay should use the freshest version.
+     */
+    private static function saveRecoverySnapshot($data)
+    {
+        $subscriptionId = $data['stripeSubscriptionId'] ?? '';
+        if (!$subscriptionId) {
+            return;
+        }
+
+        $optionName = "JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscriptionId}";
+
+        $existing = get_option($optionName);
+        if ($existing) {
+            // Keep the original createdAt. ensureStripeSubscriptionsCreated()
+            // uses it to decide when to stop retrying, so refreshing it on
+            // every attempt would make the record immortal.
+            $decoded = json_decode($existing, true);
+            if (!empty($decoded['createdAt'])) {
+                $data['createdAt'] = $decoded['createdAt'];
+            }
+        }
+        if (empty($data['createdAt'])) {
+            $data['createdAt'] = time();
+        }
+
+        update_option($optionName, wp_json_encode($data));
     }
 
     public static function handleJoin($data)
@@ -34,6 +126,7 @@ class JoinService
                 }
             }
             $lockFile = self::acquireLock($lockKey);
+            self::saveRecoverySnapshot($data);
             $chargebeeCustomer = self::tryHandleJoin($data);
             // The join is complete, so it no longer needs to be picked up by
             // ensureStripeSubscriptionsCreated() (the webhook/cron recovery path)
@@ -182,10 +275,10 @@ class JoinService
         }
         $data['membershipPlan']['remove_tags'] = Settings::computeTagsToRemove($data['membershipPlan']);
 
-        $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 0;
+        $membershipAmount = (float) ($data['membershipPlan']['amount'] ?? 0);
         if ($data['membershipPlan']['allow_custom_amount']) {
             $minimumAmount = $membershipAmount;
-            $membershipAmount = (float) $data['customMembershipAmount'] ?? 0;
+            $membershipAmount = (float) ($data['customMembershipAmount'] ?? 0);
             if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
                 $error = "Invalid membership amount: $membershipAmount < $minimumAmount or > 1000";
                 $joinBlockLog->error($error);
@@ -220,13 +313,45 @@ class JoinService
 
         if (Settings::get("USE_STRIPE") && !$isOneOffSupporterDonation) {
             StripeService::initialise();
-            $subscriptionInfo = StripeService::cancelPreviousAndGetCurrentSubscription($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
-            if ($subscriptionInfo["amount"] !== $membershipAmount) {
-                $email = $data['email'];
-                $subAmount = $subscriptionInfo["amount"];
-                $joinBlockLog->error("Found mismatched subscription amounts for $email - claimed: $membershipAmount, found in stripe: $subAmount");
+            $email = $data['email'];
+            $subscriptionId = $data["stripeSubscriptionId"] ?? null;
+
+            // Verify the amount BEFORE cancelling anything. Cancelling first
+            // means a failed verification leaves the member with their previous
+            // subscription cancelled and no new membership to show for it.
+            try {
+                $actualAmount = StripeService::getSubscriptionAmount($subscriptionId);
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    "Could not read subscription amount for $email from Stripe: " . $e->getMessage()
+                );
+                throw new JoinBlockException("Could not verify subscription amount", 9);
+            }
+
+            // Distinct from a mismatch: we do not know the amount, so we cannot
+            // say it is wrong. Treated as retryable rather than telling a member
+            // who has already paid that their amount is invalid.
+            if ($actualAmount === null) {
+                $subscriptionLabel = $subscriptionId ?: 'none';
+                $joinBlockLog->error(
+                    "Could not determine subscription amount for $email (subscription: $subscriptionLabel)"
+                );
+                throw new JoinBlockException("Could not verify subscription amount", 9);
+            }
+
+            if (abs($actualAmount - $membershipAmount) > self::AMOUNT_EPSILON) {
+                $joinBlockLog->error(
+                    "Found mismatched subscription amounts for $email - claimed: $membershipAmount,"
+                    . " found in stripe: $actualAmount"
+                );
                 throw new JoinBlockException("Invalid subscription amount", 8);
             }
+
+            $subscriptionInfo = StripeService::cancelPreviousSubscriptions(
+                $email,
+                $data["stripeCustomerId"] ?? null,
+                $subscriptionId
+            );
             $data["stripeFirstSubscriptionDate"] = $subscriptionInfo["firstSubscription"];
             $data["stripeFirstPaymentDate"] = $subscriptionInfo["firstPayment"];
             $data["stripeLastPaymentDate"] = $subscriptionInfo["lastPayment"];
@@ -272,14 +397,16 @@ class JoinService
                 ActionNetworkService::signup($data);
                 $joinBlockLog->info("Completed Action Network signup request for $email");
             } catch (\Exception $exception) {
-                // The payment has already been taken by this point, so this is
-                // money collected with no CRM record. The saved join data lets
-                // ensureStripeSubscriptionsCreated() retry.
+                // The payment has already succeeded, so the member has joined
+                // and there is nothing they can do about a CRM failure. Failing
+                // the request would show them an error they cannot act on, and
+                // invite a resubmit — which creates a duplicate subscription.
+                // Record the outstanding push instead, and retry it out of band.
                 $joinBlockLog->error(
                     "Action Network error for email $email after successful payment — money taken with no CRM"
                     . " record yet: " . $exception->getMessage()
                 );
-                throw $exception;
+                self::queueCrmRetry($data, 'action_network', $exception->getMessage());
             }
         }
 
@@ -470,9 +597,17 @@ class JoinService
                     }
                     if ($paidInvoice) {
                         $joinBlockLog->error(
-                            "ensureStripeSubscriptionsCreated: discarding {$name}, but subscription"
-                            . " {$data['stripeSubscriptionId']} has a paid invoice — payment collected without a"
-                            . " completed join. Complete the join manually or refund."
+                            "ensureStripeSubscriptionsCreated: subscription {$data['stripeSubscriptionId']} has a"
+                            . " paid invoice — payment collected without a completed join. Preserving the"
+                            . " submitted data for retry."
+                        );
+                        // Do not discard. This is the only record of what the
+                        // member submitted, so dropping it makes the join
+                        // unrecoverable without asking them for it again.
+                        self::queueCrmRetry(
+                            $data,
+                            'action_network',
+                            'payment collected without a completed join'
                         );
                     } else {
                         $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");

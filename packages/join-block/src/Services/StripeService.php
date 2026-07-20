@@ -145,7 +145,39 @@ class StripeService
         return 'default';
     }
 
-    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false, $isSupporterMode = false)
+    /**
+     * Stable key for a subscription-creation request, or null when one cannot
+     * be derived safely.
+     *
+     * Submitting the same choices twice within one form session should return
+     * the subscription Stripe already created rather than making another one:
+     * resubmitting after an error is how a member ends up charged twice.
+     * Changing plan or amount changes the key, as does starting a new session,
+     * so a deliberate second subscription is still possible.
+     *
+     * Without a session token the key would collapse to email + plan, and two
+     * genuinely separate joins would collide — so we return null and accept the
+     * old behaviour rather than risk replaying the wrong subscription.
+     */
+    public static function buildSubscriptionIdempotencyKey($data, $plan)
+    {
+        $sessionToken = $data['sessionToken'] ?? '';
+        if (!$sessionToken) {
+            return null;
+        }
+
+        return 'join_sub_' . sha1(implode('|', [
+            $sessionToken,
+            strtolower(trim((string) ($data['email'] ?? ''))),
+            Settings::getMembershipPlanId($plan),
+            (string) ($data['customMembershipAmount'] ?? ''),
+            (string) ($data['donationAmount'] ?? ''),
+            !empty($data['recurDonation']) ? '1' : '0',
+            !empty($data['donationSupporterMode']) ? '1' : '0',
+        ]));
+    }
+
+    public static function createSubscription($customer, $plan, $customAmount = null, $donationAmount = null, $recurDonation = false, $isSupporterMode = false, $idempotencyKey = null)
     {
         $priceId = $plan["stripe_price_id"];
         $customAmount = (float) $customAmount;
@@ -189,7 +221,8 @@ class StripeService
             $subscriptionPayload['add_invoice_items'] = $addInvoiceItems;
         }
 
-        $subscription = Subscription::create($subscriptionPayload);
+        $options = $idempotencyKey ? ['idempotency_key' => $idempotencyKey] : [];
+        $subscription = Subscription::create($subscriptionPayload, $options);
 
         return $subscription;
     }
@@ -562,12 +595,53 @@ class StripeService
     }
 
     /**
-     * Cancels the customer's existing subscriptions, except for $subscriptionId, which is the
-     * subscription that was just created via the browser Stripe client during this join flow.
-     * That current subscription is left in place, and its amount is returned so the caller can
-     * verify it against the amount claimed in the join request.
+     * The recurring amount of one specific subscription, in major units
+     * (e.g. 3.30 for £3.30), or null when it cannot be determined.
+     *
+     * Fetches by ID rather than scanning the customer's subscription list, so
+     * there is no "wasn't in the page we looked at" failure mode. Callers MUST
+     * treat null as *unknown* and never as zero: a null that gets coerced to
+     * 0.0 looks exactly like a genuine amount mismatch, which is how a paying
+     * member can be rejected at the amount check.
+     *
+     * API errors propagate rather than being swallowed, so a transport failure
+     * (retryable) stays distinguishable from a subscription that really has no
+     * priced item (not retryable).
+     *
+     * @throws ApiErrorException
      */
-    public static function cancelPreviousAndGetCurrentSubscription($email, $customerId, $subscriptionId)
+    public static function getSubscriptionAmount($subscriptionId)
+    {
+        global $joinBlockLog;
+
+        if (!$subscriptionId) {
+            $joinBlockLog->warning("getSubscriptionAmount: called without a subscription ID");
+            return null;
+        }
+
+        $subscription = Subscription::retrieve($subscriptionId);
+        $item = $subscription->items->first();
+
+        if (!$item || !isset($item->price->unit_amount)) {
+            $joinBlockLog->warning("getSubscriptionAmount: $subscriptionId has no priced item");
+            return null;
+        }
+
+        return round($item->price->unit_amount / 100, 2);
+    }
+
+    /**
+     * Cancel every *other* active-ish subscription for the customer, and report
+     * the member's subscription/payment dates. $subscriptionId is the one just
+     * created by the browser Stripe client during this join flow, and is left
+     * in place.
+     *
+     * Deliberately does not report the current subscription's amount — see
+     * getSubscriptionAmount(). Date collection is best-effort: the catch below
+     * keeps a transient Stripe error from failing an otherwise good join, and
+     * the dates are only used to populate CRM custom fields.
+     */
+    public static function cancelPreviousSubscriptions($email, $customerId, $subscriptionId)
     {
         global $joinBlockLog;
 
@@ -576,7 +650,6 @@ class StripeService
         $firstSubscriptionDate = date('Y-m-d');
         $firstPayment = null;
         $lastPayment = null;
-        $amount = 0;
 
         if (!$customerId) {
             [$customer,] = self::upsertCustomer($email);
@@ -616,13 +689,6 @@ class StripeService
                         $invoice->voidInvoice();
                     }
                 }
-
-                if ($sub->id === $subscriptionId) {
-                    $subItem = $sub->items->first();
-                    if ($subItem) {
-                        $amount = $subItem->price->unit_amount;
-                    }
-                }
             }
 
             // Fetch all paid invoices for first/last payment dates
@@ -649,7 +715,6 @@ class StripeService
             "firstSubscription" => $firstSubscriptionDate,
             "firstPayment"      => $firstPayment,
             "lastPayment"       => $lastPayment,
-            "amount"            => round($amount / 100, 2),
         ];
     }
 
