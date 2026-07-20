@@ -146,7 +146,11 @@ class ActionNetworkService
      *   'email_status' — the primary email address status (e.g. 'subscribed',
      *                    'bouncing'), or null if unavailable;
      *   'tags'         — the person's tag names, or null when enumeration was
-     *                    aborted (treat as unknown, not as zero tags).
+     *                    aborted (treat as unknown, not as zero tags);
+     *   'has_name'     — whether the person has a given or family name. The
+     *                    join flow always collects a name, while newsletter and
+     *                    petition signups create a person from an email alone,
+     *                    so this distinguishes "joined" from "merely exists".
      */
     public static function getPersonSnapshot($email)
     {
@@ -168,6 +172,7 @@ class ActionNetworkService
         return [
             'email_status' => $emailStatus,
             'tags' => is_array($tagNames) ? $tagNames : null,
+            'has_name' => !empty($person['given_name']) || !empty($person['family_name']),
         ];
     }
 

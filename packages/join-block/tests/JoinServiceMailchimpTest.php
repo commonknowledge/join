@@ -55,10 +55,15 @@ class JoinServiceMailchimpTest extends TestCase
         'add_tags'           => '',
     ];
 
+    /** Options written during a test, so we can assert on the CRM retry record. */
+    private array $savedOptions = [];
+
     protected function setUp(): void
     {
         parent::setUp();
         Monkey\setUp();
+
+        $this->savedOptions = [];
 
         // WordPress functions used in the join path.
         Monkey\Functions\when('wp_json_encode')->alias('json_encode');
@@ -92,7 +97,19 @@ class JoinServiceMailchimpTest extends TestCase
                 if ($key === 'ck_join_flow_membership_plan_standard') {
                     return $this->membershipPlan;
                 }
-                return false;
+                return $this->savedOptions[$key] ?? false;
+            });
+
+        Monkey\Functions\when('update_option')
+            ->alias(function (string $key, $value) {
+                $this->savedOptions[$key] = $value;
+                return true;
+            });
+
+        Monkey\Functions\when('delete_option')
+            ->alias(function (string $key) {
+                unset($this->savedOptions[$key]);
+                return true;
             });
 
         // All plugin settings default to false/empty — no payment provider,
@@ -156,6 +173,21 @@ class JoinServiceMailchimpTest extends TestCase
         global $joinBlockLog;
         $this->assertNotEmpty($joinBlockLog->errors, 'Expected Mailchimp error to be logged');
         $this->assertStringContainsString('Mailchimp', $joinBlockLog->errors[0]);
+
+        // ...and the outstanding push recorded, so the retry worker can finish
+        // it. Previously the failure was swallowed and the member was simply
+        // never added to Mailchimp.
+        $queued = array_filter(
+            $this->savedOptions,
+            fn($key) => str_starts_with($key, JoinService::CRM_RETRY_OPTION_PREFIX),
+            ARRAY_FILTER_USE_KEY
+        );
+        $this->assertCount(1, $queued, 'Expected the failed Mailchimp push to be queued for retry');
+
+        $record = json_decode((string) reset($queued), true);
+        $this->assertSame(['mailchimp'], $record['services']);
+        $this->assertSame($this->joinData['email'], $record['data']['email']);
+        $this->assertSame(1, $record['attempts']);
     }
 
     /**

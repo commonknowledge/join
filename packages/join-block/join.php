@@ -748,6 +748,8 @@ add_action('ck_join_block_gocardless_cron_hook', function () {
                 continue;
             }
 
+            // Replay: complete the join without touching payment state.
+            $data['isRecoveryReplay'] = true;
             JoinService::handleJoin($data);
             delete_option($result->option_name);
             $joinBlockLog->info("ensureSubscriptionsCreated: success, deleting option {$result->option_name}");
@@ -768,6 +770,18 @@ add_action('ck_join_block_stripe_cron_hook', function () {
 
 if (!wp_next_scheduled('ck_join_block_stripe_cron_hook')) {
     wp_schedule_event(time(), 'hourly', 'ck_join_block_stripe_cron_hook');
+}
+
+// Finish CRM pushes for members whose payment succeeded but whose CRM record
+// was never written. Complements the reconciliation cron below, which can spot
+// such a member but holds no copy of their details to fix it with. Reads Stripe
+// only to confirm the payment still stands; writes exclusively to CRMs.
+add_action('ck_join_block_crm_retry_cron_hook', function () {
+    JoinService::ensureCrmPushesCompleted();
+});
+
+if (!wp_next_scheduled('ck_join_block_crm_retry_cron_hook')) {
+    wp_schedule_event(time(), 'hourly', 'ck_join_block_crm_retry_cron_hook');
 }
 
 // Level-triggered safety net: converge Action Network state with Stripe for

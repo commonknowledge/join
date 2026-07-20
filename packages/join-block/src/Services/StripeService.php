@@ -631,33 +631,83 @@ class StripeService
     }
 
     /**
-     * Cancel every *other* active-ish subscription for the customer, and report
-     * the member's subscription/payment dates. $subscriptionId is the one just
-     * created by the browser Stripe client during this join flow, and is left
-     * in place.
+     * Whether a subscription represents a payment that actually went through.
      *
-     * Deliberately does not report the current subscription's amount — see
-     * getSubscriptionAmount(). Date collection is best-effort: the catch below
-     * keeps a transient Stripe error from failing an otherwise good join, and
-     * the dates are only used to populate CRM custom fields.
+     * Strictly read-only — used by the CRM retry worker to confirm a member
+     * really paid before writing them to a CRM, long after the join. Nothing
+     * here may mutate the subscription: by now it may be a live membership that
+     * has moved on from the data the retry record was written with.
+     *
+     * @return bool|null true = paid, false = not paid, null = could not tell
+     *                   (transient failure — the caller should try again later
+     *                   rather than conclude anything).
      */
-    public static function cancelPreviousSubscriptions($email, $customerId, $subscriptionId)
+    public static function subscriptionWasPaid($subscriptionId)
     {
         global $joinBlockLog;
 
-        $joinBlockLog->info("Removing previous subscriptions for user " . $email . ", customer: " . $customerId);
+        try {
+            $subscription = Subscription::retrieve($subscriptionId);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            // The subscription does not exist; a definite answer, not an outage.
+            $joinBlockLog->warning("subscriptionWasPaid($subscriptionId): not found — " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            $joinBlockLog->warning("subscriptionWasPaid($subscriptionId): could not check — " . $e->getMessage());
+            return null;
+        }
+
+        if (in_array($subscription->status, ['active', 'trialing'], true)) {
+            return true;
+        }
+
+        // A cancelled subscription still counts if money changed hands: the
+        // member paid, so they belong in the CRM regardless of its state now.
+        if (empty($subscription->latest_invoice)) {
+            return false;
+        }
+
+        try {
+            $invoice = \Stripe\Invoice::retrieve($subscription->latest_invoice);
+        } catch (\Exception $e) {
+            $joinBlockLog->warning(
+                "subscriptionWasPaid($subscriptionId): could not inspect invoice — " . $e->getMessage()
+            );
+            return null;
+        }
+
+        return $invoice->status === 'paid';
+    }
+
+    /**
+     * Resolve the member's Stripe customer, creating one if we do not have it.
+     */
+    public static function resolveCustomerId($email, $customerId)
+    {
+        if ($customerId) {
+            return $customerId;
+        }
+        [$customer,] = self::upsertCustomer($email);
+        return $customer->id;
+    }
+
+    /**
+     * Read-only: the member's earliest subscription date, and their first and
+     * last payment dates, for the CRM custom fields.
+     *
+     * Best-effort — a transient Stripe error must not fail an otherwise good
+     * join, so on failure the caller gets today's date and nulls rather than an
+     * exception.
+     */
+    public static function getSubscriptionDates($email, $customerId)
+    {
+        global $joinBlockLog;
 
         $firstSubscriptionDate = date('Y-m-d');
         $firstPayment = null;
         $lastPayment = null;
 
-        if (!$customerId) {
-            [$customer,] = self::upsertCustomer($email);
-            $customerId = $customer->id;
-        }
-
         try {
-            // Fetch all subscriptions for date calculation
             $subscriptions = \Stripe\Subscription::all([
                 'customer' => $customerId,
                 'status'   => 'all',
@@ -665,33 +715,12 @@ class StripeService
             ]);
 
             foreach ($subscriptions->autoPagingIterator() as $sub) {
-                // Track earliest subscription date
                 $createdDate = date('Y-m-d', $sub->created);
-                if (is_null($firstSubscriptionDate) || $createdDate < $firstSubscriptionDate) {
+                if ($createdDate < $firstSubscriptionDate) {
                     $firstSubscriptionDate = $createdDate;
-                }
-
-                // Cancel and void if it's an "active-ish" subscription and not the current one
-                if ($sub->id !== $subscriptionId && in_array($sub->status, ['active', 'trialing', 'past_due'])) {
-                    $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
-                    $sub->cancel();
-
-                    // Find and void open invoices for this subscription
-                    $invoices = \Stripe\Invoice::all([
-                        'customer'     => $customerId,
-                        'subscription' => $sub->id,
-                        'status'       => 'open',
-                        'limit'        => 100,
-                    ]);
-
-                    foreach ($invoices->autoPagingIterator() as $invoice) {
-                        $joinBlockLog->info("Voiding invoice " . $invoice->id . " for canceled subscription " . $sub->id);
-                        $invoice->voidInvoice();
-                    }
                 }
             }
 
-            // Fetch all paid invoices for first/last payment dates
             $paidInvoices = \Stripe\Invoice::all([
                 'customer' => $customerId,
                 'status'   => 'paid',
@@ -708,7 +737,7 @@ class StripeService
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Error removing subscriptions for user " . $email . ": " . $e->getMessage());
+            $joinBlockLog->error("Error reading subscription dates for " . $email . ": " . $e->getMessage());
         }
 
         return [
@@ -716,6 +745,61 @@ class StripeService
             "firstPayment"      => $firstPayment,
             "lastPayment"       => $lastPayment,
         ];
+    }
+
+    /**
+     * Cancel every *other* active-ish subscription for the customer, removing
+     * the duplicates a member creates by submitting the payment step twice.
+     * $subscriptionId is the one to keep: the subscription the browser Stripe
+     * client just created.
+     *
+     * Only safe to call while $subscriptionId is genuinely the member's current
+     * subscription. Calling it from stale data — a recovery replay hours later,
+     * say — would cancel a live subscription the member has since created. See
+     * ensureStripeSubscriptionsCreated(), which deliberately does not.
+     */
+    public static function cancelPreviousSubscriptions($email, $customerId, $subscriptionId)
+    {
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Removing previous subscriptions for user " . $email . ", customer: " . $customerId);
+
+        try {
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $customerId,
+                'status'   => 'all',
+                'limit'    => 100,
+            ]);
+
+            foreach ($subscriptions->autoPagingIterator() as $sub) {
+                if ($sub->id === $subscriptionId) {
+                    continue;
+                }
+                if (!in_array($sub->status, ['active', 'trialing', 'past_due'])) {
+                    continue;
+                }
+
+                $joinBlockLog->info("Canceling subscription " . $sub->id . " for user " . $email);
+                $sub->cancel();
+
+                // Find and void open invoices for this subscription
+                $invoices = \Stripe\Invoice::all([
+                    'customer'     => $customerId,
+                    'subscription' => $sub->id,
+                    'status'       => 'open',
+                    'limit'        => 100,
+                ]);
+
+                foreach ($invoices->autoPagingIterator() as $invoice) {
+                    $joinBlockLog->info(
+                        "Voiding invoice " . $invoice->id . " for canceled subscription " . $sub->id
+                    );
+                    $invoice->voidInvoice();
+                }
+            }
+        } catch (\Exception $e) {
+            $joinBlockLog->error("Error removing subscriptions for user " . $email . ": " . $e->getMessage());
+        }
     }
 
     public static function getSubscriptionHistory($customerId)
@@ -1377,6 +1461,19 @@ class StripeService
                     . " Network record — the join never completed. Investigate and backfill."
                 );
                 return;
+            }
+
+            // A person record on its own is not evidence the join completed: a
+            // newsletter or petition signup creates one from an email alone,
+            // and that record then masks the missing join. The join flow always
+            // collects a name, so its absence means the demographic push never
+            // ran. (Update-flow joins deliberately send no name, but those are
+            // existing members who already have one.)
+            if (empty($person['has_name'])) {
+                $joinBlockLog->error(
+                    "reconcileRecentMemberships: $email has a paid, active Stripe subscription but no name in"
+                    . " Action Network — the join's demographic push never completed. Investigate and backfill."
+                );
             }
 
             if ($isLapsed) {
