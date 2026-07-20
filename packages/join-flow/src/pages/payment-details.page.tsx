@@ -406,7 +406,8 @@ const StripeForm = ({
         );
       } else {
         const subscription = await createSubscription({ ...data });
-        clientSecret = subscription.latest_invoice.payment_intent.client_secret;
+        const paymentIntent = subscription.latest_invoice.payment_intent;
+        clientSecret = paymentIntent.client_secret;
 
         sessionStorage.setItem(
           SAVED_STATE_KEY,
@@ -414,9 +415,21 @@ const StripeForm = ({
             ...data,
             stripeCustomerId: subscription.customer,
             stripeSubscriptionId: subscription.id,
-            stripePaymentIntentId: subscription.latest_invoice.payment_intent.id
+            stripePaymentIntentId: paymentIntent.id
           })
         );
+
+        // Resubmitting within one session returns the subscription Stripe
+        // already created (see buildSubscriptionIdempotencyKey server-side).
+        // If that payment has already gone through, confirming it again would
+        // error — and taking a second payment would be worse. Carry straight
+        // on to the confirm step instead.
+        if (paymentIntent.status === "succeeded") {
+          const succeededUrl = new URL(window.location.href);
+          succeededUrl.searchParams.set("stripe_success", "true");
+          window.location.assign(succeededUrl.toString());
+          return;
+        }
       }
 
       const returnUrl = new URL(window.location.href);

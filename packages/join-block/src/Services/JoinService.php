@@ -10,6 +10,22 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class JoinService
 {
+    // Membership amounts are money in major units, held as floats. Compare with
+    // a tolerance rather than == / === so that a value which has been through
+    // Stripe's minor-unit integers and back cannot fail on representation
+    // alone. Half a penny is far below the smallest real price difference.
+    public const AMOUNT_EPSILON = 0.005;
+
+    // Join data whose CRM push failed after the payment succeeded. The member
+    // has paid and is a member; only the CRM write is outstanding, so this is
+    // kept for retry rather than surfaced as a failure to them.
+    public const CRM_RETRY_OPTION_PREFIX = 'JOIN_FORM_PENDING_CRM_';
+
+    // After this many failed attempts the record is parked for a human rather
+    // than retried forever. It is never deleted: parking keeps the member's
+    // submitted details, which exist nowhere else.
+    public const CRM_RETRY_MAX_ATTEMPTS = 12;
+
     // According to error messages from Chargebee, dates should be sent as the format yyyy-MM-dd.
     // Meaning 2021-12-25 for Christmas Day, 25th of December 2021.
     private static function formatDob($day, $month, $year)
@@ -18,6 +34,180 @@ class JoinService
         $date = new \DateTime('1970-01-01T12:00:00Z');
         $date->setDate($year, $month, $day);
         return $date->format('Y-m-d');
+    }
+
+    /**
+     * Option name for a pending CRM push. Keyed on the Stripe subscription
+     * where there is one, falling back to the email so a GoCardless or
+     * Chargebee join still gets exactly one record per member.
+     *
+     * Each fallback must be non-empty before it is used. handleJoin() can be
+     * called without an email — it falls back to sessionToken for its lock —
+     * and hashing an empty string would give every such record the same option
+     * name, so each would silently overwrite the last.
+     */
+    public static function crmRetryKey($data)
+    {
+        $subscriptionId = trim((string) ($data['stripeSubscriptionId'] ?? ''));
+        if ($subscriptionId !== '') {
+            return self::CRM_RETRY_OPTION_PREFIX . $subscriptionId;
+        }
+
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        if ($email !== '') {
+            return self::CRM_RETRY_OPTION_PREFIX . 'email_' . sha1($email);
+        }
+
+        $sessionToken = trim((string) ($data['sessionToken'] ?? ''));
+        if ($sessionToken !== '') {
+            return self::CRM_RETRY_OPTION_PREFIX . 'session_' . sha1($sessionToken);
+        }
+
+        // Last resort: the payload itself. Two identical payloads collapsing to
+        // one record is correct de-duplication; two different ones must not
+        // collide, which hashing a missing identifier would guarantee.
+        return self::CRM_RETRY_OPTION_PREFIX . 'payload_' . sha1((string) wp_json_encode($data));
+    }
+
+    /**
+     * Durably record that a CRM push is still outstanding for a member whose
+     * payment has already succeeded.
+     *
+     * This record is the only copy of what the member submitted — the join
+     * form data is not otherwise persisted — so losing it means their details
+     * can only be recovered by asking them again.
+     *
+     * @param array $data The join payload.
+     * @param array|null $services Service keys still outstanding, or null for
+     *                             "every configured CRM", used when we do not
+     *                             know how far the original join got.
+     */
+    public static function queueCrmRetry($data, $services, $reason)
+    {
+        global $joinBlockLog;
+
+        $optionName = self::crmRetryKey($data);
+
+        $attempts = 1;
+        $existing = get_option($optionName);
+        if ($existing) {
+            $decoded = json_decode($existing, true);
+            $attempts = (int) ($decoded['attempts'] ?? 0) + 1;
+        }
+
+        // autoload disabled: each record carries the full join payload, and a
+        // backlog of them would otherwise be read into memory on every single
+        // page request.
+        update_option($optionName, wp_json_encode([
+            'data' => $data,
+            'services' => $services,
+            'reason' => $reason,
+            'attempts' => $attempts,
+            'lastAttemptAt' => time(),
+        ]), false);
+
+        $email = $data['email'] ?? 'unknown';
+        $label = $services ? implode(', ', $services) : 'all configured CRMs';
+        $joinBlockLog->error("Queued CRM retry for $email ($label, attempt $attempts): $reason");
+    }
+
+    /**
+     * Push a member to every configured CRM, returning the service keys that
+     * failed.
+     *
+     * Contains no payment code at all — no subscription creation, cancellation
+     * or Chargebee/GoCardless/Auth0 calls. The retry worker depends on that
+     * structurally: replaying a CRM push must never be able to touch a payment
+     * that is working fine, and from here it cannot reach the code that would.
+     *
+     * Each service is independent — one failing must not stop the others.
+     *
+     * @param array $data The join payload.
+     * @param array|null $only Restrict to these service keys, or null for every
+     *                         configured service.
+     * @return string[] Service keys that failed.
+     */
+    public static function pushToCrms($data, $only = null)
+    {
+        global $joinBlockLog;
+
+        $email = $data['email'] ?? 'unknown';
+        $wanted = function ($service) use ($only) {
+            return $only === null || in_array($service, $only, true);
+        };
+        $failed = [];
+
+        if (Settings::get("USE_MAILCHIMP") && $wanted('mailchimp')) {
+            $joinBlockLog->info("Processing Mailchimp signup request for $email");
+            try {
+                MailchimpService::signup($data);
+                $joinBlockLog->info("Completed Mailchimp signup request for $email");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
+                $failed[] = 'mailchimp';
+            }
+        }
+
+        if (Settings::get("USE_ACTION_NETWORK") && $wanted('action_network')) {
+            $joinBlockLog->info("Processing Action Network signup request for $email");
+            try {
+                ActionNetworkService::signup($data);
+                $joinBlockLog->info("Completed Action Network signup request for $email");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error(
+                    "Action Network error for email $email after successful payment — money taken with no CRM"
+                    . " record yet: " . $exception->getMessage()
+                );
+                $failed[] = 'action_network';
+            }
+        }
+
+        if (Settings::get("USE_ZETKIN") && $wanted('zetkin')) {
+            $joinBlockLog->info("Processing Zetkin signup request for $email");
+            try {
+                ZetkinService::signup($data);
+                $joinBlockLog->info("Completed Zetkin signup request for $email");
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
+                $failed[] = 'zetkin';
+            }
+        }
+
+        return $failed;
+    }
+
+    /**
+     * Refresh the recovery snapshot with the payload we were actually handed.
+     *
+     * join.php writes this at create-subscription time, before the member has
+     * finished the form, so the stored copy can be missing fields that the
+     * final /join request carries. Any replay should use the freshest version.
+     */
+    private static function saveRecoverySnapshot($data)
+    {
+        $subscriptionId = $data['stripeSubscriptionId'] ?? '';
+        if (!$subscriptionId) {
+            return;
+        }
+
+        $optionName = "JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscriptionId}";
+
+        $existing = get_option($optionName);
+        if ($existing) {
+            // Keep the original createdAt. ensureStripeSubscriptionsCreated()
+            // uses it to decide when to stop retrying, so refreshing it on
+            // every attempt would make the record immortal.
+            $decoded = json_decode($existing, true);
+            if (!empty($decoded['createdAt'])) {
+                $data['createdAt'] = $decoded['createdAt'];
+            }
+        }
+        if (empty($data['createdAt'])) {
+            $data['createdAt'] = time();
+        }
+
+        // autoload disabled — see queueCrmRetry(): full join payload.
+        update_option($optionName, wp_json_encode($data), false);
     }
 
     public static function handleJoin($data)
@@ -34,6 +224,7 @@ class JoinService
                 }
             }
             $lockFile = self::acquireLock($lockKey);
+            self::saveRecoverySnapshot($data);
             $chargebeeCustomer = self::tryHandleJoin($data);
             // The join is complete, so it no longer needs to be picked up by
             // ensureStripeSubscriptionsCreated() (the webhook/cron recovery path)
@@ -182,10 +373,10 @@ class JoinService
         }
         $data['membershipPlan']['remove_tags'] = Settings::computeTagsToRemove($data['membershipPlan']);
 
-        $membershipAmount = (float) $data['membershipPlan']['amount'] ?? 0;
+        $membershipAmount = (float) ($data['membershipPlan']['amount'] ?? 0);
         if ($data['membershipPlan']['allow_custom_amount']) {
             $minimumAmount = $membershipAmount;
-            $membershipAmount = (float) $data['customMembershipAmount'] ?? 0;
+            $membershipAmount = (float) ($data['customMembershipAmount'] ?? 0);
             if ($membershipAmount < $minimumAmount || $membershipAmount > 1000) {
                 $error = "Invalid membership amount: $membershipAmount < $minimumAmount or > 1000";
                 $joinBlockLog->error($error);
@@ -220,13 +411,54 @@ class JoinService
 
         if (Settings::get("USE_STRIPE") && !$isOneOffSupporterDonation) {
             StripeService::initialise();
-            $subscriptionInfo = StripeService::cancelPreviousAndGetCurrentSubscription($data["email"], $data["stripeCustomerId"] ?? null, $data["stripeSubscriptionId"] ?? null);
-            if ($subscriptionInfo["amount"] !== $membershipAmount) {
-                $email = $data['email'];
-                $subAmount = $subscriptionInfo["amount"];
-                $joinBlockLog->error("Found mismatched subscription amounts for $email - claimed: $membershipAmount, found in stripe: $subAmount");
+            $email = $data['email'];
+            $subscriptionId = $data["stripeSubscriptionId"] ?? null;
+
+            // Verify the amount BEFORE cancelling anything. Cancelling first
+            // means a failed verification leaves the member with their previous
+            // subscription cancelled and no new membership to show for it.
+            try {
+                $actualAmount = StripeService::getSubscriptionAmount($subscriptionId);
+            } catch (\Exception $e) {
+                $joinBlockLog->error(
+                    "Could not read subscription amount for $email from Stripe: " . $e->getMessage()
+                );
+                throw new JoinBlockException("Could not verify subscription amount", 9);
+            }
+
+            // Distinct from a mismatch: we do not know the amount, so we cannot
+            // say it is wrong. Treated as retryable rather than telling a member
+            // who has already paid that their amount is invalid.
+            if ($actualAmount === null) {
+                $subscriptionLabel = $subscriptionId ?: 'none';
+                $joinBlockLog->error(
+                    "Could not determine subscription amount for $email (subscription: $subscriptionLabel)"
+                );
+                throw new JoinBlockException("Could not verify subscription amount", 9);
+            }
+
+            if (abs($actualAmount - $membershipAmount) > self::AMOUNT_EPSILON) {
+                $joinBlockLog->error(
+                    "Found mismatched subscription amounts for $email - claimed: $membershipAmount,"
+                    . " found in stripe: $actualAmount"
+                );
                 throw new JoinBlockException("Invalid subscription amount", 8);
             }
+
+            $customerId = StripeService::resolveCustomerId($email, $data["stripeCustomerId"] ?? null);
+
+            // A recovery replay runs on data saved hours or days earlier, by
+            // which time the member may have joined again. Cancelling
+            // "previous" subscriptions from that stale view would cancel the
+            // live one. De-duplication belongs to the live flow, which knows
+            // the current subscription; a replay only ever reads.
+            if (empty($data['isRecoveryReplay'])) {
+                StripeService::cancelPreviousSubscriptions($email, $customerId, $subscriptionId);
+            } else {
+                $joinBlockLog->info("Recovery replay for $email: leaving existing subscriptions untouched");
+            }
+
+            $subscriptionInfo = StripeService::getSubscriptionDates($email, $customerId);
             $data["stripeFirstSubscriptionDate"] = $subscriptionInfo["firstSubscription"];
             $data["stripeFirstPaymentDate"] = $subscriptionInfo["firstPayment"];
             $data["stripeLastPaymentDate"] = $subscriptionInfo["lastPayment"];
@@ -252,45 +484,13 @@ class JoinService
             }
         }
 
-        if (Settings::get("USE_MAILCHIMP")) {
-            $email = $data['email'];
-            $joinBlockLog->info("Processing Mailchimp signup request for $email");
-            try {
-                MailchimpService::signup($data);
-                $joinBlockLog->info("Completed Mailchimp signup request for $email");
-            } catch (\Exception $exception) {
-                // A Mailchimp failure should not block a successful join.
-                // The member record can be retro-added to Mailchimp once the underlying issue is resolved.
-                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-            }
-        }
-
-        if (Settings::get("USE_ACTION_NETWORK")) {
-            $email = $data['email'];
-            $joinBlockLog->info("Processing Action Network signup request for $email");
-            try {
-                ActionNetworkService::signup($data);
-                $joinBlockLog->info("Completed Action Network signup request for $email");
-            } catch (\Exception $exception) {
-                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
-                throw $exception;
-            }
-        }
-
-        if (Settings::get("USE_ZETKIN")) {
-            $email = $data['email'];
-            $joinBlockLog->info("Processing Zetkin signup request for $email");
-            try {
-                ZetkinService::signup($data);
-                $joinBlockLog->info("Completed Zetkin signup request for $email");
-            } catch (\Exception $exception) {
-                // Non-blocking: Zetkin is a secondary integration. The Stripe payment is
-                // the essential step and has already completed by this point. A Zetkin
-                // failure (e.g. expired credentials) should not surface an error to the
-                // member — they have successfully joined. The member record can be
-                // retro-added to Zetkin once the underlying issue is resolved.
-                $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
-            }
+        // The payment has already succeeded by this point, so a CRM failure is
+        // not something the member can act on. Record what is outstanding and
+        // let ensureCrmPushesCompleted() finish it, rather than showing them an
+        // error and inviting the resubmit that creates a duplicate subscription.
+        $failedCrms = self::pushToCrms($data);
+        if ($failedCrms) {
+            self::queueCrmRetry($data, $failedCrms, 'push failed during join');
         }
 
         $webhookUuid = $data['webhookUuid'] ?? '';
@@ -433,6 +633,8 @@ class JoinService
                 }
 
                 if ($subscription && in_array($subscription->status, ['active', 'trialing'])) {
+                    // Replay: complete the join without touching payment state.
+                    $data['isRecoveryReplay'] = true;
                     self::handleJoin($data);
                     delete_option($name);
                     $joinBlockLog->info("ensureStripeSubscriptionsCreated: success, deleting option {$name}");
@@ -446,7 +648,40 @@ class JoinService
                     || in_array($subscription->status, ['incomplete_expired', 'canceled']);
 
                 if ($expired || (time() - $createdAt) > $day) {
-                    $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");
+                    // If money was actually collected (e.g. the subscription was
+                    // cancelled after a successful or still-settling payment),
+                    // discarding the join data silently would strand a paid
+                    // member outside the CRM.
+                    $paidInvoice = false;
+                    if ($subscription && !empty($subscription->latest_invoice)) {
+                        try {
+                            $latestInvoice = \Stripe\Invoice::retrieve($subscription->latest_invoice);
+                            $paidInvoice = $latestInvoice->status === 'paid';
+                        } catch (\Exception $e) {
+                            $joinBlockLog->warning(
+                                "ensureStripeSubscriptionsCreated: could not inspect latest invoice for {$name}: "
+                                . $e->getMessage()
+                            );
+                        }
+                    }
+                    if ($paidInvoice) {
+                        $joinBlockLog->error(
+                            "ensureStripeSubscriptionsCreated: subscription {$data['stripeSubscriptionId']} has a"
+                            . " paid invoice — payment collected without a completed join. Preserving the"
+                            . " submitted data for retry."
+                        );
+                        // Do not discard. This is the only record of what the
+                        // member submitted, so dropping it makes the join
+                        // unrecoverable without asking them for it again.
+                        // Services unknown: the join never ran, so retry them all.
+                        self::queueCrmRetry(
+                            $data,
+                            null,
+                            'payment collected without a completed join'
+                        );
+                    } else {
+                        $joinBlockLog->info("ensureStripeSubscriptionsCreated: deleting unprocessable {$name}");
+                    }
                     delete_option($name);
                 } else {
                     $joinBlockLog->info("ensureStripeSubscriptionsCreated: not yet paid, will retry {$name}");
@@ -456,6 +691,184 @@ class JoinService
                     "ensureStripeSubscriptionsCreated: could not process {$result->option_value}: " .
                     $e->getMessage()
                 );
+            }
+        }
+    }
+
+    /**
+     * Seconds to wait before the next attempt: 1h, 2h, 4h ... capped at 24h.
+     *
+     * A CRM that is down is usually down for everyone, so retrying every queued
+     * member hourly helps nobody and buries the useful log lines.
+     */
+    public static function crmRetryBackoffSeconds($attempts)
+    {
+        $hours = min(2 ** max(0, (int) $attempts - 1), 24);
+        return $hours * 3600;
+    }
+
+    public static function crmRetryIsDue($record, $now = null)
+    {
+        $now = $now ?? time();
+        $lastAttemptAt = (int) ($record['lastAttemptAt'] ?? 0);
+        $backoff = self::crmRetryBackoffSeconds($record['attempts'] ?? 0);
+        return ($now - $lastAttemptAt) >= $backoff;
+    }
+
+    /**
+     * Read-only check that the member's payment still stands.
+     *
+     * Deliberately never mutates. This runs long after the join, by which time
+     * the member may have re-joined or changed plan, so altering a subscription
+     * from this stale data would damage a payment that is working fine.
+     *
+     * @return bool|null true = paid, false = no payment, null = could not tell.
+     */
+    private static function paymentStillStands($data)
+    {
+        $subscriptionId = $data['stripeSubscriptionId'] ?? '';
+        if (!$subscriptionId) {
+            // A GoCardless or Chargebee join: there is no Stripe subscription to
+            // check, and the record only exists because a payment succeeded.
+            return true;
+        }
+
+        StripeService::initialise();
+        return StripeService::subscriptionWasPaid($subscriptionId);
+    }
+
+    /**
+     * Stop retrying a record, without ever deleting it.
+     *
+     * Parking is how the worker makes progress on something it cannot finish.
+     * The record is the only copy of what the member submitted, so it stays for
+     * a human to pick up — but it is not re-attempted, and not re-logged on
+     * every subsequent run.
+     */
+    private static function parkCrmRetry($optionName, $record, $reason)
+    {
+        global $joinBlockLog;
+
+        $record['parked'] = true;
+        $record['parkedReason'] = $reason;
+        $record['parkedAt'] = time();
+
+        update_option($optionName, wp_json_encode($record), false);
+
+        $joinBlockLog->error(
+            "ensureCrmPushesCompleted: parked $optionName — $reason. The submitted details are preserved in"
+            . " that option; complete the CRM record manually."
+        );
+    }
+
+    /**
+     * Retry outstanding CRM pushes for members whose payment already succeeded.
+     *
+     * Complements reconcileRecentMemberships(), which can detect a member who
+     * paid but never reached the CRM yet has no copy of their submitted details
+     * to fix it with. This worker holds that copy.
+     *
+     * Touches no payment state: it reads Stripe to confirm the payment stands,
+     * then only writes to CRMs.
+     */
+    public static function ensureCrmPushesCompleted()
+    {
+        global $wpdb;
+        global $joinBlockLog;
+
+        $joinBlockLog->info("Running ensureCrmPushesCompleted");
+
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}options WHERE option_name LIKE %s",
+                self::CRM_RETRY_OPTION_PREFIX . '%'
+            )
+        );
+
+        foreach ($results as $result) {
+            $name = $result->option_name;
+            try {
+                $record = json_decode($result->option_value, true);
+
+                if (!is_array($record)) {
+                    // Keep the raw value: it is still the only copy of whatever
+                    // was written here, and may be recoverable by hand.
+                    self::parkCrmRetry(
+                        $name,
+                        ['raw' => $result->option_value],
+                        'record could not be decoded'
+                    );
+                    continue;
+                }
+
+                if (!empty($record['parked'])) {
+                    continue;
+                }
+
+                $data = $record['data'] ?? null;
+                $email = $data['email'] ?? '';
+
+                if (!$data || !$email) {
+                    // Without an email there is no CRM to push to and no lock to
+                    // take, so this can never succeed. Park it rather than
+                    // re-reading and re-logging it on every run forever.
+                    self::parkCrmRetry($name, $record, 'no usable join data (missing payload or email)');
+                    continue;
+                }
+
+                $attempts = (int) ($record['attempts'] ?? 0);
+                if ($attempts >= self::CRM_RETRY_MAX_ATTEMPTS) {
+                    self::parkCrmRetry($name, $record, "gave up after $attempts attempts");
+                    continue;
+                }
+
+                if (!self::crmRetryIsDue($record)) {
+                    continue;
+                }
+
+                $paymentStands = self::paymentStillStands($data);
+                if ($paymentStands === null) {
+                    // Could not reach Stripe. Leave the attempt count alone so a
+                    // provider outage does not burn through the retry budget.
+                    $joinBlockLog->warning(
+                        "ensureCrmPushesCompleted: could not confirm payment for $email, will try again later"
+                    );
+                    continue;
+                }
+                if ($paymentStands === false) {
+                    self::parkCrmRetry($name, $record, "no surviving payment for $email — refund or complete by hand");
+                    continue;
+                }
+
+                // Same lock the /join endpoint and the webhooks take, so a retry
+                // cannot interleave with a live write for the same person.
+                $lockFile = self::acquireLock($email);
+                try {
+                    $failed = self::pushToCrms($data, $record['services'] ?? null);
+                } finally {
+                    self::releaseLock($lockFile);
+                }
+
+                if (!$failed) {
+                    delete_option($name);
+                    // Deliberately does not fire ck_join_flow_success: handleJoin()
+                    // now completes even when a CRM push fails, so the hook has
+                    // already fired for this member and the heartbeat digest would
+                    // count them twice.
+                    $joinBlockLog->info("ensureCrmPushesCompleted: completed CRM push for $email, cleared $name");
+                    continue;
+                }
+
+                $record['services'] = $failed;
+                $record['attempts'] = $attempts + 1;
+                $record['lastAttemptAt'] = time();
+                update_option($name, wp_json_encode($record), false);
+                $joinBlockLog->warning(
+                    "ensureCrmPushesCompleted: still outstanding for $email (" . implode(', ', $failed) . "),"
+                    . " attempt " . ($attempts + 1) . " of " . self::CRM_RETRY_MAX_ATTEMPTS
+                );
+            } catch (\Exception $e) {
+                $joinBlockLog->error("ensureCrmPushesCompleted: could not process $name: " . $e->getMessage());
             }
         }
     }

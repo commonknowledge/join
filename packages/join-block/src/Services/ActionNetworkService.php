@@ -140,6 +140,42 @@ class ActionNetworkService
         return self::getPerson($email) !== null;
     }
 
+    /**
+     * Read-only view of a person for reconciliation. Returns null if the
+     * person does not exist, otherwise:
+     *   'email_status' — the primary email address status (e.g. 'subscribed',
+     *                    'bouncing'), or null if unavailable;
+     *   'tags'         — the person's tag names, or null when enumeration was
+     *                    aborted (treat as unknown, not as zero tags);
+     *   'has_name'     — whether the person has a given or family name. The
+     *                    join flow always collects a name, while newsletter and
+     *                    petition signups create a person from an email alone,
+     *                    so this distinguishes "joined" from "merely exists".
+     */
+    public static function getPersonSnapshot($email)
+    {
+        $person = self::getPerson($email);
+        if ($person === null) {
+            return null;
+        }
+
+        $emailStatus = null;
+        foreach ($person['email_addresses'] ?? [] as $address) {
+            if (!empty($address['primary'])) {
+                $emailStatus = $address['status'] ?? null;
+                break;
+            }
+        }
+
+        $tagNames = self::getPersonTagNames($email);
+
+        return [
+            'email_status' => $emailStatus,
+            'tags' => is_array($tagNames) ? $tagNames : null,
+            'has_name' => !empty($person['given_name']) || !empty($person['family_name']),
+        ];
+    }
+
     private static function getPerson($email)
     {
         global $joinBlockLog;

@@ -3,7 +3,7 @@
 /**
  * Plugin Name:     Common Knowledge Join Flow
  * Description:     Common Knowledge join flow plugin.
- * Version:         1.4.28
+ * Version:         1.4.29
  * Author:          Common Knowledge <hello@commonknowledge.coop>
  * Text Domain:     common-knowledge-join-flow
  * License: GPLv2 or later
@@ -396,7 +396,12 @@ add_action('rest_api_init', function () {
             // Make stage = "confirm" to match the normal flow
             // (the user is redirected back from GoCardless and submits their data to the /join endpoint)
             $data['stage'] = "confirm";
-            update_option("JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}", wp_json_encode($data));
+            // autoload disabled: full join payload, see the Stripe equivalent below.
+            update_option(
+                "JOIN_FORM_UNPROCESSED_GOCARDLESS_REQUEST_{$billingRequest['id']}",
+                wp_json_encode($data),
+                false
+            );
 
             return ["href" => $authLink, "gcBillingRequestId" => $billingRequest["id"]];
         }
@@ -458,7 +463,12 @@ add_action('rest_api_init', function () {
                 // Make stage = "confirm" to match the normal flow
                 // (the user is redirected back from ChargeBee and submits their data to the /join endpoint)
                 $data['stage'] = "confirm";
-                update_option("JOIN_FORM_UNPROCESSED_CHARGEBEE_REQUEST_{$hostedPageId}", wp_json_encode($data));
+                // autoload disabled: full join payload, see the Stripe equivalent below.
+                update_option(
+                    "JOIN_FORM_UNPROCESSED_CHARGEBEE_REQUEST_{$hostedPageId}",
+                    wp_json_encode($data),
+                    false
+                );
 
                 return ["href" => $hostedPageUrl, "cbHostedPageId" => $hostedPageId];
             } catch (\Exception $e) {
@@ -509,7 +519,8 @@ add_action('rest_api_init', function () {
                     $data["customMembershipAmount"] ?? null,
                     $data["donationAmount"] ?? null,
                     $data["recurDonation"] ?? false,
-                    !empty($data["donationSupporterMode"])
+                    !empty($data["donationSupporterMode"]),
+                    StripeService::buildSubscriptionIdempotencyKey($data, $plan)
                 );
 
                 // Save this data in the database so if the user pays but never returns to
@@ -521,7 +532,14 @@ add_action('rest_api_init', function () {
                 // Make stage = "confirm" to match the normal flow
                 // (the user returns from the payment step and submits their data to the /join endpoint)
                 $data['stage'] = "confirm";
-                update_option("JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscription->id}", wp_json_encode($data));
+                // autoload disabled: this holds the full join payload, and a
+                // backlog of unprocessed requests would otherwise be read into
+                // memory on every page request.
+                update_option(
+                    "JOIN_FORM_UNPROCESSED_STRIPE_REQUEST_{$subscription->id}",
+                    wp_json_encode($data),
+                    false
+                );
 
                 return $subscription;
             } catch (\Exception $e) {
@@ -747,6 +765,8 @@ add_action('ck_join_block_gocardless_cron_hook', function () {
                 continue;
             }
 
+            // Replay: complete the join without touching payment state.
+            $data['isRecoveryReplay'] = true;
             JoinService::handleJoin($data);
             delete_option($result->option_name);
             $joinBlockLog->info("ensureSubscriptionsCreated: success, deleting option {$result->option_name}");
@@ -767,6 +787,83 @@ add_action('ck_join_block_stripe_cron_hook', function () {
 
 if (!wp_next_scheduled('ck_join_block_stripe_cron_hook')) {
     wp_schedule_event(time(), 'hourly', 'ck_join_block_stripe_cron_hook');
+}
+
+// Finish CRM pushes for members whose payment succeeded but whose CRM record
+// was never written. Complements the reconciliation cron below, which can spot
+// such a member but holds no copy of their details to fix it with. Reads Stripe
+// only to confirm the payment still stands; writes exclusively to CRMs.
+add_action('ck_join_block_crm_retry_cron_hook', function () {
+    JoinService::ensureCrmPushesCompleted();
+});
+
+if (!wp_next_scheduled('ck_join_block_crm_retry_cron_hook')) {
+    wp_schedule_event(time(), 'hourly', 'ck_join_block_crm_retry_cron_hook');
+}
+
+// Level-triggered safety net: converge Action Network state with Stripe for
+// recent subscriptions, catching webhooks that were missed, suppressed or
+// arrived out of order. Alerts (error-level logs, which reach Sentry)
+// whenever it finds a divergence it cannot fix itself.
+add_action('ck_join_block_reconciliation_cron_hook', function () {
+    StripeService::initialise();
+    StripeService::reconcileRecentMemberships();
+});
+
+if (!wp_next_scheduled('ck_join_block_reconciliation_cron_hook')) {
+    wp_schedule_event(time(), 'daily', 'ck_join_block_reconciliation_cron_hook');
+}
+
+// Heartbeat for the downstream CRM pipeline (Action Network -> Make ->
+// Airtable, etc.), which the join flow cannot observe directly. Completed
+// joins are recorded on success and a daily digest is logged and emailed, so
+// a silent downstream outage shows up within a day instead of surfacing weeks
+// later as missing records.
+add_action('ck_join_flow_success', function ($data) {
+    $joins = get_option('CK_JOIN_FLOW_COMPLETED_JOINS', []);
+    if (!is_array($joins)) {
+        $joins = [];
+    }
+    $joins[] = [
+        'email' => $data['email'] ?? '(unknown)',
+        'time' => gmdate('c'),
+    ];
+    $cutoff = time() - 30 * 86400;
+    $joins = array_values(array_filter($joins, function ($join) use ($cutoff) {
+        return strtotime($join['time'] ?? '') >= $cutoff;
+    }));
+    update_option('CK_JOIN_FLOW_COMPLETED_JOINS', $joins, false);
+});
+
+add_action('ck_join_block_heartbeat_cron_hook', function () {
+    global $joinBlockLog;
+
+    $joins = get_option('CK_JOIN_FLOW_COMPLETED_JOINS', []);
+    $dayAgo = time() - 86400;
+    $recent = array_values(array_filter(is_array($joins) ? $joins : [], function ($join) use ($dayAgo) {
+        return strtotime($join['time'] ?? '') >= $dayAgo;
+    }));
+
+    $count = count($recent);
+    $joinBlockLog->info("Join heartbeat: $count completed join(s) in the last 24 hours");
+
+    $recipient = apply_filters('ck_join_flow_heartbeat_recipient', get_option('admin_email'));
+    if (!$recipient) {
+        return;
+    }
+
+    $lines = array_map(function ($join) {
+        return ($join['time'] ?? '(unknown time)') . '  ' . ($join['email'] ?? '(unknown)');
+    }, $recent);
+    $body = "Completed joins in the last 24 hours: $count\n\n"
+        . ($lines ? implode("\n", $lines) . "\n\n" : "")
+        . "Compare against the CRM pipeline (e.g. Action Network -> Make -> Airtable). "
+        . "If joins are listed here but missing downstream, the pipeline is broken.\n";
+    wp_mail($recipient, "[CK Join Flow] Daily join heartbeat: $count join(s)", $body);
+});
+
+if (!wp_next_scheduled('ck_join_block_heartbeat_cron_hook')) {
+    wp_schedule_event(time(), 'daily', 'ck_join_block_heartbeat_cron_hook');
 }
 
 if (defined('WP_CLI') && WP_CLI) {
