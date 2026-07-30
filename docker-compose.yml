@@ -17,7 +17,10 @@ services:
     volumes:
       - ./packages/join-block:/var/www/html/wp-content/plugins/join-form
   db:
-    image: mysql
+    # Pinned: the unpinned `mysql` tag moved to 9.x, which refuses to start
+    # against existing 8.x data ("Cannot upgrade from 80200 to 90400"). 8.2
+    # matches the data already in the db volume.
+    image: mysql:8.2
     environment:
       MYSQL_DATABASE: exampledb
       MYSQL_USER: exampleuser

@@ -235,6 +235,19 @@ class Settings
             Field::make('separator', 'google_cloud_logging', 'Google Cloud Logging'),
             Field::make('text', 'google_cloud_project_id'),
             Field::make('textarea', 'google_cloud_key_file_contents'),
+
+            Field::make('separator', 'loggly', 'Loggly'),
+            Field::make('text', 'loggly_token', 'Loggly Customer Token')
+                ->set_help_text(
+                    'Found in Loggly under Source Setup > Customer Tokens. ' .
+                    'When set, logs are sent to Loggly and are no longer written to disk. ' .
+                    'Takes effect on the next page load after saving.'
+                ),
+            Field::make('text', 'loggly_tags', 'Loggly Tags')
+                ->set_help_text(
+                    'Comma-separated tags applied to every log entry, used to filter this ' .
+                    'site\'s logs in Loggly. Defaults to "join-block".'
+                ),
         ];
 
         // The only existing third party use of this filter is for the London Renters Union plugin, which add support for Airtable.
@@ -247,6 +260,11 @@ class Settings
         /** @var Html_Field $logField */
         $logField = Field::make('html', 'ck_join_flow_log_contents');
         $logField->set_html(function () {
+            if (Logging::isLogglyEnabled()) {
+                return '<p>Logs are sent to Loggly and are not stored on this server. ' .
+                    'View them at <a href="https://www.loggly.com/" target="_blank" rel="noopener">loggly.com</a>, ' .
+                    'filtered by tag: <strong>' . esc_html(implode(', ', Logging::getLogglyTags())) . '</strong>.</p>';
+            }
             $joinBlockLogLocation = Logging::getLogDirectory();
             $logfiles = $joinBlockLogLocation ? scandir($joinBlockLogLocation, SCANDIR_SORT_DESCENDING) : [];
             $logfiles = array_values(array_filter($logfiles, function ($file) use ($joinBlockLogLocation) {
@@ -263,6 +281,11 @@ class Settings
         /** @var Html_Field $logRetentionField */
         $logRetentionField = Field::make('html', 'ck_join_flow_log_retention');
         $logRetentionField->set_html(function () {
+            if (Logging::isLogglyEnabled()) {
+                return '<p>Log retention is managed by your Loggly account. Any log files written ' .
+                    'before Loggly was configured are left in place and are no longer updated; ' .
+                    'delete them from the server if they are no longer needed.</p>';
+            }
             $days = Logging::getLogRetentionDays();
             // Ignore sanitization error, consistent with Settings::get().
             // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized

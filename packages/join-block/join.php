@@ -29,8 +29,8 @@ use CommonKnowledge\JoinBlock\Services\MailchimpService;
 use CommonKnowledge\JoinBlock\Services\ZetkinService;
 use CommonKnowledge\JoinBlock\Settings;
 
-// Load the .env before Logging::init(), which reads JOIN_FLOW_LOG_RETENTION_DAYS
-// from $_ENV. The logger does not exist yet, so hold any failure until it does.
+// Load the .env before Logging::init(), so that every setting read later is
+// backed by it. The logger does not exist yet, so hold any failure until it does.
 $dotenvError = null;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 try {
@@ -53,22 +53,21 @@ add_action('after_setup_theme', function () {
 });
 
 add_action('carbon_fields_register_fields', function () {
+    // Settings::init() first: Logging::configure() reads settings, which
+    // requires the container to have been registered. Blocks::init() after,
+    // so that anything it logs goes straight to the real handlers.
     Settings::init();
+    Logging::configure();
     Blocks::init();
+});
 
-    $sentryDsn = Settings::get("SENTRY_DSN");
-    if ($sentryDsn) {
-        \Sentry\init([
-            'dsn' => $sentryDsn
-        ]);
-        Logging::enableSentry();
-    }
-
-    $googleCloudProjectId = Settings::get("GOOGLE_CLOUD_PROJECT_ID");
-    $googleCloudKeyFileContents = trim(Settings::get("GOOGLE_CLOUD_KEY_FILE_CONTENTS"));
-    if ($googleCloudProjectId && $googleCloudKeyFileContents) {
-        Logging::enableGoogleCloud($googleCloudProjectId, $googleCloudKeyFileContents);
-    }
+// Fallback in case 'carbon_fields_register_fields' never fires - for example
+// if another copy of Carbon Fields booted first, so this plugin's call to
+// Carbon_Fields::boot() bails. Without this, nothing would be logged at all in
+// exactly the situation worth reading a log about. Logging::configure() is
+// idempotent, so this is a no-op on a healthy request.
+add_action('wp_loaded', function () {
+    Logging::configure();
 });
 
 // Ignore sanitization error as this could break provided environment variables

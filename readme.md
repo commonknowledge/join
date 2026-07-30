@@ -98,6 +98,7 @@ All integrations are optional. Enable and configure them via environment variabl
 | **Mailchimp** | Adds subscribers to mailing lists with plan-specific tags. Manages "lapsed" tag on payment failure/recovery. **Supporter-mode forms**: the flow does not collect a postal address, so the Mailchimp audience must have the `ADDRESS` merge field marked optional (not required); otherwise Mailchimp will reject new-member requests with a 400. |
 | **Sentry** | Real-time error tracking for both frontend and backend. |
 | **Google Cloud Logging** | Centralised log aggregation. |
+| **Loggly** | Centralised log aggregation. When a customer token is set, logs are sent to Loggly and are **not** written to disk. |
 | **Microsoft Teams** | Error alert notifications via incoming webhook. |
 | **getAddress.io / ideal-postcodes** | UK postcode address lookup. |
 
@@ -285,6 +286,8 @@ Configuration is available through a WordPress settings page (**Settings > CK Jo
 | `SENTRY_DSN` | Sentry DSN for backend error tracking |
 | `GOOGLE_CLOUD_PROJECT_ID` | Google Cloud project ID |
 | `GOOGLE_CLOUD_KEY_FILE_CONTENTS` | Google Cloud service account credentials (JSON) |
+| `LOGGLY_TOKEN` | Loggly customer token. When set, logs go to Loggly instead of disk |
+| `LOGGLY_TAGS` | Comma-separated Loggly tags (default `join-block`) |
 | `DEBUG_JOIN_FLOW` | Set to `true` to load frontend from `localhost:3000` |
 
 ---
