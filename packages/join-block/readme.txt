@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 7.0
-Stable tag: 1.4.35
+Stable tag: 1.4.36
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,9 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.36 =
+* Fix £0 subscriptions
+* Add settings switch to force test data not to appear
 = 1.4.35 =
 * Remove lapsed/lapsing tags on successful join
 = 1.4.34 =
