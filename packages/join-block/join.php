@@ -456,7 +456,7 @@ add_action('rest_api_init', function () {
                     "cancel_url" => $redirectUrl
                 ]);
 
-                /** @var HostedPage $createdHostedPage */
+                /** @var \ChargeBee\ChargeBee\Models\HostedPage $createdHostedPage */
                 $createdHostedPage = $hostedPage->hostedPage();
                 $hostedPageId = $createdHostedPage->id;
                 $hostedPageUrl = $createdHostedPage->url;

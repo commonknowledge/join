@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use CommonKnowledge\JoinBlock\Settings;
 use GuzzleHttp\Client;
@@ -43,7 +45,7 @@ class ActionNetworkService
         // Generic filter applies to all services
         $addTags = apply_filters('ck_join_flow_add_tags', $addTags, $data, 'action_network');
         $removeTags = apply_filters('ck_join_flow_remove_tags', $removeTags, $data, 'action_network');
-        
+
         // Service-specific filter for Action Network-only customization
         $addTags = apply_filters('ck_join_flow_action_network_add_tags', $addTags, $data);
         $removeTags = apply_filters('ck_join_flow_action_network_remove_tags', $removeTags, $data);

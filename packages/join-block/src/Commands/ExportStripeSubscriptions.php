@@ -4,11 +4,12 @@ namespace CommonKnowledge\JoinBlock\Commands;
 
 use CommonKnowledge\JoinBlock\Services\StripeService;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 class ExportStripeSubscriptions
 {
-
     public static function run()
     {
         StripeService::initialise();

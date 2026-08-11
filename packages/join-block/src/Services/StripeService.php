@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use CommonKnowledge\JoinBlock\Helpers;
 use CommonKnowledge\JoinBlock\Settings;
@@ -199,7 +201,10 @@ class StripeService
             if ($recurDonation) {
                 $interval = self::convertFrequencyToStripeInterval($plan['frequency']);
                 $donationPriceId = self::getOrCreatePriceForProduct(
-                    $donationProduct, $donationAmount, $plan['currency'], $interval
+                    $donationProduct,
+                    $donationAmount,
+                    $plan['currency'],
+                    $interval
                 );
                 $items[] = ['price' => $donationPriceId];
             } else {

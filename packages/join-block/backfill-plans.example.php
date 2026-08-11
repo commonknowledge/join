@@ -16,6 +16,7 @@
  *
  * Find price IDs in the Stripe Dashboard under Products > [plan] > Pricing.
  */
+
 return [
     'price_REPLACE_ME_1' => [
         'slug'        => 'example-plan-slug',

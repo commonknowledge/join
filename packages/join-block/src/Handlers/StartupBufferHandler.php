@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Handlers;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;

@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use Auth0\SDK\API\Management;
 use Auth0\SDK\Auth0;

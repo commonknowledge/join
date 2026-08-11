@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use Carbon_Fields\Container;
 use Carbon_Fields\Datastore\Empty_Datastore;
@@ -41,6 +43,12 @@ class Settings
             self::GET_ADDRESS_IO => 'getAddress.io',
             self::IDEAL_POSTCODES => 'ideal-postcodes.co.uk'
         ));
+        /** @var Html_Field $stripe_download_field */
+        $stripe_download_field = Field::make('html', 'stripe_download_subscriptions');
+        $stripe_download_field->set_html(
+            '<a href="' . get_rest_url(null, "join/v1/stripe/download-subscriptions?_wpnonce=") . wp_create_nonce('wp_rest') .
+            '" download onclick="this.innerText = \'Loading...\'">Download Subscriptions</a>'
+        );
 
         // set_required(true) is not applied so that this error can be handled by the custom
         // error handler below, resulting in a more helpful message to the user.
@@ -196,10 +204,7 @@ class Settings
                     'field' => 'stripe_direct_debit',
                     'value' => true
                 ]]),
-            Field::make('html', 'stripe_download_subscriptions')->set_html(
-                '<a href="' . get_rest_url(null, "join/v1/stripe/download-subscriptions?_wpnonce=") . wp_create_nonce('wp_rest') .
-                '" download onclick="this.innerText = \'Loading...\'">Download Subscriptions</a>'
-            ),
+            $stripe_download_field,
 
 
             Field::make('separator', 'postcodes', 'Postcode Address Providers'),

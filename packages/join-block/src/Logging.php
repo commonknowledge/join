@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use CommonKnowledge\JoinBlock\Handlers\StartupBufferHandler;
 use Google\Cloud\Logging\LoggingClient;

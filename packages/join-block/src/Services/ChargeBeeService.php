@@ -11,11 +11,12 @@ use ChargeBee\ChargeBee\Models\Subscription;
 use CommonKnowledge\JoinBlock\Exceptions\JoinBlockException;
 use CommonKnowledge\JoinBlock\Settings;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 class ChargeBeeService
 {
-
     public static function upsertCustomer($data, $billingAddress)
     {
         global $joinBlockLog;

@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock\Services;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use CommonKnowledge\JoinBlock\Exceptions\JoinBlockException;
 use CommonKnowledge\JoinBlock\Exceptions\SubscriptionExistsException;
@@ -469,9 +471,9 @@ class JoinService
             $customer = $customerResult->customer();
             $hostedPageId = $data["cbHostedPageId"] ?? null;
             if ($hostedPageId) {
-                $subscriptionPlanId = ChargebeeService::getChargebeeHostedPageSubscription($data, $hostedPageId);
+                $subscriptionPlanId = ChargeBeeService::getChargebeeHostedPageSubscription($data, $hostedPageId);
             } else {
-                $subscriptionPlanId = ChargebeeService::createChargebeeSubscription($data, $customer);
+                $subscriptionPlanId = ChargeBeeService::createChargebeeSubscription($data, $customer);
             }
         }
 

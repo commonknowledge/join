@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if (! defined('ABSPATH')) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use Carbon_Fields\Block;
 use Carbon_Fields\Field;
@@ -135,7 +137,7 @@ class Blocks
                 }
             }
             self::enqueueBlockCss();
-?>
+            ?>
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
             <div class="ck-join-flow">
                 <div class="ck-join-page-header">
@@ -143,7 +145,7 @@ class Blocks
                     <img src="<?php echo esc_url($fields['image']) ?>" alt="<?php echo esc_attr($fields['title']) ?>">
                 </div>
             </div>
-        <?php
+            <?php
         });
     }
 
@@ -226,11 +228,11 @@ class Blocks
             if (Settings::get("USE_CHARGEBEE")) {
                 wp_enqueue_script("chargebee", "https://js.chargebee.com/v2/chargebee.js", [], "v2", ["in_footer" => false]);
             }
-        ?>
+            ?>
             <div class="ck-join-flow">
                 <div class="ck-join-form mt-4"></div>
             </div>
-        <?php
+            <?php
         });
     }
 
@@ -324,7 +326,7 @@ class Blocks
         $join_form_block->set_render_callback(function ($fields, $attributes, $inner_blocks) {
             $link = get_page_link($fields['join_page'][0]['id']);
             self::enqueueBlockCss();
-        ?>
+            ?>
             <!-- wrap in .ck-join-flow so 'namespaced' styles apply -->
             <?php if ($fields['include_email_input']) : ?>
                 <div class="ck-join-flow">
@@ -353,7 +355,7 @@ class Blocks
                 </div>
             <?php endif; ?>
 
-        <?php
+            <?php
         });
     }
 
@@ -530,7 +532,7 @@ class Blocks
         <script type="application/json" id="env">
             <?php echo wp_json_encode($environment); ?>
         </script>
-<?php
+        <?php
     }
 
     private static function enqueueBlockCss()

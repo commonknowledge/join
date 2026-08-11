@@ -2,7 +2,9 @@
 
 namespace CommonKnowledge\JoinBlock;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
 
 use Carbon_Fields\Carbon_Fields;
 use Carbon_Fields\Container\Theme_Options_Container;
@@ -18,7 +20,7 @@ use Carbon_Fields\Helper\Helper;
 class CK_Theme_Options_Container extends Theme_Options_Container
 {
     /**
-     * This function copied-and-pasted, but modified to return an instance 
+     * This function copied-and-pasted, but modified to return an instance
      * of CK_Theme_Options_Container instead of the parent class.
      */
     public static function make()

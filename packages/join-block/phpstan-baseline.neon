@@ -1,0 +1,146 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Access to an undefined property ChargeBee\\\\ChargeBee\\\\Models\\\\HostedPage\\:\\:\\$id\\.$#"
+			count: 1
+			path: join.php
+
+		-
+			message: "#^Access to an undefined property ChargeBee\\\\ChargeBee\\\\Models\\\\HostedPage\\:\\:\\$url\\.$#"
+			count: 1
+			path: join.php
+
+		-
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 2
+			path: join.php
+
+		-
+			message: "#^Variable \\$data might not be defined\\.$#"
+			count: 2
+			path: join.php
+
+		-
+			message: "#^Call to method set_options\\(\\) on an unknown class CommonKnowledge\\\\JoinBlock\\\\Select_Field\\.$#"
+			count: 1
+			path: src/Blocks.php
+
+		-
+			message: "#^PHPDoc tag @var for variable \\$field_type contains unknown class CommonKnowledge\\\\JoinBlock\\\\Select_Field\\.$#"
+			count: 1
+			path: src/Blocks.php
+
+		-
+			message: "#^Parameter \\#4 \\$ver of function wp_enqueue_script expects bool\\|string\\|null, int\\<1, max\\> given\\.$#"
+			count: 1
+			path: src/Blocks.php
+
+		-
+			message: "#^Parameter \\#4 \\$ver of function wp_register_style expects bool\\|string\\|null, int\\<1, max\\> given\\.$#"
+			count: 1
+			path: src/Blocks.php
+
+		-
+			message: "#^Variable \\$custom_fields on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Blocks.php
+
+		-
+			message: "#^Instantiated class CommonKnowledge\\\\JoinBlock\\\\Broken_Container not found\\.$#"
+			count: 1
+			path: src/CK_Theme_Options_Container.php
+
+		-
+			message: "#^Method CommonKnowledge\\\\JoinBlock\\\\CK_Theme_Options_Container\\:\\:make\\(\\) should return Carbon_Fields\\\\Container\\\\Container but returns null\\.$#"
+			count: 2
+			path: src/CK_Theme_Options_Container.php
+
+		-
+			message: "#^Access to an undefined property ChargeBee\\\\ChargeBee\\\\Models\\\\HostedPage\\:\\:\\$state\\.$#"
+			count: 1
+			path: src/Services/ChargeBeeService.php
+
+		-
+			message: "#^Offset 'planId' on array\\{subscription_items\\: array\\{0\\: array\\{item_price_id\\: mixed, unit_price\\: float\\}, 1\\?\\: array\\{item_price_id\\: 'additional_donation…', unit_price\\: float\\}, 2\\?\\: array\\{item_price_id\\: 'additional_donation…', unit_price\\: float\\}\\}\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: src/Services/ChargeBeeService.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$customer\\.$#"
+			count: 1
+			path: src/Services/GocardlessService.php
+
+		-
+			message: "#^Variable \\$account might not be defined\\.$#"
+			count: 1
+			path: src/Services/GocardlessService.php
+
+		-
+			message: "#^Binary operation \"\\.\" between non\\-falsy\\-string and array\\{headers\\: WpOrg\\\\Requests\\\\Utility\\\\CaseInsensitiveDictionary, body\\: string, response\\: array\\{code\\: int, message\\: string\\}, cookies\\: array\\<int, WP_Http_Cookie\\>, filename\\: string\\|null, http_response\\: WP_HTTP_Requests_Response\\}\\|WP_Error results in an error\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Dead catch \\- Exception is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Parameter \\#2 \\$code of class Exception constructor expects int, string given\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Ternary operator condition is always false\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Variable \\$customer might not be defined\\.$#"
+			count: 1
+			path: src/Services/JoinService.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
+			count: 2
+			path: src/Services/MailchimpService.php
+
+		-
+			message: "#^Access to an undefined property Stripe\\\\StripeObject\\:\\:\\$paid_at\\.$#"
+			count: 2
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^Call to function is_null\\(\\) with non\\-falsy\\-string will always evaluate to false\\.$#"
+			count: 1
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$customer$#"
+			count: 1
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^Using nullsafe property access on non\\-nullable type Stripe\\\\Customer\\|false\\. Use \\-\\> instead\\.$#"
+			count: 2
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^Using nullsafe property access on non\\-nullable type Stripe\\\\Invoice\\|false\\. Use \\-\\> instead\\.$#"
+			count: 1
+			path: src/Services/StripeService.php
+
+		-
+			message: "#^Using nullsafe property access on non\\-nullable type Stripe\\\\Subscription\\|false\\. Use \\-\\> instead\\.$#"
+			count: 1
+			path: src/Services/StripeService.php

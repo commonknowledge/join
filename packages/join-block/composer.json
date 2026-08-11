@@ -24,7 +24,8 @@
     "phpunit/phpunit": "^9",
     "brain/monkey": "^2.7",
     "mockery/mockery": "^1.6",
-    "yoast/phpunit-polyfills": "^4.0"
+    "yoast/phpunit-polyfills": "^4.0",
+    "php-stubs/wp-cli-stubs": "^2.12"
   },
   "autoload": {
     "psr-4": {
@@ -34,10 +35,10 @@
   },
   "scripts": {
     "lint": [
-      "phpcs --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 . && phpstan analyse -c phpstan.neon --memory-limit 2G"
+      "phpcs && phpstan analyse -c phpstan.neon --memory-limit 2G"
     ],
     "lint:fix": [
-      "phpcbf --ignore=vendor,tests,wordpress --extensions=php --standard=PSR12 ."
+      "phpcbf"
     ]
   },
   "config": {
