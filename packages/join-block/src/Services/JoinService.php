@@ -330,6 +330,24 @@ class JoinService
     }
 
     /**
+     * True when no Stripe payment is expected for this join: the plan costs
+     * nothing and the frontend accordingly skipped the payment step, so no
+     * subscription was created. £0 plans (e.g. subsidised memberships) are
+     * server-side configuration, not client input, so this cannot be used to
+     * dodge payment for a priced plan — a missing subscription ID there is
+     * still an error.
+     *
+     * The frontend only skips payment when there is also no donation; a £0
+     * plan joined with a donation does create a subscription, whose first item
+     * is the £0 membership price, so it takes the verification path and
+     * passes.
+     */
+    public static function isFreeJoinWithoutSubscription($membershipAmount, $subscriptionId)
+    {
+        return !$subscriptionId && (float) $membershipAmount <= self::AMOUNT_EPSILON;
+    }
+
+    /**
      * Attempts to send the user data to configured 3rd party services.
      * Returns the Chargebee customer, if Chargebee is enabled.
      */
@@ -416,35 +434,41 @@ class JoinService
             $email = $data['email'];
             $subscriptionId = $data["stripeSubscriptionId"] ?? null;
 
-            // Verify the amount BEFORE cancelling anything. Cancelling first
-            // means a failed verification leaves the member with their previous
-            // subscription cancelled and no new membership to show for it.
-            try {
-                $actualAmount = StripeService::getSubscriptionAmount($subscriptionId);
-            } catch (\Exception $e) {
-                $joinBlockLog->error(
-                    "Could not read subscription amount for $email from Stripe: " . $e->getMessage()
+            if (self::isFreeJoinWithoutSubscription($membershipAmount, $subscriptionId)) {
+                $joinBlockLog->info(
+                    "Free membership join for $email: no Stripe subscription expected, skipping amount verification"
                 );
-                throw new JoinBlockException("Could not verify subscription amount", 9);
-            }
+            } else {
+                // Verify the amount BEFORE cancelling anything. Cancelling first
+                // means a failed verification leaves the member with their previous
+                // subscription cancelled and no new membership to show for it.
+                try {
+                    $actualAmount = StripeService::getSubscriptionAmount($subscriptionId);
+                } catch (\Exception $e) {
+                    $joinBlockLog->error(
+                        "Could not read subscription amount for $email from Stripe: " . $e->getMessage()
+                    );
+                    throw new JoinBlockException("Could not verify subscription amount", 9);
+                }
 
-            // Distinct from a mismatch: we do not know the amount, so we cannot
-            // say it is wrong. Treated as retryable rather than telling a member
-            // who has already paid that their amount is invalid.
-            if ($actualAmount === null) {
-                $subscriptionLabel = $subscriptionId ?: 'none';
-                $joinBlockLog->error(
-                    "Could not determine subscription amount for $email (subscription: $subscriptionLabel)"
-                );
-                throw new JoinBlockException("Could not verify subscription amount", 9);
-            }
+                // Distinct from a mismatch: we do not know the amount, so we cannot
+                // say it is wrong. Treated as retryable rather than telling a member
+                // who has already paid that their amount is invalid.
+                if ($actualAmount === null) {
+                    $subscriptionLabel = $subscriptionId ?: 'none';
+                    $joinBlockLog->error(
+                        "Could not determine subscription amount for $email (subscription: $subscriptionLabel)"
+                    );
+                    throw new JoinBlockException("Could not verify subscription amount", 9);
+                }
 
-            if (abs($actualAmount - $membershipAmount) > self::AMOUNT_EPSILON) {
-                $joinBlockLog->error(
-                    "Found mismatched subscription amounts for $email - claimed: $membershipAmount,"
-                    . " found in stripe: $actualAmount"
-                );
-                throw new JoinBlockException("Invalid subscription amount", 8);
+                if (abs($actualAmount - $membershipAmount) > self::AMOUNT_EPSILON) {
+                    $joinBlockLog->error(
+                        "Found mismatched subscription amounts for $email - claimed: $membershipAmount,"
+                        . " found in stripe: $actualAmount"
+                    );
+                    throw new JoinBlockException("Invalid subscription amount", 8);
+                }
             }
 
             $customerId = StripeService::resolveCustomerId($email, $data["stripeCustomerId"] ?? null);
