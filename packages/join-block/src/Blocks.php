@@ -487,6 +487,7 @@ class Blocks
             "CUSTOM_FIELDS_HEADING" => Settings::get("CUSTOM_FIELDS_HEADING"),
             'DATE_OF_BIRTH_COPY' => wpautop(Settings::get("DATE_OF_BIRTH_COPY")),
             'DATE_OF_BIRTH_HEADING' => Settings::get("DATE_OF_BIRTH_HEADING"),
+            "DISABLE_TEST_DATA" => Settings::get("DISABLE_TEST_DATA"),
             "HEAR_ABOUT_US_DETAILS" => Settings::get("HEAR_ABOUT_US_DETAILS"),
             "HEAR_ABOUT_US_HEADING" => Settings::get("HEAR_ABOUT_US_HEADING"),
             "HEAR_ABOUT_US_OPTIONS" => $hearAboutUsOptions,

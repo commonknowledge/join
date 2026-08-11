@@ -8,6 +8,7 @@ interface StaticEnv {
     CHARGEBEE_SITE_NAME: string;
     COLLECT_COUNTY: boolean;
     COLLECT_DATE_OF_BIRTH: boolean;
+    DISABLE_TEST_DATA: boolean;
     REQUIRE_AGE_18_OR_OVER: boolean;
     MINIMUM_AGE: number;
     COLLECT_HEAR_ABOUT_US: boolean;
@@ -83,6 +84,7 @@ const staticEnv: StaticEnv = {
     CHARGEBEE_SITE_NAME: process.env.REACT_APP_CHARGEBEE_SITE_NAME || '',
     COLLECT_COUNTY: parseBooleanEnvVar("REACT_APP_COLLECT_COUNTY"),
     COLLECT_DATE_OF_BIRTH: parseBooleanEnvVar("REACT_APP_COLLECT_DATE_OF_BIRTH"),
+    DISABLE_TEST_DATA: parseBooleanEnvVar("REACT_APP_DISABLE_TEST_DATA"),
     REQUIRE_AGE_18_OR_OVER: parseBooleanEnvVar("REACT_APP_REQUIRE_AGE_18_OR_OVER"),
     MINIMUM_AGE: parseInt(process.env.REACT_APP_MINIMUM_AGE || '18', 10),
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: parseBooleanEnvVar("REACT_APP_COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),

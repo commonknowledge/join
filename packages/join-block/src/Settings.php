@@ -323,13 +323,22 @@ class Settings
         $logging_fields[] = $logRetentionField;
         $logging_fields[] = $logField;
 
+        $debug_fields = [
+            Field::make('checkbox', 'disable_test_data', 'Disable Test Data')
+                ->set_help_text(
+                    'Prevents the join form from being pre-filled with test data, even if the ' .
+                    'REACT_APP_USE_TEST_DATA environment variable was set when the form was built.'
+                ),
+        ];
+
         CK_Theme_Options_Container::make('theme_options', CONTAINER_ID, 'Join')
             ->add_tab('Features', $feature_fields)
             ->add_tab('Membership Plans', $membership_plans_fields)
             ->add_tab('Theme', $theme_fields)
             ->add_tab('Copy', $copy_fields)
             ->add_tab('Integrations', $integration_fields)
-            ->add_tab('Logging', $logging_fields);
+            ->add_tab('Logging', $logging_fields)
+            ->add_tab('Debug', $debug_fields);
 
         add_filter('carbon_fields_container_is_valid_save', function ($valid, $container) {
             if (!$valid) {

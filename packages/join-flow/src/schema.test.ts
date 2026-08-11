@@ -4,7 +4,7 @@
  *
  * Red-Green-Reverse TDD: tests are written before the function exists.
  */
-import { renderDonationSummary } from './schema';
+import { getTestDataIfEnabled, renderDonationSummary } from './schema';
 import { FormSchema } from './schema';
 
 const PLAN_STANDARD = {
@@ -132,6 +132,27 @@ describe('renderDonationSummary — standard mode', () => {
     withPlan(() => {
       const data: FormSchema = {};
       expect(renderDonationSummary(data)).toBe('None right now');
+    });
+  });
+});
+
+describe('getTestDataIfEnabled', () => {
+  it('returns test data when USE_TEST_DATA is set', () => {
+    withEnv({ USE_TEST_DATA: true }, () => {
+      expect(getTestDataIfEnabled().email).toBe('someone@example.com');
+      expect(console).toHaveLogged();
+    });
+  });
+
+  it('returns nothing when USE_TEST_DATA is not set', () => {
+    withEnv({}, () => {
+      expect(getTestDataIfEnabled()).toEqual({});
+    });
+  });
+
+  it('DISABLE_TEST_DATA overrides USE_TEST_DATA', () => {
+    withEnv({ USE_TEST_DATA: true, DISABLE_TEST_DATA: true }, () => {
+      expect(getTestDataIfEnabled()).toEqual({});
     });
   });
 });

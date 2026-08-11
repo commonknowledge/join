@@ -415,6 +415,9 @@ export type FormSchema = Partial<
 >;
 
 export const getTestDataIfEnabled = (): FormSchema => {
+  if (getEnv("DISABLE_TEST_DATA")) {
+    return {};
+  }
   const useTestData = getEnv("USE_TEST_DATA");
   if (useTestData) {
     console.log(
