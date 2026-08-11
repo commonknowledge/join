@@ -679,6 +679,13 @@ class Settings
         return null;
     }
 
+    /**
+     * Tags to remove from a member in every CRM when they join on
+     * $currentPlan: the tags added by every other plan, plus the configured
+     * lapsed/lapsing tags. A member who has just joined successfully is by
+     * definition no longer lapsed or lapsing; each CRM service treats
+     * removing an absent tag (or tagging an absent member) as a no-op.
+     */
     public static function computeTagsToRemove(array $currentPlan): string
     {
         global $wpdb;
@@ -691,6 +698,14 @@ class Settings
         $currentPlanId  = self::getMembershipPlanId($currentPlan);
         $currentAddTags = array_flip($parseTags($currentPlan['add_tags'] ?? ''));
 
+        $tagsToRemove = [];
+        foreach ([self::get('LAPSED_TAG'), self::get('LAPSING_TAG')] as $tag) {
+            $tag = is_string($tag) ? trim($tag) : '';
+            if ($tag !== '' && !isset($currentAddTags[$tag])) {
+                $tagsToRemove[$tag] = true;
+            }
+        }
+
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -699,7 +714,6 @@ class Settings
             ARRAY_A
         );
 
-        $tagsToRemove = [];
         foreach ($rows as $row) {
             $plan = maybe_unserialize($row['option_value']);
             if (!is_array($plan)) {
