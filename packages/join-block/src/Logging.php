@@ -106,15 +106,12 @@ class Logging
     /**
      * Number of days of rotated log files to keep.
      *
-     * Deliberately environment-only: there is no settings field for it, as
-     * changing log retention is a hosting decision rather than something a
-     * site editor should do from the admin.
+     * The settings page value takes precedence, then the
+     * JOIN_FLOW_LOG_RETENTION_DAYS environment variable, then the default.
      */
     public static function getLogRetentionDays()
     {
-        // Ignore sanitization error, consistent with Settings::get().
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-        $days = (int) ($_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] ?? 0);
+        $days = (int) self::getSetting('join_flow_log_retention_days');
         return $days > 0 ? $days : self::DEFAULT_LOG_RETENTION_DAYS;
     }
 

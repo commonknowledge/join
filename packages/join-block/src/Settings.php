@@ -287,16 +287,34 @@ class Settings
                     'delete them from the server if they are no longer needed.</p>';
             }
             $days = Logging::getLogRetentionDays();
+            $optionValue = carbon_get_theme_option(
+                'join_flow_log_retention_days',
+                'carbon_fields_container_' . CONTAINER_ID
+            );
+            $optionValue = is_string($optionValue) ? trim($optionValue) : '';
             // Ignore sanitization error, consistent with Settings::get().
             // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $envValue = $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] ?? null;
-            $source = $envValue === null
-                ? 'default, as JOIN_FLOW_LOG_RETENTION_DAYS is not set'
-                : 'from JOIN_FLOW_LOG_RETENTION_DAYS=' . esc_html($envValue);
+            if ($optionValue !== '') {
+                $source = 'from the Log Retention setting above';
+            } elseif ($envValue !== null) {
+                $source = 'from JOIN_FLOW_LOG_RETENTION_DAYS=' . esc_html($envValue);
+            } else {
+                $source = 'default, as neither the Log Retention setting nor JOIN_FLOW_LOG_RETENTION_DAYS is set';
+            }
             return '<p>Logs are retained for <strong>' . esc_html($days) . '</strong> days (' . $source . ').</p>';
         });
 
         $logging_fields[] = Field::make('separator', 'ck_join_flow_log', 'CK Join Flow Log');
+        $logging_fields[] = Field::make('text', 'join_flow_log_retention_days', 'Log Retention (days)')
+            ->set_attribute('type', 'number')
+            ->set_attribute('min', '1')
+            ->set_help_text(
+                'Number of days of rotated log files to keep. Leave blank to use the ' .
+                'JOIN_FLOW_LOG_RETENTION_DAYS environment variable, or the default of 10 days ' .
+                'if that is not set either. Not used when Loggly is enabled, as no logs are ' .
+                'written to disk.'
+            );
         $logging_fields[] = $logRetentionField;
         $logging_fields[] = $logField;
 
@@ -400,6 +418,13 @@ class Settings
                             $errors[] = $validation_config["label"] . " credentials are missing (see Integrations tab).";
                             break;
                         }
+                    }
+                }
+
+                if ($base_name === "join_flow_log_retention_days") {
+                    $trimmed = is_string($value) ? trim($value) : '';
+                    if ($trimmed !== '' && (!ctype_digit($trimmed) || (int) $trimmed < 1)) {
+                        $errors[] = "Log Retention must be a whole number of days, at least 1 (see Logging tab).";
                     }
                 }
 

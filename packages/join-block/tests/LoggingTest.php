@@ -41,12 +41,12 @@ class LoggingTest extends TestCase
             return is_dir($dir) || mkdir($dir, 0777, true);
         });
 
-        unset($_ENV['LOGGLY_TOKEN'], $_ENV['LOGGLY_TAGS']);
+        unset($_ENV['LOGGLY_TOKEN'], $_ENV['LOGGLY_TAGS'], $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS']);
     }
 
     protected function tearDown(): void
     {
-        unset($_ENV['LOGGLY_TOKEN'], $_ENV['LOGGLY_TAGS']);
+        unset($_ENV['LOGGLY_TOKEN'], $_ENV['LOGGLY_TAGS'], $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS']);
         $this->deleteDirectory($this->uploadsDir);
         Monkey\tearDown();
         parent::tearDown();
@@ -172,6 +172,47 @@ class LoggingTest extends TestCase
 
         $this->assertSame('', Logging::getLogglyToken());
         $this->assertFalse(Logging::isLogglyEnabled());
+    }
+
+    public function testRetentionDaysDefaultWhenNothingIsConfigured(): void
+    {
+        $this->assertSame(10, Logging::getLogRetentionDays());
+    }
+
+    public function testRetentionDaysFallBackToTheEnvironmentBeforeFieldsAreRegistered(): void
+    {
+        $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] = '30';
+
+        $this->assertSame(30, Logging::getLogRetentionDays());
+    }
+
+    public function testAnInvalidRetentionValueFallsBackToTheDefault(): void
+    {
+        $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] = 'not-a-number';
+
+        $this->assertSame(10, Logging::getLogRetentionDays());
+    }
+
+    public function testTheRetentionSettingOverridesTheEnvironment(): void
+    {
+        $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] = '30';
+
+        // Simulate Carbon Fields having registered its fields, with the
+        // settings page value set to 5 days.
+        Monkey\Functions\when('did_action')->justReturn(1);
+        Monkey\Functions\when('carbon_get_theme_option')->justReturn('5');
+
+        $this->assertSame(5, Logging::getLogRetentionDays());
+    }
+
+    public function testABlankRetentionSettingFallsBackToTheEnvironment(): void
+    {
+        $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] = '30';
+
+        Monkey\Functions\when('did_action')->justReturn(1);
+        Monkey\Functions\when('carbon_get_theme_option')->justReturn('');
+
+        $this->assertSame(30, Logging::getLogRetentionDays());
     }
 
     public function testNoLogFileIsCreatedWhenLogglyIsEnabled(): void
