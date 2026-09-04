@@ -108,9 +108,13 @@ All integrations are optional. Enable and configure them via environment variabl
 
 The plugin handles member lapsing automatically in response to payment provider webhooks.
 
-- A Stripe subscription entering `unpaid` or `incomplete_expired` triggers a lapse.
-- A Stripe subscription returning to `active` triggers an unlapse.
-- Lapsed/unlapsed status is reflected in all configured integrations (e.g. "lapsed" tag in Action Network, Mailchimp, Zetkin).
+Two distinct end states are tracked, each with its own configurable tag (WP Admin > CK Join Flow > Membership Plans, or the `LAPSED_TAG` / `CANCELLED_TAG` / `LAPSING_TAG` env vars):
+
+- **Lapsed** (default tag "Lapsed - failed payment"): the subscription ended because payments failed. Triggered by a final `invoice.payment_failed` with no retry scheduled, a subscription entering `unpaid` or `incomplete_expired`, or a `customer.subscription.deleted` whose `cancellation_details.reason` is `payment_failed`.
+- **Cancelled** (default tag "Cancelled"): the member deliberately ended their subscription. Triggered by any other `customer.subscription.deleted`, including `cancellation_requested`, a `cancel_at_period_end` expiry, and `payment_disputed`.
+- **Lapsing** (default tag "Lapsing"): transient, applied while payments are failing but retries are still scheduled. Cleared when the member recovers, lapses or cancels.
+
+Lapsed and cancelled are mutually exclusive: applying one removes the other. A subscription returning to `active`, a paid invoice, or a successful re-join clears all three tags. Status is reflected in all configured integrations (Action Network, Mailchimp, Zetkin).
 
 ---
 
@@ -148,6 +152,10 @@ Controls whether a member should be unlapsed when a reactivation event is detect
 | `$default` | bool | `true` by default |
 | `$email` | string | The member's email address |
 | `$context` | array | Same shape as above |
+
+#### `ck_join_flow_should_cancel_member`
+
+Controls whether a member should be tagged as cancelled when a deliberate cancellation is detected. Same arguments as `ck_join_flow_should_lapse_member`; `trigger` is `subscription_deleted`.
 
 #### `ck_join_flow_add_tags`
 
@@ -206,6 +214,12 @@ Fired after a member has been successfully unmarked as lapsed.
 |---|---|---|
 | `$email` | string | The member's email address |
 | `$context` | array | Trigger context (see above) |
+
+Reactivation always goes through this path, whether the member had previously lapsed or cancelled.
+
+#### `ck_join_flow_member_cancelled`
+
+Fired after a member has been successfully marked as cancelled. Same arguments as `ck_join_flow_member_lapsed`.
 
 ---
 

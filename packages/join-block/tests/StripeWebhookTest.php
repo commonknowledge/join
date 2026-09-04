@@ -268,4 +268,36 @@ class StripeWebhookTest extends TestCase
 
         $this->assertSame(['previousPriceId' => 'price_OLD', 'currentPriceId' => 'price_NEW'], $result);
     }
+
+    // --- classifySubscriptionDeletion ---
+
+    public function testDeletionAfterPaymentFailureIsLapsed(): void
+    {
+        $subscription = ['cancellation_details' => ['reason' => 'payment_failed']];
+
+        $this->assertSame('lapsed', StripeService::classifySubscriptionDeletion($subscription));
+    }
+
+    public function testRequestedCancellationIsCancelled(): void
+    {
+        $subscription = ['cancellation_details' => ['reason' => 'cancellation_requested']];
+
+        $this->assertSame('cancelled', StripeService::classifySubscriptionDeletion($subscription));
+    }
+
+    public function testDisputedPaymentIsCancelled(): void
+    {
+        $subscription = ['cancellation_details' => ['reason' => 'payment_disputed']];
+
+        $this->assertSame('cancelled', StripeService::classifySubscriptionDeletion($subscription));
+    }
+
+    public function testDeletionWithoutReasonIsCancelled(): void
+    {
+        $this->assertSame('cancelled', StripeService::classifySubscriptionDeletion([]));
+        $this->assertSame(
+            'cancelled',
+            StripeService::classifySubscriptionDeletion(['cancellation_details' => ['reason' => null]])
+        );
+    }
 }

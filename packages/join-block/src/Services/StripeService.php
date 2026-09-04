@@ -929,6 +929,7 @@ class StripeService
         $customerId = null;
         $customerLapsed = false;
         $lapseTrigger = null;
+        $lapseKind = 'lapsed';
         // Per-email lock acquired lazily when we resolve the customer's
         // email. Serialises CRM mutations against the /join endpoint and
         // other concurrent webhook deliveries for the same person.
@@ -1008,6 +1009,11 @@ class StripeService
 
                     $customerLapsed = true;
                     $lapseTrigger = 'subscription_deleted';
+                    $lapseKind = self::classifySubscriptionDeletion($subscription);
+                    $joinBlockLog->info(
+                        "Subscription {$subscription['id']} for Stripe customer $customerId classified as $lapseKind"
+                        . " (cancellation reason: " . ($subscription['cancellation_details']['reason'] ?? 'none') . ")"
+                    );
                     break;
 
                 case 'invoice.payment_failed':
@@ -1271,7 +1277,11 @@ class StripeService
                 if ($email) {
                     $lockFile = $lockFile ?: JoinService::acquireLock($email);
                     $context = ['provider' => 'stripe', 'trigger' => $lapseTrigger, 'event' => $event];
-                    if (JoinService::shouldLapseMember($email, $context)) {
+                    if ($lapseKind === 'cancelled') {
+                        if (JoinService::shouldCancelMember($email, $context)) {
+                            JoinService::toggleMemberCancelled($email, true, $context);
+                        }
+                    } elseif (JoinService::shouldLapseMember($email, $context)) {
                         JoinService::toggleMemberLapsed($email, true, null, $context);
                     }
                 }
@@ -1282,6 +1292,32 @@ class StripeService
         } finally {
             JoinService::releaseLock($lockFile);
         }
+    }
+
+    /**
+     * Decide whether a customer.subscription.deleted event means the member
+     * lost their subscription to failed payments ("lapsed") or ended it on
+     * purpose ("cancelled").
+     *
+     * Stripe records why a subscription was cancelled in
+     * cancellation_details.reason: "payment_failed" when its dunning settings
+     * cancelled it after the final retry, "cancellation_requested" when the
+     * customer or a staff member cancelled it (including a cancel_at_period_end
+     * expiry), and "payment_disputed" when a chargeback cancelled it. Only a
+     * payment failure is a lapse; a dispute is the member taking their money
+     * back, which is a cancellation. Deletions with no recorded reason (older
+     * API versions, test fixtures) are treated as cancellations: the failed
+     * payment paths (invoice.payment_failed with no retry, status -> unpaid)
+     * already catch every lapse, so an unexplained deletion is far more likely
+     * to be a deliberate one.
+     *
+     * @param array $subscription The subscription object from the event payload
+     * @return string 'lapsed' or 'cancelled'
+     */
+    public static function classifySubscriptionDeletion(array $subscription): string
+    {
+        $reason = $subscription['cancellation_details']['reason'] ?? null;
+        return $reason === 'payment_failed' ? 'lapsed' : 'cancelled';
     }
 
     private static function getEmailForCustomer($customerId)
@@ -1452,12 +1488,15 @@ class StripeService
 
         $hasLiveSubscription = self::customerHasActiveSubscription($customerId);
         $lapsedTag = Settings::get("LAPSED_TAG");
+        $cancelledTag = Settings::get("CANCELLED_TAG");
 
         $person = ActionNetworkService::getPersonSnapshot($email);
-        $isLapsed = $person !== null
-            && $lapsedTag
-            && is_array($person['tags'])
-            && in_array($lapsedTag, $person['tags'], true);
+        $personTags = ($person !== null && is_array($person['tags'])) ? $person['tags'] : [];
+        // "Lapsed" here means "marked as no longer a member" in either form:
+        // both tags say the subscription is over, and both must come off if
+        // the member is in fact paying.
+        $isLapsed = ($lapsedTag && in_array($lapsedTag, $personTags, true))
+            || ($cancelledTag && in_array($cancelledTag, $personTags, true));
 
         if ($hasLiveSubscription) {
             if ($person === null) {
@@ -1484,7 +1523,7 @@ class StripeService
             if ($isLapsed) {
                 $joinBlockLog->error(
                     "reconcileRecentMemberships: $email has an active Stripe subscription but carries the"
-                    . " '$lapsedTag' tag — removing it."
+                    . " '$lapsedTag' or '$cancelledTag' tag — removing it."
                 );
                 $lockFile = JoinService::acquireLock($email);
                 try {

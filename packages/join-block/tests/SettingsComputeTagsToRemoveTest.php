@@ -61,14 +61,14 @@ class SettingsComputeTagsToRemoveTest extends TestCase
             }
         };
 
-        unset($_ENV['LAPSED_TAG'], $_ENV['LAPSING_TAG']);
+        unset($_ENV['LAPSED_TAG'], $_ENV['CANCELLED_TAG'], $_ENV['LAPSING_TAG']);
     }
 
     protected function tearDown(): void
     {
         global $wpdb;
         $wpdb = null;
-        unset($_ENV['LAPSED_TAG'], $_ENV['LAPSING_TAG']);
+        unset($_ENV['LAPSED_TAG'], $_ENV['CANCELLED_TAG'], $_ENV['LAPSING_TAG']);
         Monkey\tearDown();
         parent::tearDown();
     }
@@ -106,6 +106,21 @@ class SettingsComputeTagsToRemoveTest extends TestCase
 
         $this->assertSame(
             ['Lapsed - failed payment', 'Lapsing'],
+            $this->tagsFor($this->plan('Standard'))
+        );
+    }
+
+    public function testConfiguredCancelledTagIsRemovedOnJoin(): void
+    {
+        $this->settings = [
+            'lapsed_tag'    => 'Lapsed - failed payment',
+            'cancelled_tag' => 'Cancelled',
+            'lapsing_tag'   => 'Lapsing',
+        ];
+        $this->setStoredPlans([$this->plan('Standard')]);
+
+        $this->assertSame(
+            ['Lapsed - failed payment', 'Cancelled', 'Lapsing'],
             $this->tagsFor($this->plan('Standard'))
         );
     }

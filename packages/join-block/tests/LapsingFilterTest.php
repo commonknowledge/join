@@ -235,4 +235,78 @@ class LapsingFilterTest extends TestCase
 
         JoinService::toggleMemberLapsed('test@example.com', true, null, []);
     }
+
+    // --- shouldCancelMember ---
+
+    public function testShouldCancelReturnsTrueByDefault(): void
+    {
+        $this->assertTrue(JoinService::shouldCancelMember('test@example.com'));
+    }
+
+    public function testCancelFilterCanOverrideTrueDefaultToFalse(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_cancel_member')
+            ->once()
+            ->andReturn(false);
+
+        $this->assertFalse(JoinService::shouldCancelMember('test@example.com', [], true));
+    }
+
+    public function testCancelFilterReceivesContext(): void
+    {
+        Filters\expectApplied('ck_join_flow_should_cancel_member')
+            ->once()
+            ->with(true, 'test@example.com', \Mockery::on(fn($c) => $c['trigger'] === 'subscription_deleted'))
+            ->andReturn(true);
+
+        JoinService::shouldCancelMember('test@example.com', ['trigger' => 'subscription_deleted']);
+    }
+
+    // --- toggleMemberCancelled action hooks ---
+
+    public function testCancelledActionFiresAfterExecution(): void
+    {
+        Actions\expectDone('ck_join_flow_member_cancelled')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberCancelled('test@example.com', true, []);
+    }
+
+    public function testUncancelledActionFiresAfterExecution(): void
+    {
+        Actions\expectDone('ck_join_flow_member_uncancelled')
+            ->once()
+            ->with('test@example.com', \Mockery::type('array'));
+
+        JoinService::toggleMemberCancelled('test@example.com', false, []);
+    }
+
+    public function testCancelledActionReceivesContext(): void
+    {
+        Actions\expectDone('ck_join_flow_member_cancelled')
+            ->once()
+            ->with(\Mockery::any(), \Mockery::on(fn($c) => $c['provider'] === 'stripe'));
+
+        JoinService::toggleMemberCancelled('test@example.com', true, ['provider' => 'stripe']);
+    }
+
+    public function testTogglingCancelledClearsLapsingTag(): void
+    {
+        Monkey\Functions\when('carbon_get_theme_option')
+            ->alias(fn($key) => $key === 'lapsing_tag' ? 'Lapsing' : '');
+
+        Actions\expectDone('ck_join_flow_member_unlapsing')->once();
+        Actions\expectDone('ck_join_flow_member_cancelled')->once();
+
+        JoinService::toggleMemberCancelled('test@example.com', true, []);
+    }
+
+    public function testTogglingCancelledDoesNotFireLapsedActions(): void
+    {
+        Actions\expectDone('ck_join_flow_member_lapsed')->never();
+        Actions\expectDone('ck_join_flow_member_unlapsed')->never();
+
+        JoinService::toggleMemberCancelled('test@example.com', true, []);
+    }
 }

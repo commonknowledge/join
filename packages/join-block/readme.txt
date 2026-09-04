@@ -107,6 +107,9 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= Unreleased =
+* Add a "Cancelled" tag, applied when a member deliberately cancels their subscription. "Lapsed - failed payment" is now only applied when the subscription ends because payments failed.
+* Added `ck_join_flow_should_cancel_member` filter and `ck_join_flow_member_cancelled` action.
 = 1.4.36 =
 * Fix £0 subscriptions
 * Add settings switch to force test data not to appear

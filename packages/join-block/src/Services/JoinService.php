@@ -914,71 +914,131 @@ class JoinService
         return (bool) apply_filters('ck_join_flow_should_mark_member_lapsing', $default, $email, $context);
     }
 
-    public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null, $context = [])
+    public static function shouldCancelMember($email, $context = [], $default = true)
+    {
+        return (bool) apply_filters('ck_join_flow_should_cancel_member', $default, $email, $context);
+    }
+
+    /**
+     * Add or remove a single tag for a member in every configured CRM.
+     *
+     * Action Network and Zetkin errors are rethrown (the caller decides
+     * whether that aborts the wider operation); Mailchimp errors are logged
+     * only, matching the join flow's treatment of Mailchimp as best-effort.
+     *
+     * @param string        $label              Human-readable state name for logs ("lapsed", "cancelled", ...)
+     * @param callable|null $afterActionNetworkRemove Extra Action Network work to do after a successful removal
+     */
+    private static function toggleCrmTag($email, $tag, $add, $label, $afterActionNetworkRemove = null)
     {
         global $joinBlockLog;
 
-        $action = $lapsed ? "Marking" : "Unmarking";
-        $done = $lapsed ? "Marked" : "Unmarked";
-        $joinBlockLog->info("$action member $email as lapsed");
+        $action = $add ? "Marking" : "Unmarking";
+        $done = $add ? "Marked" : "Unmarked";
 
-        if (!Settings::get("LAPSED_TAG")) {
-            $joinBlockLog->warning("Skipping lapsed tag update for $email - no lapsed tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Lapsed Tag.");
-        }
-
-        if (Settings::get("LAPSED_TAG") && Settings::get("USE_ACTION_NETWORK")) {
-            $joinBlockLog->info("$action member $email as lapsed in Action Network");
+        if (Settings::get("USE_ACTION_NETWORK")) {
+            $joinBlockLog->info("$action member $email as $label in Action Network");
             try {
-                if ($lapsed) {
-                    ActionNetworkService::addTag($email, Settings::get("LAPSED_TAG"));
+                if ($add) {
+                    ActionNetworkService::addTag($email, $tag);
                 } else {
-                    ActionNetworkService::removeTag($email, Settings::get("LAPSED_TAG"));
-                    ActionNetworkService::updateCustomFields($email, [
-                        "Latest Stripe Payment Date" => $paymentDate ?? date('Y-m-d'),
-                    ]);
+                    ActionNetworkService::removeTag($email, $tag);
+                    if ($afterActionNetworkRemove) {
+                        $afterActionNetworkRemove();
+                    }
                 }
-                $joinBlockLog->info("$done member $email as lapsed in Action Network");
+                $joinBlockLog->info("$done member $email as $label in Action Network");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
                 throw $exception;
             }
         }
 
-        if (Settings::get("LAPSED_TAG") && Settings::get("USE_MAILCHIMP")) {
-            $joinBlockLog->info("$action member $email as lapsed in Mailchimp");
+        if (Settings::get("USE_MAILCHIMP")) {
+            $joinBlockLog->info("$action member $email as $label in Mailchimp");
             try {
-                if ($lapsed) {
-                    MailchimpService::addTag($email, Settings::get("LAPSED_TAG"));
+                if ($add) {
+                    MailchimpService::addTag($email, $tag);
                 } else {
-                    MailchimpService::removeTag($email, Settings::get("LAPSED_TAG"));
+                    MailchimpService::removeTag($email, $tag);
                 }
-                $joinBlockLog->info("$done member $email as lapsed in Mailchimp");
+                $joinBlockLog->info("$done member $email as $label in Mailchimp");
             } catch (\Exception $exception) {
                 $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
             }
         }
 
-        if (Settings::get("LAPSED_TAG") && Settings::get("USE_ZETKIN")) {
+        if (Settings::get("USE_ZETKIN")) {
             $clientId = Settings::get("ZETKIN_CLIENT_ID");
             $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
             $jwt = Settings::get("ZETKIN_JWT");
             if ($clientId && $clientSecret && $jwt) {
-                $joinBlockLog->info("$action member $email as lapsed in Zetkin");
+                $joinBlockLog->info("$action member $email as $label in Zetkin");
                 try {
-                    if ($lapsed) {
-                        ZetkinService::addTag($email, Settings::get("LAPSED_TAG"));
+                    if ($add) {
+                        ZetkinService::addTag($email, $tag);
                     } else {
-                        ZetkinService::removeTag($email, Settings::get("LAPSED_TAG"));
+                        ZetkinService::removeTag($email, $tag);
                     }
-                    $joinBlockLog->info("$done member $email as lapsed in Zetkin");
+                    $joinBlockLog->info("$done member $email as $label in Zetkin");
                 } catch (\Exception $exception) {
                     $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
                     throw $exception;
                 }
             } else {
-                $joinBlockLog->warning("Can't $action member $email as lapsed in Zetkin - need OAuth credentials");
+                $joinBlockLog->warning("Can't $action member $email as $label in Zetkin - need OAuth credentials");
             }
         }
+    }
+
+    /**
+     * Best-effort removal of a configured tag that is a no-op when the tag is
+     * not set, and logs rather than throws on failure. Used to clear the
+     * states that are mutually exclusive with the one being applied.
+     */
+    private static function clearCrmTag($email, $settingKey, $label)
+    {
+        global $joinBlockLog;
+
+        $tag = Settings::get($settingKey);
+        if (!$tag) {
+            return;
+        }
+        try {
+            self::toggleCrmTag($email, $tag, false, $label);
+        } catch (\Exception $exception) {
+            $joinBlockLog->error("Error clearing $label tag for $email: " . $exception->getMessage());
+        }
+    }
+
+    /**
+     * Mark a member as lapsed (their subscription ended because payment
+     * failed) or, with $lapsed = false, as recovered. Recovery is the single
+     * "member is paying again" path, so it clears the lapsed, cancelled and
+     * lapsing tags together.
+     */
+    public static function toggleMemberLapsed($email, $lapsed = true, $paymentDate = null, $context = [])
+    {
+        global $joinBlockLog;
+
+        $action = $lapsed ? "Marking" : "Unmarking";
+        $joinBlockLog->info("$action member $email as lapsed");
+
+        $lapsedTag = Settings::get("LAPSED_TAG");
+        if (!$lapsedTag) {
+            $joinBlockLog->warning("Skipping lapsed tag update for $email - no lapsed tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Lapsed Tag.");
+        } else {
+            $recordPaymentDate = function () use ($email, $paymentDate) {
+                ActionNetworkService::updateCustomFields($email, [
+                    "Latest Stripe Payment Date" => $paymentDate ?? date('Y-m-d'),
+                ]);
+            };
+            self::toggleCrmTag($email, $lapsedTag, $lapsed, "lapsed", $recordPaymentDate);
+        }
+
+        // Lapsed and cancelled are mutually exclusive, and both are over once
+        // the member recovers.
+        self::clearCrmTag($email, "CANCELLED_TAG", "cancelled");
 
         // Whether the member is recovering or progressing to fully lapsed, the
         // transient "lapsing" state is over - clear that tag if it is set.
@@ -997,69 +1057,59 @@ class JoinService
         }
     }
 
+    /**
+     * Mark a member as cancelled: they deliberately ended their subscription
+     * rather than losing it to failed payments. Clears the lapsed and lapsing
+     * tags, which describe payment failure and no longer apply.
+     *
+     * Reactivation goes through toggleMemberLapsed($email, false), which
+     * clears this tag too; $cancelled = false exists for completeness.
+     */
+    public static function toggleMemberCancelled($email, $cancelled = true, $context = [])
+    {
+        global $joinBlockLog;
+
+        $action = $cancelled ? "Marking" : "Unmarking";
+        $joinBlockLog->info("$action member $email as cancelled");
+
+        $cancelledTag = Settings::get("CANCELLED_TAG");
+        if (!$cancelledTag) {
+            $joinBlockLog->warning("Skipping cancelled tag update for $email - no cancelled tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Cancelled Tag.");
+        } else {
+            self::toggleCrmTag($email, $cancelledTag, $cancelled, "cancelled");
+        }
+
+        self::clearCrmTag($email, "LAPSED_TAG", "lapsed");
+
+        if (Settings::get("LAPSING_TAG")) {
+            try {
+                self::toggleMemberLapsing($email, false, $context);
+            } catch (\Exception $exception) {
+                $joinBlockLog->error("Error clearing lapsing tag for $email: " . $exception->getMessage());
+            }
+        }
+
+        if ($cancelled) {
+            do_action('ck_join_flow_member_cancelled', $email, $context);
+        } else {
+            do_action('ck_join_flow_member_uncancelled', $email, $context);
+        }
+    }
+
     public static function toggleMemberLapsing($email, $lapsing = true, $context = [])
     {
         global $joinBlockLog;
 
         $action = $lapsing ? "Marking" : "Unmarking";
-        $done = $lapsing ? "Marked" : "Unmarked";
         $joinBlockLog->info("$action member $email as lapsing");
 
-        if (!Settings::get("LAPSING_TAG")) {
+        $lapsingTag = Settings::get("LAPSING_TAG");
+        if (!$lapsingTag) {
             $joinBlockLog->warning("Skipping lapsing tag update for $email - no lapsing tag has been set. Configure it under WP Admin > CK Join Flow > Membership Plans > Lapsing Tag.");
             return;
         }
 
-        if (Settings::get("USE_ACTION_NETWORK")) {
-            $joinBlockLog->info("$action member $email as lapsing in Action Network");
-            try {
-                if ($lapsing) {
-                    ActionNetworkService::addTag($email, Settings::get("LAPSING_TAG"));
-                } else {
-                    ActionNetworkService::removeTag($email, Settings::get("LAPSING_TAG"));
-                }
-                $joinBlockLog->info("$done member $email as lapsing in Action Network");
-            } catch (\Exception $exception) {
-                $joinBlockLog->error("Action Network error for email $email: " . $exception->getMessage());
-                throw $exception;
-            }
-        }
-
-        if (Settings::get("USE_MAILCHIMP")) {
-            $joinBlockLog->info("$action member $email as lapsing in Mailchimp");
-            try {
-                if ($lapsing) {
-                    MailchimpService::addTag($email, Settings::get("LAPSING_TAG"));
-                } else {
-                    MailchimpService::removeTag($email, Settings::get("LAPSING_TAG"));
-                }
-                $joinBlockLog->info("$done member $email as lapsing in Mailchimp");
-            } catch (\Exception $exception) {
-                $joinBlockLog->error("Mailchimp error for email $email: " . $exception->getMessage());
-            }
-        }
-
-        if (Settings::get("USE_ZETKIN")) {
-            $clientId = Settings::get("ZETKIN_CLIENT_ID");
-            $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
-            $jwt = Settings::get("ZETKIN_JWT");
-            if ($clientId && $clientSecret && $jwt) {
-                $joinBlockLog->info("$action member $email as lapsing in Zetkin");
-                try {
-                    if ($lapsing) {
-                        ZetkinService::addTag($email, Settings::get("LAPSING_TAG"));
-                    } else {
-                        ZetkinService::removeTag($email, Settings::get("LAPSING_TAG"));
-                    }
-                    $joinBlockLog->info("$done member $email as lapsing in Zetkin");
-                } catch (\Exception $exception) {
-                    $joinBlockLog->error("Zetkin error for email $email: " . $exception->getMessage());
-                    throw $exception;
-                }
-            } else {
-                $joinBlockLog->warning("Can't $action member $email as lapsing in Zetkin - need OAuth credentials");
-            }
-        }
+        self::toggleCrmTag($email, $lapsingTag, $lapsing, "lapsing");
 
         if ($lapsing) {
             do_action('ck_join_flow_member_lapsing', $email, $context);
