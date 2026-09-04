@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 7.0
-Stable tag: 1.4.36
+Stable tag: 1.4.37
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.37 =
+* Add "cancelled" tag option, distinguishing this from lapsed membership
 = 1.4.36 =
 * Fix £0 subscriptions
 * Add settings switch to force test data not to appear
