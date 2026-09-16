@@ -175,32 +175,14 @@ class ZetkinService
             }
 
             foreach ($addTagIds as $tagId) {
-                $response = $client->request("PUT", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
-                    "headers" => [
-                        "Authorization" => "Bearer {$accessToken}",
-                        "Content-type" => "application/json",
-                    ],
-                ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                if (!empty($responseData["error"])) {
-                    $joinBlockLog->error("Could not tag person: " . json_encode($responseData["error"]));
+                if (self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) !== 'ok') {
+                    $joinBlockLog->error("Could not tag person $personId with tag $tagId");
                 }
             }
 
             foreach ($removeTagIds as $tagId) {
-                $response = $client->request("DELETE", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
-                    "headers" => [
-                        "Authorization" => "Bearer {$accessToken}",
-                        "Content-type" => "application/json",
-                    ],
-                    "http_errors" => false
-                ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                if (!empty($responseData["error"])) {
-                    $msg = $responseData["error"]["title"] ?? "";
-                    if ($msg !== "404 Not Found") {
-                        $joinBlockLog->error("Could not untag person: " . json_encode($responseData["error"]));
-                    }
+                if (self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) === 'error') {
+                    $joinBlockLog->error("Could not untag person $personId of tag $tagId");
                 }
             }
         } catch (\GuzzleHttp\Exception\RequestException $e) {
@@ -426,6 +408,184 @@ class ZetkinService
     }
 
     /**
+     * List people in the organisation, one page at a time.
+     *
+     * Intended for bulk maintenance jobs that need to walk the whole
+     * membership, rather than the per-signup path. Zetkin paginates with `p`
+     * (zero-indexed page) and `pp` (page size); an empty array means the end
+     * of the list has been reached.
+     *
+     * Note that each call opens its own Zetkin context, so a walk over the
+     * full membership costs one OAuth exchange per page. That is deliberate:
+     * it keeps this consistent with the other standalone helpers below, and
+     * bulk jobs are expected to be occasional.
+     *
+     * Only available when OAuth credentials (CLIENT_ID, CLIENT_SECRET, JWT)
+     * are configured.
+     *
+     * @param int $page Zero-indexed page number.
+     * @param int $perPage Records per page.
+     * @return array List of person records, empty when exhausted or unconfigured.
+     */
+    public static function listPeople($page = 0, $perPage = 100)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return [];
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        $response = $client->request("GET", "$baseUrl/orgs/$orgId/people?p=$page&pp=$perPage", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ]
+        ]);
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        if (!empty($responseData["error"])) {
+            throw new \Exception("Could not list people: " . json_encode($responseData["error"]));
+        }
+
+        return $responseData["data"] ?? [];
+    }
+
+    /**
+     * Get the tags currently applied to one person.
+     *
+     * @param int|string $personId
+     * @return array List of tag records, each with at least id and title.
+     */
+    public static function getPersonTags($personId)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return [];
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        $response = $client->request("GET", "$baseUrl/orgs/$orgId/people/$personId/tags", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ]
+        ]);
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        if (!empty($responseData["error"])) {
+            throw new \Exception("Could not get tags for person $personId: " . json_encode($responseData["error"]));
+        }
+
+        return $responseData["data"] ?? [];
+    }
+
+    /**
+     * Look up a tag by title, creating it if it does not exist yet.
+     *
+     * Public wrapper over the same find-or-create the signup path uses, so
+     * bulk jobs tag people with exactly the same tags a signup would.
+     *
+     * @param string $title
+     * @return array|null The tag record, or null if Zetkin is not configured.
+     */
+    public static function findOrCreateTagByTitle($title)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return null;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken] = $zetkinContext;
+
+        $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
+
+        return self::findOrCreateTag($baseUrl, $orgId, $existingTags, $title, $accessToken);
+    }
+
+    /**
+     * Apply an already-resolved tag to an already-resolved person.
+     *
+     * @param int|string $personId
+     * @param int|string $tagId
+     * @return bool True if the tag was applied.
+     */
+    public static function addTagToPerson($personId, $tagId)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return false;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        return self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) === 'ok';
+    }
+
+    /**
+     * Remove an already-resolved tag from an already-resolved person.
+     *
+     * A tag the person does not have is treated as success, not an error.
+     *
+     * @param int|string $personId
+     * @param int|string $tagId
+     * @return bool True if the person no longer has the tag.
+     */
+    public static function removeTagFromPerson($personId, $tagId)
+    {
+        $zetkinContext = self::getZetkinContext();
+        if (!$zetkinContext) {
+            return false;
+        }
+
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
+
+        return self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) !== 'error';
+    }
+
+    /**
+     * Single implementation of "apply this tag to this person".
+     *
+     * @return string 'ok' or 'error'. Callers add their own context to the log.
+     */
+    private static function putPersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId)
+    {
+        $response = $client->request("PUT", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ]
+        ]);
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        return empty($responseData["error"]) ? 'ok' : 'error';
+    }
+
+    /**
+     * Single implementation of "take this tag off this person".
+     *
+     * @return string 'ok', 'missing' when the person did not have the tag, or 'error'.
+     */
+    private static function deletePersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId)
+    {
+        $response = $client->request("DELETE", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
+            "headers" => [
+                "Authorization" => "Bearer {$accessToken}",
+                "Content-type" => "application/json",
+            ],
+            "http_errors" => false
+        ]);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode === 404) {
+            return 'missing';
+        }
+
+        return $statusCode >= 400 ? 'error' : 'ok';
+    }
+
+    /**
      * Standalone function to find a person by email and apply a tag (string)
      */
     public static function addTag($email, $tag)
@@ -463,19 +623,11 @@ class ZetkinService
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
             foreach ($matched as $person) {
-                $personId = $person["id"];
-                $tagId = $existingTag["id"];
-                $response = $client->request("PUT", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
-                    "headers" => [
-                        "Authorization" => "Bearer {$accessToken}",
-                        "Content-type" => "application/json",
-                    ]
-                ]);
-                $responseData = json_decode($response->getBody()->getContents(), true);
-                if (!empty($responseData["error"])) {
-                    $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . json_encode($responseData["error"]));
-                } else {
+                $result = self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"]);
+                if ($result === 'ok') {
                     $joinBlockLog->info("Added tag '$tag' to $email in Zetkin");
+                } else {
+                    $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
@@ -521,21 +673,11 @@ class ZetkinService
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
             foreach ($matched as $person) {
-                $personId = $person["id"];
-                $tagId = $existingTag["id"];
-                $response = $client->request("DELETE", "$baseUrl/orgs/$orgId/people/$personId/tags/$tagId", [
-                    "headers" => [
-                        "Authorization" => "Bearer {$accessToken}",
-                        "Content-type" => "application/json",
-                    ],
-                    "http_errors" => false
-                ]);
-                $statusCode = $response->getStatusCode();
-                if ($statusCode === 404) {
+                $result = self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"]);
+                if ($result === 'missing') {
                     $joinBlockLog->info("Could not remove tag '$tag' from $email in Zetkin: tag does not exist");
-                } elseif ($statusCode >= 400) {
-                    $responseData = json_decode($response->getBody()->getContents(), true);
-                    $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . json_encode($responseData["error"] ?? $statusCode));
+                } elseif ($result === 'error') {
+                    $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin");
                 } else {
                     $joinBlockLog->info("Removed tag '$tag' from $email in Zetkin");
                 }
