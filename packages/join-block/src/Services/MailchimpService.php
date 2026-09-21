@@ -255,70 +255,33 @@ class MailchimpService
         }
     }
 
-    /**
-     * Is Mailchimp worth talking to at all?
-     *
-     * A bulk job asks this once at the start rather than discovering the
-     * answer member by member.
-     *
-     * @since 1.4.39
-     *
-     * @return bool True when both an API key and an audience are configured.
-     */
+    // A bulk job asks this once at the start rather than discovering the
+    // answer member by member.
     public static function isConfigured()
     {
         return !empty(Settings::get("MAILCHIMP_API_KEY"))
             && !empty(Settings::get("MAILCHIMP_AUDIENCE_ID"));
     }
 
-    /**
-     * Apply a tag to an audience member, reporting what happened.
-     *
-     * Unlike addTag(), this returns a status rather than throwing, because a
-     * bulk run has to carry on past one bad member and account for it at the
-     * end.
-     *
-     * @since 1.4.39
-     *
-     * @param string      $email
-     * @param string      $tag
-     * @param object|null $client Injected Mailchimp client, for testing.
-     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
-     */
+    // Unlike addTag(), returns a status rather than throwing, because a bulk
+    // run has to carry on past one bad member and account for it at the end.
+    // Returns 'ok', 'not_found', 'not_configured' or 'error'.
+    // $client is injectable so this is testable without network access.
     public static function addTagToMember($email, $tag, $client = null)
     {
         return self::setMemberTagStatus($email, $tag, 'active', $client);
     }
 
-    /**
-     * Take a tag off an audience member, reporting what happened.
-     *
-     * @since 1.4.39
-     *
-     * @param string      $email
-     * @param string      $tag
-     * @param object|null $client Injected Mailchimp client, for testing.
-     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
-     */
     public static function removeTagFromMember($email, $tag, $client = null)
     {
         return self::setMemberTagStatus($email, $tag, 'inactive', $client);
     }
 
-    /**
-     * Single implementation of "set this tag to this status on this member".
-     *
-     * Mailchimp has no separate remove call; a tag is switched between active
-     * and inactive. A member who is not in the audience comes back as a 404,
-     * which is a reportable outcome rather than a failure, so this reads the
-     * status out of the exception instead of pre-checking with memberExists().
-     * That also halves the API calls per member, which matters across a
-     * whole-membership walk.
-     *
-     * @since 1.4.39
-     *
-     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
-     */
+    // Mailchimp has no separate remove call; a tag is switched between active
+    // and inactive. A member who is not in the audience comes back as a 404,
+    // which is a reportable outcome rather than a failure, so read the status
+    // out of the exception instead of pre-checking with memberExists(). That
+    // also halves the API calls per member across a whole-membership walk.
     private static function setMemberTagStatus($email, $tag, $status, $client = null)
     {
         global $joinBlockLog;
@@ -346,10 +309,17 @@ class MailchimpService
                 return 'not_found';
             }
 
-            $joinBlockLog->error("Failed to set tag '$tag' to $status for $email in Mailchimp: " . $body);
+            $joinBlockLog->error(
+                "Mailchimp rejected setting tag '$tag' to $status for $email: " . $body
+            );
             return 'error';
         } catch (\Throwable $e) {
-            $joinBlockLog->error("Failed to set tag '$tag' to $status for $email in Mailchimp: " . $e->getMessage());
+            // Not a Mailchimp API rejection: the call never completed. Worded
+            // differently from the branch above so the two are distinguishable
+            // in the logs.
+            $joinBlockLog->error(
+                "Could not reach Mailchimp to set tag '$tag' to $status for $email: " . $e->getMessage()
+            );
             return 'error';
         }
     }
