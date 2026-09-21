@@ -265,6 +265,14 @@ class ZetkinService
             return null;
         }
 
+        return self::searchPeopleByEmail($zetkinContext, $email)[0] ?? null;
+    }
+
+    // The one place Zetkin is searched for a person. Zetkin's search is fuzzy,
+    // so the results are filtered down to exact email matches. More than one
+    // can come back, because nothing stops Zetkin holding duplicates.
+    private static function searchPeopleByEmail($zetkinContext, $email)
+    {
         ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
         $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
@@ -281,13 +289,8 @@ class ZetkinService
         }
 
         $people = $responseData["data"] ?? [];
-        foreach ($people as $candidate) {
-            if ($candidate["email"] === $email) {
-                return $candidate;
-            }
-        }
 
-        return null;
+        return array_values(array_filter($people, fn($p) => $p["email"] === $email));
     }
 
     /**
@@ -311,27 +314,7 @@ class ZetkinService
 
         try {
             $searchEmail = $previousEmail ?? $email;
-            $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
-                "headers" => [
-                    "Authorization" => "Bearer {$accessToken}",
-                    "Content-type" => "application/json",
-                ],
-                "json" => ["q" => $searchEmail],
-            ]);
-            $responseData = json_decode($response->getBody()->getContents(), true);
-
-            if (!empty($responseData["error"])) {
-                throw new \Exception(json_encode($responseData["error"]));
-            }
-
-            $people = $responseData["data"] ?? [];
-            $person = null;
-            foreach ($people as $candidate) {
-                if ($candidate["email"] === $searchEmail) {
-                    $person = $candidate;
-                    break;
-                }
-            }
+            $person = self::searchPeopleByEmail($zetkinContext, $searchEmail)[0] ?? null;
 
             if (!$person) {
                 $joinBlockLog->warning("Cannot update person in Zetkin - no person found with email $searchEmail");
@@ -474,7 +457,7 @@ class ZetkinService
         return self::findOrCreateTag($baseUrl, $orgId, $existingTags, $title, $accessToken);
     }
 
-    public static function addTagToPerson($personId, $tagId)
+    public static function tryAddTagToPerson($personId, $tagId)
     {
         $zetkinContext = self::getZetkinContext();
         if (!$zetkinContext) {
@@ -487,7 +470,7 @@ class ZetkinService
     }
 
     // A tag the person does not have is treated as success, not an error.
-    public static function removeTagFromPerson($personId, $tagId)
+    public static function tryRemoveTagFromPerson($personId, $tagId)
     {
         $zetkinContext = self::getZetkinContext();
         if (!$zetkinContext) {
@@ -539,49 +522,7 @@ class ZetkinService
      */
     public static function addTag($email, $tag)
     {
-        global $joinBlockLog;
-        try {
-            $zetkinContext = self::getZetkinContext();
-            if (!$zetkinContext) {
-                return;
-            }
-
-            ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
-
-            $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
-                "headers" => [
-                    "Authorization" => "Bearer {$accessToken}",
-                    "Content-type" => "application/json",
-                ],
-                "json" => [
-                    "q" => $email,
-                ]
-            ]);
-            $responseData = json_decode($response->getBody()->getContents(), true);
-
-            if (!empty($responseData["error"])) {
-                throw new \Exception(json_encode($responseData["error"]));
-            }
-
-            $people = $responseData["data"] ?? [];
-            $matched = array_filter($people, fn($p) => $p["email"] === $email);
-            if (empty($matched)) {
-                $joinBlockLog->warning("Could not add tag '$tag' in Zetkin: no person found for $email");
-                return;
-            }
-            $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
-            $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
-            foreach ($matched as $person) {
-                $result = self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"]);
-                if ($result === 'ok') {
-                    $joinBlockLog->info("Added tag '$tag' to $email in Zetkin");
-                } else {
-                    $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin");
-                }
-            }
-        } catch (\Exception $e) {
-            $joinBlockLog->error("Could not add tag '$tag' to $email in Zetkin: " . $e->getMessage());
-        }
+        self::setTagByEmail($email, $tag, false);
     }
 
     /**
@@ -589,7 +530,19 @@ class ZetkinService
      */
     public static function removeTag($email, $tag)
     {
+        self::setTagByEmail($email, $tag, true);
+    }
+
+    // Resolves the person and the tag title, then applies the change to every
+    // exact email match. Logs and swallows rather than throwing, which is what
+    // both callers of addTag and removeTag relied on.
+    private static function setTagByEmail($email, $tag, $remove)
+    {
         global $joinBlockLog;
+
+        $verb = $remove ? 'remove' : 'add';
+        $done = $remove ? 'removed from' : 'added to';
+
         try {
             $zetkinContext = self::getZetkinContext();
             if (!$zetkinContext) {
@@ -598,41 +551,30 @@ class ZetkinService
 
             ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
-            $response = $client->request("POST", "$baseUrl/orgs/$orgId/search/person", [
-                "headers" => [
-                    "Authorization" => "Bearer {$accessToken}",
-                    "Content-type" => "application/json",
-                ],
-                "json" => [
-                    "q" => $email,
-                ]
-            ]);
-            $responseData = json_decode($response->getBody()->getContents(), true);
-
-            if (!empty($responseData["error"])) {
-                throw new \Exception(json_encode($responseData["error"]));
-            }
-
-            $people = $responseData["data"] ?? [];
-            $matched = array_filter($people, fn($p) => $p["email"] === $email);
+            $matched = self::searchPeopleByEmail($zetkinContext, $email);
             if (empty($matched)) {
-                $joinBlockLog->warning("Could not remove tag '$tag' in Zetkin: no person found for $email");
+                $joinBlockLog->warning("Could not $verb tag '$tag' in Zetkin: no person found for $email");
                 return;
             }
+
             $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
             $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
+
             foreach ($matched as $person) {
-                $result = self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"]);
-                if ($result === 'missing') {
-                    $joinBlockLog->info("Could not remove tag '$tag' from $email in Zetkin: tag does not exist");
-                } elseif ($result === 'error') {
-                    $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin");
+                $result = $remove
+                    ? self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"])
+                    : self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $person["id"], $existingTag["id"]);
+
+                if ($result === 'error') {
+                    $joinBlockLog->error("Could not $verb tag '$tag' for $email in Zetkin");
+                } elseif ($result === 'missing') {
+                    $joinBlockLog->info("Tag '$tag' was not on $email in Zetkin");
                 } else {
-                    $joinBlockLog->info("Removed tag '$tag' from $email in Zetkin");
+                    $joinBlockLog->info("Tag '$tag' $done $email in Zetkin");
                 }
             }
         } catch (\Exception $e) {
-            $joinBlockLog->error("Could not remove tag '$tag' from $email in Zetkin: " . $e->getMessage());
+            $joinBlockLog->error("Could not $verb tag '$tag' for $email in Zetkin: " . $e->getMessage());
         }
     }
 
