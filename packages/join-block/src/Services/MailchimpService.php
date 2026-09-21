@@ -13,6 +13,14 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    // Outcomes of a tag write, returned by addTagToMember and
+    // removeTagFromMember. These cross into the GMTU add-on, which compares
+    // against them, so they are named rather than left as loose strings.
+    public const TAG_OK = 'ok';
+    public const TAG_NOT_FOUND = 'not_found';
+    public const TAG_NOT_CONFIGURED = 'not_configured';
+    public const TAG_ERROR = 'error';
+
     public static function buildMergeFields(array $data): array
     {
         if ($data['isUpdateFlow']) {
@@ -265,7 +273,7 @@ class MailchimpService
 
     // Unlike addTag(), returns a status rather than throwing, because a bulk
     // run has to carry on past one bad member and account for it at the end.
-    // Returns 'ok', 'not_found', 'not_configured' or 'error'.
+    // Returns one of the TAG_* constants.
     // $client is injectable so this is testable without network access.
     public static function addTagToMember($email, $tag, $client = null)
     {
@@ -287,7 +295,7 @@ class MailchimpService
         global $joinBlockLog;
 
         if (!self::isConfigured()) {
-            return 'not_configured';
+            return self::TAG_NOT_CONFIGURED;
         }
 
         $client = $client ?? self::getClient();
@@ -300,19 +308,19 @@ class MailchimpService
                 $subscriberHash,
                 ["tags" => [["name" => $tag, "status" => $status]]]
             );
-            return 'ok';
+            return self::TAG_OK;
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $response = $e->getResponse();
             $body = $response ? $response->getBody()->getContents() : $e->getMessage();
 
             if (($response && $response->getStatusCode() === 404) || str_contains($body, "Resource Not Found")) {
-                return 'not_found';
+                return self::TAG_NOT_FOUND;
             }
 
             $joinBlockLog->error(
                 "Mailchimp rejected setting tag '$tag' to $status for $email: " . $body
             );
-            return 'error';
+            return self::TAG_ERROR;
         } catch (\Throwable $e) {
             // Not a Mailchimp API rejection: the call never completed. Worded
             // differently from the branch above so the two are distinguishable
@@ -320,7 +328,7 @@ class MailchimpService
             $joinBlockLog->error(
                 "Could not reach Mailchimp to set tag '$tag' to $status for $email: " . $e->getMessage()
             );
-            return 'error';
+            return self::TAG_ERROR;
         }
     }
 

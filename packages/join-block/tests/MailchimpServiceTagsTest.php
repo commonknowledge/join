@@ -110,7 +110,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
 
-        $this->assertSame('ok', $result);
+        $this->assertSame(MailchimpService::TAG_OK, $result);
     }
 
     public function testAddTagToMemberSendsTheTagAsActive(): void
@@ -129,7 +129,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::removeTagFromMember('person@example.com', 'South Manchester', $client);
 
-        $this->assertSame('ok', $result);
+        $this->assertSame(MailchimpService::TAG_OK, $result);
         $call = $client->lists->calls[0];
         $this->assertSame(
             [['name' => 'South Manchester', 'status' => 'inactive']],
@@ -162,7 +162,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::addTagToMember('ghost@example.com', 'Bury', $client);
 
-        $this->assertSame('not_found', $result);
+        $this->assertSame(MailchimpService::TAG_NOT_FOUND, $result);
     }
 
     public function testUnknownMemberIsReportedAsNotFoundWhenRemoving(): void
@@ -171,7 +171,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::removeTagFromMember('ghost@example.com', 'Bury', $client);
 
-        $this->assertSame('not_found', $result);
+        $this->assertSame(MailchimpService::TAG_NOT_FOUND, $result);
     }
 
     /**
@@ -184,7 +184,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
 
-        $this->assertSame('error', $result);
+        $this->assertSame(MailchimpService::TAG_ERROR, $result);
     }
 
     public function testUnexpectedFailuresAreReportedAsError(): void
@@ -193,7 +193,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
 
-        $this->assertSame('error', $result);
+        $this->assertSame(MailchimpService::TAG_ERROR, $result);
     }
 
     /**
@@ -220,6 +220,19 @@ class MailchimpServiceTagsTest extends TestCase
     }
 
     /**
+     * The GMTU add-on compares against these values across a plugin boundary,
+     * and its test fakes return them as literals. Renaming a constant is free;
+     * changing its value is not, so pin the wire values here.
+     */
+    public function testStatusValuesAreStable(): void
+    {
+        $this->assertSame('ok', MailchimpService::TAG_OK);
+        $this->assertSame('not_found', MailchimpService::TAG_NOT_FOUND);
+        $this->assertSame('not_configured', MailchimpService::TAG_NOT_CONFIGURED);
+        $this->assertSame('error', MailchimpService::TAG_ERROR);
+    }
+
+    /**
      * With Mailchimp switched off, the helpers say so rather than
      * constructing a client against an empty key.
      */
@@ -230,7 +243,7 @@ class MailchimpServiceTagsTest extends TestCase
 
         $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
 
-        $this->assertSame('not_configured', $result);
+        $this->assertSame(MailchimpService::TAG_NOT_CONFIGURED, $result);
         $this->assertSame([], $client->lists->calls);
     }
 }
