@@ -255,6 +255,105 @@ class MailchimpService
         }
     }
 
+    /**
+     * Is Mailchimp worth talking to at all?
+     *
+     * A bulk job asks this once at the start rather than discovering the
+     * answer member by member.
+     *
+     * @since 1.4.39
+     *
+     * @return bool True when both an API key and an audience are configured.
+     */
+    public static function isConfigured()
+    {
+        return !empty(Settings::get("MAILCHIMP_API_KEY"))
+            && !empty(Settings::get("MAILCHIMP_AUDIENCE_ID"));
+    }
+
+    /**
+     * Apply a tag to an audience member, reporting what happened.
+     *
+     * Unlike addTag(), this returns a status rather than throwing, because a
+     * bulk run has to carry on past one bad member and account for it at the
+     * end.
+     *
+     * @since 1.4.39
+     *
+     * @param string      $email
+     * @param string      $tag
+     * @param object|null $client Injected Mailchimp client, for testing.
+     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
+     */
+    public static function addTagToMember($email, $tag, $client = null)
+    {
+        return self::setMemberTagStatus($email, $tag, 'active', $client);
+    }
+
+    /**
+     * Take a tag off an audience member, reporting what happened.
+     *
+     * @since 1.4.39
+     *
+     * @param string      $email
+     * @param string      $tag
+     * @param object|null $client Injected Mailchimp client, for testing.
+     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
+     */
+    public static function removeTagFromMember($email, $tag, $client = null)
+    {
+        return self::setMemberTagStatus($email, $tag, 'inactive', $client);
+    }
+
+    /**
+     * Single implementation of "set this tag to this status on this member".
+     *
+     * Mailchimp has no separate remove call; a tag is switched between active
+     * and inactive. A member who is not in the audience comes back as a 404,
+     * which is a reportable outcome rather than a failure, so this reads the
+     * status out of the exception instead of pre-checking with memberExists().
+     * That also halves the API calls per member, which matters across a
+     * whole-membership walk.
+     *
+     * @since 1.4.39
+     *
+     * @return string 'ok', 'not_found', 'not_configured' or 'error'.
+     */
+    private static function setMemberTagStatus($email, $tag, $status, $client = null)
+    {
+        global $joinBlockLog;
+
+        if (!self::isConfigured()) {
+            return 'not_configured';
+        }
+
+        $client = $client ?? self::getClient();
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+        $subscriberHash = md5(strtolower($email));
+
+        try {
+            $client->lists->updateListMemberTags(
+                $mailchimp_audience_id,
+                $subscriberHash,
+                ["tags" => [["name" => $tag, "status" => $status]]]
+            );
+            return 'ok';
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $response = $e->getResponse();
+            $body = $response ? $response->getBody()->getContents() : $e->getMessage();
+
+            if (($response && $response->getStatusCode() === 404) || str_contains($body, "Resource Not Found")) {
+                return 'not_found';
+            }
+
+            $joinBlockLog->error("Failed to set tag '$tag' to $status for $email in Mailchimp: " . $body);
+            return 'error';
+        } catch (\Throwable $e) {
+            $joinBlockLog->error("Failed to set tag '$tag' to $status for $email in Mailchimp: " . $e->getMessage());
+            return 'error';
+        }
+    }
+
     public static function addTag($email, $tag)
     {
         global $joinBlockLog;
