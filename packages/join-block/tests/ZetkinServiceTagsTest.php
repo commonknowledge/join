@@ -331,6 +331,77 @@ class ZetkinServiceTagsTest extends TestCase
         $this->assertSame([['id' => 7, 'title' => 'Bury']], ZetkinService::getPersonTags(5));
     }
 
+    // The try* pair report one of the TAG_* constants, mirroring
+    // MailchimpService, so the re-tag job reads both services the same way.
+
+    public function test_try_add_tag_to_person_reports_ok()
+    {
+        $this->fakeZetkin([
+            ['PUT', '/people/5/tags/7', $this->response([])],
+        ]);
+
+        $this->assertSame(ZetkinService::TAG_OK, ZetkinService::tryAddTagToPerson(5, 7));
+    }
+
+    public function test_try_add_tag_to_person_reports_an_api_error()
+    {
+        $this->fakeZetkin([
+            ['PUT', '/people/5/tags/7', $this->response(['error' => 'nope'])],
+        ]);
+
+        $this->assertSame(ZetkinService::TAG_ERROR, ZetkinService::tryAddTagToPerson(5, 7));
+    }
+
+    public function test_try_remove_tag_from_person_reports_ok()
+    {
+        $this->fakeZetkin([
+            ['DELETE', '/people/5/tags/7', $this->response([])],
+        ]);
+
+        $this->assertSame(ZetkinService::TAG_OK, ZetkinService::tryRemoveTagFromPerson(5, 7));
+    }
+
+    /**
+     * A tag the person does not have is reported as missing, distinct from
+     * both success and failure, and callers decide what it means to them.
+     */
+    public function test_try_remove_tag_from_person_reports_a_missing_tag()
+    {
+        $this->fakeZetkin([
+            ['DELETE', '/people/5/tags/7', $this->response([], 404)],
+        ]);
+
+        $this->assertSame(ZetkinService::TAG_MISSING, ZetkinService::tryRemoveTagFromPerson(5, 7));
+    }
+
+    public function test_try_remove_tag_from_person_reports_an_api_error()
+    {
+        $this->fakeZetkin([
+            ['DELETE', '/people/5/tags/7', $this->response([], 500)],
+        ]);
+
+        $this->assertSame(ZetkinService::TAG_ERROR, ZetkinService::tryRemoveTagFromPerson(5, 7));
+    }
+
+    public function test_try_helpers_report_not_configured_without_credentials()
+    {
+        $this->assertSame(ZetkinService::TAG_NOT_CONFIGURED, ZetkinService::tryAddTagToPerson(5, 7));
+        $this->assertSame(ZetkinService::TAG_NOT_CONFIGURED, ZetkinService::tryRemoveTagFromPerson(5, 7));
+    }
+
+    /**
+     * The GMTU add-on compares against these values across a plugin boundary,
+     * and its test fakes return them as literals. Renaming a constant is free;
+     * changing its value is not, so pin the wire values here.
+     */
+    public function test_status_values_are_stable()
+    {
+        $this->assertSame('ok', ZetkinService::TAG_OK);
+        $this->assertSame('missing', ZetkinService::TAG_MISSING);
+        $this->assertSame('not_configured', ZetkinService::TAG_NOT_CONFIGURED);
+        $this->assertSame('error', ZetkinService::TAG_ERROR);
+    }
+
     public function test_find_or_create_tag_by_title_reuses_an_existing_tag()
     {
         $client = $this->fakeZetkin([

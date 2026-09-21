@@ -12,6 +12,13 @@ use GuzzleHttp\Client;
 
 class ZetkinService
 {
+    // Outcomes of a tag write, returned by tryAddTagToPerson and
+    // tryRemoveTagFromPerson.
+    public const TAG_OK = 'ok';
+    public const TAG_MISSING = 'missing';
+    public const TAG_NOT_CONFIGURED = 'not_configured';
+    public const TAG_ERROR = 'error';
+
     private static $zetkinContextOverride = null;
 
     public static function signup($data)
@@ -469,29 +476,39 @@ class ZetkinService
         return self::findOrCreateTag($client, $baseUrl, $orgId, $existingTags, $title, $accessToken);
     }
 
+    // Both report one of the TAG_* constants, mirroring MailchimpService.
     public static function tryAddTagToPerson($personId, $tagId)
     {
         $zetkinContext = self::getZetkinContext();
         if (!$zetkinContext) {
-            return false;
+            return self::TAG_NOT_CONFIGURED;
         }
 
         ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
-        return self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) === 'ok';
+        return self::putPersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) === 'ok'
+            ? self::TAG_OK
+            : self::TAG_ERROR;
     }
 
-    // A tag the person does not have is treated as success, not an error.
+    // A tag the person does not have comes back as TAG_MISSING, distinct from
+    // both success and failure; callers decide what it means to them.
     public static function tryRemoveTagFromPerson($personId, $tagId)
     {
         $zetkinContext = self::getZetkinContext();
         if (!$zetkinContext) {
-            return false;
+            return self::TAG_NOT_CONFIGURED;
         }
 
         ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
-        return self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId) !== 'error';
+        $result = self::deletePersonTag($client, $baseUrl, $orgId, $accessToken, $personId, $tagId);
+
+        if ($result === 'missing') {
+            return self::TAG_MISSING;
+        }
+
+        return $result === 'ok' ? self::TAG_OK : self::TAG_ERROR;
     }
 
     // Single implementation of "apply this tag to this person".
