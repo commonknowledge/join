@@ -108,7 +108,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient();
 
-        $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
+        $result = MailchimpService::tryAddTag('person@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_OK, $result);
     }
@@ -117,7 +117,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient();
 
-        MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
+        MailchimpService::tryAddTag('person@example.com', 'Bury', $client);
 
         $call = $client->lists->calls[0];
         $this->assertSame([['name' => 'Bury', 'status' => 'active']], $call['body']['tags']);
@@ -127,7 +127,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient();
 
-        $result = MailchimpService::removeTagFromMember('person@example.com', 'South Manchester', $client);
+        $result = MailchimpService::tryRemoveTag('person@example.com', 'South Manchester', $client);
 
         $this->assertSame(MailchimpService::TAG_OK, $result);
         $call = $client->lists->calls[0];
@@ -145,7 +145,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient();
 
-        MailchimpService::addTagToMember('Person@Example.COM', 'Bury', $client);
+        MailchimpService::tryAddTag('Person@Example.COM', 'Bury', $client);
 
         $call = $client->lists->calls[0];
         $this->assertSame(md5('person@example.com'), $call['subscriberHash']);
@@ -160,7 +160,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient($this->clientException(404, '{"title":"Resource Not Found"}'));
 
-        $result = MailchimpService::addTagToMember('ghost@example.com', 'Bury', $client);
+        $result = MailchimpService::tryAddTag('ghost@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_NOT_FOUND, $result);
     }
@@ -169,7 +169,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient($this->clientException(404, '{"title":"Resource Not Found"}'));
 
-        $result = MailchimpService::removeTagFromMember('ghost@example.com', 'Bury', $client);
+        $result = MailchimpService::tryRemoveTag('ghost@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_NOT_FOUND, $result);
     }
@@ -182,7 +182,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient($this->clientException(403, '{"title":"API Key Invalid"}'));
 
-        $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
+        $result = MailchimpService::tryAddTag('person@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_ERROR, $result);
     }
@@ -191,7 +191,7 @@ class MailchimpServiceTagsTest extends TestCase
     {
         $client = $this->fakeClient(new \RuntimeException('connection reset'));
 
-        $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
+        $result = MailchimpService::tryAddTag('person@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_ERROR, $result);
     }
@@ -241,7 +241,7 @@ class MailchimpServiceTagsTest extends TestCase
         unset($_ENV['MAILCHIMP_API_KEY']);
         $client = $this->fakeClient();
 
-        $result = MailchimpService::addTagToMember('person@example.com', 'Bury', $client);
+        $result = MailchimpService::tryAddTag('person@example.com', 'Bury', $client);
 
         $this->assertSame(MailchimpService::TAG_NOT_CONFIGURED, $result);
         $this->assertSame([], $client->lists->calls);

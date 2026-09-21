@@ -13,9 +13,9 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
-    // Outcomes of a tag write, returned by addTagToMember and
-    // removeTagFromMember. These cross into the GMTU add-on, which compares
-    // against them, so they are named rather than left as loose strings.
+    // Outcomes of a tag write, returned by tryAddTag and tryRemoveTag. These
+    // cross into the GMTU add-on, which compares against them, so they are
+    // named rather than left as loose strings.
     public const TAG_OK = 'ok';
     public const TAG_NOT_FOUND = 'not_found';
     public const TAG_NOT_CONFIGURED = 'not_configured';
@@ -271,18 +271,48 @@ class MailchimpService
             && !empty(Settings::get("MAILCHIMP_AUDIENCE_ID"));
     }
 
-    // Unlike addTag(), returns a status rather than throwing, because a bulk
-    // run has to carry on past one bad member and account for it at the end.
-    // Returns one of the TAG_* constants.
-    // $client is injectable so this is testable without network access.
-    public static function addTagToMember($email, $tag, $client = null)
+    // The one place a Mailchimp tag write is built. Everything that changes a
+    // member's tags goes through here: signup(), addTag(), removeTag() and the
+    // try* pair below. A hook that needs to see or alter tag writes therefore
+    // has one home rather than four.
+    //
+    // Deliberately does not catch. Callers pick their error policy: addTag and
+    // removeTag log and rethrow as they always have, the try* pair translates
+    // to a TAG_* status. Catching here and returning a status would force the
+    // throwing callers to invent a new exception, and external code catching
+    // ClientException would stop catching.
+    //
+    // $client is injectable so callers that already hold one avoid building a
+    // second, and so this is testable without network access.
+    private static function updateMemberTags($email, array $tagUpdates, $client = null)
     {
-        return self::setMemberTagStatus($email, $tag, 'active', $client);
+        if (empty($tagUpdates)) {
+            return;
+        }
+
+        $client = $client ?? self::getClient();
+        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
+        $subscriberHash = md5(strtolower($email));
+
+        $client->lists->updateListMemberTags(
+            $mailchimp_audience_id,
+            $subscriberHash,
+            ["tags" => $tagUpdates]
+        );
     }
 
-    public static function removeTagFromMember($email, $tag, $client = null)
+    // Reporting counterparts to addTag and removeTag. Same operation, same
+    // target; the difference is error policy, which is what the name says. A
+    // bulk run has to carry on past one bad member and account for it at the
+    // end, so these return a TAG_* status rather than throwing.
+    public static function tryAddTag($email, $tag, $client = null)
     {
-        return self::setMemberTagStatus($email, $tag, 'inactive', $client);
+        return self::trySetTag($email, $tag, 'active', $client);
+    }
+
+    public static function tryRemoveTag($email, $tag, $client = null)
+    {
+        return self::trySetTag($email, $tag, 'inactive', $client);
     }
 
     // Mailchimp has no separate remove call; a tag is switched between active
@@ -290,7 +320,7 @@ class MailchimpService
     // which is a reportable outcome rather than a failure, so read the status
     // out of the exception instead of pre-checking with memberExists(). That
     // also halves the API calls per member across a whole-membership walk.
-    private static function setMemberTagStatus($email, $tag, $status, $client = null)
+    private static function trySetTag($email, $tag, $status, $client = null)
     {
         global $joinBlockLog;
 
@@ -298,16 +328,8 @@ class MailchimpService
             return self::TAG_NOT_CONFIGURED;
         }
 
-        $client = $client ?? self::getClient();
-        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-        $subscriberHash = md5(strtolower($email));
-
         try {
-            $client->lists->updateListMemberTags(
-                $mailchimp_audience_id,
-                $subscriberHash,
-                ["tags" => [["name" => $tag, "status" => $status]]]
-            );
+            self::updateMemberTags($email, [["name" => $tag, "status" => $status]], $client);
             return self::TAG_OK;
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $response = $e->getResponse();
@@ -341,17 +363,8 @@ class MailchimpService
             return;
         }
 
-        $mailchimp = self::getClient();
-        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-
-        $subscriberHash = md5(strtolower($email));
-
         try {
-            $mailchimp->lists->updateListMemberTags(
-                $mailchimp_audience_id,
-                $subscriberHash,
-                ["tags" => [["name" => $tag, "status" => "active"]]]
-            );
+            self::updateMemberTags($email, [["name" => $tag, "status" => "active"]]);
             $joinBlockLog->info("Added tag '$tag' to $email in Mailchimp");
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $joinBlockLog->error("Failed to add tag '$tag' to $email in Mailchimp: " . $e->getMessage());
@@ -368,17 +381,8 @@ class MailchimpService
             return;
         }
 
-        $mailchimp = self::getClient();
-        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-
-        $subscriberHash = md5(strtolower($email));
-
         try {
-            $mailchimp->lists->updateListMemberTags(
-                $mailchimp_audience_id,
-                $subscriberHash,
-                ["tags" => [["name" => $tag, "status" => "inactive"]]]
-            );
+            self::updateMemberTags($email, [["name" => $tag, "status" => "inactive"]]);
             $joinBlockLog->info("Removed tag '$tag' from $email in Mailchimp");
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $joinBlockLog->error("Failed to remove tag '$tag' from $email in Mailchimp: " . $e->getMessage());
