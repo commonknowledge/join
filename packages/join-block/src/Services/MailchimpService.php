@@ -327,39 +327,32 @@ class MailchimpService
         }
     }
 
-    public static function addTag($email, $tag)
+    // Throwing counterpart to trySetTag, for callers that want an exception.
+    private static function setTagOrThrow($email, $tag, $status)
     {
         global $joinBlockLog;
 
         if (!self::memberExists($email)) {
-            $joinBlockLog->warning("Skipping Mailchimp addTag('$tag') for $email: member does not exist");
+            $joinBlockLog->warning("Skipping Mailchimp tag update for $email: member does not exist");
             return;
         }
 
         try {
-            self::updateMemberTags($email, [["name" => $tag, "status" => "active"]]);
-            $joinBlockLog->info("Added tag '$tag' to $email in Mailchimp");
+            self::updateMemberTags($email, [["name" => $tag, "status" => $status]]);
+            $joinBlockLog->info("Set Mailchimp tag '$tag' to $status for $email");
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $joinBlockLog->error("Failed to add tag '$tag' to $email in Mailchimp: " . $e->getMessage());
+            $joinBlockLog->error("Failed to set Mailchimp tag '$tag' to $status for $email: " . $e->getMessage());
             throw $e;
         }
     }
 
+    public static function addTag($email, $tag)
+    {
+        self::setTagOrThrow($email, $tag, 'active');
+    }
+
     public static function removeTag($email, $tag)
     {
-        global $joinBlockLog;
-
-        if (!self::memberExists($email)) {
-            $joinBlockLog->warning("Skipping Mailchimp removeTag('$tag') for $email: member does not exist");
-            return;
-        }
-
-        try {
-            self::updateMemberTags($email, [["name" => $tag, "status" => "inactive"]]);
-            $joinBlockLog->info("Removed tag '$tag' from $email in Mailchimp");
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $joinBlockLog->error("Failed to remove tag '$tag' from $email in Mailchimp: " . $e->getMessage());
-            throw $e;
-        }
+        self::setTagOrThrow($email, $tag, 'inactive');
     }
 }
