@@ -407,11 +407,9 @@ class ZetkinService
         ];
     }
 
-    // List people one page at a time, for bulk jobs that walk the whole
-    // membership. Zetkin pages with p (zero-indexed) and pp (page size);
-    // an empty array means the end of the list.
-    // Each call opens its own Zetkin context, so a full walk costs one OAuth
-    // exchange per page. Acceptable because bulk jobs are occasional.
+    // Zetkin pages with p (zero-indexed) and pp (page size); an empty array
+    // means the end of the list. Each call opens its own Zetkin context, so a
+    // full walk costs one OAuth exchange per page.
     public static function listPeople($page = 0, $perPage = 100)
     {
         $zetkinContext = self::getZetkinContext();

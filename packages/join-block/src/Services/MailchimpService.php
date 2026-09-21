@@ -13,9 +13,7 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
-    // Outcomes of a tag write, returned by tryAddTag and tryRemoveTag. These
-    // cross into the GMTU add-on, which compares against them, so they are
-    // named rather than left as loose strings.
+    // Outcomes of a tag write, returned by tryAddTag and tryRemoveTag.
     public const TAG_OK = 'ok';
     public const TAG_NOT_FOUND = 'not_found';
     public const TAG_NOT_CONFIGURED = 'not_configured';
@@ -171,8 +169,6 @@ class MailchimpService
                 }
 
                 if (!empty($tagUpdates)) {
-                    // Pass the client we already built rather than letting the
-                    // primitive make a second one.
                     self::updateMemberTags($email, $tagUpdates, $mailchimp);
                     $joinBlockLog->info("Updated tags for $email in Mailchimp");
                 }
@@ -260,27 +256,14 @@ class MailchimpService
         }
     }
 
-    // A bulk job asks this once at the start rather than discovering the
-    // answer member by member.
     public static function isConfigured()
     {
         return !empty(Settings::get("MAILCHIMP_API_KEY"))
             && !empty(Settings::get("MAILCHIMP_AUDIENCE_ID"));
     }
 
-    // The one place a Mailchimp tag write is built. Everything that changes a
-    // member's tags goes through here: signup(), addTag(), removeTag() and the
-    // try* pair below. A hook that needs to see or alter tag writes therefore
-    // has one home rather than four.
-    //
-    // Deliberately does not catch. Callers pick their error policy: addTag and
-    // removeTag log and rethrow as they always have, the try* pair translates
-    // to a TAG_* status. Catching here and returning a status would force the
-    // throwing callers to invent a new exception, and external code catching
-    // ClientException would stop catching.
-    //
-    // $client is injectable so callers that already hold one avoid building a
-    // second, and so this is testable without network access.
+    // The one place a Mailchimp tag write is built. Does not catch: callers
+    // pick their own error policy.
     private static function updateMemberTags($email, array $tagUpdates, $client = null)
     {
         if (empty($tagUpdates)) {
@@ -298,10 +281,8 @@ class MailchimpService
         );
     }
 
-    // Reporting counterparts to addTag and removeTag. Same operation, same
-    // target; the difference is error policy, which is what the name says. A
-    // bulk run has to carry on past one bad member and account for it at the
-    // end, so these return a TAG_* status rather than throwing.
+    // Reporting counterparts to addTag and removeTag: return a TAG_* status
+    // rather than throwing, so a bulk run can carry on and account for it.
     public static function tryAddTag($email, $tag, $client = null)
     {
         return self::trySetTag($email, $tag, 'active', $client);
@@ -313,10 +294,8 @@ class MailchimpService
     }
 
     // Mailchimp has no separate remove call; a tag is switched between active
-    // and inactive. A member who is not in the audience comes back as a 404,
-    // which is a reportable outcome rather than a failure, so read the status
-    // out of the exception instead of pre-checking with memberExists(). That
-    // also halves the API calls per member across a whole-membership walk.
+    // and inactive. A member missing from the audience comes back as a 404,
+    // which is reportable rather than a failure.
     private static function trySetTag($email, $tag, $status, $client = null)
     {
         global $joinBlockLog;
@@ -341,9 +320,6 @@ class MailchimpService
             );
             return self::TAG_ERROR;
         } catch (\Throwable $e) {
-            // Not a Mailchimp API rejection: the call never completed. Worded
-            // differently from the branch above so the two are distinguishable
-            // in the logs.
             $joinBlockLog->error(
                 "Could not reach Mailchimp to set tag '$tag' to $status for $email: " . $e->getMessage()
             );
