@@ -236,11 +236,11 @@ class MailchimpService
      * @param string $email
      * @return bool
      */
-    public static function memberExists($email)
+    public static function memberExists($email, $client = null)
     {
         global $joinBlockLog;
 
-        $mailchimp = self::getClient();
+        $mailchimp = $client ?? self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
         $subscriberHash = md5(strtolower($email));
 
@@ -328,17 +328,17 @@ class MailchimpService
     }
 
     // Throwing counterpart to trySetTag, for callers that want an exception.
-    private static function setTagOrThrow($email, $tag, $status)
+    private static function setTagOrThrow($email, $tag, $status, $client = null)
     {
         global $joinBlockLog;
 
-        if (!self::memberExists($email)) {
+        if (!self::memberExists($email, $client)) {
             $joinBlockLog->warning("Skipping Mailchimp tag update for $email: member does not exist");
             return;
         }
 
         try {
-            self::updateMemberTags($email, [["name" => $tag, "status" => $status]]);
+            self::updateMemberTags($email, [["name" => $tag, "status" => $status]], $client);
             $joinBlockLog->info("Set Mailchimp tag '$tag' to $status for $email");
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $joinBlockLog->error("Failed to set Mailchimp tag '$tag' to $status for $email: " . $e->getMessage());
@@ -346,13 +346,13 @@ class MailchimpService
         }
     }
 
-    public static function addTag($email, $tag)
+    public static function addTag($email, $tag, $client = null)
     {
-        self::setTagOrThrow($email, $tag, 'active');
+        self::setTagOrThrow($email, $tag, 'active', $client);
     }
 
-    public static function removeTag($email, $tag)
+    public static function removeTag($email, $tag, $client = null)
     {
-        self::setTagOrThrow($email, $tag, 'inactive');
+        self::setTagOrThrow($email, $tag, 'inactive', $client);
     }
 }

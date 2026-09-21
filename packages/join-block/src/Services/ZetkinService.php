@@ -12,6 +12,8 @@ use GuzzleHttp\Client;
 
 class ZetkinService
 {
+    private static $zetkinContextOverride = null;
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -159,18 +161,18 @@ class ZetkinService
 
             $personId = $responseData["data"]["id"];
 
-            $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
+            $existingTags = self::getTags($client, $baseUrl, $orgId, $accessToken);
 
             $addTags[] = "Unconfirmed";
             $addTagIds = [];
             foreach ($addTags as $tag) {
-                $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
+                $existingTag = self::findOrCreateTag($client, $baseUrl, $orgId, $existingTags, $tag, $accessToken);
                 $addTagIds[] = $existingTag["id"];
             }
 
             $removeTagIds = [];
             foreach ($removeTags as $tag) {
-                $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
+                $existingTag = self::findOrCreateTag($client, $baseUrl, $orgId, $existingTags, $tag, $accessToken);
                 $removeTagIds[] = $existingTag["id"];
             }
 
@@ -202,9 +204,8 @@ class ZetkinService
         }
     }
 
-    private static function getTags($baseUrl, $orgId, $accessToken)
+    private static function getTags($client, $baseUrl, $orgId, $accessToken)
     {
-        $client = new \GuzzleHttp\Client();
         $response = $client->request("GET", "$baseUrl/orgs/$orgId/people/tags", [
             "headers" => [
                 "Authorization" => "Bearer {$accessToken}",
@@ -219,7 +220,7 @@ class ZetkinService
         return $responseData["data"] ?? [];
     }
 
-    private static function findOrCreateTag($baseUrl, $orgId, $tags, $title, $accessToken)
+    private static function findOrCreateTag($client, $baseUrl, $orgId, $tags, $title, $accessToken)
     {
         $matchingTags = array_filter($tags, function ($tag) use ($title) {
             return strtolower($tag['title']) === strtolower($title);
@@ -229,7 +230,6 @@ class ZetkinService
             return array_values($matchingTags)[0];
         }
 
-        $client = new \GuzzleHttp\Client();
         $response = $client->request("POST", "$baseUrl/orgs/$orgId/people/tags", [
             "headers" => [
                 "Authorization" => "Bearer {$accessToken}",
@@ -362,9 +362,21 @@ class ZetkinService
         }
     }
 
+    // Test seam: getZetkinContext() performs a live OAuth exchange, which
+    // makes everything built on it untestable. Pass null to restore normal
+    // behaviour.
+    public static function overrideZetkinContext($zetkinContext)
+    {
+        self::$zetkinContextOverride = $zetkinContext;
+    }
+
     private static function getZetkinContext()
     {
         global $joinBlockLog;
+
+        if (self::$zetkinContextOverride !== null) {
+            return self::$zetkinContextOverride;
+        }
 
         $clientId = Settings::get("ZETKIN_CLIENT_ID");
         $clientSecret = Settings::get("ZETKIN_CLIENT_SECRET");
@@ -450,11 +462,11 @@ class ZetkinService
             return null;
         }
 
-        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken] = $zetkinContext;
+        ['baseUrl' => $baseUrl, 'orgId' => $orgId, 'accessToken' => $accessToken, 'client' => $client] = $zetkinContext;
 
-        $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
+        $existingTags = self::getTags($client, $baseUrl, $orgId, $accessToken);
 
-        return self::findOrCreateTag($baseUrl, $orgId, $existingTags, $title, $accessToken);
+        return self::findOrCreateTag($client, $baseUrl, $orgId, $existingTags, $title, $accessToken);
     }
 
     public static function tryAddTagToPerson($personId, $tagId)
@@ -557,8 +569,8 @@ class ZetkinService
                 return;
             }
 
-            $existingTags = self::getTags($baseUrl, $orgId, $accessToken);
-            $existingTag = self::findOrCreateTag($baseUrl, $orgId, $existingTags, $tag, $accessToken);
+            $existingTags = self::getTags($client, $baseUrl, $orgId, $accessToken);
+            $existingTag = self::findOrCreateTag($client, $baseUrl, $orgId, $existingTags, $tag, $accessToken);
 
             foreach ($matched as $person) {
                 $result = $remove
