@@ -154,7 +154,6 @@ class MailchimpService
         // For new members, we need to remove tags via updateListMemberTags (can't do it in addListMember)
         if ($memberExists || !empty($removeTags)) {
             try {
-                $subscriberHash = md5(strtolower($email));
                 $tagUpdates = [];
 
                 // If member exists, add tags that weren't added during creation
@@ -172,11 +171,9 @@ class MailchimpService
                 }
 
                 if (!empty($tagUpdates)) {
-                    $mailchimp->lists->updateListMemberTags(
-                        $mailchimp_audience_id,
-                        $subscriberHash,
-                        ["tags" => $tagUpdates]
-                    );
+                    // Pass the client we already built rather than letting the
+                    // primitive make a second one.
+                    self::updateMemberTags($email, $tagUpdates, $mailchimp);
                     $joinBlockLog->info("Updated tags for $email in Mailchimp");
                 }
             } catch (\GuzzleHttp\Exception\ClientException $e) {
