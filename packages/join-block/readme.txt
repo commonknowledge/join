@@ -108,9 +108,7 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 == Changelog ==
 
 = 1.4.39 =
-* Add Mailchimp tag helpers that report status instead of throwing, for bulk maintenance jobs
-= 1.4.38 =
-* Add Zetkin people listing and person-tag helpers for bulk maintenance jobs
+* Add Zetkin people listing and Zetkin and Mailchimp tag helpers that report status instead of throwing, for bulk maintenance jobs
 = 1.4.37 =
 * Add "cancelled" tag option, distinguishing this from lapsed membership
 = 1.4.36 =
