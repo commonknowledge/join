@@ -29,7 +29,7 @@ const MOCK_PLANS = [
 
 function renderDonationPage(data = baseData) {
   return render(
-    <DonationPage data={data} onCompleted={mockOnCompleted} />
+    <DonationPage data={data} setData={jest.fn()} onCompleted={mockOnCompleted} />
   );
 }
 

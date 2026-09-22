@@ -351,7 +351,9 @@ const StripeForm = ({
     {
       id: string;
       customer: string;
-      latest_invoice: { payment_intent: { id: string; client_secret: string } };
+      latest_invoice: {
+        payment_intent: { id: string; client_secret: string; status?: string };
+      };
     }
   >("/stripe/create-subscription");
   const createPaymentIntent = usePostResource<

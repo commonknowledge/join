@@ -381,15 +381,13 @@ const getInitialState = (): FormSchema => {
       if (!state.customMembershipAmount) {
         delete state.customMembershipAmount;
       }
-      return FormSchema.cast(state, {
-        strict: true
-      });
+      return FormSchema.cast(state);
     }
   };
 
   const getProvidedStateFromQueryParams = () => {
     if (queryParams) {
-      const cast = FormSchema.cast(queryParams, { strict: true });
+      const cast = FormSchema.cast(queryParams);
       // FormSchema.cast() fills in schema defaults for every field absent from
       // the query string (e.g. recurDonation: false, membership: "").  Those
       // defaults must not override the session-restored state or the

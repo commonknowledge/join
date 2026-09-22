@@ -581,5 +581,5 @@ const parseCustomFieldOptions = (options: string) => {
       }
       return { value: row[0], label: row.slice(1).join(":") };
     })
-    .filter((r) => r !== null);
+    .filter((r): r is { value: string; label: string } => r !== null);
 };
