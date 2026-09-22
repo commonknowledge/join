@@ -8,7 +8,7 @@ import {
 } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
-import { FormSchema } from "../schema";
+import { FormSchema, currencyCodeToSymbol, getPaymentPlan } from "../schema";
 import { get as getEnv, getStr as getEnvStr } from "../env";
 
 const membershipTiersHeading = getEnvStr("MEMBERSHIP_TIERS_HEADING");
@@ -36,6 +36,13 @@ export const PlanPage: StagerComponent<FormSchema> = ({
   // A currency selector is only rendered for plans available in more than one currency.
   const hasCurrencyChoice = Object.values(groupedPlans).some(
     (group) => group.length > 1
+  );
+
+  // Spell out the amount on the button so the member sees what they are about
+  // to pay before leaving for a hosted payment page, which may not show it.
+  const continueLabel = renderContinueLabel(
+    form.watch("membership"),
+    form.watch("customMembershipAmount")
   );
 
   return (
@@ -71,7 +78,25 @@ export const PlanPage: StagerComponent<FormSchema> = ({
         ))}
       </fieldset>
 
-      <ContinueButton />
+      <ContinueButton text={continueLabel} />
     </form>
   );
+};
+
+export const renderContinueLabel = (
+  membership: string | undefined,
+  customMembershipAmount: string | number | undefined
+) => {
+  const plan = getPaymentPlan(membership);
+  if (!plan) {
+    return "Continue";
+  }
+  const amount = plan.allowCustomAmount
+    ? Number(customMembershipAmount || plan.amount)
+    : Number(plan.amount);
+  if (!(amount > 0)) {
+    return "Continue";
+  }
+  const symbol = currencyCodeToSymbol(plan.currency);
+  return `Continue and pay ${symbol}${amount} ${plan.frequency}`;
 };
