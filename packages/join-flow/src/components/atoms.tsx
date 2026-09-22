@@ -142,6 +142,14 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
           });
         };
 
+        // Typing a custom amount must select this tier, otherwise the amount
+        // is ignored on submit and the default plan price is charged.
+        const onChangeCustomAmount = () => {
+          if (!checked) {
+            onChange(currentPlan.value);
+          }
+        };
+
         return (
           <Form.Label
             className={
@@ -179,6 +187,7 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                           min={currentPlan.amount || 0.01}
                           step="0.01"
                           max="1000"
+                          onChange={onChangeCustomAmount}
                         />
                       </FormItem>
                     </div>
@@ -231,6 +240,7 @@ export const PlanRadioPanel: FC<PlanRadioPanelProps> = ({
                             min={currentPlan.amount || 0.01}
                             step="0.01"
                             max="1000"
+                            onChange={onChangeCustomAmount}
                           />
                         </FormItem>
                       </div>
