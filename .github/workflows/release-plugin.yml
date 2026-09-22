@@ -30,7 +30,7 @@ jobs:
 
     - name: Install Javascript dependencies
       run: |
-        npm install
+        npm ci
 
     - name: Package
       run: |

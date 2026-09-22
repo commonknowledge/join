@@ -4,18 +4,17 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "postinstall": "yarn composer && lerna bootstrap",
+    "postinstall": "npm run composer && npm --prefix packages/join-flow ci",
     "composer": "cd packages/join-block && composer install",
-    "frontend": "cd packages/join-flow && yarn start",
-    "start": "docker-compose up -d && lerna run --parallel start",
-    "build": "lerna run build",
-    "dist": "lerna run build && scripts/package.sh",
-    "deploy": "yarn build && sh scripts/deploy.sh",
+    "frontend": "npm --prefix packages/join-flow start",
+    "start": "docker-compose up -d && npm --prefix packages/join-flow start",
+    "build": "npm --prefix packages/join-flow run build",
+    "dist": "npm run build && scripts/package.sh",
+    "deploy": "npm run build && sh scripts/deploy.sh",
     "prettier": "prettier --write packages/join-flow"
   },
   "devDependencies": {
-    "lerna": "^3.22.1",
     "prettier": "^2.1.1",
-    "typescript": "^4.0.2"
+    "typescript": "^5.9.3"
   }
 }

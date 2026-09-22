@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install root deps
-        run: yarn install
+        run: npm ci
 
       - name: Build join-flow bundle (E2E mode)
         working-directory: packages/join-flow

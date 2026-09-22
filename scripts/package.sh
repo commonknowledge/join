@@ -12,7 +12,7 @@ mkdir -p dist
 
 echo "Building front end"
 cd packages/join-flow
-NODE_ENV=production && npm i && npm run build
+npm ci && NODE_ENV=production npm run build
 cd ../..
 
 echo "Copying WordPress plugin files"

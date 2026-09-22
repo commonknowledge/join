@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install root deps
-        run: yarn install
+        run: npm ci
 
       - name: Run Jest
         working-directory: packages/join-flow

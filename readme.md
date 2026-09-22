@@ -340,9 +340,9 @@ Configuration is available through a WordPress settings page (**Settings > CK Jo
 ### Build
 
 ```bash
-yarn
-yarn composer
-yarn build
+npm install
+npm run composer
+npm run build
 ```
 
 This produces a deployable WordPress plugin in `packages/join-block`.
@@ -372,7 +372,7 @@ The GitHub Action will build, package, and deploy to the WordPress.org plugin re
 ### Manual deployment
 
 ```bash
-yarn && yarn composer && yarn build
+npm install && npm run composer && npm run build
 sh scripts/package.sh
 ```
 
@@ -390,8 +390,8 @@ Upload the resulting zip to a WordPress site and activate the plugin.
 
 ```bash
 # Install dependencies
-yarn
-yarn composer
+npm install
+npm run composer
 
 # Configure the frontend
 cd packages/join-flow
@@ -400,7 +400,7 @@ cp .env.example .env
 
 # Start the Docker stack
 cd ../..
-yarn start
+npm start
 ```
 
 - WordPress admin: `http://localhost:8082/wp-admin`
@@ -416,10 +416,10 @@ yarn start
 ### Frontend only (no backend)
 
 ```bash
-yarn
+npm install
 cd packages/join-flow
 cp .env.example .env
-yarn run frontend
+npm start
 # Open http://localhost:3000
 ```
 
@@ -433,7 +433,7 @@ Use `REACT_APP_USE_TEST_DATA=true` in `.env` to pre-fill the form with example d
 
 ```bash
 cd packages/join-flow
-yarn test
+npm test
 ```
 
 ### Backend unit tests
@@ -447,5 +447,5 @@ composer test
 
 ```bash
 cd packages/join-e2e
-yarn test
+npm test
 ```

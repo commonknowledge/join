@@ -250,13 +250,13 @@ Flags to cover: `COLLECT_DATE_OF_BIRTH`, `COLLECT_COUNTY`, `COLLECT_HEAR_ABOUT_U
 
 ```bash
 # Start the wp-env environment
-yarn wp-env start
+npm run wp-env:start
 
 # Seed the test pages
-yarn wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
 
 # Build the frontend with test data pre-fill
-USE_TEST_DATA=true yarn build
+npm run test:build
 
 # Run the suite
 cd packages/join-e2e
