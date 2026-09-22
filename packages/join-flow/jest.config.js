@@ -6,6 +6,6 @@ module.exports = {
     '\\.(css|scss|svg|png)$': '<rootDir>/__mocks__/fileMock.js',
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(lodash-es)/)',
+    '/node_modules/(?!(lodash-es|@hookform)/)',
   ],
 };

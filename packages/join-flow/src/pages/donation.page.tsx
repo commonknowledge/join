@@ -41,7 +41,9 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   const [isMonthly, setIsMonthly] = useState(true);
   const [selectedTier, setSelectedTier] = useState<number>(defaultSupporterTier);
 
-  const form = useForm({
+  // otherDonationAmount is a transient field for the "other" input; it is
+  // folded into donationAmount on submit and never leaves this page.
+  const form = useForm<FormSchema & { otherDonationAmount?: string | number }>({
     defaultValues: {
       donationAmount: supporterMode ? defaultSupporterTier : donationTiers[1],
       recurDonation: supporterMode ? true : false,
@@ -79,7 +81,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       return;
     }
     if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
-      formData.donationAmount = formData.otherDonationAmount;
+      formData.donationAmount = Number(formData.otherDonationAmount);
       delete formData.otherDonationAmount;
     }
     onCompleted(formData);
@@ -212,7 +214,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
             }}
             ref={form.register}
             variant={
-              selectedDonationAmount === donationTierAmount.toString()
+              String(selectedDonationAmount) === donationTierAmount.toString()
                 ? "dark"
                 : "outline-dark"
             }
