@@ -13,6 +13,12 @@ use CommonKnowledge\JoinBlock\Settings;
 
 class MailchimpService
 {
+    // Outcomes of a tag write, returned by tryAddTag and tryRemoveTag.
+    public const TAG_OK = 'ok';
+    public const TAG_NOT_FOUND = 'not_found';
+    public const TAG_NOT_CONFIGURED = 'not_configured';
+    public const TAG_ERROR = 'error';
+
     public static function buildMergeFields(array $data): array
     {
         if ($data['isUpdateFlow']) {
@@ -146,7 +152,6 @@ class MailchimpService
         // For new members, we need to remove tags via updateListMemberTags (can't do it in addListMember)
         if ($memberExists || !empty($removeTags)) {
             try {
-                $subscriberHash = md5(strtolower($email));
                 $tagUpdates = [];
 
                 // If member exists, add tags that weren't added during creation
@@ -164,11 +169,7 @@ class MailchimpService
                 }
 
                 if (!empty($tagUpdates)) {
-                    $mailchimp->lists->updateListMemberTags(
-                        $mailchimp_audience_id,
-                        $subscriberHash,
-                        ["tags" => $tagUpdates]
-                    );
+                    self::updateMemberTags($email, $tagUpdates, $mailchimp);
                     $joinBlockLog->info("Updated tags for $email in Mailchimp");
                 }
             } catch (\GuzzleHttp\Exception\ClientException $e) {
@@ -235,11 +236,11 @@ class MailchimpService
      * @param string $email
      * @return bool
      */
-    public static function memberExists($email)
+    public static function memberExists($email, $client = null)
     {
         global $joinBlockLog;
 
-        $mailchimp = self::getClient();
+        $mailchimp = $client ?? self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
         $subscriberHash = md5(strtolower($email));
 
@@ -255,57 +256,103 @@ class MailchimpService
         }
     }
 
-    public static function addTag($email, $tag)
+    public static function isConfigured()
     {
-        global $joinBlockLog;
+        return !empty(Settings::get("MAILCHIMP_API_KEY"))
+            && !empty(Settings::get("MAILCHIMP_AUDIENCE_ID"));
+    }
 
-        if (!self::memberExists($email)) {
-            $joinBlockLog->warning("Skipping Mailchimp addTag('$tag') for $email: member does not exist");
+    // The one place a Mailchimp tag write is built. Does not catch: callers
+    // pick their own error policy.
+    private static function updateMemberTags($email, array $tagUpdates, $client = null)
+    {
+        if (empty($tagUpdates)) {
             return;
         }
 
-        $mailchimp = self::getClient();
+        $client = $client ?? self::getClient();
         $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-
         $subscriberHash = md5(strtolower($email));
 
+        $client->lists->updateListMemberTags(
+            $mailchimp_audience_id,
+            $subscriberHash,
+            ["tags" => $tagUpdates]
+        );
+    }
+
+    // Reporting counterparts to addTag and removeTag: return a TAG_* status
+    // rather than throwing, so a bulk run can carry on and account for it.
+    public static function tryAddTag($email, $tag, $client = null)
+    {
+        return self::trySetTag($email, $tag, 'active', $client);
+    }
+
+    public static function tryRemoveTag($email, $tag, $client = null)
+    {
+        return self::trySetTag($email, $tag, 'inactive', $client);
+    }
+
+    // Mailchimp has no separate remove call; a tag is switched between active
+    // and inactive. A member missing from the audience comes back as a 404,
+    // which is reportable rather than a failure.
+    private static function trySetTag($email, $tag, $status, $client = null)
+    {
+        global $joinBlockLog;
+
+        if (!self::isConfigured()) {
+            return self::TAG_NOT_CONFIGURED;
+        }
+
         try {
-            $mailchimp->lists->updateListMemberTags(
-                $mailchimp_audience_id,
-                $subscriberHash,
-                ["tags" => [["name" => $tag, "status" => "active"]]]
-            );
-            $joinBlockLog->info("Added tag '$tag' to $email in Mailchimp");
+            self::updateMemberTags($email, [["name" => $tag, "status" => $status]], $client);
+            return self::TAG_OK;
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $joinBlockLog->error("Failed to add tag '$tag' to $email in Mailchimp: " . $e->getMessage());
+            $response = $e->getResponse();
+            $body = $response ? $response->getBody()->getContents() : $e->getMessage();
+
+            if (($response && $response->getStatusCode() === 404) || str_contains($body, "Resource Not Found")) {
+                return self::TAG_NOT_FOUND;
+            }
+
+            $joinBlockLog->error(
+                "Mailchimp rejected setting tag '$tag' to $status for $email: " . $body
+            );
+            return self::TAG_ERROR;
+        } catch (\Throwable $e) {
+            $joinBlockLog->error(
+                "Could not reach Mailchimp to set tag '$tag' to $status for $email: " . $e->getMessage()
+            );
+            return self::TAG_ERROR;
+        }
+    }
+
+    // Throwing counterpart to trySetTag, for callers that want an exception.
+    private static function setTagOrThrow($email, $tag, $status, $client = null)
+    {
+        global $joinBlockLog;
+
+        if (!self::memberExists($email, $client)) {
+            $joinBlockLog->warning("Skipping Mailchimp tag update for $email: member does not exist");
+            return;
+        }
+
+        try {
+            self::updateMemberTags($email, [["name" => $tag, "status" => $status]], $client);
+            $joinBlockLog->info("Set Mailchimp tag '$tag' to $status for $email");
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $joinBlockLog->error("Failed to set Mailchimp tag '$tag' to $status for $email: " . $e->getMessage());
             throw $e;
         }
     }
 
-    public static function removeTag($email, $tag)
+    public static function addTag($email, $tag, $client = null)
     {
-        global $joinBlockLog;
+        self::setTagOrThrow($email, $tag, 'active', $client);
+    }
 
-        if (!self::memberExists($email)) {
-            $joinBlockLog->warning("Skipping Mailchimp removeTag('$tag') for $email: member does not exist");
-            return;
-        }
-
-        $mailchimp = self::getClient();
-        $mailchimp_audience_id = Settings::get("MAILCHIMP_AUDIENCE_ID");
-
-        $subscriberHash = md5(strtolower($email));
-
-        try {
-            $mailchimp->lists->updateListMemberTags(
-                $mailchimp_audience_id,
-                $subscriberHash,
-                ["tags" => [["name" => $tag, "status" => "inactive"]]]
-            );
-            $joinBlockLog->info("Removed tag '$tag' from $email in Mailchimp");
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $joinBlockLog->error("Failed to remove tag '$tag' from $email in Mailchimp: " . $e->getMessage());
-            throw $e;
-        }
+    public static function removeTag($email, $tag, $client = null)
+    {
+        self::setTagOrThrow($email, $tag, 'inactive', $client);
     }
 }
