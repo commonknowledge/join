@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 7.0
-Stable tag: 1.4.39
+Stable tag: 1.4.40
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.40 =
+* Fix bug when editing a custom amount wouldn't auto-select that option.
 = 1.4.39 =
 * Add Zetkin people listing and Zetkin and Mailchimp tag helpers that report status instead of throwing, for bulk maintenance jobs
 = 1.4.37 =
