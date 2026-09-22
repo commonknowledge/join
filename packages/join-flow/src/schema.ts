@@ -1,5 +1,6 @@
 import { memoize } from "lodash-es";
 import {
+  AnyObjectSchema,
   BaseSchema,
   boolean,
   InferType,
@@ -7,7 +8,8 @@ import {
   number,
   object,
   ObjectSchema,
-  string
+  string,
+  TestContext
 } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { PhoneNumberFormat, PhoneNumberUtil } from "google-libphonenumber";
@@ -54,26 +56,26 @@ const Prerequesites = object({
   sessionToken: string().required()
 }).required();
 
-function isValidDayOfMonth(value: number | null | undefined | object) {
+function isValidDayOfMonth(this: TestContext, value: number | null | undefined | object) {
   const correctDaysInMonth = getDaysInMonth(
-    new Date(this.options.parent.dobYear, this.options.parent.dobMonth - 1)
+    new Date(this.parent.dobYear, this.parent.dobMonth - 1)
   );
 
-  return value <= correctDaysInMonth;
+  return Number(value) <= correctDaysInMonth;
 }
 
-function isInPast(value: number | null | undefined | object) {
+function isInPast(this: TestContext, value: number | null | undefined | object) {
   return isPast(
     new Date(
-      this.options.parent.dobYear,
-      this.options.parent.dobMonth - 1,
-      this.options.parent.dobDay - 1
+      this.parent.dobYear,
+      this.parent.dobMonth - 1,
+      this.parent.dobDay - 1
     )
   );
 }
 
-function isAtLeast18(value: number | null | undefined | object) {
-  const { dobYear, dobMonth, dobDay } = this.options.parent;
+function isAtLeast18(this: TestContext, value: number | null | undefined | object) {
+  const { dobYear, dobMonth, dobDay } = this.parent;
   if (!dobYear || !dobMonth || !dobDay) {
     return true;
   }
@@ -448,4 +450,4 @@ export const getTestDataIfEnabled = (): FormSchema => {
   }
 };
 
-export const validate = memoize((schema: ObjectSchema) => yupResolver(schema));
+export const validate = memoize((schema: AnyObjectSchema) => yupResolver(schema));

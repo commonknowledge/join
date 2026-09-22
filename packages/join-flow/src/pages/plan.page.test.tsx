@@ -33,7 +33,7 @@ beforeEach(() => {
 
 describe('PlanPage — custom amount', () => {
   test('typing a custom amount selects that tier instead of the default', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} onCompleted={mockOnCompleted} />);
+    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
 
     const customInput = document.getElementById('other-amount') as HTMLInputElement;
     expect(customInput).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('PlanPage — custom amount', () => {
   });
 
   test('the continue button spells out the amount about to be paid', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} onCompleted={mockOnCompleted} />);
+    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
 
     expect(screen.getByRole('button', { name: 'Continue and pay £20 monthly' })).toBeInTheDocument();
 
@@ -62,7 +62,7 @@ describe('PlanPage — custom amount', () => {
   });
 
   test('submitting without touching the custom amount keeps the default tier', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} onCompleted={mockOnCompleted} />);
+    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
 
     fireEvent.submit(screen.getByRole('button', { name: /continue/i }).closest('form')!);
 

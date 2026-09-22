@@ -13,6 +13,7 @@ interface StaticEnv {
     MINIMUM_AGE: number;
     COLLECT_HEAR_ABOUT_US: boolean;
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: boolean;
+    CONSENT_CHECKED_BY_DEFAULT: boolean;
     CONTACT_CONSENT_COPY: string;
     CONTACT_DETAILS_COPY: string;
     CONTACT_DETAILS_HEADING: string;
@@ -88,6 +89,7 @@ const staticEnv: StaticEnv = {
     REQUIRE_AGE_18_OR_OVER: parseBooleanEnvVar("REACT_APP_REQUIRE_AGE_18_OR_OVER"),
     MINIMUM_AGE: parseInt(process.env.REACT_APP_MINIMUM_AGE || '18', 10),
     COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT: parseBooleanEnvVar("REACT_APP_COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT"),
+    CONSENT_CHECKED_BY_DEFAULT: parseBooleanEnvVar("REACT_APP_CONSENT_CHECKED_BY_DEFAULT"),
     COLLECT_HEAR_ABOUT_US: parseBooleanEnvVar("REACT_APP_COLLECT_HEAR_ABOUT_US"),
     CONTACT_CONSENT_COPY: process.env.REACT_ENV_CONTACT_CONSENT_COPY || '',
     CONTACT_DETAILS_COPY: process.env.REACT_APP_CONTACT_DETAILS_COPY || '',
@@ -141,7 +143,7 @@ const staticEnv: StaticEnv = {
     WP_REST_API: '',
 }
 
-export const get = (envVar: keyof StaticEnv): object[]|boolean|string|string[] => {
+export const get = (envVar: keyof StaticEnv): object[]|boolean|number|string|string[] => {
     return window.process.env[envVar] || staticEnv[envVar] || ''
 }
 
