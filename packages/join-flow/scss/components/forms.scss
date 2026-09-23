@@ -105,6 +105,13 @@ select.form-control {
     width: 30px;
     height: 30px;
   }
+
+  // Bootstrap's .custom-radio draws its own indicator on the label's
+  // pseudo-elements, which showed as a second circle on top of our SVG.
+  .custom-control-label::before,
+  .custom-control-label::after {
+    display: none;
+  }
 }
 
 .radio-panel-custom-amount {
