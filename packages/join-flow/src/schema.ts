@@ -97,6 +97,59 @@ export const parseTriggerValues = (raw: string | undefined): string[] =>
     .map((v) => v.trim())
     .filter(Boolean);
 
+/**
+ * Normalise a form value of any custom field type to a comparable string:
+ * checkboxes give booleans, number inputs may give numbers, everything else
+ * gives a string. Empty/unset values become "".
+ */
+const normaliseTriggerValue = (value: unknown): string => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+  return String(value).trim().toLowerCase();
+};
+
+/**
+ * Decide whether a conditional field should be shown, given the current
+ * value of its trigger field. Works for every custom field type:
+ * - select / radio: the option value (left side of "value : label")
+ * - checkbox: "true" or "false"
+ * - text / number: the entered value (case-insensitive, whitespace-trimmed)
+ * - month_year: "MM/YYYY"
+ * With no trigger values configured, the field shows whenever the trigger
+ * field has any value at all (i.e. is filled in or checked).
+ */
+export const matchesTrigger = (
+  triggerValue: unknown,
+  triggerValues: string[]
+): boolean => {
+  const value = normaliseTriggerValue(triggerValue);
+  if (triggerValues.length === 0) {
+    return value !== "" && value !== "false";
+  }
+  return triggerValues.some((v) => v.toLowerCase() === value);
+};
+
+/**
+ * The conditional-display config of a custom field, or null if the field is
+ * always shown.
+ */
+export const getFieldCondition = (
+  field: any
+): { triggerField: string; triggerValues: string[] } | null => {
+  const triggerField = (field.conditional_trigger_field || "").trim();
+  if (!triggerField || field.display_conditionally === false) {
+    return null;
+  }
+  return {
+    triggerField,
+    triggerValues: parseTriggerValues(field.conditional_trigger_values)
+  };
+};
+
 const CustomFieldsSchema = customFields.reduce((o, field) => {
   let def: BaseSchema = string();
   if (field.field_type === "checkbox") {
@@ -120,11 +173,10 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
 
   let validator: BaseSchema = field.required ? def.required() : def;
 
-  const triggerField = field.conditional_trigger_field;
-  const triggerValues = parseTriggerValues(field.conditional_trigger_values);
-  if (triggerField && triggerValues.length) {
-    validator = mixed().when(triggerField, {
-      is: (v: string) => triggerValues.includes(v),
+  const condition = getFieldCondition(field);
+  if (condition) {
+    validator = mixed().when(condition.triggerField, {
+      is: (v: unknown) => matchesTrigger(v, condition.triggerValues),
       then: validator,
       otherwise: mixed().notRequired()
     });

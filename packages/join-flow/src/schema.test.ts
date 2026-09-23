@@ -156,3 +156,98 @@ describe('getTestDataIfEnabled', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Conditional custom fields — trigger matching across every field type
+// ---------------------------------------------------------------------------
+
+import { getFieldCondition, matchesTrigger, parseTriggerValues } from './schema';
+
+describe('parseTriggerValues', () => {
+  it('splits on commas and trims whitespace', () => {
+    expect(parseTriggerValues(' red , blue,,green ')).toEqual(['red', 'blue', 'green']);
+  });
+
+  it('returns an empty list for blank input', () => {
+    expect(parseTriggerValues(undefined)).toEqual([]);
+    expect(parseTriggerValues('')).toEqual([]);
+  });
+});
+
+describe('matchesTrigger', () => {
+  it('matches select/radio option values', () => {
+    expect(matchesTrigger('red', ['red', 'blue'])).toBe(true);
+    expect(matchesTrigger('green', ['red', 'blue'])).toBe(false);
+    expect(matchesTrigger('', ['red', 'blue'])).toBe(false);
+  });
+
+  it('matches checkbox booleans against "true"/"false"', () => {
+    expect(matchesTrigger(true, ['true'])).toBe(true);
+    expect(matchesTrigger(false, ['true'])).toBe(false);
+    expect(matchesTrigger(false, ['false'])).toBe(true);
+    expect(matchesTrigger(undefined, ['false'])).toBe(false);
+  });
+
+  it('matches text values ignoring case and surrounding whitespace', () => {
+    expect(matchesTrigger('  Yes ', ['yes'])).toBe(true);
+    expect(matchesTrigger('yes', ['YES'])).toBe(true);
+    expect(matchesTrigger('no', ['yes'])).toBe(false);
+  });
+
+  it('matches number values whether given as numbers or strings', () => {
+    expect(matchesTrigger(5, ['5'])).toBe(true);
+    expect(matchesTrigger('5', ['5'])).toBe(true);
+    expect(matchesTrigger(6, ['5'])).toBe(false);
+  });
+
+  it('matches month/year values in MM/YYYY form', () => {
+    expect(matchesTrigger('01/2024', ['01/2024'])).toBe(true);
+    expect(matchesTrigger('02/2024', ['01/2024'])).toBe(false);
+  });
+
+  it('shows the field for any non-empty value when no trigger values are set', () => {
+    expect(matchesTrigger('anything', [])).toBe(true);
+    expect(matchesTrigger(true, [])).toBe(true);
+    expect(matchesTrigger(0, [])).toBe(true);
+    expect(matchesTrigger('', [])).toBe(false);
+    expect(matchesTrigger('   ', [])).toBe(false);
+    expect(matchesTrigger(false, [])).toBe(false);
+    expect(matchesTrigger(undefined, [])).toBe(false);
+  });
+});
+
+describe('getFieldCondition', () => {
+  it('returns null when no trigger field is configured', () => {
+    expect(getFieldCondition({ id: 'a' })).toBeNull();
+    expect(getFieldCondition({ id: 'a', conditional_trigger_field: '  ' })).toBeNull();
+  });
+
+  it('returns null when "display conditionally" is explicitly off', () => {
+    expect(
+      getFieldCondition({
+        id: 'a',
+        display_conditionally: false,
+        conditional_trigger_field: 'b',
+        conditional_trigger_values: 'x',
+      })
+    ).toBeNull();
+  });
+
+  it('returns the parsed condition when enabled', () => {
+    expect(
+      getFieldCondition({
+        id: 'a',
+        display_conditionally: true,
+        conditional_trigger_field: ' b ',
+        conditional_trigger_values: 'x, y',
+      })
+    ).toEqual({ triggerField: 'b', triggerValues: ['x', 'y'] });
+  });
+
+  it('treats a missing "display conditionally" flag as enabled', () => {
+    expect(getFieldCondition({ id: 'a', conditional_trigger_field: 'b' })).toEqual({
+      triggerField: 'b',
+      triggerValues: [],
+    });
+  });
+});

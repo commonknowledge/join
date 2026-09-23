@@ -273,9 +273,9 @@ class Blocks
                 ]
             ]),
             Field::make('checkbox', 'display_conditionally', 'Display conditionally')
-                ->set_help_text("Only show this field when another custom field has specific value(s)."),
+                ->set_help_text("Only show this field when another custom field (of any type) has a particular value."),
             Field::make('text', 'conditional_trigger_field', "Conditional trigger field")
-                ->set_help_text("Enter the ID of another (Select-type) custom field. This field will only display when that field's value matches one of the trigger values below.")
+                ->set_help_text("Enter the ID of another custom field. This field will only display when that field's value matches one of the trigger values below. The trigger field can be any type: Text, Checkbox, Number, Select, Radio or Month and Year.")
                 ->set_conditional_logic([
                     [
                         'field' => 'display_conditionally',
@@ -283,7 +283,16 @@ class Blocks
                     ],
                 ]),
             Field::make('text', 'conditional_trigger_values', "Conditional trigger values")
-                ->set_help_text("Comma-separated list of values that, when matched against the trigger field, cause this field to display. Match against option values (left side of <code>value : label</code>), not labels.")
+                ->set_help_text(
+                    "Comma-separated list of values that cause this field to display when the trigger field matches one of them. What to enter depends on the trigger field's type:<br />"
+                    . "<ul style=\"list-style: disc; margin-left: 1.5em;\">"
+                    . "<li><strong>Select / Radio:</strong> the option values (the left side of <code>value : label</code>, not the labels), e.g. <code>red, blue</code></li>"
+                    . "<li><strong>Checkbox:</strong> <code>true</code> to show when ticked, <code>false</code> to show when unticked</li>"
+                    . "<li><strong>Text / Number:</strong> the exact text or number the user must enter, e.g. <code>yes</code> or <code>0</code> (matching ignores case and surrounding spaces)</li>"
+                    . "<li><strong>Month and Year:</strong> in <code>MM/YYYY</code> form, e.g. <code>01/2024</code></li>"
+                    . "</ul>"
+                    . "Leave blank to show this field whenever the trigger field has any value at all (i.e. it is filled in, selected or ticked)."
+                )
                 ->set_conditional_logic([
                     [
                         'field' => 'display_conditionally',

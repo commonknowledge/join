@@ -4,7 +4,13 @@ import { useForm } from "react-hook-form";
 
 import { get as getEnv, getStr as getEnvStr } from "../env";
 import { StagerComponent } from "../components/stager";
-import { DetailsSchema, FormSchema, parseTriggerValues, validate } from "../schema";
+import {
+  DetailsSchema,
+  FormSchema,
+  getFieldCondition,
+  matchesTrigger,
+  validate
+} from "../schema";
 import { useAddressLookup } from "../services/address-lookup.service";
 import { ContinueButton, FormItem } from "../components/atoms";
 import { phoneCountries, sortedCountries } from "../constants";
@@ -404,13 +410,10 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
 };
 
 const CustomField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
-  const triggerField = field.conditional_trigger_field;
-  const triggerValues = parseTriggerValues(field.conditional_trigger_values);
-  const triggerValue = form.watch(triggerField || "");
+  const condition = getFieldCondition(field);
+  const triggerValue = form.watch(condition?.triggerField || "");
   const visible =
-    !triggerField ||
-    triggerValues.length === 0 ||
-    triggerValues.includes(triggerValue);
+    !condition || matchesTrigger(triggerValue, condition.triggerValues);
 
   useEffect(() => {
     if (!visible) {
