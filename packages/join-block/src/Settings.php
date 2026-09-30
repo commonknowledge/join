@@ -638,6 +638,22 @@ class Settings
         return implode('_', array_filter($parts));
     }
 
+    // The page a plan sends people to instead of taking payment, or null when
+    // the plan takes payment as normal.
+    public static function getMembershipPlanRedirectUrl($membership_plan)
+    {
+        if (empty($membership_plan["redirect_instead_of_payment"])) {
+            return null;
+        }
+
+        $pageId = $membership_plan["redirect_page"][0]["id"] ?? null;
+        if (!$pageId) {
+            return null;
+        }
+
+        return get_page_link($pageId);
+    }
+
     public static function getMembershipPlan($id)
     {
         $plan = get_option('ck_join_flow_membership_plan_' . $id);
