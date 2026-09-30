@@ -256,6 +256,74 @@ $multi_currency_page_id = ck_e2e_upsert_page(
     ck_e2e_make_block_content($multi_currency_plans)
 );
 
+// Plan redirect: a plan can send people to a chosen page instead of taking
+// payment. This is the page they land on.
+$redirect_target_page_id = ck_e2e_upsert_page(
+    'e2e-redirect-target',
+    'E2E Redirect Target',
+    '<!-- wp:paragraph --><p>You have been redirected here instead of paying.</p><!-- /wp:paragraph -->'
+);
+
+// The redirect fields are in the shape the block editor saves them: a real
+// boolean and a list of {id, type, subtype} page references.
+$redirect_to_target = [['id' => $redirect_target_page_id, 'type' => 'post', 'subtype' => 'page']];
+
+$ck_e2e_plan = function (string $label, string $id, string $amount, array $overrides = []): array {
+    return array_merge([
+        '_type'                       => '',
+        'label'                       => $label,
+        'id'                          => $id,
+        'amount'                      => $amount,
+        'allow_custom_amount'         => '',
+        'frequency'                   => 'monthly',
+        'currency'                    => 'GBP',
+        'description'                 => '',
+        'add_tags'                    => '',
+        'redirect_instead_of_payment' => false,
+        'redirect_page'               => [],
+    ], $overrides);
+};
+
+// One plan of each kind side by side, so each can be told apart from the others.
+$plan_redirect_page_id = ck_e2e_upsert_page(
+    'e2e-plan-redirect-join',
+    'E2E Plan Redirect Test',
+    ck_e2e_make_block_content([
+        $ck_e2e_plan('Standard', 'standard', '5'),
+        $ck_e2e_plan('Student', 'student', '3', [
+            'redirect_instead_of_payment' => true,
+            'redirect_page'               => $redirect_to_target,
+        ]),
+        // Ticked with no page chosen: takes payment as normal.
+        $ck_e2e_plan('Concession', 'concession', '2', [
+            'redirect_instead_of_payment' => true,
+        ]),
+        // Unticked but still holding a page from before: takes payment as normal.
+        $ck_e2e_plan('Unwaged', 'unwaged', '1', [
+            'redirect_page' => $redirect_to_target,
+        ]),
+    ])
+);
+
+// Supporter mode skips the plan step, so a redirecting tier must not redirect.
+$supporter_redirect_page_id = ck_e2e_upsert_page(
+    'e2e-supporter-redirect',
+    'E2E Supporter Redirect Test',
+    ck_e2e_make_block_content([
+        $ck_e2e_plan('Supporter', 'supporter-redirect', '5', [
+            'redirect_instead_of_payment' => true,
+            'redirect_page'               => $redirect_to_target,
+        ]),
+    ], ['donation_supporter_mode' => true])
+);
+
+// No block plans, so the form uses the global plans from the settings page.
+$global_plans_page_id = ck_e2e_upsert_page(
+    'e2e-global-plans-join',
+    'E2E Global Plans Test',
+    ck_e2e_make_block_content([])
+);
+
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the
 // override would produce no observable difference.
