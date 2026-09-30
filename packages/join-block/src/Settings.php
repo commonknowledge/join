@@ -9,6 +9,7 @@ if (! defined('ABSPATH')) {
 use Carbon_Fields\Container;
 use Carbon_Fields\Datastore\Empty_Datastore;
 use Carbon_Fields\Field;
+use Carbon_Fields\Field\Association_Field;
 use Carbon_Fields\Field\Complex_Field;
 use Carbon_Fields\Field\Html_Field;
 use Carbon_Fields\Field\Select_Field;
@@ -534,6 +535,18 @@ class Settings
             'EUR' => 'EUR (€)',
             'USD' => 'USD ($)',
         ))->set_default_value('GBP');
+        /** @var Association_Field $redirect_page */
+        $redirect_page = Field::make('association', 'redirect_page', 'Page to redirect to');
+        $redirect_page->set_types(array(
+            array(
+                'type' => 'post',
+                'post_type' => 'page',
+            ),
+        ))->set_max(1)
+        ->set_conditional_logic([[
+            'field' => 'redirect_instead_of_payment',
+            'value' => true
+        ]]);
         /** @var Complex_Field $membership_plans */
         $membership_plans = Field::make('complex', $name);
         $membership_plans->add_fields([
@@ -546,7 +559,13 @@ class Settings
             $payment_frequency_select,
             $payment_currency_select,
             Field::make('text', 'description'),
-            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin.")
+            Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin."),
+            Field::make('checkbox', 'redirect_instead_of_payment', 'Redirect to a page instead of taking payment')
+                ->set_help_text(
+                    'People who choose this plan are sent to the page below instead of paying. ' .
+                    'They are not signed up as members. Has no effect when Donation Supporter Mode is enabled.'
+                ),
+            $redirect_page,
         ])->set_min(1)
         ->set_header_template('
             <% if (label) { %>
