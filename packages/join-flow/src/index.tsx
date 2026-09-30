@@ -24,7 +24,7 @@ const init = () => {
   const sentryDsn = getEnvStr("SENTRY_DSN")
   Sentry.init({
     dsn: sentryDsn,
-    release: "1.4.42"
+    release: "1.4.43"
   });
 
   if (getEnv('USE_CHARGEBEE')) {
