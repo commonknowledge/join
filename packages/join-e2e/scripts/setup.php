@@ -77,6 +77,10 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
     return $page_id;
 }
 
+// Stop WordPress interrupting admin logins with its periodic "is the
+// administration email still correct?" screen.
+update_option('admin_email_lifespan', time() + 10 * YEAR_IN_SECONDS);
+
 // Configure pretty permalinks so test URLs are predictable.
 update_option('permalink_structure', '/%postname%/');
 flush_rewrite_rules(true);
