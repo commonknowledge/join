@@ -251,3 +251,35 @@ describe('getFieldCondition', () => {
     });
   });
 });
+
+import { getPlanRedirectUrl } from './schema';
+
+describe('getPlanRedirectUrl', () => {
+  const PLAN_REDIRECT = {
+    ...PLAN_STANDARD,
+    value: 'student',
+    label: 'Student',
+    redirectUrl: 'https://example.org/students',
+  };
+
+  const withPlans = (fn: () => void) =>
+    withEnv({ MEMBERSHIP_PLANS: [PLAN_STANDARD, PLAN_REDIRECT] }, fn);
+
+  it('returns the redirect URL for a plan marked to redirect', () => {
+    withPlans(() => {
+      expect(getPlanRedirectUrl('student')).toBe('https://example.org/students');
+    });
+  });
+
+  it('returns null for a plan that takes payment as normal', () => {
+    withPlans(() => {
+      expect(getPlanRedirectUrl('standard')).toBeNull();
+    });
+  });
+
+  it('returns null when no plan is selected', () => {
+    withPlans(() => {
+      expect(getPlanRedirectUrl(undefined)).toBeNull();
+    });
+  });
+});
