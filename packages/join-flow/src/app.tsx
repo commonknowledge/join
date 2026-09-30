@@ -11,6 +11,7 @@ import {
   PageState,
   RouterContext,
   StateRouter,
+  redirectToPage,
   redirectToSuccess,
   stripUrlParams,
   useStateRouter,
@@ -19,7 +20,7 @@ import {
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
-import { FormSchema, getPaymentPlan, getTestDataIfEnabled } from "./schema";
+import { FormSchema, getPaymentPlan, getPlanRedirectUrl, getTestDataIfEnabled } from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
 import { get as getEnv, getStr as getEnvStr, getPaymentMethods, getPaymentProviders, PaymentMethod, PaymentProvider } from "./env";
 import { usePostResource } from "./services/rest-resource.service";
@@ -162,6 +163,12 @@ const App = () => {
         // Clear any previous blocking message
         setBlockingMessage(null);
       } else if (router.state.stage === "plan") {
+        const planRedirectUrl = getPlanRedirectUrl(nextData.membership);
+        if (planRedirectUrl) {
+          router.reset();
+          await redirectToPage(planRedirectUrl);
+          return;
+        }
         nextStage = "donation";
       } else if (router.state.stage === "donation") {
         nextStage = "payment-method";
