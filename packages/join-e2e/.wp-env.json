@@ -2,7 +2,8 @@
   "core": "https://wordpress.org/wordpress-6.9.4.zip",
   "plugins": ["../../packages/join-block"],
   "mappings": {
-    "wp-content/e2e-scripts": "../../packages/join-e2e/scripts"
+    "wp-content/e2e-scripts": "../../packages/join-e2e/scripts",
+    "wp-content/mu-plugins/ck-e2e-income-guidance.php": "../../packages/join-e2e/mu-plugins/ck-e2e-income-guidance.php"
   },
   "config": {
     "WP_DEBUG": true,

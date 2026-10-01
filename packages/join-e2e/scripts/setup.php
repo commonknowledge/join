@@ -42,6 +42,9 @@ function ck_e2e_make_block_content(array $plans, array $overrides = []): string
 
 /**
  * Create or update a page by post_name slug.
+ *
+ * WordPress unslashes post content on save, which would turn the \u escapes
+ * in the block's JSON (e.g. \u00a3 for £) into plain text, so slash it first.
  * Returns the page ID on success; exits with status 1 on failure.
  */
 function ck_e2e_upsert_page(string $slug, string $title, string $content): int
@@ -55,7 +58,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 
     if ($existing) {
         $page_id = $existing[0]->ID;
-        wp_update_post(['ID' => $page_id, 'post_content' => $content]);
+        wp_update_post(['ID' => $page_id, 'post_content' => wp_slash($content)]);
         echo "Updated page '{$slug}' (ID: {$page_id}).\n";
         return $page_id;
     }
@@ -65,7 +68,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
         'post_title'   => $title,
         'post_status'  => 'publish',
         'post_type'    => 'page',
-        'post_content' => $content,
+        'post_content' => wp_slash($content),
     ], true);
 
     if (is_wp_error($page_id)) {
@@ -86,6 +89,10 @@ update_option('admin_email_lifespan', time() + 10 * YEAR_IN_SECONDS);
 carbon_set_theme_option('organisation_name', 'E2E Organisation');
 carbon_set_theme_option('organisation_bank_name', 'E2E ORG');
 carbon_set_theme_option('organisation_email_address', 'e2e@example.org');
+
+// Switch income guidance on, as an add-on would (see mu-plugins/). Specs that
+// need it off turn the option off and back on again.
+update_option('ck_e2e_income_guidance_enabled', '1');
 
 // Configure pretty permalinks so test URLs are predictable.
 update_option('permalink_structure', '/%postname%/');
@@ -334,6 +341,29 @@ $global_plans_page_id = ck_e2e_upsert_page(
     'E2E Global Plans Test',
     ck_e2e_make_block_content([])
 );
+
+// Income guidance: three banded tiers, and a custom-amount tier with no band
+// that stays out of the table.
+$income_guidance_page_id = ck_e2e_upsert_page(
+    'e2e-income-guidance-join',
+    'E2E Income Guidance Test',
+    ck_e2e_make_block_content([
+        $ck_e2e_plan('Higher', 'higher', '25', [
+            'income_weekly'  => 'More than £800',
+            'income_monthly' => 'More than £3,200',
+        ]),
+        $ck_e2e_plan('Middle', 'middle', '12', [
+            'income_weekly'  => '£400 to £800',
+            'income_monthly' => '£1,600 to £3,200',
+        ]),
+        $ck_e2e_plan('Lower', 'lower', '5', [
+            'income_weekly'  => 'Less than £400',
+            'income_monthly' => 'Less than £1,600',
+        ]),
+        $ck_e2e_plan('Other', 'other', '1', ['allow_custom_amount' => '1']),
+    ])
+);
+carbon_set_theme_option('income_guidance_note', "Can't afford dues? Email dues@example.org.");
 
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the

@@ -404,7 +404,7 @@ class Blocks
                 "frequency" => $plan["frequency"],
                 "description" => $plan["description"],
                 "redirectUrl" => $is_supporter_mode ? null : Settings::getMembershipPlanRedirectUrl($plan)
-            ];
+            ] + Settings::getMembershipPlanIncomeBands($plan);
         }
 
         $webhook_url = $fields['custom_webhook_url'] ?? '';
@@ -538,7 +538,7 @@ class Blocks
             "USE_STRIPE" => Settings::get("USE_STRIPE"),
             "USE_VARIABLE_MEMBERSHIP_PLAN" => $fields['use_variable_membership_plan'] ?? false,
             "WEBHOOK_UUID" => $webhook_uuid ? $webhook_uuid : '',
-        ];
+        ] + Settings::getIncomeGuidanceEnv();
         ?>
         <script type="application/json" id="env">
             <?php echo wp_json_encode($environment); ?>
