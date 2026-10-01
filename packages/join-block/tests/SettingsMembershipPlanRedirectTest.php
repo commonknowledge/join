@@ -22,6 +22,7 @@ class SettingsMembershipPlanRedirectTest extends TestCase
         parent::setUp();
         Monkey\setUp();
         Monkey\Functions\when('get_page_link')->alias(fn($id) => "https://example.org/?page_id=$id");
+        Monkey\Functions\when('get_post_status')->justReturn('publish');
     }
 
     protected function tearDown(): void
@@ -81,6 +82,34 @@ class SettingsMembershipPlanRedirectTest extends TestCase
         ]);
 
         $this->assertNull(Settings::getMembershipPlanRedirectUrl($plan));
+    }
+
+    /**
+     * get_page_link() on a missing page falls back to the page being viewed,
+     * which is the join form itself, so a deleted page must not redirect.
+     */
+    public function test_returns_null_when_the_chosen_page_has_been_deleted()
+    {
+        Monkey\Functions\when('get_post_status')->justReturn(false);
+
+        $this->assertNull(Settings::getMembershipPlanRedirectUrl($this->redirectingPlan()));
+    }
+
+    public function test_returns_null_when_the_chosen_page_is_not_published()
+    {
+        foreach (['trash', 'draft', 'private'] as $status) {
+            Monkey\Functions\when('get_post_status')->justReturn($status);
+
+            $this->assertNull(Settings::getMembershipPlanRedirectUrl($this->redirectingPlan()), $status);
+        }
+    }
+
+    private function redirectingPlan(): array
+    {
+        return $this->plan([
+            'redirect_instead_of_payment' => true,
+            'redirect_page' => [['id' => 42, 'type' => 'post', 'subtype' => 'page']],
+        ]);
     }
 
     /**

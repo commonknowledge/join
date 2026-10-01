@@ -709,7 +709,9 @@ class Settings
         }
 
         $pageId = $membership_plan["redirect_page"][0]["id"] ?? null;
-        if (!$pageId) {
+        // get_page_link() on a missing page falls back to the page being
+        // viewed, which would send people back to the join form.
+        if (!$pageId || get_post_status($pageId) !== 'publish') {
             return null;
         }
 
