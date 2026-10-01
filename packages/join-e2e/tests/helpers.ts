@@ -172,3 +172,15 @@ export async function choosePlan(page: Page, label: string): Promise<void> {
   await page.locator('label.radio-panel', { has: page.locator(`[id="membership-${label}"]`) }).click();
   await page.locator(CONTINUE).click();
 }
+
+/** Chooses a page, by its exact title, in a Carbon Fields page picker. */
+export async function choosePage(picker: Locator, title: string): Promise<void> {
+  await picker.locator('.cf-search-input__inner').fill(title);
+  // The search runs over AJAX; clicking before it lands hits the old list.
+  await expect(picker.locator('.cf-association__counter')).toHaveText(/Showing 1 of 1 results/);
+  await picker
+    .locator('.cf-association__option', { hasText: title })
+    // The block editor renders this button without an accessible name.
+    .locator('button.dashicons-plus-alt')
+    .click();
+}

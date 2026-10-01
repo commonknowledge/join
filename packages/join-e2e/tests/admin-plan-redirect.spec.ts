@@ -1,5 +1,6 @@
 import { test, expect, Locator } from '@playwright/test';
 import {
+  choosePage,
   choosePlan,
   field,
   fillPlan,
@@ -35,14 +36,7 @@ function redirectPicker(plan: Locator): Locator {
 }
 
 async function chooseRedirectTarget(picker: Locator): Promise<void> {
-  await picker.locator('.cf-search-input__inner').fill(REDIRECT_TARGET_TITLE);
-  // The search runs over AJAX; clicking before it lands hits the old list.
-  await expect(picker.locator('.cf-association__counter')).toHaveText(/Showing 1 of 1 results/);
-  await picker
-    .locator('.cf-association__option', { hasText: REDIRECT_TARGET_TITLE })
-    // The block editor renders this button without an accessible name.
-    .locator('button.dashicons-plus-alt')
-    .click();
+  await choosePage(picker, REDIRECT_TARGET_TITLE);
 }
 
 /** Selected pages are shown in the association field's second column. */
