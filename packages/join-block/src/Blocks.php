@@ -402,7 +402,8 @@ class Blocks
                 "amount" => $plan["amount"],
                 "currency" => $plan["currency"],
                 "frequency" => $plan["frequency"],
-                "description" => $plan["description"]
+                "description" => $plan["description"],
+                "redirectUrl" => $is_supporter_mode ? null : Settings::getMembershipPlanRedirectUrl($plan)
             ];
         }
 

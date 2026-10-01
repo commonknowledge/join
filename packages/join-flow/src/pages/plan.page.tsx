@@ -88,7 +88,8 @@ export const renderContinueLabel = (
   customMembershipAmount: string | number | undefined
 ) => {
   const plan = getPaymentPlan(membership);
-  if (!plan) {
+  // A redirecting plan sends people to a page instead of taking payment.
+  if (!plan || plan.redirectUrl) {
     return "Continue";
   }
   const amount = plan.allowCustomAmount

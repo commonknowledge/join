@@ -324,6 +324,11 @@ export const getPaymentPlan = (name: string | undefined) => {
   return (plans as any[]).filter((p) => p.value === name).pop();
 };
 
+// A plan can send people to a page instead of taking payment.
+export const getPlanRedirectUrl = (name: string | undefined): string | null => {
+  return getPaymentPlan(name)?.redirectUrl || null;
+};
+
 export const renderDonationSummary = (data: FormSchema): string => {
   const { donationAmount, recurDonation, donationSupporterMode, membership, customMembershipAmount } = data;
 

@@ -70,3 +70,35 @@ describe('PlanPage — custom amount', () => {
     expect(mockOnCompleted.mock.calls[0][0].membership).toBe('higher');
   });
 });
+
+describe('PlanPage — redirecting plan', () => {
+  const PLANS_WITH_REDIRECT = [
+    ...MOCK_PLANS,
+    {
+      value: 'student', label: 'Student', description: '', amount: '3', currency: 'GBP', frequency: 'monthly',
+      allowCustomAmount: false, redirectUrl: 'https://example.org/students',
+    },
+  ];
+
+  beforeEach(() => {
+    mockGetEnv.mockImplementation((key: string) => {
+      if (key === 'MEMBERSHIP_PLANS') return PLANS_WITH_REDIRECT;
+      return false;
+    });
+  });
+
+  test('the continue button does not promise a payment that will not be taken', () => {
+    render(<PlanPage data={{ membership: 'student' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+  });
+
+  test('switching from a paying plan to the redirecting plan drops the amount from the button', async () => {
+    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+    expect(screen.getByRole('button', { name: 'Continue and pay £20 monthly' })).toBeInTheDocument();
+
+    fireEvent.click(document.getElementById('membership-Student')!);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument());
+  });
+});

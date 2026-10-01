@@ -102,3 +102,21 @@ export async function captureJoinBodyViaStripeRedirect(
 
   return joinBody!;
 }
+
+/**
+ * Logs in to wp-admin as the admin user wp-env creates.
+ *
+ * Posts the login form directly: the login page clears and refocuses the
+ * username field shortly after loading, which can wipe a typed-in value.
+ */
+export async function loginAsAdmin(page: Page): Promise<void> {
+  await page.goto('/wp-login.php');
+  const origin = new URL(page.url()).origin;
+  await page.context().addCookies([{ name: 'wordpress_test_cookie', value: 'WP Cookie check', url: origin }]);
+  const response = await page.request.post('/wp-login.php', {
+    form: { log: 'admin', pwd: 'password', testcookie: '1', redirect_to: `${origin}/wp-admin/` },
+  });
+  expect(response.ok()).toBe(true);
+  await page.goto('/wp-admin/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#wpadminbar')).toBeVisible();
+}
