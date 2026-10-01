@@ -679,6 +679,12 @@ class Settings
         }
     }
 
+    // Income guidance is off unless an add-on switches it on.
+    public static function isIncomeGuidanceEnabled()
+    {
+        return (bool) apply_filters('ck_join_flow_income_guidance_enabled', false);
+    }
+
     // Names the CRMs this site uses, so admins can see where redirected people
     // will not appear.
     public static function getMembershipPlanRedirectHelpText()
