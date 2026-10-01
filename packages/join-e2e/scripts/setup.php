@@ -342,6 +342,29 @@ $global_plans_page_id = ck_e2e_upsert_page(
     ck_e2e_make_block_content([])
 );
 
+// Income guidance: three banded tiers, and a custom-amount tier with no band
+// that stays out of the table.
+$income_guidance_page_id = ck_e2e_upsert_page(
+    'e2e-income-guidance-join',
+    'E2E Income Guidance Test',
+    ck_e2e_make_block_content([
+        $ck_e2e_plan('Higher', 'higher', '25', [
+            'income_weekly'  => 'More than £800',
+            'income_monthly' => 'More than £3,200',
+        ]),
+        $ck_e2e_plan('Middle', 'middle', '12', [
+            'income_weekly'  => '£400 to £800',
+            'income_monthly' => '£1,600 to £3,200',
+        ]),
+        $ck_e2e_plan('Lower', 'lower', '5', [
+            'income_weekly'  => 'Less than £400',
+            'income_monthly' => 'Less than £1,600',
+        ]),
+        $ck_e2e_plan('Other', 'other', '1', ['allow_custom_amount' => '1']),
+    ])
+);
+carbon_set_theme_option('income_guidance_note', "Can't afford dues? Email dues@example.org.");
+
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the
 // override would produce no observable difference.
