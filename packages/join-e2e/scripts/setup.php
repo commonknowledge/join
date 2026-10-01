@@ -81,6 +81,12 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 // administration email still correct?" screen.
 update_option('admin_email_lifespan', time() + 10 * YEAR_IN_SECONDS);
 
+// The settings page will not save until its required fields are filled in,
+// and a fresh site has none of them.
+carbon_set_theme_option('organisation_name', 'E2E Organisation');
+carbon_set_theme_option('organisation_bank_name', 'E2E ORG');
+carbon_set_theme_option('organisation_email_address', 'e2e@example.org');
+
 // Configure pretty permalinks so test URLs are predictable.
 update_option('permalink_structure', '/%postname%/');
 flush_rewrite_rules(true);
