@@ -42,6 +42,9 @@ function ck_e2e_make_block_content(array $plans, array $overrides = []): string
 
 /**
  * Create or update a page by post_name slug.
+ *
+ * WordPress unslashes post content on save, which would turn the \u escapes
+ * in the block's JSON (e.g. \u00a3 for £) into plain text, so slash it first.
  * Returns the page ID on success; exits with status 1 on failure.
  */
 function ck_e2e_upsert_page(string $slug, string $title, string $content): int
@@ -55,7 +58,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 
     if ($existing) {
         $page_id = $existing[0]->ID;
-        wp_update_post(['ID' => $page_id, 'post_content' => $content]);
+        wp_update_post(['ID' => $page_id, 'post_content' => wp_slash($content)]);
         echo "Updated page '{$slug}' (ID: {$page_id}).\n";
         return $page_id;
     }
@@ -65,7 +68,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
         'post_title'   => $title,
         'post_status'  => 'publish',
         'post_type'    => 'page',
-        'post_content' => $content,
+        'post_content' => wp_slash($content),
     ], true);
 
     if (is_wp_error($page_id)) {
