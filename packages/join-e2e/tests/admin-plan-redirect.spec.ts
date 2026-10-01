@@ -65,6 +65,24 @@ function selectedPages(picker: Locator): Locator {
   return picker.locator('.cf-association__col').nth(1);
 }
 
+/** Opens a new, unsaved page in the block editor with a CK Join Form block on it. */
+async function openNewPageWithJoinBlock(page: Page): Promise<void> {
+  await page.goto('/wp-admin/post-new.php?post_type=page');
+  await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
+
+  // New pages open with WordPress's starter pattern picker over the editor.
+  const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
+  if (await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
+    await patterns.getByRole('button', { name: 'Close' }).click();
+  }
+
+  await page.evaluate(() => {
+    const wp = (window as any).wp;
+    wp.data.dispatch('core/editor').editPost({ title: 'E2E Block Editor Redirect' });
+    wp.data.dispatch('core/block-editor').insertBlocks(wp.blocks.createBlock('carbon-fields/ck-join-form'));
+  });
+}
+
 async function choosePlan(page: Page, label: string): Promise<void> {
   await page.locator(CONTINUE).click();
   await page.waitForSelector('[role="radiogroup"]');
@@ -158,23 +176,40 @@ test.describe('Global plans on the Join settings page', () => {
   });
 });
 
+test.describe('Redirect help text', () => {
+  test('names the CRMs the site uses, since redirected people are not recorded in them', async ({ page }) => {
+    const NOT_RECORDED = 'They are not signed up as members and not recorded in Mailchimp and Zetkin.';
+    const setCrms = (on: boolean) =>
+      wpCli(`wp eval 'carbon_set_theme_option("use_mailchimp", ${on}); carbon_set_theme_option("use_zetkin", ${on});'`);
+
+    setCrms(true);
+    try {
+      await loginAsAdmin(page);
+      await page.goto(SETTINGS_PAGE);
+      await page.getByRole('tab', { name: 'Membership Plans' }).click();
+
+      const checkbox = field(page.locator('.cf-container'), 'Membership Plans')
+        .locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX })
+        .first();
+      await expect(checkbox).toContainText(NOT_RECORDED);
+
+      // The block's own plans are built separately, so check them too.
+      await openNewPageWithJoinBlock(page);
+      const plansField = field(page.locator('[data-type="carbon-fields/ck-join-form"]'), 'Custom Membership Plans');
+      await plansField.locator('.cf-complex__inserter-button').click();
+      await expect(
+        plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
+      ).toContainText(NOT_RECORDED);
+    } finally {
+      setCrms(false);
+    }
+  });
+});
+
 test.describe('Custom plans in the CK Join Form block', () => {
   test('a redirecting plan set up in the block editor redirects on the published page', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/wp-admin/post-new.php?post_type=page');
-    await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
-
-    // New pages open with WordPress's starter pattern picker over the editor.
-    const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
-    if (await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
-      await patterns.getByRole('button', { name: 'Close' }).click();
-    }
-
-    await page.evaluate(() => {
-      const wp = (window as any).wp;
-      wp.data.dispatch('core/editor').editPost({ title: 'E2E Block Editor Redirect' });
-      wp.data.dispatch('core/block-editor').insertBlocks(wp.blocks.createBlock('carbon-fields/ck-join-form'));
-    });
+    await openNewPageWithJoinBlock(page);
 
     const block = page.locator('[data-type="carbon-fields/ck-join-form"]');
     await chooseRedirectTarget(field(block, 'Page to redirect to after joining'));
