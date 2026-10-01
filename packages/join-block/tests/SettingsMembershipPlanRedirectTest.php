@@ -82,4 +82,59 @@ class SettingsMembershipPlanRedirectTest extends TestCase
 
         $this->assertNull(Settings::getMembershipPlanRedirectUrl($plan));
     }
+
+    /**
+     * The help text names the CRMs the site actually uses, so admins know
+     * where these people will not show up.
+     */
+    private function withCrms(array $enabled): void
+    {
+        Monkey\Functions\when('carbon_get_theme_option')->alias(
+            fn($key) => in_array($key, $enabled, true)
+        );
+    }
+
+    private function helpText(string $notRecorded): string
+    {
+        return 'People who choose this plan are sent to the page below instead of paying. '
+            . "They are not signed up as members$notRecorded. "
+            . 'Has no effect when Donation Supporter Mode is enabled.';
+    }
+
+    public function test_help_text_names_no_crm_when_none_is_set_up()
+    {
+        $this->withCrms([]);
+
+        $this->assertSame($this->helpText(''), Settings::getMembershipPlanRedirectHelpText());
+    }
+
+    public function test_help_text_names_the_one_crm_that_is_set_up()
+    {
+        $this->withCrms(['use_zetkin']);
+
+        $this->assertSame(
+            $this->helpText(' and not recorded in Zetkin'),
+            Settings::getMembershipPlanRedirectHelpText()
+        );
+    }
+
+    public function test_help_text_names_two_crms()
+    {
+        $this->withCrms(['use_action_network', 'use_mailchimp']);
+
+        $this->assertSame(
+            $this->helpText(' and not recorded in Action Network and Mailchimp'),
+            Settings::getMembershipPlanRedirectHelpText()
+        );
+    }
+
+    public function test_help_text_names_all_three_crms()
+    {
+        $this->withCrms(['use_action_network', 'use_mailchimp', 'use_zetkin']);
+
+        $this->assertSame(
+            $this->helpText(' and not recorded in Action Network, Mailchimp and Zetkin'),
+            Settings::getMembershipPlanRedirectHelpText()
+        );
+    }
 }

@@ -23,6 +23,11 @@ class Settings
     public const GET_ADDRESS_IO = 'get_address_io';
     public const IDEAL_POSTCODES = 'ideal_postcodes';
 
+    // Settings can only be read once the settings container is registered,
+    // so plan redirect checkboxes built before then are described afterwards.
+    private static $containerRegistered = false;
+    private static $planRedirectCheckboxes = [];
+
     public static function init()
     {
         /** @var Select_Field $gc_environment_select */
@@ -344,6 +349,9 @@ class Settings
             ->add_tab('Logging', $logging_fields)
             ->add_tab('Debug', $debug_fields);
 
+        self::$containerRegistered = true;
+        self::describePlanRedirectCheckboxes();
+
         add_filter('carbon_fields_container_is_valid_save', function ($valid, $container) {
             if (!$valid) {
                 return false;
@@ -547,6 +555,13 @@ class Settings
             'field' => 'redirect_instead_of_payment',
             'value' => true
         ]]);
+        $redirect_checkbox = Field::make(
+            'checkbox',
+            'redirect_instead_of_payment',
+            'Redirect to a page instead of taking payment'
+        );
+        self::$planRedirectCheckboxes[] = $redirect_checkbox;
+        self::describePlanRedirectCheckboxes();
         /** @var Complex_Field $membership_plans */
         $membership_plans = Field::make('complex', $name);
         $membership_plans->add_fields([
@@ -560,11 +575,7 @@ class Settings
             $payment_currency_select,
             Field::make('text', 'description'),
             Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin."),
-            Field::make('checkbox', 'redirect_instead_of_payment', 'Redirect to a page instead of taking payment')
-                ->set_help_text(
-                    'People who choose this plan are sent to the page below instead of paying. ' .
-                    'They are not signed up as members. Has no effect when Donation Supporter Mode is enabled.'
-                ),
+            $redirect_checkbox,
             $redirect_page,
         ])->set_min(1)
         ->set_header_template('
@@ -655,6 +666,38 @@ class Settings
             $parts[] = sanitize_title(strtolower($membership_plan["currency"]));
         }
         return implode('_', array_filter($parts));
+    }
+
+    private static function describePlanRedirectCheckboxes()
+    {
+        if (!self::$containerRegistered) {
+            return;
+        }
+
+        foreach (self::$planRedirectCheckboxes as $checkbox) {
+            $checkbox->set_help_text(self::getMembershipPlanRedirectHelpText());
+        }
+    }
+
+    // Names the CRMs this site uses, so admins can see where redirected people
+    // will not appear.
+    public static function getMembershipPlanRedirectHelpText()
+    {
+        $crms = array_keys(array_filter([
+            'Action Network' => self::get('USE_ACTION_NETWORK'),
+            'Mailchimp' => self::get('USE_MAILCHIMP'),
+            'Zetkin' => self::get('USE_ZETKIN'),
+        ]));
+
+        $notRecorded = '';
+        if ($crms) {
+            $last = array_pop($crms);
+            $notRecorded = ' and not recorded in ' . ($crms ? implode(', ', $crms) . ' and ' : '') . $last;
+        }
+
+        return 'People who choose this plan are sent to the page below instead of paying. '
+            . "They are not signed up as members$notRecorded. "
+            . 'Has no effect when Donation Supporter Mode is enabled.';
     }
 
     // The page a plan sends people to instead of taking payment, or null when
