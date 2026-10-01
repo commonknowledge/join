@@ -16,11 +16,12 @@ import { loginAsAdmin, mockRestEndpoints, CONTINUE } from './helpers';
  * the seed is re-run afterwards to put them back for the specs that follow.
  */
 
+function wpCli(command: string): void {
+  execSync(`npx wp-env run tests-cli ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
+}
+
 function reseed(): void {
-  execSync('npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php', {
-    cwd: path.resolve(__dirname, '..'),
-    stdio: 'ignore',
-  });
+  wpCli('wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php');
 }
 
 const SETTINGS_PAGE = '/wp-admin/admin.php?page=crb_carbon_fields_container_ck_join_flow.php';
@@ -215,11 +216,7 @@ test.describe('Custom plans in the CK Join Form block', () => {
       await choosePlan(page, 'Block Standard');
       await expect(page.locator('.progress-step--current')).toContainText('Payment');
     } finally {
-      await page.goto('/wp-admin/');
-      await page.evaluate(
-        (id) => (window as any).wp.apiFetch({ path: `/wp/v2/pages/${id}?force=true`, method: 'DELETE' }),
-        pageId,
-      );
+      wpCli(`wp post delete ${pageId} --force`);
     }
   });
 });
