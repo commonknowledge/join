@@ -85,7 +85,13 @@ test.describe('Global plans on the Join settings page', () => {
     const plansField = field(page.locator('.cf-container'), 'Membership Plans');
     const plans = plansField.locator('.cf-complex__group');
 
-    // Start from a single plan, whatever earlier runs left behind.
+    // Start from a single plan, whatever earlier runs left behind. A fresh
+    // site has no global plans at all.
+    await expect(plansField.locator('.cf-complex__inserter-button')).toBeVisible();
+    if ((await plans.count()) === 0) {
+      await plansField.locator('.cf-complex__inserter-button').click();
+    }
+    await expect(plans.first()).toBeVisible();
     while ((await plans.count()) > 1) {
       await plans.last().locator('button[title="Remove"]').click();
     }
