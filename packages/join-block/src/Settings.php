@@ -710,6 +710,32 @@ class Settings
         return (bool) apply_filters('ck_join_flow_income_guidance_enabled', false);
     }
 
+    // A plan's income bands, for the form's income guidance table.
+    public static function getMembershipPlanIncomeBands($membership_plan)
+    {
+        if (!self::isIncomeGuidanceEnabled()) {
+            return [];
+        }
+
+        return [
+            'incomeWeekly' => trim((string) ($membership_plan['income_weekly'] ?? '')),
+            'incomeMonthly' => trim((string) ($membership_plan['income_monthly'] ?? '')),
+        ];
+    }
+
+    public static function getIncomeGuidanceEnv()
+    {
+        if (!self::isIncomeGuidanceEnabled()) {
+            return ['INCOME_GUIDANCE_ENABLED' => false];
+        }
+
+        return [
+            'INCOME_GUIDANCE_ENABLED' => true,
+            'INCOME_GUIDANCE_HEADING' => (string) self::get('INCOME_GUIDANCE_HEADING'),
+            'INCOME_GUIDANCE_NOTE' => wpautop((string) self::get('INCOME_GUIDANCE_NOTE')),
+        ];
+    }
+
     // Names the CRMs this site uses, so admins can see where redirected people
     // will not appear.
     public static function getMembershipPlanRedirectHelpText()
