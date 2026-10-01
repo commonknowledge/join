@@ -87,6 +87,10 @@ carbon_set_theme_option('organisation_name', 'E2E Organisation');
 carbon_set_theme_option('organisation_bank_name', 'E2E ORG');
 carbon_set_theme_option('organisation_email_address', 'e2e@example.org');
 
+// Switch income guidance on, as an add-on would (see mu-plugins/). Specs that
+// need it off turn the option off and back on again.
+update_option('ck_e2e_income_guidance_enabled', '1');
+
 // Configure pretty permalinks so test URLs are predictable.
 update_option('permalink_structure', '/%postname%/');
 flush_rewrite_rules(true);
