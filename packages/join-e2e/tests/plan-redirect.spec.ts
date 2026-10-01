@@ -72,6 +72,18 @@ test.describe('Plan redirect page', () => {
     expect(joinCalls).toEqual([]);
   });
 
+  test('the continue button only mentions paying for plans that take payment', async ({ page }) => {
+    await page.locator(CONTINUE).click();
+    await page.waitForSelector('[role="radiogroup"]');
+    const button = page.locator('button[type="submit"]');
+
+    await page.locator('label.radio-panel', { has: page.locator('[id="membership-Student"]') }).click();
+    await expect(button).toHaveText('Continue');
+
+    await page.locator('label.radio-panel', { has: page.locator('[id="membership-Standard"]') }).click();
+    await expect(button).toHaveText('Continue and pay £5 monthly');
+  });
+
   test('after being redirected, coming back to the form starts afresh', async ({ page }) => {
     await choosePlan(page, 'Student');
     await page.waitForURL(`**${REDIRECT_TARGET}`);
