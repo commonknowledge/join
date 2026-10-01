@@ -308,6 +308,11 @@ $plan_redirect_page_id = ck_e2e_upsert_page(
         $ck_e2e_plan('Unwaged', 'unwaged', '1', [
             'redirect_page' => $redirect_to_target,
         ]),
+        // Ticked, but the chosen page has since been deleted: takes payment as normal.
+        $ck_e2e_plan('Retired', 'retired', '4', [
+            'redirect_instead_of_payment' => true,
+            'redirect_page'               => [['id' => 999999, 'type' => 'post', 'subtype' => 'page']],
+        ]),
     ])
 );
 

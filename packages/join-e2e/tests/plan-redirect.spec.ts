@@ -9,6 +9,7 @@ import { mockRestEndpoints, CONTINUE, SAVED_STATE_KEY } from './helpers';
  *   Student    — redirect ticked, page chosen: goes to the redirect target
  *   Concession — redirect ticked, no page chosen: takes payment as normal
  *   Unwaged    — redirect unticked, page still set: takes payment as normal
+ *   Retired    — redirect ticked, chosen page since deleted: takes payment as normal
  *
  * The plans are seeded in the shape the block editor saves them, and
  * admin-plan-redirect.spec.ts drives the editor itself, so the two cover each
@@ -58,6 +59,7 @@ test.describe('Plan redirect page', () => {
     expect(redirects.standard).toBeNull();
     expect(redirects.concession).toBeNull();
     expect(redirects.unwaged).toBeNull();
+    expect(redirects.retired).toBeNull();
   });
 
   test('choosing the redirecting plan lands on the chosen page without joining', async ({ page }) => {
@@ -81,7 +83,7 @@ test.describe('Plan redirect page', () => {
     await expect(page.locator('input#firstName')).toBeVisible();
   });
 
-  for (const label of ['Standard', 'Concession', 'Unwaged']) {
+  for (const label of ['Standard', 'Concession', 'Unwaged', 'Retired']) {
     test(`choosing ${label} goes on to payment as normal`, async ({ page }) => {
       await choosePlan(page, label);
 
