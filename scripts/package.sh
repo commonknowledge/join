@@ -12,8 +12,20 @@ mkdir -p dist
 
 echo "Building front end"
 cd packages/join-flow
-npm ci && NODE_ENV=production npm run build
+npm ci
+# Build in a clean environment so that neither a local .env file nor stray
+# REACT_APP_* shell variables get baked into the bundle (matches CI, which
+# has no .env file).
+env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production JOIN_FLOW_IGNORE_DOTENV=1 npm run build
 cd ../..
+
+echo "Checking that no environment values were baked into the bundle"
+BAKED=$(grep -oE 'REACT_APP_[A-Z0-9_]+:"[^"]+"' packages/join-block/build/join-flow/bundle.js || true)
+if [ -n "$BAKED" ]; then
+    echo "ERROR: bundle contains baked-in environment values:" >&2
+    echo "$BAKED" >&2
+    exit 1
+fi
 
 echo "Copying WordPress plugin files"
 cp -r packages/join-block/ dist/common-knowledge-join-flow
