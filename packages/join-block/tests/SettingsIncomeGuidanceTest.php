@@ -59,6 +59,7 @@ class SettingsIncomeGuidanceTest extends TestCase
     {
         Monkey\Functions\when('carbon_get_theme_option')->alias(fn($key) => $settings[$key] ?? null);
         Monkey\Functions\when('wpautop')->alias(fn($text) => $text === '' ? '' : "<p>$text</p>");
+        Monkey\Functions\when('wp_kses_post')->alias(fn($html) => str_replace(' onerror="steal()"', '', $html));
     }
 
     public function test_plans_carry_no_income_bands_when_off()
@@ -109,6 +110,24 @@ class SettingsIncomeGuidanceTest extends TestCase
             'INCOME_GUIDANCE_HEADING' => 'Suggested dues by income',
             'INCOME_GUIDANCE_NOTE' => "<p>Can't afford dues? Email us.</p>",
         ], Settings::getIncomeGuidanceEnv());
+    }
+
+    /**
+     * The note is shown as HTML on the join form. An admin without the
+     * unfiltered_html capability must not be able to put script in it.
+     */
+    public function test_the_note_is_sanitised_before_reaching_the_form()
+    {
+        $this->switchOn();
+        $this->withSettings([
+            'income_guidance_heading' => 'Suggested dues by income',
+            'income_guidance_note' => 'Email us <img src="x" onerror="steal()">',
+        ]);
+
+        $this->assertSame(
+            '<p>Email us <img src="x"></p>',
+            Settings::getIncomeGuidanceEnv()['INCOME_GUIDANCE_NOTE']
+        );
     }
 
     public function test_an_unset_note_is_sent_empty()

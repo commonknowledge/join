@@ -732,7 +732,7 @@ class Settings
         return [
             'INCOME_GUIDANCE_ENABLED' => true,
             'INCOME_GUIDANCE_HEADING' => (string) self::get('INCOME_GUIDANCE_HEADING'),
-            'INCOME_GUIDANCE_NOTE' => wpautop((string) self::get('INCOME_GUIDANCE_NOTE')),
+            'INCOME_GUIDANCE_NOTE' => wp_kses_post(wpautop((string) self::get('INCOME_GUIDANCE_NOTE'))),
         ];
     }
 
