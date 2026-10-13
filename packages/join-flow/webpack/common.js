@@ -3,7 +3,12 @@ const { resolve } = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
-const parsed = require("dotenv").config({ path: resolve(__dirname, '../.env') });
+// Every REACT_APP_* variable in the environment is baked into the bundle
+// below, so release builds (scripts/package.sh) set JOIN_FLOW_IGNORE_DOTENV
+// to keep a developer's local .env out of the shipped bundle.
+if (!process.env.JOIN_FLOW_IGNORE_DOTENV) {
+  require("dotenv").config({ path: resolve(__dirname, '../.env') });
+}
 
 module.exports = {
   resolve: {

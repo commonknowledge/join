@@ -108,7 +108,7 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 == Changelog ==
 
 = 1.4.44 =
-* Add optional income guidance: a table of income bands against membership plans on the membership step, switched on by an add-on
+* Fix: keep members lapsed when they pay an overdue invoice after Stripe has cancelled their subscription
 = 1.4.43 =
 * Let a membership plan send people to a chosen page instead of taking payment
 = 1.4.42 =
