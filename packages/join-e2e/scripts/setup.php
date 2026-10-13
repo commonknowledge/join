@@ -364,7 +364,12 @@ $income_guidance_page_id = ck_e2e_upsert_page(
         $ck_e2e_plan('Other', 'other', '1', ['allow_custom_amount' => '1']),
     ])
 );
-carbon_set_theme_option('income_guidance_note', "Can't afford dues? Email dues@example.org.");
+// The image's handler is script an admin without unfiltered_html could save;
+// the form must strip it rather than run it.
+carbon_set_theme_option(
+    'income_guidance_note',
+    "Can't afford dues? Email dues@example.org.<img src=\"x\" onerror=\"document.body.dataset.injected='yes'\">"
+);
 
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
 // something to override. Without this the global default is false and the

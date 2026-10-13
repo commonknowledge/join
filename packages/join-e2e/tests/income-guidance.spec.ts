@@ -51,6 +51,13 @@ test.describe('The income guidance table', () => {
     await expect(page.getByText(NOTE)).toBeVisible();
   });
 
+  test('script saved in the note is stripped, not run', async ({ page }) => {
+    const note = page.locator('.income-guidance-note');
+    await expect(note).toContainText(NOTE);
+    await expect(note.locator('[onerror]')).toHaveCount(0);
+    expect(await page.evaluate(() => document.body.dataset.injected)).toBeUndefined();
+  });
+
   test('choosing a row selects its tier, and that tier is the one taken to payment', async ({ page }) => {
     await rowButton(page, '£12 monthly').click();
 
