@@ -8,6 +8,7 @@ import {
 } from "../components/atoms";
 import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
+import { IncomeGuidance, IncomeGuidancePlan } from "../components/income-guidance";
 import { FormSchema, currencyCodeToSymbol, getPaymentPlan } from "../schema";
 import { get as getEnv, getStr as getEnvStr } from "../env";
 
@@ -45,11 +46,25 @@ export const PlanPage: StagerComponent<FormSchema> = ({
     form.watch("customMembershipAmount")
   );
 
+  // Matches choosing the tier itself, including resetting a custom amount.
+  const selectPlan = (plan: IncomeGuidancePlan) => {
+    form.setValue("membership", plan.value);
+    setTimeout(() => {
+      form.setValue("customMembershipAmount", plan.allowCustomAmount ? plan.amount : "");
+    });
+  };
+
   return (
     <form className="form-content" onSubmit={form.handleSubmit(onCompleted)}>
       <div>
         <Summary data={data} />
       </div>
+
+      <IncomeGuidance
+        groupedPlans={groupedPlans}
+        selected={form.watch("membership")}
+        onSelect={selectPlan}
+      />
 
       <fieldset className="radio-grid form-section" role="radiogroup">
         <legend>
