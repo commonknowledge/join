@@ -90,8 +90,9 @@ carbon_set_theme_option('organisation_name', 'E2E Organisation');
 carbon_set_theme_option('organisation_bank_name', 'E2E ORG');
 carbon_set_theme_option('organisation_email_address', 'e2e@example.org');
 
-// Switch income guidance on, as an add-on would (see mu-plugins/). Specs that
-// need it off turn the option off and back on again.
+// Income guidance is on unless a spec turns it off (see mu-plugins/). It has
+// to be on before this script starts for the guidance settings below to save,
+// so this only puts it back for the next run after an interrupted spec.
 update_option('ck_e2e_income_guidance_enabled', '1');
 
 // Configure pretty permalinks so test URLs are predictable.
