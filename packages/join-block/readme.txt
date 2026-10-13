@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 7.0
-Stable tag: 1.4.43
+Stable tag: 1.4.44
 Requires PHP: 8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.44 =
+* Fix: keep members lapsed when they pay an overdue invoice after Stripe has cancelled their subscription
 = 1.4.43 =
 * Let a membership plan send people to a chosen page instead of taking payment
 = 1.4.42 =
