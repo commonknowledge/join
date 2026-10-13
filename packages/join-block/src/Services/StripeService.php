@@ -1096,6 +1096,19 @@ class StripeService
                         break;
                     }
                     if (!empty($invoice['customer'])) {
+                        // Paying an overdue invoice after Stripe has cancelled the
+                        // subscription (retries exhausted) settles the debt but does
+                        // not restart the subscription: the member is not paying
+                        // again, so they stay lapsed.
+                        if (!self::customerHasActiveSubscription($customerId)) {
+                            $joinBlockLog->error(
+                                "Payment collected with no live subscription: invoice " . ($invoice['id'] ?? '(unknown)')
+                                . " of Stripe customer $customerId was paid, but the customer has no active"
+                                . " subscription. Leaving the member lapsed — refund the payment or ask them to re-join."
+                            );
+                            break;
+                        }
+
                         $email = self::getEmailForCustomer($customerId);
                         if ($email) {
                             $lockFile = JoinService::acquireLock($email);
