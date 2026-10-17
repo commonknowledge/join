@@ -29,30 +29,11 @@ npm --prefix "$ROOT/packages/join-e2e" install --no-audit --no-fund
 
 # --- PHP ---------------------------------------------------------------------
 
-# The session's GitHub proxy refuses tarball downloads for third-party repos,
-# but git clones work, so install from source. phpstan/phpstan has no git
-# source in composer.lock, so seed Composer's download cache with a zip built
-# from a git checkout of the locked commit.
+# The session's GitHub proxy refuses tarball downloads for third-party repos;
+# build them from git instead (see seed-composer-cache.sh).
 cd "$ROOT/packages/join-block"
-PHPSTAN_URL=$(php -r '
-  $lock = json_decode(file_get_contents("composer.lock"), true);
-  foreach ($lock["packages-dev"] as $p) {
-    if ($p["name"] === "phpstan/phpstan") { echo $p["dist"]["url"]; }
-  }')
-if [ -n "$PHPSTAN_URL" ]; then
-  PHPSTAN_REF="${PHPSTAN_URL##*/}"
-  CACHE_DIR="$(composer config --global cache-files-dir)/phpstan/phpstan"
-  CACHE_FILE="$CACHE_DIR/$(printf %s "$PHPSTAN_URL" | sha1sum | cut -d' ' -f1).zip"
-  if [ ! -f "$CACHE_FILE" ]; then
-    TMP=$(mktemp -d)
-    git -C "$TMP" init -q
-    git -C "$TMP" fetch -q --depth 1 https://github.com/phpstan/phpstan.git "$PHPSTAN_REF"
-    mkdir -p "$CACHE_DIR"
-    git -C "$TMP" archive --format=zip --prefix=phpstan/ FETCH_HEAD -o "$CACHE_FILE"
-    rm -rf "$TMP"
-  fi
-fi
-composer install --no-interaction --prefer-source
+"$HOOK_DIR/seed-composer-cache.sh" composer.lock
+composer install --no-interaction
 
 # --- Docker (wp-env) ---------------------------------------------------------
 
@@ -64,3 +45,49 @@ if ! docker info >/dev/null 2>&1; then
     sleep 1
   done
 fi
+
+# Containers have no DNS and can't reach the session proxy on 127.0.0.1, so
+# forward the Docker bridge gateway to it.
+GATEWAY=$(docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}')
+FORWARD_PORT=3128
+if ! (exec 3<>"/dev/tcp/$GATEWAY/$FORWARD_PORT") 2>/dev/null; then
+  setsid nohup node "$HOOK_DIR/docker-proxy-forward.cjs" "$GATEWAY" "$FORWARD_PORT" "$HTTPS_PROXY" \
+    >/tmp/docker-proxy-forward.log 2>&1 < /dev/null &
+fi
+CONTAINER_PROXY="http://$GATEWAY:$FORWARD_PORT"
+
+# wp-env builds its images FROM these two, so rebuild them locally to use the
+# forwarded proxy and trust its CA (the proxy re-terminates TLS). Composer in
+# the images also hits the GitHub tarball block, so make it install from git.
+# Bump IMAGE_PATCH when changing the Dockerfile below to force a rebuild.
+IMAGE_PATCH="$CONTAINER_PROXY#2"
+CA_CONTEXT=$(mktemp -d)
+cp /root/.ccr/ca-bundle.crt "$CA_CONTEXT/proxy-ca.crt"
+cat > "$CA_CONTEXT/Dockerfile" <<'EOF'
+ARG BASE
+FROM ${BASE}
+ARG PROXY
+ARG PATCH
+USER root
+ENV https_proxy=${PROXY} HTTPS_PROXY=${PROXY} \
+    no_proxy=localhost,127.0.0.1,mysql,tests-mysql,wordpress,tests-wordpress \
+    NO_PROXY=localhost,127.0.0.1,mysql,tests-mysql,wordpress,tests-wordpress
+COPY proxy-ca.crt /usr/local/share/ca-certificates/proxy-ca.crt
+RUN cat /usr/local/share/ca-certificates/proxy-ca.crt >> /etc/ssl/certs/ca-certificates.crt \
+ && if [ -d /etc/apt ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+      echo "Acquire::https::Proxy \"$PROXY\";" > /etc/apt/apt.conf.d/99proxy; \
+    fi \
+ && if command -v apk >/dev/null; then apk add --no-cache git; fi \
+ && mkdir -p /root/.composer \
+ && echo '{"config":{"preferred-install":"source"}}' > /root/.composer/config.json
+LABEL ck.join.image-patch=${PATCH}
+EOF
+for image in wordpress:latest wordpress:cli; do
+  if [ "$(docker image inspect -f '{{index .Config.Labels "ck.join.image-patch"}}' "$image" 2>/dev/null)" != "$IMAGE_PATCH" ]; then
+    docker pull -q "$image"
+    docker build -q --build-arg BASE="$image" --build-arg PROXY="$CONTAINER_PROXY" \
+      --build-arg PATCH="$IMAGE_PATCH" -t "$image" "$CA_CONTEXT"
+  fi
+done
+rm -rf "$CA_CONTEXT"
