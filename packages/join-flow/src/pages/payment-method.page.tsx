@@ -5,7 +5,10 @@ import { StagerComponent } from "../components/stager";
 import { Summary } from "../components/summary";
 import { FormSchema } from "../schema";
 
-export const PaymentPage: StagerComponent<FormSchema> = ({ data, onCompleted }) => {
+export const PaymentPage: StagerComponent<FormSchema> = ({
+  data,
+  onCompleted
+}) => {
   const form = useForm({
     defaultValues: data as FormSchema
   });

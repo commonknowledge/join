@@ -18,7 +18,8 @@ module.exports = merge(commonConfig, {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
+      "Access-Control-Allow-Headers":
+        "X-Requested-With, content-type, Authorization"
     },
     // The standalone harness has no WordPress backend, so stub the REST
     // endpoints the form posts to (mirrors mockRestEndpoints in join-e2e).
@@ -26,7 +27,10 @@ module.exports = merge(commonConfig, {
     setupMiddlewares: (middlewares, devServer) => {
       devServer.app.use(require("express").json());
       devServer.app.post("/join/v1/:resource", (req, res) => {
-        console.log(`[mock] POST /join/v1/${req.params.resource}`, JSON.stringify(req.body));
+        console.log(
+          `[mock] POST /join/v1/${req.params.resource}`,
+          JSON.stringify(req.body)
+        );
         res.json({});
       });
       return middlewares;

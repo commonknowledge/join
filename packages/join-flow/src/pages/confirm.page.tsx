@@ -7,26 +7,29 @@ import { FormSchema, getPaymentFrequency, getPaymentPlan } from "../schema";
 import { usePostResource } from "../services/rest-resource.service";
 import { upperFirst } from "lodash-es";
 
-import { get as getEnv, getStr as getEnvStr } from '../env';
+import { get as getEnv, getStr as getEnvStr } from "../env";
 import { useCurrentRouter } from "../services/router.service";
 
 export const ConfirmationPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  const organisationName = getEnv('ORGANISATION_NAME');
-  const organisationBankName = getEnv('ORGANISATION_BANK_NAME');
-  const organisationEmailAddress = getEnv('ORGANISATION_EMAIL_ADDRESS');
+  const organisationName = getEnv("ORGANISATION_NAME");
+  const organisationBankName = getEnv("ORGANISATION_BANK_NAME");
+  const organisationEmailAddress = getEnv("ORGANISATION_EMAIL_ADDRESS");
   const organisationMailToLink = `mailto:${organisationEmailAddress}`;
-  const chargebeeSiteName = getEnv('CHARGEBEE_SITE_NAME');
-  const joiningVerb = getEnvStr('JOINING_VERB');
+  const chargebeeSiteName = getEnv("CHARGEBEE_SITE_NAME");
+  const joiningVerb = getEnvStr("JOINING_VERB");
 
   const form = useForm();
   const router = useCurrentRouter();
 
-  const join = usePostResource<Partial<FormSchema & { stage: string }>>("/join");
+  const join =
+    usePostResource<Partial<FormSchema & { stage: string }>>("/join");
 
-  const autoSubmit = Boolean(data.gcBillingRequestId || data.stripePaymentIntentId || data.cbHostedPageId);
+  const autoSubmit = Boolean(
+    data.gcBillingRequestId || data.stripePaymentIntentId || data.cbHostedPageId
+  );
 
   // Default "requestInFlight" to true if autoSubmit is set, as the request is sent
   // immediately through useEffect() below
@@ -40,7 +43,9 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
       <div className="spinner-border" role="status">
         <span className="sr-only">Please wait</span>
       </div>
-      <div className="mt-3">{joiningVerb} {organisationName}</div>
+      <div className="mt-3">
+        {joiningVerb} {organisationName}
+      </div>
     </div>
   );
 
@@ -50,23 +55,28 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
   if (data.paymentMethod === "directDebit" && data.membership) {
     const plan = getPaymentPlan(data.membership);
     const isAmountZero = plan && Number(plan.amount) === 0;
-    const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(data.customMembershipAmount) > 0 : false;
+    const isCustomAmountAboveZero =
+      plan && plan.allowCustomAmount
+        ? Number(data.customMembershipAmount) > 0
+        : false;
     const hasDonation = data.donationAmount && Number(data.donationAmount) > 0;
-    
+
     // Only show payment details if there's something to pay (membership, custom amount, or donation)
     if (!isAmountZero || isCustomAmountAboveZero || hasDonation) {
-      const frequency = getPaymentFrequency(data.membership)
+      const frequency = getPaymentFrequency(data.membership);
       directDebitDetailsMessage = (
         <section className="form-section mb-3">
           <p>
-            You are paying for your membership of {organisationName} by Direct Debit.
+            You are paying for your membership of {organisationName} by Direct
+            Debit.
           </p>
           <p>
-            This will be charged {frequency ? frequency + ' ' : ''}from your
+            This will be charged {frequency ? frequency + " " : ""}from your
             bank account.
           </p>
           <p>
-            On your bank statement the charge will appear as "{organisationBankName}".
+            On your bank statement the charge will appear as "
+            {organisationBankName}".
           </p>
           <p>
             You can contact the membership team of {organisationName} at{" "}
@@ -79,7 +89,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   const onSubmit = async () => {
     setRequestInFlight(true);
-    join({ ...data, stage: 'confirm' }).then(
+    join({ ...data, stage: "confirm" }).then(
       () => {
         onCompleted(data);
       },
@@ -110,7 +120,7 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
                 <ul>
                   {errorInformaton.data.fields.map((fieldInformation: any) => (
                     <li>
-                      {upperFirst(fieldInformation.field).replace(/_/g, ' ')}{" "}
+                      {upperFirst(fieldInformation.field).replace(/_/g, " ")}{" "}
                       {fieldInformation.message}
                     </li>
                   ))}
@@ -133,7 +143,9 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
                 <p>We seem to already have an active membership for you.</p>
                 <p>
                   If you'd like to update your details, we recommend using the{" "}
-                  <a href={`https://${chargebeeSiteName}.chargebeeportal.com/portal/v2/login`}>
+                  <a
+                    href={`https://${chargebeeSiteName}.chargebeeportal.com/portal/v2/login`}
+                  >
                     {organisationName} membership management page
                   </a>
                   .
@@ -146,17 +158,24 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
             message = (
               <p>
                 <span>
-                  We didn't find you in our members database.
-                  Make sure you're using the same email address that you've used for your membership
-                  before now. If you're trying to join up as a new member, use the{" "}
+                  We didn't find you in our members database. Make sure you're
+                  using the same email address that you've used for your
+                  membership before now. If you're trying to join up as a new
+                  member, use the{" "}
                 </span>
-                <a href="#" onClick={(e) => {
-                  e.preventDefault();
-                  router.setState({ ...router.state, stage: 'enter-details' });
-                }}>Join</a>
-                <span>
-                  {" "}page instead.
-                </span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    router.setState({
+                      ...router.state,
+                      stage: "enter-details"
+                    });
+                  }}
+                >
+                  Join
+                </a>
+                <span> page instead.</span>
               </p>
             );
             break;
@@ -169,9 +188,9 @@ export const ConfirmationPage: StagerComponent<FormSchema> = ({
 
   useEffect(() => {
     if (autoSubmit) {
-      onSubmit()
+      onSubmit();
     }
-  }, [])
+  }, []);
 
   return (
     <form

@@ -39,7 +39,7 @@ li.progress-step {
   &.progress-step--current {
     .progress-text {
       color: black;
-      font-weight:bold;
+      font-weight: bold;
     }
 
     .progress-circle {
@@ -138,7 +138,7 @@ li.progress-step {
     margin-bottom: 0;
     margin-right: 0.75rem;
   }
-  
+
   .progress-line {
     background-color: $primary;
     bottom: 22px;

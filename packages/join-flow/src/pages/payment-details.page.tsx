@@ -20,9 +20,21 @@ import { Summary } from "../components/summary";
 import { sortedCountries } from "../constants";
 import { useCSSStyle } from "../hooks/util";
 import ddLogo from "../images/dd_logo_landscape.png";
-import { PaymentMethodDDSchema, FormSchema, formatPhoneE164, validate } from "../schema";
+import {
+  PaymentMethodDDSchema,
+  FormSchema,
+  formatPhoneE164,
+  validate
+} from "../schema";
 
-import { get as getEnv, getStr as getEnvStr, getPaymentProviders, resolveStripePaymentMethodTypes, PaymentMethod, PaymentProvider } from "../env";
+import {
+  get as getEnv,
+  getStr as getEnvStr,
+  getPaymentProviders,
+  resolveStripePaymentMethodTypes,
+  PaymentMethod,
+  PaymentProvider
+} from "../env";
 import { loadStripe } from "@stripe/stripe-js";
 import type { StripeError } from "@stripe/stripe-js";
 import { usePostResource } from "../services/rest-resource.service";
@@ -31,7 +43,7 @@ import { SAVED_STATE_KEY } from "../services/router.service";
 const STRIPE_CODE_MESSAGES: Partial<Record<string, string>> = {
   payment_intent_authentication_failure:
     "We were unable to authenticate your payment. Please try a different payment method.",
-  payment_intent_timeout: "Payment timed out. Please try again.",
+  payment_intent_timeout: "Payment timed out. Please try again."
 };
 
 const TECHNICAL_ERROR_TYPES = new Set([
@@ -40,7 +52,7 @@ const TECHNICAL_ERROR_TYPES = new Set([
   "authentication_error",
   "rate_limit_error",
   "idempotency_error",
-  "stripe_invalid_response_error",
+  "stripe_invalid_response_error"
 ]);
 
 const GENERIC_PAYMENT_ERROR =
@@ -74,15 +86,33 @@ export const PaymentDetailsPage: StagerComponent<FormSchema> = ({
     }
 
     if (paymentProvider === "stripe") {
-      return <StripePaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
+      return (
+        <StripePaymentPage
+          data={data}
+          setData={setData}
+          onCompleted={onCompleted}
+        />
+      );
     }
 
     if (paymentProvider === "gocardless") {
-      return <GocardlessPaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
+      return (
+        <GocardlessPaymentPage
+          data={data}
+          setData={setData}
+          onCompleted={onCompleted}
+        />
+      );
     }
 
     if (paymentProvider === "chargebee") {
-      return <ChargebeePaymentPage data={data} setData={setData} onCompleted={onCompleted} />;
+      return (
+        <ChargebeePaymentPage
+          data={data}
+          setData={setData}
+          onCompleted={onCompleted}
+        />
+      );
     }
 
     return <p>Error: no payment providers available. Please contact us.</p>;
@@ -299,23 +329,26 @@ const ChargebeePaymentPage: StagerComponent<FormSchema> = ({
 
 const convertCurrencyFromMajorToMinorUnits = (amount: number) => amount * 100;
 
-const StripePaymentPage: StagerComponent<FormSchema> = ({
-  data,
-  setData
-}) => {
+const StripePaymentPage: StagerComponent<FormSchema> = ({ data, setData }) => {
   const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY") as string);
   const plan = (getEnv("MEMBERSHIP_PLANS") as any[]).find(
     (plan) => plan.value === data.membership
   );
-  const isOneOffDonation = Boolean(getEnv("DONATION_SUPPORTER_MODE")) && !data.recurDonation;
+  const isOneOffDonation =
+    Boolean(getEnv("DONATION_SUPPORTER_MODE")) && !data.recurDonation;
   // For one-off donations the amount comes from donationAmount (set by donation.page).
   // For subscriptions the amount is only used by Stripe Elements for display; the
   // actual charge is determined server-side from the plan / customMembershipAmount.
   const amountForElements = isOneOffDonation
     ? convertCurrencyFromMajorToMinorUnits(data.donationAmount as number)
-    : (plan.amount ? convertCurrencyFromMajorToMinorUnits(plan.amount) : 100);
+    : plan.amount
+      ? convertCurrencyFromMajorToMinorUnits(plan.amount)
+      : 100;
   const currency = plan.currency.toLowerCase() || "gbp";
-  const paymentMethodTypes = resolveStripePaymentMethodTypes(isOneOffDonation, currency);
+  const paymentMethodTypes = resolveStripePaymentMethodTypes(
+    isOneOffDonation,
+    currency
+  );
 
   return (
     <Elements
@@ -325,10 +358,15 @@ const StripePaymentPage: StagerComponent<FormSchema> = ({
         mode: isOneOffDonation ? "payment" : "subscription",
         amount: amountForElements,
         currency,
-        paymentMethodTypes,
+        paymentMethodTypes
       }}
     >
-      <StripeForm data={data} setData={setData} plan={plan} isOneOffDonation={isOneOffDonation} />
+      <StripeForm
+        data={data}
+        setData={setData}
+        plan={plan}
+        isOneOffDonation={isOneOffDonation}
+      />
     </Elements>
   );
 };
@@ -368,12 +406,16 @@ const StripeForm = ({
 
   // Use ref for paymentMethodOrder so that it is fixed when the component is first rendered
   // Otherwise the Stripe form switches the order whenever the payment method is changed
-  const paymentMethodOrder = useRef<string[]>(data.paymentMethod === "directDebit" ? ["bacs_debit", "card"] : ["card", "bacs_debit"]);
+  const paymentMethodOrder = useRef<string[]>(
+    data.paymentMethod === "directDebit"
+      ? ["bacs_debit", "card"]
+      : ["card", "bacs_debit"]
+  );
 
   const handleError = (error: { message: string }) => {
     setLoading(false);
     setErrorMessage(error.message);
-    Sentry.captureMessage(error.message, 'error')
+    Sentry.captureMessage(error.message, "error");
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -448,7 +490,7 @@ const StripeForm = ({
       if (error) {
         Sentry.captureMessage("Stripe confirmPayment error", {
           level: "error",
-          extra: { stripeError: error },
+          extra: { stripeError: error }
         });
         setLoading(false);
         setErrorMessage(formatStripeError(error));
@@ -470,9 +512,10 @@ const StripeForm = ({
   // This allows users to verify their details are correct when setting up Direct Debit
   const defaultValues = {
     billingDetails: {
-      name: data.firstName && data.lastName
-        ? `${data.firstName} ${data.lastName}`
-        : undefined,
+      name:
+        data.firstName && data.lastName
+          ? `${data.firstName} ${data.lastName}`
+          : undefined,
       email: data.email || undefined,
       phone: formatPhoneE164(data.phoneNumber, data.phoneCountry),
       address: {
@@ -480,7 +523,7 @@ const StripeForm = ({
         line2: data.addressLine2 || undefined,
         city: data.addressCity || undefined,
         postal_code: data.addressPostcode || undefined,
-        country: data.addressCountry || undefined,
+        country: data.addressCountry || undefined
       }
     }
   };
@@ -491,10 +534,22 @@ const StripeForm = ({
         <Summary data={data} />
       </div>
       <div className="mb-4">
-        <PaymentElement options={{defaultValues, paymentMethodOrder: paymentMethodOrder.current}} onChange={(e) => {
-          const stripePaymentMethod = e.value.type;
-          setData({ ...data, paymentMethod: stripePaymentMethod === "bacs_debit" ? "directDebit" : "creditCard" });
-        }}/>
+        <PaymentElement
+          options={{
+            defaultValues,
+            paymentMethodOrder: paymentMethodOrder.current
+          }}
+          onChange={(e) => {
+            const stripePaymentMethod = e.value.type;
+            setData({
+              ...data,
+              paymentMethod:
+                stripePaymentMethod === "bacs_debit"
+                  ? "directDebit"
+                  : "creditCard"
+            });
+          }}
+        />
         <ContinueButton disabled={loading} text={loading ? "Loading..." : ""} />
         {errorMessage && (
           <div className="invalid-feedback d-block mt-3">
@@ -505,12 +560,27 @@ const StripeForm = ({
                 <button
                   type="button"
                   onClick={() => setShowErrorDetails((v) => !v)}
-                  style={{ background: "none", border: "none", padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "inherit",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    font: "inherit"
+                  }}
                 >
                   {showErrorDetails ? "Hide details" : "Show details"}
                 </button>
                 {showErrorDetails && (
-                  <pre style={{ marginTop: "0.5rem", whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.8em" }}>
+                  <pre
+                    style={{
+                      marginTop: "0.5rem",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all",
+                      fontSize: "0.8em"
+                    }}
+                  >
                     {errorDetails}
                   </pre>
                 )}

@@ -20,27 +20,29 @@ const init = () => {
     return;
   }
 
-
-  const sentryDsn = getEnvStr("SENTRY_DSN")
+  const sentryDsn = getEnvStr("SENTRY_DSN");
   Sentry.init({
     dsn: sentryDsn,
     release: "1.4.44"
   });
 
-  if (getEnv('USE_CHARGEBEE')) {
+  if (getEnv("USE_CHARGEBEE")) {
     if (!window.Chargebee) {
       console.error(
         "Chargebee library is not loaded in surrounding page. Chargebee React components will not function as a result. The WordPress Join Form block will include this library."
       );
-      return
+      return;
     }
-    if (!getEnv('CHARGEBEE_SITE_NAME') || !getEnv('CHARGEBEE_API_PUBLISHABLE_KEY')) {
+    if (
+      !getEnv("CHARGEBEE_SITE_NAME") ||
+      !getEnv("CHARGEBEE_API_PUBLISHABLE_KEY")
+    ) {
       console.error("Chargebee credentials are missing.");
-      return
+      return;
     }
     window.Chargebee.init({
-      site: getEnv('CHARGEBEE_SITE_NAME'),
-      publishableKey: getEnv('CHARGEBEE_API_PUBLISHABLE_KEY'),
+      site: getEnv("CHARGEBEE_SITE_NAME"),
+      publishableKey: getEnv("CHARGEBEE_API_PUBLISHABLE_KEY")
     });
   }
 
@@ -50,6 +52,6 @@ const init = () => {
     </React.StrictMode>,
     joinFormElement
   );
-}
+};
 
-init()
+init();

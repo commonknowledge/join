@@ -20,9 +20,21 @@ import {
 import { useOnce } from "./hooks/util";
 import { PaymentDetailsPage } from "./pages/payment-details.page";
 import { Stager } from "./components/stager";
-import { FormSchema, getPaymentPlan, getPlanRedirectUrl, getTestDataIfEnabled } from "./schema";
+import {
+  FormSchema,
+  getPaymentPlan,
+  getPlanRedirectUrl,
+  getTestDataIfEnabled
+} from "./schema";
 import { ConfirmationPage } from "./pages/confirm.page";
-import { get as getEnv, getStr as getEnvStr, getPaymentMethods, getPaymentProviders, PaymentMethod, PaymentProvider } from "./env";
+import {
+  get as getEnv,
+  getStr as getEnvStr,
+  getPaymentMethods,
+  getPaymentProviders,
+  PaymentMethod,
+  PaymentProvider
+} from "./env";
 import { usePostResource } from "./services/rest-resource.service";
 import gocardless from "./images/gocardless.svg";
 import chargebee from "./images/chargebee.png";
@@ -60,7 +72,11 @@ const stripePromise = loadStripe(getEnv("STRIPE_PUBLISHABLE_KEY"));
 const App = () => {
   let stages: Stage[] = [
     { id: "enter-details", label: "Your Details", breadcrumb: true },
-    { id: "plan", label: getEnvStr("MEMBERSHIP_STAGE_LABEL"), breadcrumb: true },
+    {
+      id: "plan",
+      label: getEnvStr("MEMBERSHIP_STAGE_LABEL"),
+      breadcrumb: true
+    },
     { id: "donation", label: "Can you chip in?", breadcrumb: false },
     { id: "payment-details", label: "Payment", breadcrumb: true },
     { id: "payment-method", label: "Payment", breadcrumb: false },
@@ -73,11 +89,11 @@ const App = () => {
 
   if (getEnv("DONATION_SUPPORTER_MODE")) {
     stages = [
-      { id: "donation",        label: "Your Donation", breadcrumb: true },
-      { id: "enter-details",   label: "Your Details",  breadcrumb: true },
-      { id: "payment-details", label: "Payment",       breadcrumb: true },
-      { id: "payment-method",  label: "Payment",       breadcrumb: false },
-      { id: "confirm",         label: "Confirm",       breadcrumb: false }
+      { id: "donation", label: "Your Donation", breadcrumb: true },
+      { id: "enter-details", label: "Your Details", breadcrumb: true },
+      { id: "payment-details", label: "Payment", breadcrumb: true },
+      { id: "payment-method", label: "Payment", breadcrumb: false },
+      { id: "confirm", label: "Confirm", breadcrumb: false }
     ];
   }
 
@@ -116,10 +132,9 @@ const App = () => {
     usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
       "/gocardless/auth"
     );
-  const getChargeBeeRedirect =
-    usePostResource<Partial<FormSchema & { redirectUrl: string }>>(
-      "/chargebee/hosted-page"
-    );
+  const getChargeBeeRedirect = usePostResource<
+    Partial<FormSchema & { redirectUrl: string }>
+  >("/chargebee/hosted-page");
 
   const currentIndex = stages.findIndex((x) => x.id === router.state.stage);
   const handlePageCompleted = useCallback(
@@ -141,9 +156,12 @@ const App = () => {
           nextStage = "enter-details";
         } else if (router.state.stage === "enter-details") {
           nextStage = "payment-method";
-          const response: any = await recordStep({ ...nextData, stage: "enter-details" });
-          if (response?.status === 'blocked') {
-            setBlockingMessage(response.message || 'Unable to proceed.');
+          const response: any = await recordStep({
+            ...nextData,
+            stage: "enter-details"
+          });
+          if (response?.status === "blocked") {
+            setBlockingMessage(response.message || "Unable to proceed.");
             return;
           }
           setBlockingMessage(null);
@@ -152,11 +170,16 @@ const App = () => {
       } else if (router.state.stage === "enter-details") {
         nextStage = "plan";
         // Send initial details to catch drop off
-        const response: any = await recordStep({ ...nextData, stage: "enter-details" });
+        const response: any = await recordStep({
+          ...nextData,
+          stage: "enter-details"
+        });
 
         // Check if the form progression is blocked
-        if (response?.status === 'blocked') {
-          setBlockingMessage(response.message || 'Unable to proceed with this submission.');
+        if (response?.status === "blocked") {
+          setBlockingMessage(
+            response.message || "Unable to proceed with this submission."
+          );
           return; // Stop progression
         }
 
@@ -180,9 +203,13 @@ const App = () => {
         // (e.g., when there are multiple payment methods to choose from)
         const plan = getPaymentPlan(nextData.membership);
         const isAmountZero = plan && Number(plan.amount) === 0;
-        const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
-        const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
-        
+        const isCustomAmountAboveZero =
+          plan && plan.allowCustomAmount
+            ? Number(nextData.customMembershipAmount) > 0
+            : false;
+        const hasDonation =
+          nextData.donationAmount && Number(nextData.donationAmount) > 0;
+
         // Skip payment only if membership is free, no custom amount, AND no donation
         if (isAmountZero && !isCustomAmountAboveZero && !hasDonation) {
           nextStage = "confirm";
@@ -206,11 +233,19 @@ const App = () => {
       // payment-method page - both are needed to cover all navigation paths.
       const plan = getPaymentPlan(nextData.membership);
       const isAmountZero = plan && Number(plan.amount) === 0;
-      const isCustomAmountAboveZero = (plan && plan.allowCustomAmount) ? Number(nextData.customMembershipAmount) > 0 : false;
-      const hasDonation = nextData.donationAmount && Number(nextData.donationAmount) > 0;
-      
+      const isCustomAmountAboveZero =
+        plan && plan.allowCustomAmount
+          ? Number(nextData.customMembershipAmount) > 0
+          : false;
+      const hasDonation =
+        nextData.donationAmount && Number(nextData.donationAmount) > 0;
+
       // Only skip payment if there's truly nothing to pay (no membership fee, no custom amount, no donation)
-      const shouldSkipPayment = nextStage === "payment-method" && isAmountZero && !isCustomAmountAboveZero && !hasDonation;
+      const shouldSkipPayment =
+        nextStage === "payment-method" &&
+        isAmountZero &&
+        !isCustomAmountAboveZero &&
+        !hasDonation;
 
       if (shouldSkipPayment) {
         // For zero-price memberships with no donation, skip directly to confirmation
@@ -218,7 +253,10 @@ const App = () => {
       } else if (nextStage === "payment-method") {
         const paymentProviders = getPaymentProviders();
         const paymentMethods = getPaymentMethods();
-        if (Object.keys(paymentProviders).length < 2 || paymentMethods.length < 2) {
+        if (
+          Object.keys(paymentProviders).length < 2 ||
+          paymentMethods.length < 2
+        ) {
           // Auto-skip payment method selection if there's only one option available
           // This only runs if we haven't already skipped payment entirely above
           nextStage = "payment-details";
@@ -282,22 +320,26 @@ const App = () => {
     [router, data, setBlockingMessage]
   );
 
-  const paymentProviders: PaymentProvider[] = Object.keys(getPaymentProviders()) as PaymentProvider[];
-  const paymentProviderLogos = paymentProviders.map((provider: PaymentProvider) => {
-    return provider === "gocardless" ? (
-      <a key={provider} href="https://gocardless.com" target="_blank">
-        <img alt="GoCardless" src={gocardless} width="100px" />
-      </a>
-    ) : provider === "chargebee" ? (
-      <a key={provider} href="https://chargebee.com" target="_blank">
-        <img alt="Chargebee" src={chargebee} width="100px" />
-      </a>
-    ) : provider === "stripe" ? (
-      <a key={provider} href="https://stripe.com" target="_blank">
-        <img alt="Stripe" src={stripe} width="100px" />
-      </a>
-    ) : null;
-  });
+  const paymentProviders: PaymentProvider[] = Object.keys(
+    getPaymentProviders()
+  ) as PaymentProvider[];
+  const paymentProviderLogos = paymentProviders.map(
+    (provider: PaymentProvider) => {
+      return provider === "gocardless" ? (
+        <a key={provider} href="https://gocardless.com" target="_blank">
+          <img alt="GoCardless" src={gocardless} width="100px" />
+        </a>
+      ) : provider === "chargebee" ? (
+        <a key={provider} href="https://chargebee.com" target="_blank">
+          <img alt="Chargebee" src={chargebee} width="100px" />
+        </a>
+      ) : provider === "stripe" ? (
+        <a key={provider} href="https://stripe.com" target="_blank">
+          <img alt="Stripe" src={stripe} width="100px" />
+        </a>
+      ) : null;
+    }
+  );
 
   const fullJoinForm = (
     <>
@@ -369,8 +411,12 @@ const getInitialState = (): FormSchema => {
     membership: membershipPlans.length ? membershipPlans[0].value : "standard",
     paymentMethod: defaultMethod,
     // Default contact flags to true if not collecting consent, or if consent is checked by default
-    contactByEmail: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") || !!getEnv("CONSENT_CHECKED_BY_DEFAULT"),
-    contactByPhone: !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") || !!getEnv("CONSENT_CHECKED_BY_DEFAULT")
+    contactByEmail:
+      !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ||
+      !!getEnv("CONSENT_CHECKED_BY_DEFAULT"),
+    contactByPhone:
+      !getEnv("COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT") ||
+      !!getEnv("CONSENT_CHECKED_BY_DEFAULT")
   });
 
   const getSavedState = () => {
@@ -421,7 +467,9 @@ const getInitialState = (): FormSchema => {
     // donationSupporterMode is a page-level flag derived from the block config;
     // always apply it after session restore so a stale session from a different
     // form type cannot suppress it.
-    ...(getEnv("DONATION_SUPPORTER_MODE") ? { donationSupporterMode: true } : {}),
+    ...(getEnv("DONATION_SUPPORTER_MODE")
+      ? { donationSupporterMode: true }
+      : {}),
     ...getProvidedStateFromQueryParams(),
     isUpdateFlow: getEnv("IS_UPDATE_FLOW"),
     webhookUuid: getEnv("WEBHOOK_UUID"),
@@ -429,7 +477,10 @@ const getInitialState = (): FormSchema => {
   } as any;
   // Clamp paymentMethod to available methods — session storage may have a stale value
   // from a previous flow (e.g. "creditCard" persisted when STRIPE_DIRECT_DEBIT_ONLY is now active)
-  if (availableMethods.length && !availableMethods.includes(state.paymentMethod)) {
+  if (
+    availableMethods.length &&
+    !availableMethods.includes(state.paymentMethod)
+  ) {
     state.paymentMethod = defaultMethod;
   }
   return state;
