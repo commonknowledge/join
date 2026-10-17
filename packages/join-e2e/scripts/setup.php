@@ -7,7 +7,7 @@
  *   - e2e-free-join:     free (£0/month) membership
  *
  * Run via:
- *   wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+ *   scripts/env.sh wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
  */
 
 if (!defined('ABSPATH')) {

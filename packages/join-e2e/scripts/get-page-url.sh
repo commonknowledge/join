@@ -10,4 +10,4 @@ OPTION_KEY="ck_e2e_${SLUG}_page_url"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}/.."
 
-npx wp-env run tests-cli wp option get "${OPTION_KEY}" 2>/dev/null
+scripts/env.sh wp option get "${OPTION_KEY}" 2>/dev/null

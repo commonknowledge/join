@@ -6,6 +6,7 @@ use Brain\Monkey;
 use CommonKnowledge\JoinBlock\Handlers\StartupBufferHandler;
 use CommonKnowledge\JoinBlock\Logging;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Monolog\Handler\BufferHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +47,20 @@ class LoggingTest extends TestCase
 
     protected function tearDown(): void
     {
+        global $joinBlockLog;
+
+        // The Loggly handler buffers records and sends them when PHP shuts
+        // down. Drop anything a test left in it, and detach it, so the suite
+        // never sends logs to Loggly.
+        if ($joinBlockLog instanceof Logger) {
+            foreach ($joinBlockLog->getHandlers() as $handler) {
+                if ($handler instanceof BufferHandler) {
+                    $handler->clear();
+                }
+            }
+            $joinBlockLog->setHandlers([]);
+        }
+
         unset($_ENV['LOGGLY_TOKEN'], $_ENV['LOGGLY_TAGS'], $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS']);
         $this->deleteDirectory($this->uploadsDir);
         Monkey\tearDown();

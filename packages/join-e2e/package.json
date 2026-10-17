@@ -5,12 +5,12 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "wp-env:start": "wp-env start",
-    "wp-env:stop": "wp-env stop",
+    "env:start": "bash scripts/env.sh start",
+    "env:stop": "bash scripts/env.sh stop",
+    "env:destroy": "bash scripts/env.sh destroy",
     "pretest": "bash scripts/seed.sh"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@wordpress/env": "^11.15.0"
+    "@playwright/test": "^1.63.0"
   }
 }

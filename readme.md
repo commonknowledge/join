@@ -6,7 +6,7 @@ This is a monorepo containing packages that together provide a full membership a
 
 - `packages/join-flow` — A React application implementing the join form frontend.
 - `packages/join-block` — A WordPress Gutenberg plugin containing the join form block(s) and the backend logic that processes memberships, payments, and CRM integrations.
-- `packages/join-e2e` — End-to-end tests (Puppeteer).
+- `packages/join-e2e` — End-to-end tests (Playwright).
 
 **Current version:** 1.4.9
 
@@ -440,12 +440,46 @@ npm test
 
 ```bash
 cd packages/join-block
-composer test
+./vendor/bin/phpunit
 ```
 
 ### End-to-end tests
 
+The Playwright suite in `packages/join-e2e` runs against a real WordPress site in Docker, defined in `packages/join-e2e/docker-compose.yml`: WordPress (Apache), MariaDB, and a WP-CLI container for one-off commands. The plugin (`packages/join-block`) is mounted into it, so its Composer dependencies must be installed first. The containers need no network access of their own.
+
 ```bash
 cd packages/join-e2e
-npm test
+npm run env:start    # WordPress on http://localhost:8889 (admin / password)
+npm test             # builds the test bundle, seeds the test pages, runs the suite
 ```
+
+`npm test` runs `scripts/seed.sh` first, which builds the join-flow bundle with test data and runs `scripts/setup.php` to create the test pages. Other commands:
+
+| Command | What it does |
+|---|---|
+| `npm run env:stop` | Stop the containers, keeping the database |
+| `npm run env:destroy` | Remove the containers and all data, for a fresh install |
+| `bash scripts/env.sh wp <command>` | Run WP-CLI, e.g. `bash scripts/env.sh wp option get home` |
+| `npx playwright test tests/render.spec.ts` | Run one spec (after seeding) |
+| `npx playwright show-report` | Open the HTML report of the last run |
+
+To use an already-installed Chromium instead of Playwright's download, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its path. Claude Code cloud sessions set this automatically.
+
+CI runs the same setup (`.github/workflows/e2e.yml`). See [docs/e2e-testing.md](docs/e2e-testing.md) for what the suite covers.
+
+#### Maintenance: WordPress version
+
+The suite tests against one pinned WordPress release: the `wordpress:<version>-php8.2-apache` and `wordpress:cli-<version>-php8.2` image tags in `packages/join-e2e/docker-compose.yml`. When WordPress releases a new version:
+
+1. Bump the WordPress image tag (and the WP-CLI tag if a newer WP-CLI image exists).
+2. Run `npm run env:destroy && npm run env:start && npm test` locally, or let CI run on the PR.
+3. Fix anything the new version breaks before merging.
+
+The PHP version in the tags (8.2) matches the plugin's minimum and the PHP version used in CI and `composer.json`; change them together.
+
+### Claude Code cloud sessions
+
+`.claude/hooks/session-start.sh` runs at the start of each Claude Code cloud session (and does nothing elsewhere). It installs the npm and Composer dependencies and starts Docker, so all three test suites can run. Two things are specific to that environment:
+
+- **Composer:** the session's GitHub proxy refuses package tarball downloads for third-party repositories. `seed-composer-cache.sh` builds each locked package's zip from a shallow git fetch of the locked commit and places it in Composer's cache, so `composer install` works as normal. It reads `composer.lock`, so it needs no updating when dependencies change.
+- **Network allowlist:** the environment needs `wordpress.org`, `api.github.com` and `codeload.github.com` allowed, plus Docker Hub and the default package managers.

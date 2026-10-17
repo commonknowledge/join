@@ -33,15 +33,15 @@ jobs:
         working-directory: packages/join-e2e
         run: npx playwright install --with-deps chromium
 
-      - name: Start wp-env
+      - name: Start WordPress
         working-directory: packages/join-e2e
-        run: npx wp-env start
+        run: bash scripts/env.sh start
 
       - name: Seed WordPress test environment
         working-directory: packages/join-e2e
         run: |
-          npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
-          npx wp-env run tests-cli wp rewrite flush --hard
+          bash scripts/env.sh wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+          bash scripts/env.sh wp rewrite flush --hard
 
       - name: Run E2E tests
         working-directory: packages/join-e2e

@@ -17,7 +17,7 @@ import { loginAsAdmin, mockRestEndpoints, CONTINUE } from './helpers';
  */
 
 function wpCli(command: string): void {
-  execSync(`npx wp-env run tests-cli ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
+  execSync(`scripts/env.sh ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
 }
 
 function reseed(): void {
@@ -33,10 +33,16 @@ const REDIRECT_CHECKBOX = 'Redirect to a page instead of taking payment';
 
 /** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */
 function field(scope: Locator, label: string): Locator {
+  // One selector rather than a `has` filter, so it also works inside the
+  // block editor's iframe.
   return scope
-    .locator('.cf-field:not(.cf-separator)')
-    .filter({ has: scope.page().locator('.cf-field__label', { hasText: new RegExp(`^${label}\\*?$`) }) })
+    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
     .first();
+}
+
+/** The CK Join Form block. The block editor renders its content in an iframe. */
+function joinFormBlock(page: Page): Locator {
+  return page.frameLocator('iframe[name="editor-canvas"]').locator('[data-type="carbon-fields/ck-join-form"]');
 }
 
 /** Fills in a plan's name and price. "Price" alone would also match "Price Point ID". */
@@ -60,6 +66,14 @@ async function chooseRedirectTarget(picker: Locator): Promise<void> {
     .click();
 }
 
+/** Picks the redirect target straight from the unfiltered list, without searching. */
+async function pickRedirectTargetFromList(picker: Locator): Promise<void> {
+  await picker
+    .locator('.cf-association__option', { hasText: REDIRECT_TARGET_TITLE })
+    .locator('button.dashicons-plus-alt')
+    .click();
+}
+
 /** Selected pages are shown in the association field's second column. */
 function selectedPages(picker: Locator): Locator {
   return picker.locator('.cf-association__col').nth(1);
@@ -69,6 +83,12 @@ function selectedPages(picker: Locator): Locator {
 async function openNewPageWithJoinBlock(page: Page): Promise<void> {
   await page.goto('/wp-admin/post-new.php?post_type=page');
   await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
+
+  // A user's first visit to the editor opens the "Welcome to the editor" guide
+  // over it. Turning the preference off closes it.
+  await page.evaluate(() => {
+    (window as any).wp.data.dispatch('core/preferences').set('core/edit-post', 'welcomeGuide', false);
+  });
 
   // New pages open with WordPress's starter pattern picker over the editor.
   const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
@@ -195,7 +215,7 @@ test.describe('Redirect help text', () => {
 
       // The block's own plans are built separately, so check them too.
       await openNewPageWithJoinBlock(page);
-      const plansField = field(page.locator('[data-type="carbon-fields/ck-join-form"]'), 'Custom Membership Plans');
+      const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
       await plansField.locator('.cf-complex__inserter-button').click();
       await expect(
         plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
@@ -207,12 +227,27 @@ test.describe('Redirect help text', () => {
 });
 
 test.describe('Custom plans in the CK Join Form block', () => {
-  test('a redirecting plan set up in the block editor redirects on the published page', async ({ page }) => {
+  // The page picker's search does nothing in WordPress 7's iframed block
+  // editor (Linear JOIN-158). Re-enable this once it's fixed.
+  test.fixme('a redirecting plan set up in the block editor redirects on the published page', async ({ page }) => {
+    await redirectingPlanInBlockEditor(page, chooseRedirectTarget);
+  });
+
+  // Same as above, but picks the page without the picker's search, so the
+  // redirect itself stays covered while JOIN-158 is open.
+  test('a redirecting plan set up in the block editor redirects on the published page, picking the page from the full list', async ({ page }) => {
+    await redirectingPlanInBlockEditor(page, pickRedirectTargetFromList);
+  });
+
+  async function redirectingPlanInBlockEditor(
+    page: Page,
+    choose: (picker: Locator) => Promise<void>,
+  ): Promise<void> {
     await loginAsAdmin(page);
     await openNewPageWithJoinBlock(page);
 
-    const block = page.locator('[data-type="carbon-fields/ck-join-form"]');
-    await chooseRedirectTarget(field(block, 'Page to redirect to after joining'));
+    const block = joinFormBlock(page);
+    await choose(field(block, 'Page to redirect to after joining'));
 
     const plansField = field(block, 'Custom Membership Plans');
     const plans = plansField.locator('.cf-complex__group');
@@ -227,7 +262,7 @@ test.describe('Custom plans in the CK Join Form block', () => {
     await expect(redirectPicker(redirecting)).toBeHidden();
     await redirecting.getByLabel(REDIRECT_CHECKBOX).check();
     await expect(redirectPicker(redirecting)).toBeVisible();
-    await chooseRedirectTarget(redirectPicker(redirecting));
+    await choose(redirectPicker(redirecting));
 
     const pageId = await page.evaluate(async () => {
       const wp = (window as any).wp;
@@ -253,5 +288,5 @@ test.describe('Custom plans in the CK Join Form block', () => {
     } finally {
       wpCli(`wp post delete ${pageId} --force`);
     }
-  });
+  }
 });
