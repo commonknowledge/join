@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds the join-flow bundle with test data enabled and seeds the wp-env
-# test WordPress instance with the two E2E test pages.
+# Builds the join-flow bundle with test data enabled and seeds the E2E
+# WordPress instance (scripts/env.sh) with the test pages.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,7 +13,7 @@ REACT_APP_USE_TEST_DATA=true npm run build
 
 echo "--- Seeding WordPress test environment ---"
 cd "${PACKAGE_DIR}"
-npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
-npx wp-env run tests-cli wp rewrite flush --hard
+scripts/env.sh wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
+scripts/env.sh wp rewrite flush --hard
 
 echo "--- Seed complete ---"

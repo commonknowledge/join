@@ -17,7 +17,7 @@ import { loginAsAdmin, mockRestEndpoints, CONTINUE } from './helpers';
  */
 
 function wpCli(command: string): void {
-  execSync(`npx wp-env run tests-cli ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
+  execSync(`scripts/env.sh ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
 }
 
 function reseed(): void {
@@ -33,10 +33,16 @@ const REDIRECT_CHECKBOX = 'Redirect to a page instead of taking payment';
 
 /** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */
 function field(scope: Locator, label: string): Locator {
+  // One selector rather than a `has` filter, so it also works inside the
+  // block editor's iframe.
   return scope
-    .locator('.cf-field:not(.cf-separator)')
-    .filter({ has: scope.page().locator('.cf-field__label', { hasText: new RegExp(`^${label}\\*?$`) }) })
+    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
     .first();
+}
+
+/** The CK Join Form block. The block editor renders its content in an iframe. */
+function joinFormBlock(page: Page): Locator {
+  return page.frameLocator('iframe[name="editor-canvas"]').locator('[data-type="carbon-fields/ck-join-form"]');
 }
 
 /** Fills in a plan's name and price. "Price" alone would also match "Price Point ID". */
@@ -69,6 +75,12 @@ function selectedPages(picker: Locator): Locator {
 async function openNewPageWithJoinBlock(page: Page): Promise<void> {
   await page.goto('/wp-admin/post-new.php?post_type=page');
   await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
+
+  // A user's first visit to the editor opens the "Welcome to the editor" guide
+  // over it. Turning the preference off closes it.
+  await page.evaluate(() => {
+    (window as any).wp.data.dispatch('core/preferences').set('core/edit-post', 'welcomeGuide', false);
+  });
 
   // New pages open with WordPress's starter pattern picker over the editor.
   const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
@@ -195,7 +207,7 @@ test.describe('Redirect help text', () => {
 
       // The block's own plans are built separately, so check them too.
       await openNewPageWithJoinBlock(page);
-      const plansField = field(page.locator('[data-type="carbon-fields/ck-join-form"]'), 'Custom Membership Plans');
+      const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
       await plansField.locator('.cf-complex__inserter-button').click();
       await expect(
         plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
@@ -211,7 +223,7 @@ test.describe('Custom plans in the CK Join Form block', () => {
     await loginAsAdmin(page);
     await openNewPageWithJoinBlock(page);
 
-    const block = page.locator('[data-type="carbon-fields/ck-join-form"]');
+    const block = joinFormBlock(page);
     await chooseRedirectTarget(field(block, 'Page to redirect to after joining'));
 
     const plansField = field(block, 'Custom Membership Plans');

@@ -1,0 +1,59 @@
+# WordPress for the Playwright E2E suite. Managed by scripts/env.sh; see the
+# "End-to-end tests" section of the root readme.
+#
+# Pinned versions: bump the WordPress and WP-CLI image tags together when a new
+# WordPress release comes out, then run the suite.
+name: join-e2e
+
+x-wordpress-volumes: &wordpress-volumes
+  - wordpress:/var/www/html
+  - ../join-block:/var/www/html/wp-content/plugins/join-block
+  - ./scripts:/var/www/html/wp-content/e2e-scripts
+
+x-wordpress-environment: &wordpress-environment
+  WORDPRESS_DB_HOST: db
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_DB_PASSWORD: wordpress
+  WORDPRESS_DB_NAME: wordpress
+
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_RANDOM_ROOT_PASSWORD: '1'
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    image: wordpress:7.1.3-php8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8889:80'
+    volumes: *wordpress-volumes
+    environment:
+      <<: *wordpress-environment
+      WORDPRESS_DEBUG: '1'
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG_LOG', true);
+        define('SCRIPT_DEBUG', true);
+
+  # One-off WP-CLI runs: docker compose run --rm cli wp <command>
+  cli:
+    image: wordpress:cli-2.12.0-php8.2
+    profiles: [cli]
+    user: '33:33'
+    depends_on:
+      - wordpress
+    volumes: *wordpress-volumes
+    environment: *wordpress-environment
+
+volumes:
+  wordpress:

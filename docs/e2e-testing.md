@@ -2,7 +2,7 @@
 
 ## Overview
 
-Join ships with a Playwright end-to-end test suite that exercises the React join flow inside a real WordPress environment. Tests run against a wp-env (Docker WordPress) instance seeded with purpose-built test pages.
+Join ships with a Playwright end-to-end test suite that exercises the React join flow inside a real WordPress environment. Tests run against a Docker Compose WordPress instance (`packages/join-e2e/docker-compose.yml`) seeded with purpose-built test pages.
 
 ### Test approach
 
@@ -49,7 +49,7 @@ The setup script (`scripts/setup.php`) creates these WordPress pages:
 
 ## What is covered
 
-The suite currently contains 52 passing tests across 7 spec files.
+The suite currently contains 77 tests across 11 spec files.
 
 | Spec file | Area | Tests | What it verifies |
 |-----------|------|------:|------------------|
@@ -232,7 +232,7 @@ Flags to cover: `COLLECT_DATE_OF_BIRTH`, `COLLECT_COUNTY`, `COLLECT_HEAR_ABOUT_U
 
 **What is needed:**
 - [ ] Configure the CI matrix to run the suite against the current stable WordPress release and the previous major version
-- [ ] Update `.wp-env.json` when a new WordPress major is released and confirm the suite passes
+- [ ] Bump the WordPress image tag in `packages/join-e2e/docker-compose.yml` when a new WordPress release comes out and confirm the suite passes (see the readme)
 - [ ] Consider running nightly or weekly against WordPress trunk to catch regressions before stable release
 
 ### 11. Skip payment button
@@ -249,18 +249,13 @@ Flags to cover: `COLLECT_DATE_OF_BIRTH`, `COLLECT_COUNTY`, `COLLECT_HEAR_ABOUT_U
 ## Running the tests
 
 ```bash
-# Start the wp-env environment
-npm run wp-env:start
-
-# Seed the test pages
-npx wp-env run tests-cli wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
-
-# Build the frontend with test data pre-fill
-npm run test:build
-
-# Run the suite
 cd packages/join-e2e
-npx playwright test
+
+# Start WordPress on http://localhost:8889
+npm run env:start
+
+# Build the test bundle, seed the test pages and run the suite
+npm test
 
 # Run a specific spec
 npx playwright test tests/free-membership.spec.ts

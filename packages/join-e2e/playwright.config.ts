@@ -14,7 +14,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Lets an environment with a preinstalled Chromium (e.g. Claude Code
+        // cloud sessions) use it instead of Playwright's own download.
+        launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined },
+      },
     },
   ],
 });
