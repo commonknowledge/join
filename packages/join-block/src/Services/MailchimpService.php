@@ -217,7 +217,7 @@ class MailchimpService
             $mailchimp->lists->updateListMember($mailchimp_audience_id, $subscriberHash, $updateData);
             $joinBlockLog->info("Updated member $email in Mailchimp");
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            $body = $e->getResponse()->getBody()->getContents();
             $notFound = str_contains($body, "404") || str_contains($body, "Resource Not Found");
 
             if ($notFound) {
@@ -248,7 +248,7 @@ class MailchimpService
             $mailchimp->lists->getListMember($mailchimp_audience_id, $subscriberHash);
             return true;
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $body = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            $body = $e->getResponse()->getBody()->getContents();
             if (str_contains($body, "404") || str_contains($body, "Resource Not Found")) {
                 return false;
             }
@@ -309,9 +309,9 @@ class MailchimpService
             return self::TAG_OK;
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $response = $e->getResponse();
-            $body = $response ? $response->getBody()->getContents() : $e->getMessage();
+            $body = $response->getBody()->getContents();
 
-            if (($response && $response->getStatusCode() === 404) || str_contains($body, "Resource Not Found")) {
+            if ($response->getStatusCode() === 404 || str_contains($body, "Resource Not Found")) {
                 return self::TAG_NOT_FOUND;
             }
 

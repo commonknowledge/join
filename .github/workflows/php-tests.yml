@@ -26,3 +26,23 @@ jobs:
       - name: Run PHPUnit
         working-directory: packages/join-block
         run: ./vendor/bin/phpunit
+
+  php-lint:
+    name: PHP lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install PHP dependencies
+        working-directory: packages/join-block
+        run: composer install --no-interaction --prefer-dist
+
+      # phpcs (fails on errors, not warnings), then PHPStan.
+      - name: Run phpcs and PHPStan
+        working-directory: packages/join-block
+        run: composer lint

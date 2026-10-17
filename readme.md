@@ -451,6 +451,17 @@ cd packages/join-block
 ./vendor/bin/phpunit
 ```
 
+### Backend linting
+
+CI runs phpcs and PHPStan on `packages/join-block` and fails on any phpcs error or PHPStan error. Run both locally with:
+
+```bash
+cd packages/join-block
+composer lint
+```
+
+`phpstan-baseline.neon` lists errors that existed before PHPStan ran in CI. Fix new errors rather than adding them to the baseline.
+
 ### End-to-end tests
 
 The Playwright suite in `packages/join-e2e` runs against a real WordPress site in Docker, defined in `packages/join-e2e/docker-compose.yml`: WordPress (Apache), MariaDB, and a WP-CLI container for one-off commands. The plugin (`packages/join-block`) is mounted into it, so its Composer dependencies must be installed first. The containers need no network access of their own.
