@@ -56,7 +56,10 @@ const Prerequesites = object({
   sessionToken: string().required()
 }).required();
 
-function isValidDayOfMonth(this: TestContext, value: number | null | undefined | object) {
+function isValidDayOfMonth(
+  this: TestContext,
+  value: number | null | undefined | object
+) {
   const correctDaysInMonth = getDaysInMonth(
     new Date(this.parent.dobYear, this.parent.dobMonth - 1)
   );
@@ -64,7 +67,10 @@ function isValidDayOfMonth(this: TestContext, value: number | null | undefined |
   return Number(value) <= correctDaysInMonth;
 }
 
-function isInPast(this: TestContext, value: number | null | undefined | object) {
+function isInPast(
+  this: TestContext,
+  value: number | null | undefined | object
+) {
   return isPast(
     new Date(
       this.parent.dobYear,
@@ -74,12 +80,15 @@ function isInPast(this: TestContext, value: number | null | undefined | object) 
   );
 }
 
-function isAtLeast18(this: TestContext, value: number | null | undefined | object) {
+function isAtLeast18(
+  this: TestContext,
+  value: number | null | undefined | object
+) {
   const { dobYear, dobMonth, dobDay } = this.parent;
   if (!dobYear || !dobMonth || !dobDay) {
     return true;
   }
-  const minimumAge = Number(getEnv('MINIMUM_AGE')) || 18;
+  const minimumAge = Number(getEnv("MINIMUM_AGE")) || 18;
   const dob = new Date(dobYear, dobMonth - 1, dobDay);
   const minimumAgeBirthday = new Date(
     dob.getFullYear() + minimumAge,
@@ -330,23 +339,29 @@ export const getPlanRedirectUrl = (name: string | undefined): string | null => {
 };
 
 export const renderDonationSummary = (data: FormSchema): string => {
-  const { donationAmount, recurDonation, donationSupporterMode, membership, customMembershipAmount } = data;
+  const {
+    donationAmount,
+    recurDonation,
+    donationSupporterMode,
+    membership,
+    customMembershipAmount
+  } = data;
 
   if (donationSupporterMode && recurDonation) {
     // Monthly supporter mode: amount comes from the plan, not donationAmount
     const plan = getPaymentPlan(membership);
     const amount = customMembershipAmount || plan?.amount;
     if (amount) {
-      const currency = currencyCodeToSymbol(plan?.currency || 'GBP');
+      const currency = currencyCodeToSymbol(plan?.currency || "GBP");
       return `${currency}${amount} a month donation`;
     }
   }
 
   if (donationAmount && donationAmount > 0) {
-    return `£${donationAmount} ${recurDonation ? 'a month donation' : 'one time donation'}`;
+    return `£${donationAmount} ${recurDonation ? "a month donation" : "one time donation"}`;
   }
 
-  return 'None right now';
+  return "None right now";
 };
 
 export const renderPaymentPlan = ({
@@ -381,7 +396,7 @@ export const renderPaymentMethod = ({
   paymentMethod,
   membership,
   recurDonation,
-  donationSupporterMode,
+  donationSupporterMode
 }: FormSchema) => {
   let paymentFormat = "None";
 
@@ -507,4 +522,6 @@ export const getTestDataIfEnabled = (): FormSchema => {
   }
 };
 
-export const validate = memoize((schema: AnyObjectSchema) => yupResolver(schema));
+export const validate = memoize((schema: AnyObjectSchema) =>
+  yupResolver(schema)
+);

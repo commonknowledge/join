@@ -297,7 +297,7 @@ export const FormItem: FC<FormItemProps> = ({
   return (
     <Form.Group className={className} style={style}>
       {label && (
-        <Form.Label {...isRadio ? {} : {htmlFor: name}}>
+        <Form.Label {...(isRadio ? {} : { htmlFor: name })}>
           {label}{" "}
           {required && (
             <>

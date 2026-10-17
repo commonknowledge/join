@@ -31,15 +31,20 @@ export const DonationPage: StagerComponent<FormSchema> = ({
     : [5, 10, 15, 20];
 
   const supporterMode = Boolean(getEnv("DONATION_SUPPORTER_MODE"));
-  const oneOffAvailable = Boolean(getEnv("USE_STRIPE")) && !Boolean(getEnv("STRIPE_DIRECT_DEBIT_ONLY"));
+  const oneOffAvailable =
+    Boolean(getEnv("USE_STRIPE")) &&
+    !Boolean(getEnv("STRIPE_DIRECT_DEBIT_ONLY"));
 
   const membershipPlans = (getEnv("MEMBERSHIP_PLANS") as any[]) || [];
-  const supporterTiers: number[] = membershipPlans.map((p) => Number(p.amount)).filter((n) => n > 0);
+  const supporterTiers: number[] = membershipPlans
+    .map((p) => Number(p.amount))
+    .filter((n) => n > 0);
   const supporterCurrency: string = membershipPlans[0]?.currency || "GBP";
   const defaultSupporterTier = supporterTiers[0] ?? 0;
 
   const [isMonthly, setIsMonthly] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<number>(defaultSupporterTier);
+  const [selectedTier, setSelectedTier] =
+    useState<number>(defaultSupporterTier);
 
   // otherDonationAmount is a transient field for the "other" input; it is
   // folded into donationAmount on submit and never leaves this page.
@@ -56,15 +61,21 @@ export const DonationPage: StagerComponent<FormSchema> = ({
 
   const handleSubmit = form.handleSubmit((formData) => {
     if (supporterMode) {
-      const amount = (formData.otherDonationAmount != null && formData.otherDonationAmount !== "")
-        ? Number(formData.otherDonationAmount)
-        : selectedTier;
+      const amount =
+        formData.otherDonationAmount != null &&
+        formData.otherDonationAmount !== ""
+          ? Number(formData.otherDonationAmount)
+          : selectedTier;
       delete formData.otherDonationAmount;
 
       // Find the plan whose amount matches the selected tier.
       // The plan price IS the donation — no separate donationAmount item should be created.
-      const matchingPlan = membershipPlans.find((p: any) => Number(p.amount) === amount);
-      const fallbackPlan = membershipPlans.find((p: any) => p.allowCustomAmount) ?? membershipPlans[0];
+      const matchingPlan = membershipPlans.find(
+        (p: any) => Number(p.amount) === amount
+      );
+      const fallbackPlan =
+        membershipPlans.find((p: any) => p.allowCustomAmount) ??
+        membershipPlans[0];
       const resolvedPlan = matchingPlan ?? fallbackPlan;
 
       onCompleted({
@@ -76,11 +87,14 @@ export const DonationPage: StagerComponent<FormSchema> = ({
         donationAmount: isMonthly ? 0 : amount,
         recurDonation: isMonthly,
         // One-off payments require card — override any stale directDebit from session
-        ...(!isMonthly ? { paymentMethod: "creditCard" } : {}),
+        ...(!isMonthly ? { paymentMethod: "creditCard" } : {})
       });
       return;
     }
-    if (formData.otherDonationAmount !== "" && formData.otherDonationAmount != null) {
+    if (
+      formData.otherDonationAmount !== "" &&
+      formData.otherDonationAmount != null
+    ) {
       formData.donationAmount = Number(formData.otherDonationAmount);
       delete formData.otherDonationAmount;
     }
@@ -92,7 +106,8 @@ export const DonationPage: StagerComponent<FormSchema> = ({
       <div className="alert alert-warning m-4" role="alert">
         <strong>No donation amounts configured.</strong>
         <p className="mb-0 mt-1">
-          Add membership plans to this block in the WordPress editor. Their amounts will be used as the donation tiers shown to supporters.
+          Add membership plans to this block in the WordPress editor. Their
+          amounts will be used as the donation tiers shown to supporters.
         </p>
       </div>
     );
@@ -100,12 +115,18 @@ export const DonationPage: StagerComponent<FormSchema> = ({
 
   if (supporterMode) {
     const currencySymbol = currencyCodeToSymbol(supporterCurrency);
-    const activeAmount = (otherDonationAmount != null && otherDonationAmount !== "")
-      ? Number(otherDonationAmount)
-      : selectedTier;
-    const ctaLabel = activeAmount > 0
-      ? (isMonthly ? `Donate ${currencySymbol}${activeAmount}/month` : `Donate ${currencySymbol}${activeAmount} now`)
-      : (isMonthly ? "Donate monthly" : "Donate now");
+    const activeAmount =
+      otherDonationAmount != null && otherDonationAmount !== ""
+        ? Number(otherDonationAmount)
+        : selectedTier;
+    const ctaLabel =
+      activeAmount > 0
+        ? isMonthly
+          ? `Donate ${currencySymbol}${activeAmount}/month`
+          : `Donate ${currencySymbol}${activeAmount} now`
+        : isMonthly
+          ? "Donate monthly"
+          : "Donate now";
 
     return (
       <form className="form-content" onSubmit={handleSubmit}>
@@ -141,7 +162,8 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           </div>
           {!oneOffAvailable && (
             <p className="text-muted small mb-3">
-              One-off donations are not available with Direct Debit. To make a one-off donation, please contact us.
+              One-off donations are not available with Direct Debit. To make a
+              one-off donation, please contact us.
             </p>
           )}
 
@@ -153,7 +175,9 @@ export const DonationPage: StagerComponent<FormSchema> = ({
                 className="mr-2 mb-2"
                 variant={
                   (otherDonationAmount == null || otherDonationAmount === "") &&
-                  selectedTier === tier ? "dark" : "outline-dark"
+                  selectedTier === tier
+                    ? "dark"
+                    : "outline-dark"
                 }
                 onClick={() => {
                   setSelectedTier(tier);
@@ -161,7 +185,8 @@ export const DonationPage: StagerComponent<FormSchema> = ({
                   form.setValue("otherDonationAmount", null);
                 }}
               >
-                {currencySymbol}{tier}
+                {currencySymbol}
+                {tier}
               </Button>
             ))}
           </div>
@@ -182,10 +207,7 @@ export const DonationPage: StagerComponent<FormSchema> = ({
   }
 
   return (
-    <form
-      className="form-content"
-      onSubmit={handleSubmit}
-    >
+    <form className="form-content" onSubmit={handleSubmit}>
       <div>
         <Summary data={data} />
       </div>
@@ -195,13 +217,14 @@ export const DonationPage: StagerComponent<FormSchema> = ({
           <h2>Can you chip in?</h2>
         </legend>
         <p className="text-secondary">
-          We rely on our members' generosity to build our movement,
-          particularly as we look ahead to the next General Election and
-          the work that needs to be done to gain more MPs.
+          We rely on our members' generosity to build our movement, particularly
+          as we look ahead to the next General Election and the work that needs
+          to be done to gain more MPs.
         </p>
         <p className="text-secondary">
-          Many of our members top up their membership, which forms a vital part of our income.
-          We'd be very grateful if you would consider doing the same.
+          Many of our members top up their membership, which forms a vital part
+          of our income. We'd be very grateful if you would consider doing the
+          same.
         </p>
       </div>
       <fieldset className="mt-5">

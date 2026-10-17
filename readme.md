@@ -436,6 +436,14 @@ cd packages/join-flow
 npm test
 ```
 
+### Frontend formatting
+
+CI fails if `packages/join-flow` isn't formatted with Prettier. To fix formatting, from the repository root:
+
+```bash
+npm run prettier
+```
+
 ### Backend unit tests
 
 ```bash
