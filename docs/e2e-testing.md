@@ -49,7 +49,7 @@ The setup script (`scripts/setup.php`) creates these WordPress pages:
 
 ## What is covered
 
-The suite currently contains 77 tests across 11 spec files.
+The suite currently contains 78 tests across 11 spec files (one skipped pending JOIN-158).
 
 | Spec file | Area | Tests | What it verifies |
 |-----------|------|------:|------------------|
