@@ -39,9 +39,21 @@ composer install --no-interaction
 
 # The container doesn't start a Docker daemon by default.
 if ! docker info >/dev/null 2>&1; then
+  # A restarted session can leave PID files from daemons that no longer run,
+  # and dockerd then refuses to start ("process with PID ... is still running").
+  for pidfile in /var/run/docker.pid /var/run/docker/containerd/containerd.pid; do
+    if [ -f "$pidfile" ] && ! kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+      rm -f "$pidfile"
+    fi
+  done
   setsid nohup dockerd >/tmp/dockerd.log 2>&1 < /dev/null &
   for _ in $(seq 1 30); do
     docker info >/dev/null 2>&1 && break
     sleep 1
   done
+  if ! docker info >/dev/null 2>&1; then
+    echo "Docker daemon did not start within 30s. Last lines of /tmp/dockerd.log:" >&2
+    tail -n 20 /tmp/dockerd.log >&2 || true
+    exit 1
+  fi
 fi

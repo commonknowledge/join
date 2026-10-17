@@ -11,20 +11,37 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 URL="http://localhost:8889"
+READY_TIMEOUT="${WP_READY_TIMEOUT:-120}"
 
+# COMPOSE_PROGRESS rather than --progress: older Compose versions reject the
+# flag but ignore the variable.
 wp() {
-  docker compose --progress quiet run --rm --no-deps -T cli wp "$@"
+  COMPOSE_PROGRESS=quiet docker compose run --rm --no-deps -T cli wp "$@"
+}
+
+# On first start the wordpress container copies WordPress into the shared
+# volume and only then writes wp-config.php, so the files can exist before the
+# configuration does. Wait until WP-CLI can load the configuration and reach
+# the database.
+wait_for_wordpress() {
+  local deadline=$((SECONDS + READY_TIMEOUT))
+  until wp db query 'SELECT 1' >/dev/null 2>&1; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "WordPress was not ready after ${READY_TIMEOUT}s (no wp-config.php or no database connection)." >&2
+      echo "Last WP-CLI error:" >&2
+      wp db query 'SELECT 1' 2>&1 >/dev/null | tail -5 >&2 || true
+      echo "wordpress container logs:" >&2
+      docker compose logs --tail 20 wordpress >&2 || true
+      exit 1
+    fi
+    sleep 2
+  done
 }
 
 case "${1:-}" in
   start)
     docker compose up -d --wait
-    # The wordpress container copies WordPress into the shared volume on first
-    # start; wait for it before running WP-CLI against it.
-    for _ in $(seq 1 60); do
-      wp core version >/dev/null 2>&1 && break
-      sleep 1
-    done
+    wait_for_wordpress
     if ! wp core is-installed 2>/dev/null; then
       wp core install --url="$URL" --title="Join E2E" \
         --admin_user=admin --admin_password=password \

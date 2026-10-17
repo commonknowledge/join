@@ -7,27 +7,45 @@
 # key Composer looks for (sha1 of the dist URL). `composer install` then
 # installs every package from the cache as normal.
 #
+# Exits non-zero if any package can't be seeded. A zip only lands in the cache
+# once it is complete and valid, and invalid cached zips are rebuilt.
+#
 # Usage: seed-composer-cache.sh <path/to/composer.lock>
 set -euo pipefail
 
 LOCK="$1"
 CACHE_ROOT="$(composer config --global cache-files-dir)"
 
+# Runs in its own bash process per package (via xargs), so it sets its own
+# error handling and cleans up after itself.
 seed() {
+  set -euo pipefail
   local name="$1" url="$2" cache_root="$3"
   local repo="${url#https://api.github.com/repos/}"
   repo="${repo%/zipball/*}"
   local ref="${url##*/}"
   local file="$cache_root/$name/$(printf %s "$url" | sha1sum | cut -d' ' -f1).zip"
-  [ -f "$file" ] && return 0
-  local tmp
+
+  if [ -f "$file" ]; then
+    unzip -tqq "$file" >/dev/null 2>&1 && return 0
+    echo "Rebuilding invalid cached zip for $name" >&2
+    rm -f "$file"
+  fi
+
+  # Build next to the final path so the last step is an atomic rename.
+  local tmp partial="$file.partial.$$"
   tmp=$(mktemp -d)
-  git -C "$tmp" init -q
-  git -C "$tmp" fetch -q --depth 1 "https://github.com/$repo.git" "$ref"
+  # Expanded now: the trap runs at process exit, after these locals are gone.
+  trap "rm -rf $(printf %q "$tmp") $(printf %q "$partial")" EXIT
   mkdir -p "$(dirname "$file")"
-  git -C "$tmp" archive --format=zip --prefix="${repo#*/}/" FETCH_HEAD -o "$file.tmp"
-  mv "$file.tmp" "$file"
-  rm -rf "$tmp"
+  if ! git -C "$tmp" init -q ||
+    ! git -C "$tmp" fetch -q --depth 1 "https://github.com/$repo.git" "$ref" ||
+    ! git -C "$tmp" archive --format=zip --prefix="${repo#*/}/" FETCH_HEAD -o "$partial" ||
+    ! unzip -tqq "$partial" >/dev/null; then
+    echo "Failed to seed $name from https://github.com/$repo.git at $ref" >&2
+    return 1
+  fi
+  mv "$partial" "$file"
 }
 export -f seed
 
