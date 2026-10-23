@@ -9,6 +9,7 @@ x-wordpress-volumes: &wordpress-volumes
   - wordpress:/var/www/html
   - ../join-block:/var/www/html/wp-content/plugins/join-block
   - ./scripts:/var/www/html/wp-content/e2e-scripts
+  - ./mu-plugins:/var/www/html/wp-content/mu-plugins
 
 x-wordpress-environment: &wordpress-environment
   WORDPRESS_DB_HOST: db
