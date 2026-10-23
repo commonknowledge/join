@@ -53,9 +53,20 @@ export const test = base.extend<{ settings: JoinSettingsPage; baseline: void }, 
 
 export { expect };
 
-/** Opens a join form as a visitor, with the form's REST calls stubbed. */
+/**
+ * Opens a join form at its first step as a visitor, with the form's REST
+ * calls stubbed. The form remembers progress in the browser tab (session
+ * storage, and the history entry, which reopening the same URL keeps), so
+ * both are cleared first.
+ */
 export async function openJoinForm(page: Page, url = STANDARD_JOIN_PAGE): Promise<void> {
   await mockRestEndpoints(page);
+  if (page.url().startsWith('http')) {
+    await page.evaluate(() => {
+      sessionStorage.clear();
+      history.replaceState(null, '');
+    });
+  }
   await page.goto(url);
   await page.waitForSelector('input#firstName');
 }

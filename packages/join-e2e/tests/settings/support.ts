@@ -181,6 +181,37 @@ export class JoinSettingsPage {
     await this.field(label).fill(value);
   }
 
+  /** Sets a colour field to a hex colour, e.g. '#336699', through its colour picker. */
+  async setColor(label: string, hex: string): Promise<void> {
+    const field = this.page.locator('.cf-field.cf-color').filter({
+      has: this.page.locator('.cf-field__label', { hasText: new RegExp(`^${label}$`) }),
+    });
+    await field.locator('.cf-color__toggle').click();
+    const hexInput = field.locator('.sketch-picker input').first();
+    // Don't press Enter here: it submits the whole settings form.
+    await hexInput.fill(hex.replace('#', ''));
+    // Clicking outside closes the picker.
+    await field.locator('.cf-field__label').click();
+    await expect(this.page.locator('.cf-color__picker')).toHaveCount(0);
+    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(`^${hex}$`, 'i'));
+  }
+
+  /** Sets a rich text (editor) field's content to the given HTML. */
+  async setRichText(label: string, html: string): Promise<void> {
+    const editorId = await this.page
+      .locator('.cf-container__fields .cf-field__label', { hasText: new RegExp(`^${label}$`) })
+      .getAttribute('for');
+    await this.page.waitForFunction((id) => (window as any).tinymce?.get(id), editorId);
+    await this.page.evaluate(
+      ({ id, content }) => {
+        const editor = (window as any).tinymce.get(id);
+        editor.setContent(content);
+        editor.fire('change');
+      },
+      { id: editorId, content: html },
+    );
+  }
+
   /**
    * Ticks an integration switch on the Features tab and fills in the
    * credentials it needs on the Integrations tab (INTEGRATION_CREDENTIALS).
