@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { field, loginAsAdmin, openNewPageWithJoinBlock, SETTINGS_PAGE, wpCli } from './helpers';
+import { field, joinFormBlock, loginAsAdmin, openNewPageWithJoinBlock, SETTINGS_PAGE, wpCli } from './helpers';
 
 /**
  * Income guidance settings in wp-admin
@@ -56,7 +56,7 @@ test.describe('With income guidance switched on', () => {
 
   test('a block\'s own plans can be given income bands too', async ({ page }) => {
     await openNewPageWithJoinBlock(page, 'E2E Income Guidance Fields');
-    const plansField = field(page.locator('[data-type="carbon-fields/ck-join-form"]'), 'Custom Membership Plans');
+    const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
     await plansField.locator('.cf-complex__inserter-button').click();
     const plan = plansField.locator('.cf-complex__group').first();
 

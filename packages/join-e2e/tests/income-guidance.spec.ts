@@ -1,11 +1,12 @@
 import { test, expect, Page } from '@playwright/test';
 import {
-  choosePage,
   field,
   fillPlan,
+  joinFormBlock,
   loginAsAdmin,
   mockRestEndpoints,
   openNewPageWithJoinBlock,
+  pickPageFromList,
   wpCli,
   CONTINUE,
   SAVED_STATE_KEY,
@@ -125,8 +126,8 @@ test.describe('Bands entered in the block editor', () => {
     await loginAsAdmin(page);
     await openNewPageWithJoinBlock(page, 'E2E Income Guidance Editor');
 
-    const block = page.locator('[data-type="carbon-fields/ck-join-form"]');
-    await choosePage(field(block, 'Page to redirect to after joining'), 'E2E Redirect Target');
+    const block = joinFormBlock(page);
+    await pickPageFromList(field(block, 'Page to redirect to after joining'), 'E2E Redirect Target');
 
     const plansField = field(block, 'Custom Membership Plans');
     const plans = plansField.locator('.cf-complex__group');

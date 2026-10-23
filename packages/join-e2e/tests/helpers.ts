@@ -126,7 +126,7 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 export const SETTINGS_PAGE = '/wp-admin/admin.php?page=crb_carbon_fields_container_ck_join_flow.php';
 
 export function wpCli(command: string): void {
-  execSync(`npx wp-env run tests-cli ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
+  execSync(`scripts/env.sh ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
 }
 
 export function reseed(): void {
@@ -135,10 +135,16 @@ export function reseed(): void {
 
 /** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */
 export function field(scope: Locator, label: string): Locator {
+  // One selector rather than a `has` filter, so it also works inside the
+  // block editor's iframe.
   return scope
-    .locator('.cf-field:not(.cf-separator)')
-    .filter({ has: scope.page().locator('.cf-field__label', { hasText: new RegExp(`^${label}\\*?$`) }) })
+    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
     .first();
+}
+
+/** The CK Join Form block. The block editor renders its content in an iframe. */
+export function joinFormBlock(page: Page): Locator {
+  return page.frameLocator('iframe[name="editor-canvas"]').locator('[data-type="carbon-fields/ck-join-form"]');
 }
 
 /** Fills in a plan's name and price. "Price" alone would also match "Price Point ID". */
@@ -151,6 +157,12 @@ export async function fillPlan(plan: Locator, name: string, price: string): Prom
 export async function openNewPageWithJoinBlock(page: Page, title: string): Promise<void> {
   await page.goto('/wp-admin/post-new.php?post_type=page');
   await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
+
+  // A user's first visit to the editor opens the "Welcome to the editor" guide
+  // over it. Turning the preference off closes it.
+  await page.evaluate(() => {
+    (window as any).wp.data.dispatch('core/preferences').set('core/edit-post', 'welcomeGuide', false);
+  });
 
   // New pages open with WordPress's starter pattern picker over the editor.
   const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
@@ -181,6 +193,18 @@ export async function choosePage(picker: Locator, title: string): Promise<void> 
   await picker
     .locator('.cf-association__option', { hasText: title })
     // The block editor renders this button without an accessible name.
+    .locator('button.dashicons-plus-alt')
+    .click();
+}
+
+/**
+ * Picks a page, by its title, straight from a Carbon Fields page picker's
+ * unfiltered list. Use this in the block editor, where the picker's search
+ * does nothing in WordPress 7's iframed editor (Linear JOIN-158).
+ */
+export async function pickPageFromList(picker: Locator, title: string): Promise<void> {
+  await picker
+    .locator('.cf-association__option', { hasText: title })
     .locator('button.dashicons-plus-alt')
     .click();
 }
