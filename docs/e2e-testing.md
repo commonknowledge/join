@@ -69,6 +69,20 @@ The suite currently contains 78 tests across 11 spec files (one skipped pending 
 - **Validation** for required fields and email format is exercised.
 
 
+## Settings page coverage
+
+`tests/settings/` tests the settings on WP Admin > Join: each is saved (read back through `Settings::get`), has its effect, and still works when loaded as Carbon Fields stored it. The readme ("Settings page regression tests") explains how these tests are built. Known problems are `test.fixme` tests linked to Linear issues.
+
+| Tab | Spec | Covered |
+|---|---|---|
+| Features | `features.spec.ts`, `features-integrations.spec.ts` | Every setting. Integration switches: refused without credentials, saved with them, payment-step and form effects. Use Stripe sets global plans up in Stripe on save (fake API). Known problem: JOIN-161 (a rejected Stripe key crashes the save). |
+| Membership Plans | | Not yet |
+| Theme | | Not yet |
+| Copy | | Not yet |
+| Integrations | | Not yet. What Mailchimp, Action Network and Zetkin receive on a join will be covered here. |
+| Logging | | Not yet |
+| Debug | | Not yet |
+
 ## What is not covered
 
 ### Payment UI rendering
@@ -89,16 +103,11 @@ No tests. When `IS_UPDATE_FLOW=true`, personal details are skipped and the form 
 
 ### Payment method selection page
 
-The `payment-method` step (choosing between Direct Debit and Card when multiple providers are enabled) is never exercised. Tests either mock everything or bypass payment.
+Now partly covered by the settings tests: `tests/settings/features-integrations.spec.ts` checks the step appears, with both methods, when GoCardless and Chargebee are both on. Choosing a method and going on from there is still untested.
 
 ### Optional data collection flags
 
-The following flags control whether additional fields appear on the details page, but none are tested:
-
-- `COLLECT_DATE_OF_BIRTH`
-- `COLLECT_COUNTY`
-- `COLLECT_HEAR_ABOUT_US`
-- `COLLECT_PHONE_AND_EMAIL_CONTACT_CONSENT`
+Now covered by the settings tests (`tests/settings/features.spec.ts`).
 
 ### Custom fields
 
