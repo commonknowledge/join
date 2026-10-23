@@ -80,8 +80,12 @@ export const IncomeGuidance: FC<IncomeGuidanceProps> = ({
                 className={chosen ? "selected" : undefined}
                 onClick={() => onSelect(plan)}
               >
-                {showWeekly && <td data-label="Weekly income">{plan.incomeWeekly}</td>}
-                {showMonthly && <td data-label="Monthly income">{plan.incomeMonthly}</td>}
+                {showWeekly && (
+                  <td data-label="Weekly income">{plan.incomeWeekly}</td>
+                )}
+                {showMonthly && (
+                  <td data-label="Monthly income">{plan.incomeMonthly}</td>
+                )}
                 <td data-label="Suggested dues">
                   <button
                     type="button"
