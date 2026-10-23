@@ -24,3 +24,21 @@ jobs:
       - name: Run Jest
         working-directory: packages/join-flow
         run: npm test
+
+  prettier:
+    name: Prettier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Only Prettier is needed, so skip the postinstall (Composer and the
+      # join-flow install).
+      - name: Install root deps
+        run: npm ci --ignore-scripts
+
+      - name: Check formatting
+        run: npx prettier --check packages/join-flow

@@ -3,7 +3,8 @@
   background-color: $primary !important;
   color: $white;
 
-  &:hover,&:focus {
+  &:hover,
+  &:focus {
     background-color: $primary-focus !important;
   }
 }
@@ -20,8 +21,8 @@
   &::after {
     content: "";
     background-color: var(--btn-chevron-color, currentColor);
-    -webkit-mask: url('graphics/chevron.svg') no-repeat 0 0;
-    mask: url('graphics/chevron.svg') no-repeat 0 0;
+    -webkit-mask: url("graphics/chevron.svg") no-repeat 0 0;
+    mask: url("graphics/chevron.svg") no-repeat 0 0;
     height: 30px;
     position: absolute;
     right: -8px;

@@ -1,104 +1,184 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { PlanPage } from './plan.page';
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { PlanPage } from "./plan.page";
 
-jest.mock('../env', () => ({
+jest.mock("../env", () => ({
   get: jest.fn(),
-  getStr: jest.fn(() => ''),
+  getStr: jest.fn(() => "")
 }));
 
-jest.mock('../components/summary', () => ({
-  Summary: () => null,
+jest.mock("../components/summary", () => ({
+  Summary: () => null
 }));
 
-import { get as getEnv } from '../env';
+import { get as getEnv } from "../env";
 const mockGetEnv = getEnv as jest.Mock;
 
 const mockOnCompleted = jest.fn();
 
 const MOCK_PLANS = [
-  { value: 'higher', label: 'Higher income', description: '', amount: '20', currency: 'GBP', frequency: 'monthly', allowCustomAmount: false },
-  { value: 'lower', label: 'Lower income', description: '', amount: '5', currency: 'GBP', frequency: 'monthly', allowCustomAmount: false },
-  { value: 'other', label: 'Other', description: '', amount: '1', currency: 'GBP', frequency: 'monthly', allowCustomAmount: true },
+  {
+    value: "higher",
+    label: "Higher income",
+    description: "",
+    amount: "20",
+    currency: "GBP",
+    frequency: "monthly",
+    allowCustomAmount: false
+  },
+  {
+    value: "lower",
+    label: "Lower income",
+    description: "",
+    amount: "5",
+    currency: "GBP",
+    frequency: "monthly",
+    allowCustomAmount: false
+  },
+  {
+    value: "other",
+    label: "Other",
+    description: "",
+    amount: "1",
+    currency: "GBP",
+    frequency: "monthly",
+    allowCustomAmount: true
+  }
 ];
 
 beforeEach(() => {
   mockGetEnv.mockImplementation((key: string) => {
-    if (key === 'MEMBERSHIP_PLANS') return MOCK_PLANS;
+    if (key === "MEMBERSHIP_PLANS") return MOCK_PLANS;
     return false;
   });
   mockOnCompleted.mockClear();
 });
 
-describe('PlanPage — custom amount', () => {
-  test('typing a custom amount selects that tier instead of the default', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+describe("PlanPage — custom amount", () => {
+  test("typing a custom amount selects that tier instead of the default", async () => {
+    render(
+      <PlanPage
+        data={{ membership: "higher" } as any}
+        setData={jest.fn()}
+        onCompleted={mockOnCompleted}
+      />
+    );
 
-    const customInput = document.getElementById('other-amount') as HTMLInputElement;
+    const customInput = document.getElementById(
+      "other-amount"
+    ) as HTMLInputElement;
     expect(customInput).toBeInTheDocument();
 
-    fireEvent.change(customInput, { target: { value: '7' } });
+    fireEvent.change(customInput, { target: { value: "7" } });
 
-    fireEvent.submit(screen.getByRole('button', { name: /continue/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole("button", { name: /continue/i }).closest("form")!
+    );
 
     await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
     const submitted = mockOnCompleted.mock.calls[0][0];
-    expect(submitted.membership).toBe('other');
+    expect(submitted.membership).toBe("other");
     expect(Number(submitted.customMembershipAmount)).toBe(7);
   });
 
-  test('the continue button spells out the amount about to be paid', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+  test("the continue button spells out the amount about to be paid", async () => {
+    render(
+      <PlanPage
+        data={{ membership: "higher" } as any}
+        setData={jest.fn()}
+        onCompleted={mockOnCompleted}
+      />
+    );
 
-    expect(screen.getByRole('button', { name: 'Continue and pay £20 monthly' })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue and pay £20 monthly" })
+    ).toBeInTheDocument();
 
-    const customInput = document.getElementById('other-amount') as HTMLInputElement;
-    fireEvent.change(customInput, { target: { value: '7' } });
+    const customInput = document.getElementById(
+      "other-amount"
+    ) as HTMLInputElement;
+    fireEvent.change(customInput, { target: { value: "7" } });
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Continue and pay £7 monthly' })).toBeInTheDocument()
+      expect(
+        screen.getByRole("button", { name: "Continue and pay £7 monthly" })
+      ).toBeInTheDocument()
     );
   });
 
-  test('submitting without touching the custom amount keeps the default tier', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+  test("submitting without touching the custom amount keeps the default tier", async () => {
+    render(
+      <PlanPage
+        data={{ membership: "higher" } as any}
+        setData={jest.fn()}
+        onCompleted={mockOnCompleted}
+      />
+    );
 
-    fireEvent.submit(screen.getByRole('button', { name: /continue/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole("button", { name: /continue/i }).closest("form")!
+    );
 
     await waitFor(() => expect(mockOnCompleted).toHaveBeenCalled());
-    expect(mockOnCompleted.mock.calls[0][0].membership).toBe('higher');
+    expect(mockOnCompleted.mock.calls[0][0].membership).toBe("higher");
   });
 });
 
-describe('PlanPage — redirecting plan', () => {
+describe("PlanPage — redirecting plan", () => {
   const PLANS_WITH_REDIRECT = [
     ...MOCK_PLANS,
     {
-      value: 'student', label: 'Student', description: '', amount: '3', currency: 'GBP', frequency: 'monthly',
-      allowCustomAmount: false, redirectUrl: 'https://example.org/students',
-    },
+      value: "student",
+      label: "Student",
+      description: "",
+      amount: "3",
+      currency: "GBP",
+      frequency: "monthly",
+      allowCustomAmount: false,
+      redirectUrl: "https://example.org/students"
+    }
   ];
 
   beforeEach(() => {
     mockGetEnv.mockImplementation((key: string) => {
-      if (key === 'MEMBERSHIP_PLANS') return PLANS_WITH_REDIRECT;
+      if (key === "MEMBERSHIP_PLANS") return PLANS_WITH_REDIRECT;
       return false;
     });
   });
 
-  test('the continue button does not promise a payment that will not be taken', () => {
-    render(<PlanPage data={{ membership: 'student' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
+  test("the continue button does not promise a payment that will not be taken", () => {
+    render(
+      <PlanPage
+        data={{ membership: "student" } as any}
+        setData={jest.fn()}
+        onCompleted={mockOnCompleted}
+      />
+    );
 
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue" })
+    ).toBeInTheDocument();
   });
 
-  test('switching from a paying plan to the redirecting plan drops the amount from the button', async () => {
-    render(<PlanPage data={{ membership: 'higher' } as any} setData={jest.fn()} onCompleted={mockOnCompleted} />);
-    expect(screen.getByRole('button', { name: 'Continue and pay £20 monthly' })).toBeInTheDocument();
+  test("switching from a paying plan to the redirecting plan drops the amount from the button", async () => {
+    render(
+      <PlanPage
+        data={{ membership: "higher" } as any}
+        setData={jest.fn()}
+        onCompleted={mockOnCompleted}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "Continue and pay £20 monthly" })
+    ).toBeInTheDocument();
 
-    fireEvent.click(document.getElementById('membership-Student')!);
+    fireEvent.click(document.getElementById("membership-Student")!);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Continue" })
+      ).toBeInTheDocument()
+    );
   });
 });

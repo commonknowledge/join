@@ -2,7 +2,7 @@ import { useState } from "react";
 import { compact, uniqueId } from "lodash-es";
 import { UseFormMethods } from "react-hook-form";
 
-import { get as getEnv } from '../env';
+import { get as getEnv } from "../env";
 
 /**
  * Represents an Ideal Postcodes result, which has
@@ -26,12 +26,12 @@ class Address {
    */
   constructor() {
     this.id = uniqueId("idealpostcodes");
-    this.address = '';
+    this.address = "";
   }
 
   toString() {
     if (this.address) {
-      return this.address
+      return this.address;
     }
 
     return compact([
@@ -49,24 +49,27 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
   const [address, setAddressValue] = useState<Address>();
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<'error' | 'info' | null>(null);
+  const [messageType, setMessageType] = useState<"error" | "info" | null>(null);
 
   const setPostcode = async (postcode: string) => {
     const endpoint = "join/v1/postcode";
-    const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, ''); // trim trailing slash
-    
+    const baseUrl = (getEnv("WP_REST_API") as string).replace(/\/$/, ""); // trim trailing slash
+
     // Clear previous messages
     setMessage(null);
     setMessageType(null);
-    
+
     try {
-      const res = await fetch(`${baseUrl}/${endpoint}?postcode=${encodeURIComponent(postcode)}`, {
-        method: "GET",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json"
+      const res = await fetch(
+        `${baseUrl}/${endpoint}?postcode=${encodeURIComponent(postcode)}`,
+        {
+          method: "GET",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json"
+          }
         }
-      });
+      );
 
       if (!res.ok) {
         throw Error(await res.text());
@@ -75,45 +78,50 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
       const response = await res.json();
 
       // Handle bad postcode (validation failed)
-      if (response.status === 'bad_postcode') {
+      if (response.status === "bad_postcode") {
         setMessage(response.message);
-        setMessageType('error');
+        setMessageType("error");
         setOptions([]);
         setAddressValue(undefined);
         return;
       }
 
       // Handle successful lookup
-      if (response.status === 'ok') {
+      if (response.status === "ok") {
         setAddressValue(undefined);
-        setOptions(response.data.map((addr: any) => Object.assign(new Address(), addr)));
-        
+        setOptions(
+          response.data.map((addr: any) => Object.assign(new Address(), addr))
+        );
+
         // Handle enrichment message (positive info like local branch)
         if (response.message) {
           setMessage(response.message);
-          setMessageType('info');
+          setMessageType("info");
         }
         return;
       }
 
-      throw new Error('Postcode address lookup failed: ' + response.status);
+      throw new Error("Postcode address lookup failed: " + response.status);
     } catch (error: any) {
-      console.error(error.message)
+      console.error(error.message);
       setOptions([]);
     }
   };
 
   const fetchAddress = async (id: string) => {
     const endpoint = "join/v1/address";
-    const baseUrl = (getEnv('WP_REST_API') as string).replace(/\/$/, ''); // trim trailing slash
+    const baseUrl = (getEnv("WP_REST_API") as string).replace(/\/$/, ""); // trim trailing slash
     try {
-      const res = await fetch(`${baseUrl}/${endpoint}?id=${encodeURIComponent(id)}`, {
-        method: "GET",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json"
+      const res = await fetch(
+        `${baseUrl}/${endpoint}?id=${encodeURIComponent(id)}`,
+        {
+          method: "GET",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json"
+          }
         }
-      });
+      );
 
       if (!res.ok) {
         throw Error(await res.text());
@@ -121,16 +129,16 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
 
       const response = await res.json();
 
-      if (response.status !== 'ok') {
-        throw new Error('Postcode address lookup failed: ' + response.status)
+      if (response.status !== "ok") {
+        throw new Error("Postcode address lookup failed: " + response.status);
       }
 
-      return response.data
+      return response.data;
     } catch (error: any) {
-      console.error(error.message)
+      console.error(error.message);
     }
-    return {}
-  }
+    return {};
+  };
 
   const setAddress = async (id: string) => {
     const hit = options?.find((x) => x.id === id);
@@ -161,9 +169,9 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
     // Check which provider is configured to determine if we need a second API call:
     // - Ideal Postcodes returns complete structured data immediately
     // - getAddress.io returns only id/address in autocomplete and requires a second call
-    const provider = getEnv('POSTCODE_ADDRESS_PROVIDER') as string;
-    const isGetAddressIo = provider === 'get_address_io';
-    
+    const provider = getEnv("POSTCODE_ADDRESS_PROVIDER") as string;
+    const isGetAddressIo = provider === "get_address_io";
+
     if (isGetAddressIo) {
       // getAddress.io: need to fetch full address details
       setLoading(true);
@@ -182,7 +190,7 @@ export const useAddressLookup = (form: UseFormMethods<any>) => {
         setFormValue("addressPostcode", address.postcode);
         setFormValue("addressCountry", "GB");
       }
-      setLoading(false)
+      setLoading(false);
     });
   };
 

@@ -106,7 +106,7 @@ export async function captureJoinBodyViaStripeRedirect(
 }
 
 /**
- * Logs in to wp-admin as the admin user wp-env creates.
+ * Logs in to wp-admin as the admin user scripts/env.sh creates.
  *
  * Posts the login form directly: the login page clears and refocuses the
  * username field shortly after loading, which can wipe a typed-in value.

@@ -1,7 +1,12 @@
 import React, { FC } from "react";
 import { takeWhile } from "lodash-es";
 import { get as getEnv, getPaymentMethods } from "../env";
-import { FormSchema, renderDonationSummary, renderPaymentMethod, renderPaymentPlan } from "../schema";
+import {
+  FormSchema,
+  renderDonationSummary,
+  renderPaymentMethod,
+  renderPaymentPlan
+} from "../schema";
 import { PageState, useCurrentRouter } from "../services/router.service";
 import { DetailPanel, DetailsCard } from "./atoms";
 
@@ -16,17 +21,22 @@ export const Summary: FC<SummaryProps> = ({ data }) => {
       return !getEnv("DONATION_SUPPORTER_MODE");
     }
     if (stage === "donation") {
-      return getEnv("ASK_FOR_ADDITIONAL_DONATION") || getEnv("DONATION_SUPPORTER_MODE");
+      return (
+        getEnv("ASK_FOR_ADDITIONAL_DONATION") ||
+        getEnv("DONATION_SUPPORTER_MODE")
+      );
     }
     if (stage === "payment-method") {
-      return getPaymentMethods().length > 1
+      return getPaymentMethods().length > 1;
     }
     if (stage === "payment-details") {
       // Don't show the payment details page if external GoCardless pages were used
-      return getEnv("USE_GOCARDLESS_API") || data.paymentMethod !== "directDebit";
+      return (
+        getEnv("USE_GOCARDLESS_API") || data.paymentMethod !== "directDebit"
+      );
     }
-    return true
-  })
+    return true;
+  });
   const stages = takeWhile(
     validStages,
     (stage) => stage !== router.state.stage

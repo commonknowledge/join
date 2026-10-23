@@ -1,5 +1,5 @@
-import { get as getEnv, getStr as getEnvStr } from '../env';
-import { formatPhoneE164 } from '../schema';
+import { get as getEnv, getStr as getEnvStr } from "../env";
+import { formatPhoneE164 } from "../schema";
 
 export const usePostResource = <Params, Result = {}>(resource: string) => {
   return async (data: Params): Promise<Result> => {
@@ -18,7 +18,7 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
         : {})
     };
 
-    const baseUrl = getEnvStr('WP_REST_API').replace(/\/$/, ''); // trim trailing slash
+    const baseUrl = getEnvStr("WP_REST_API").replace(/\/$/, ""); // trim trailing slash
     const res = await fetch(`${baseUrl}/${endpoint}`, {
       method: "POST",
       headers: {
@@ -30,7 +30,10 @@ export const usePostResource = <Params, Result = {}>(resource: string) => {
 
     if (!res.ok) {
       const body = await res.text();
-      const err = new Error(body) as Error & { status: number; resource: string };
+      const err = new Error(body) as Error & {
+        status: number;
+        resource: string;
+      };
       err.status = res.status;
       err.resource = resource;
       throw err;

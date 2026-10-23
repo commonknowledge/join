@@ -166,119 +166,150 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
             ></div>
           ) : null}
           {usePostcodeLookup ? (
-          <>
-            <FormItem
-              label="Postcode"
-              name="postcode"
-              form={addressLookupForm}
-              required
-              after={
-                <Button
-                  className="mt-2"
-                  onClick={handleLookupPostcode}
-                  variant="secondary"
-                >
-                  Find address
-                </Button>
-              }
-            >
-              <Form.Control className="mb-2" autoComplete="postal-code" />
-            </FormItem>
-
-            {addressLookup.message && (
-              <Alert 
-                variant={addressLookup.messageType === 'error' ? 'warning' : 'info'} 
-                className="mt-2"
-              >
-                <div dangerouslySetInnerHTML={{ __html: addressLookup.message }} />
-              </Alert>
-            )}
-
-            <p className="text-secondary">
-              <a
-                className="text-secondary text-decoration-underline cursor-pointer"
-                onClick={() =>
-                  setAddressManuallyOpen((manuallyOpen) => !manuallyOpen)
+            <>
+              <FormItem
+                label="Postcode"
+                name="postcode"
+                form={addressLookupForm}
+                required
+                after={
+                  <Button
+                    className="mt-2"
+                    onClick={handleLookupPostcode}
+                    variant="secondary"
+                  >
+                    Find address
+                  </Button>
                 }
               >
-                If you can't find your address, you can enter it manually.
-              </a>
-            </p>
+                <Form.Control className="mb-2" autoComplete="postal-code" />
+              </FormItem>
 
-            <Collapse in={!!addressLookup.options && addressLookup.options.length > 0}>
-              <Form.Group>
-                <Form.Label>Select Address</Form.Label>
-                <Form.Control
-                  as="select"
-                  custom
-                  className="form-control"
-                  onChange={(e) =>
-                    addressLookup.setAddress(e.currentTarget.value)
+              {addressLookup.message && (
+                <Alert
+                  variant={
+                    addressLookup.messageType === "error" ? "warning" : "info"
+                  }
+                  className="mt-2"
+                >
+                  <div
+                    dangerouslySetInnerHTML={{ __html: addressLookup.message }}
+                  />
+                </Alert>
+              )}
+
+              <p className="text-secondary">
+                <a
+                  className="text-secondary text-decoration-underline cursor-pointer"
+                  onClick={() =>
+                    setAddressManuallyOpen((manuallyOpen) => !manuallyOpen)
                   }
                 >
-                  <option>Choose your address</option>
+                  If you can't find your address, you can enter it manually.
+                </a>
+              </p>
 
-                  {addressLookup.options?.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.toString()}
+              <Collapse
+                in={!!addressLookup.options && addressLookup.options.length > 0}
+              >
+                <Form.Group>
+                  <Form.Label>Select Address</Form.Label>
+                  <Form.Control
+                    as="select"
+                    custom
+                    className="form-control"
+                    onChange={(e) =>
+                      addressLookup.setAddress(e.currentTarget.value)
+                    }
+                  >
+                    <option>Choose your address</option>
+
+                    {addressLookup.options?.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.toString()}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+              </Collapse>
+            </>
+          ) : null}
+          <Collapse
+            in={
+              !!addressLookup.address ||
+              !!data.addressLine1 ||
+              manuallyOpen ||
+              !usePostcodeLookup
+            }
+          >
+            <div>
+              <FormItem
+                label="Address line 1"
+                name="addressLine1"
+                form={form}
+                required={requireAddress}
+              >
+                <Form.Control
+                  autoComplete="address-line1"
+                  disabled={addressLookup.loading}
+                />
+              </FormItem>
+              <FormItem label="Address line 2" name="addressLine2" form={form}>
+                <Form.Control
+                  autoComplete="address-line2"
+                  disabled={addressLookup.loading}
+                />
+              </FormItem>
+              <FormItem
+                label="City"
+                name="addressCity"
+                form={form}
+                required={requireAddress}
+              >
+                <Form.Control
+                  autoComplete="address-level2"
+                  disabled={addressLookup.loading}
+                />
+              </FormItem>
+              {getEnv("COLLECT_COUNTY") ? (
+                <FormItem
+                  label="County"
+                  name="addressCounty"
+                  form={form}
+                  required
+                >
+                  <Form.Control disabled={addressLookup.loading} />
+                </FormItem>
+              ) : null}
+
+              <FormItem
+                label="Postcode"
+                name="addressPostcode"
+                form={form}
+                required={requireAddress}
+              >
+                <Form.Control disabled={addressLookup.loading} />
+              </FormItem>
+              <FormItem
+                label="Country"
+                form={form}
+                name="addressCountry"
+                required={requireAddress}
+              >
+                <Form.Control
+                  autoComplete="country"
+                  as="select"
+                  className="form-control"
+                >
+                  {sortedCountries.map((c) => (
+                    <option key={c.numeric} value={c.alpha2}>
+                      {c.name}
                     </option>
                   ))}
                 </Form.Control>
-              </Form.Group>
-            </Collapse>
-          </>
-        ) : null}
-        <Collapse
-          in={
-            !!addressLookup.address ||
-            !!data.addressLine1 ||
-            manuallyOpen ||
-            !usePostcodeLookup
-          }
-        >
-          <div>
-            <FormItem label="Address line 1" name="addressLine1" form={form} required={requireAddress}>
-              <Form.Control
-                autoComplete="address-line1"
-                disabled={addressLookup.loading}
-              />
-            </FormItem>
-            <FormItem label="Address line 2" name="addressLine2" form={form}>
-              <Form.Control
-                autoComplete="address-line2"
-                disabled={addressLookup.loading}
-              />
-            </FormItem>
-            <FormItem label="City" name="addressCity" form={form} required={requireAddress}>
-              <Form.Control
-                autoComplete="address-level2"
-                disabled={addressLookup.loading}
-              />
-            </FormItem>
-            {getEnv("COLLECT_COUNTY") ? (
-              <FormItem label="County" name="addressCounty" form={form} required>
-                <Form.Control disabled={addressLookup.loading} />
               </FormItem>
-            ) : null}
-
-            <FormItem label="Postcode" name="addressPostcode" form={form} required={requireAddress}>
-              <Form.Control disabled={addressLookup.loading} />
-            </FormItem>
-            <FormItem label="Country" form={form} name="addressCountry" required={requireAddress}>
-              <Form.Control
-                autoComplete="country"
-                as="select"
-                className="form-control"
-              >
-                {sortedCountries.map((c) => (
-                  <option key={c.numeric} value={c.alpha2}>
-                    {c.name}
-                  </option>
-                ))}
-              </Form.Control>
-            </FormItem>
-          </div>
-        </Collapse>
+            </div>
+          </Collapse>
         </section>
       ) : null}
 
@@ -303,7 +334,12 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
         {Boolean(getEnv("ENABLE_INTERNATIONAL_PHONE_NUMBERS")) ? (
           <Row>
             <Col xs={5} sm={4}>
-              <FormItem label="Country code" name="phoneCountry" form={form} required>
+              <FormItem
+                label="Country code"
+                name="phoneCountry"
+                form={form}
+                required
+              >
                 <Form.Control as="select">
                   {phoneCountries.map((c) => (
                     <option key={c.alpha2} value={c.alpha2}>
@@ -314,13 +350,23 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               </FormItem>
             </Col>
             <Col>
-              <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
+              <FormItem
+                label="Phone number"
+                name="phoneNumber"
+                form={form}
+                required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}
+              >
                 <Form.Control autoComplete="tel-national" type="tel" />
               </FormItem>
             </Col>
           </Row>
         ) : (
-          <FormItem label="Phone number" name="phoneNumber" form={form} required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}>
+          <FormItem
+            label="Phone number"
+            name="phoneNumber"
+            form={form}
+            required={Boolean(getEnv("REQUIRE_PHONE_NUMBER"))}
+          >
             <Form.Control autoComplete="tel-national" type="tel" />
           </FormItem>
         )}
@@ -330,10 +376,18 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               className="text-secondary"
               dangerouslySetInnerHTML={{ __html: contactConsentCopy }}
             ></div>
-            <FormItem form={form} name="contactByEmail" required={Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))}>
+            <FormItem
+              form={form}
+              name="contactByEmail"
+              required={Boolean(getEnv("REQUIRE_EMAIL_CONSENT"))}
+            >
               <Form.Check label="Email" />
             </FormItem>
-            <FormItem form={form} name="contactByPhone" required={Boolean(getEnv("REQUIRE_PHONE_CONSENT"))}>
+            <FormItem
+              form={form}
+              name="contactByPhone"
+              required={Boolean(getEnv("REQUIRE_PHONE_CONSENT"))}
+            >
               <Form.Check label="Phone" />
             </FormItem>
           </>
@@ -435,7 +489,12 @@ const CustomField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
           <Form.Check label={field.label} />
         </FormItem>
       ) : field.field_type === "select" ? (
-        <FormItem label={field.label} name={field.id} form={form} required={field.required}>
+        <FormItem
+          label={field.label}
+          name={field.id}
+          form={form}
+          required={field.required}
+        >
           <Form.Control as="select" custom className="form-control">
             <option value="">Choose an option</option>
             {parseCustomFieldOptions(field.options).map(
@@ -472,11 +531,13 @@ const CustomField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
       ) : field.field_type === "month_year" ? (
         <MonthYearField field={field} form={form} />
       ) : (
-        <FormItem label={field.label} name={field.id} form={form} required={field.required}>
-          <Form.Control
-            autoComplete={field.id}
-            type={field.field_type}
-          />
+        <FormItem
+          label={field.label}
+          name={field.id}
+          form={form}
+          required={field.required}
+        >
+          <Form.Control autoComplete={field.id} type={field.field_type} />
         </FormItem>
       )}
       {field.instructions && (
@@ -489,7 +550,10 @@ const CustomField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
   );
 };
 
-const MonthYearField: React.FC<{ field: any; form: any }> = ({ field, form }) => {
+const MonthYearField: React.FC<{ field: any; form: any }> = ({
+  field,
+  form
+}) => {
   const monthName = `${field.id}Month`;
   const yearName = `${field.id}Year`;
   const month = form.watch(monthName);

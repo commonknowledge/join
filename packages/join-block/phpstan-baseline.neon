@@ -106,11 +106,6 @@ parameters:
 			path: src/Services/JoinService.php
 
 		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 2
-			path: src/Services/MailchimpService.php
-
-		-
 			message: "#^Access to an undefined property Stripe\\\\StripeObject\\:\\:\\$paid_at\\.$#"
 			count: 2
 			path: src/Services/StripeService.php
