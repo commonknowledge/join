@@ -24,7 +24,7 @@
   "_membership_plans|add_tags|1|0|value": "",
   "_membership_plans|redirect_instead_of_payment|1|0|value": "",
   "_membership_plans|redirect_page|1|0|_empty": "",
-  "ck_join_flow_membership_plan_legacy-standard_monthly_gbp": {
+  "ck_join_flow_membership_plan_legacy-standard": {
     "_type": "_",
     "label": "Legacy Standard",
     "id": "",

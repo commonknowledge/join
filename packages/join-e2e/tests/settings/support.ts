@@ -142,9 +142,12 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
  * last step, and returns the response. Only the fields the test cares about
  * need passing; `membership` is the chosen plan's ID.
  */
+/** The email postJoin() joins with, unless given another. */
+export const MEMBER_EMAIL = 'member@example.org';
+
 export async function postJoin(request: APIRequestContext, data: Record<string, unknown>) {
   return request.post('/wp-json/join/v1/join', {
-    data: { firstName: 'Ada', lastName: 'Lovelace', email: 'member@example.org', ...data },
+    data: { firstName: 'Ada', lastName: 'Lovelace', email: MEMBER_EMAIL, ...data },
   });
 }
 
@@ -278,16 +281,19 @@ export class JoinSettingsPage {
 
   /** The global membership plans on the Membership Plans tab, one per plan. */
   plans(): Locator {
+    return this.plansField().locator('.cf-complex__group');
+  }
+
+  private plansField(): Locator {
     return this.page
       .locator('.cf-container__fields .cf-field.cf-complex')
-      .filter({ has: this.page.locator('.cf-field__label', { hasText: /^Membership Plans$/ }) })
-      .locator('.cf-complex__group');
+      .filter({ has: this.page.locator('.cf-field__label', { hasText: /^Membership Plans$/ }) });
   }
 
   /** Adds a membership plan at the end of the list and fills it in. Does not save. */
   async addPlan(plan: PlanFields): Promise<void> {
     const count = await this.plans().count();
-    await this.page.locator('.cf-container__fields .cf-complex__inserter-button').click();
+    await this.plansField().locator('.cf-complex__inserter-button').click();
     await expect(this.plans()).toHaveCount(count + 1);
     await this.editPlan(count, plan);
   }
@@ -341,15 +347,52 @@ export class JoinSettingsPage {
   }
 
   /**
-   * Checks the page will not save as it stands: either it won't let the save
-   * be made (today it disables Save while a required field is empty), or it
-   * rejects it with an error.
+   * Checks the page will not save as it stands. It may not let the save be
+   * made at all (today Save is disabled while a required field is empty; a
+   * rebuilt page may leave it to the browser to block a field breaking its
+   * own rules), or it may make the save and reject it with an error.
+   *
+   * A save refused before it is made says nothing about the plugin's own
+   * checks: test those with saveSkippingPageChecksExpectingErrors().
    */
   async expectSaveRefused(): Promise<void> {
-    if (await this.page.locator('#publish').isDisabled()) {
+    const publish = this.page.locator('#publish');
+    // Give the page a moment to disable Save after the last change.
+    const disabled = await expect
+      .poll(() => publish.isDisabled(), { timeout: 2000 })
+      .toBe(true)
+      .then(
+        () => true,
+        () => false,
+      );
+    if (disabled) {
       return;
     }
-    await this.saveExpectingErrors();
+    const navigated = await Promise.all([
+      this.page.waitForNavigation({ timeout: 5000 }).then(
+        () => true,
+        () => false,
+      ),
+      publish.click(),
+    ]).then(([didNavigate]) => didNavigate);
+    if (!navigated) {
+      // The browser blocked the submit.
+      return;
+    }
+    expect(await this.errors(), 'expected the settings page to refuse the save').not.toEqual([]);
+  }
+
+  /**
+   * Saves with the page's own checks turned off (Save enabled, the browser's
+   * field checks skipped), as a request made without the browser would be,
+   * expecting the plugin to reject it. Returns its error messages.
+   */
+  async saveSkippingPageChecksExpectingErrors(): Promise<string[]> {
+    await this.page.locator('#publish').evaluate((button: HTMLInputElement) => {
+      button.disabled = false;
+      if (button.form) button.form.noValidate = true;
+    });
+    return this.saveExpectingErrors();
   }
 
   private async submit(): Promise<void> {

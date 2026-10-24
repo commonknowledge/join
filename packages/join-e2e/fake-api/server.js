@@ -59,6 +59,28 @@ function parseFormEncoded(raw) {
 }
 
 /**
+ * A Stripe list, filtered as Stripe filters it for the parameters the plugin
+ * sends: plain fields (?customer=cus_1), ranges (?created[gte]=...), and
+ * subscriptions' status, where "all" means any and leaving it out means any
+ * but canceled.
+ */
+function listStripe(type, store, url) {
+  const ignored = ['limit', 'starting_after', 'ending_before'];
+  const params = [...url.searchParams].filter(([key]) => !ignored.includes(key) && !key.startsWith('expand'));
+  const ranges = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b };
+  const hasStatus = params.some(([key]) => key === 'status');
+  return store.filter((object) => {
+    if (type === 'subscriptions' && !hasStatus && object.status === 'canceled') return false;
+    return params.every(([key, value]) => {
+      const range = key.match(/^([a-z_]+)\[(gt|gte|lt|lte)\]$/);
+      if (range) return ranges[range[2]](Number(object[range[1]]), Number(value));
+      if (key === 'status' && value === 'all') return true;
+      return String(object[key]) === value;
+    });
+  });
+}
+
+/**
  * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
  * and for the customer and subscription look-ups its webhook handlers make.
  */
@@ -87,12 +109,7 @@ function fakeStripe(method, url, body) {
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
   }
   if (method === 'GET' && !idOrAction) {
-    // List, filtered on plain fields, e.g. ?customer=cus_1&status=active
-    const filters = Object.entries(Object.fromEntries(url.searchParams)).filter(
-      ([key]) => !['limit', 'starting_after', 'ending_before'].includes(key) && !key.startsWith('expand'),
-    );
-    const data = store.filter((object) => filters.every(([key, value]) => String(object[key]) === value));
-    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data } };
+    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
