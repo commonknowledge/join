@@ -6,6 +6,7 @@ import {
   JoinSettingsPage,
   MULTI_CURRENCY_PAGE,
   STANDARD_JOIN_PAGE,
+  continueToPlans,
   expect,
   getSetting,
   getSettings,
@@ -27,8 +28,7 @@ const details = (page: Page) => page.locator('form.form-content').first();
 /** From the details step to the plan step. */
 async function goToPlans(page: Page, url = STANDARD_JOIN_PAGE) {
   await openJoinForm(page, url);
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  await continueToPlans(page);
 }
 
 /**

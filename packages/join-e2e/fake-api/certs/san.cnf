@@ -20,3 +20,6 @@ DNS.10 = api.postcodes.io
 DNS.11 = api.getaddress.io
 DNS.12 = api.ideal-postcodes.co.uk
 DNS.13 = fake-api
+DNS.14 = logs-01.loggly.com
+DNS.15 = sentry.e2e.example
+DNS.16 = logging.googleapis.com

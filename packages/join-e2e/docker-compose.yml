@@ -57,6 +57,9 @@ services:
           - api.postcodes.io
           - api.getaddress.io
           - api.ideal-postcodes.co.uk
+          - logs-01.loggly.com
+          - sentry.e2e.example
+          - logging.googleapis.com
 
   db:
     image: mariadb:11.4

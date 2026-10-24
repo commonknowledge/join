@@ -5,6 +5,7 @@ import {
   GLOBAL_PLANS_PAGE,
   JoinSettingsPage,
   MEMBER_EMAIL,
+  continueToPlans,
   expect,
   fakeApiRequests,
   getSettings,
@@ -55,8 +56,7 @@ const formPlans = async (page: Page) => (await joinFormEnv(page, GLOBAL_PLANS_PA
 /** Opens the join form on GLOBAL_PLANS_PAGE and moves on to choosing a plan. */
 async function openPlanStep(page: Page): Promise<void> {
   await openJoinForm(page, GLOBAL_PLANS_PAGE);
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  await continueToPlans(page);
 }
 
 /** A plan's panel on the join form's plan step. */
