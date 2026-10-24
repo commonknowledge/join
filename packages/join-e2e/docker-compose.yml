@@ -10,13 +10,14 @@ x-wordpress-volumes: &wordpress-volumes
   - ../join-block:/var/www/html/wp-content/plugins/join-block
   - ./scripts:/var/www/html/wp-content/e2e-scripts
   # Trust the fake API's test CA: PHP's curl and streams, WordPress's own
-  # HTTP API (via a must-use plugin) and the Stripe SDK each have their own CA
+  # HTTP API (via a must-use plugin) and the Stripe and Chargebee SDKs each have their own CA
   # setting. Nothing may be mounted over WordPress's core files: the image
   # copies them into the volume on first start and fails if one is in the way.
   - ./fake-api/certs/ca.crt:/usr/local/share/e2e-fake-api-ca.crt:ro
   - ./fake-api/php-ca.ini:/usr/local/etc/php/conf.d/zz-e2e-fake-api-ca.ini:ro
   - ./fake-api/e2e-fake-api-ca.php:/var/www/html/wp-content/mu-plugins/e2e-fake-api-ca.php:ro
   - ./fake-api/certs/ca.crt:/var/www/html/wp-content/plugins/join-block/vendor/stripe/stripe-php/data/ca-certificates.crt:ro
+  - ./fake-api/certs/ca.crt:/var/www/html/wp-content/plugins/join-block/vendor/chargebee/chargebee-php/lib/ssl/ca-certs.crt:ro
 
 x-wordpress-environment: &wordpress-environment
   WORDPRESS_DB_HOST: db
@@ -56,6 +57,10 @@ services:
           - api.postcodes.io
           - api.getaddress.io
           - api.ideal-postcodes.co.uk
+          - logs-01.loggly.com
+          - sentry.e2e.example
+          - oauth2.googleapis.com
+          - logging.googleapis.com
 
   db:
     image: mariadb:11.4
