@@ -1,4 +1,4 @@
-import { Locator, Page, expect } from '@playwright/test';
+import { APIRequestContext, Locator, Page, expect } from '@playwright/test';
 import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -31,6 +31,8 @@ export const FREE_JOIN_PAGE = '/e2e-free-join/';
 export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
 /** A join form offering the same plan in GBP and EUR. */
 export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
+/** A join form with no plans of its own, so it offers the global plans. */
+export const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
 
 /** A pattern matching exactly `text`, with any pattern characters in it escaped. */
 const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
@@ -136,6 +138,26 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
 }
 
 /**
+ * Sends a join to the plugin's /join endpoint, as the join form does at its
+ * last step, and returns the response. Only the fields the test cares about
+ * need passing; `membership` is the chosen plan's ID.
+ */
+/** The email postJoin() joins with, unless given another. */
+export const MEMBER_EMAIL = 'member@example.org';
+
+export async function postJoin(request: APIRequestContext, data: Record<string, unknown>) {
+  return request.post('/wp-json/join/v1/join', {
+    data: { firstName: 'Ada', lastName: 'Lovelace', email: MEMBER_EMAIL, ...data },
+  });
+}
+
+/** Delivers an event to the plugin's Stripe webhook endpoint, as Stripe would. */
+export async function postStripeWebhook(request: APIRequestContext, type: string, data: Record<string, unknown>) {
+  const response = await request.post('/wp-json/join/v1/stripe/webhook', { data: { type, data } });
+  expect(response.ok()).toBe(true);
+}
+
+/**
  * Integration switches on the Features tab, and the Integrations tab
  * credentials each one needs before the settings page will save it switched
  * on. The values are fake: nothing in these tests reaches the real services.
@@ -161,6 +183,20 @@ export const INTEGRATION_CREDENTIALS: Record<string, Record<string, string>> = {
   },
   'Use Action Network': { 'Action Network API key': 'e2e-action-network-key' },
   'Use Mailchimp': { 'Mailchimp API key': 'e2e-mailchimp-key-us1', 'Mailchimp audience ID': 'e2e-audience' },
+};
+
+/** A membership plan's fields on the settings page. Unset fields are left as they are. */
+export type PlanFields = {
+  name?: string;
+  /** "Price Point ID". */
+  id?: string;
+  price?: string;
+  allowCustomAmount?: boolean;
+  frequency?: 'yearly' | 'monthly' | 'weekly';
+  currency?: 'GBP' | 'EUR' | 'USD';
+  description?: string;
+  /** Comma-separated. */
+  addTags?: string;
 };
 
 /**
@@ -243,6 +279,57 @@ export class JoinSettingsPage {
     await this.setCheckbox(switchLabel, true);
   }
 
+  /** The global membership plans on the Membership Plans tab, one per plan. */
+  plans(): Locator {
+    return this.plansField().locator('.cf-complex__group');
+  }
+
+  private plansField(): Locator {
+    return this.page
+      .locator('.cf-container__fields .cf-field.cf-complex')
+      .filter({ has: this.page.locator('.cf-field__label', { hasText: /^Membership Plans$/ }) });
+  }
+
+  /** Adds a membership plan at the end of the list and fills it in. Does not save. */
+  async addPlan(plan: PlanFields): Promise<void> {
+    const count = await this.plans().count();
+    await this.plansField().locator('.cf-complex__inserter-button').click();
+    await expect(this.plans()).toHaveCount(count + 1);
+    await this.editPlan(count, plan);
+  }
+
+  /** Changes the given fields of the plan at `index` (0 is the first). Does not save. */
+  async editPlan(index: number, plan: PlanFields): Promise<void> {
+    const group = this.plans().nth(index);
+    if (await group.evaluate((element) => element.classList.contains('cf-complex__group--collapsed'))) {
+      await group.locator('.cf-complex__group-head').click();
+    }
+    const input = (label: string) =>
+      group
+        .locator(`.cf-field:has(.cf-field__label:text-matches("^${label}[*]?$"))`)
+        .first()
+        .locator('input:not([type="hidden"]), select, textarea')
+        .first();
+
+    if (plan.name !== undefined) await input('Name').fill(plan.name);
+    if (plan.id !== undefined) await input('Price Point ID').fill(plan.id);
+    if (plan.price !== undefined) await input('Price').fill(plan.price);
+    if (plan.allowCustomAmount !== undefined) {
+      await group.getByLabel('Allow users to change the amount', { exact: true }).setChecked(plan.allowCustomAmount);
+    }
+    if (plan.frequency !== undefined) await input('Frequency').selectOption(plan.frequency);
+    if (plan.currency !== undefined) await input('Currency').selectOption(plan.currency);
+    if (plan.description !== undefined) await input('Description').fill(plan.description);
+    if (plan.addTags !== undefined) await input('Add Tags').fill(plan.addTags);
+  }
+
+  /** Removes the plan at `index` (0 is the first). Does not save. */
+  async removePlan(index: number): Promise<void> {
+    const count = await this.plans().count();
+    await this.plans().nth(index).locator('button[title="Remove"]').click();
+    await expect(this.plans()).toHaveCount(count - 1);
+  }
+
   /** Saves every tab, and fails with the page's error messages if the save is rejected. */
   async save(): Promise<void> {
     await this.submit();
@@ -257,6 +344,55 @@ export class JoinSettingsPage {
     const errors = await this.errors();
     expect(errors, 'expected the settings page to reject the save').not.toEqual([]);
     return errors;
+  }
+
+  /**
+   * Checks the page will not save as it stands. It may not let the save be
+   * made at all (today Save is disabled while a required field is empty; a
+   * rebuilt page may leave it to the browser to block a field breaking its
+   * own rules), or it may make the save and reject it with an error.
+   *
+   * A save refused before it is made says nothing about the plugin's own
+   * checks: test those with saveSkippingPageChecksExpectingErrors().
+   */
+  async expectSaveRefused(): Promise<void> {
+    const publish = this.page.locator('#publish');
+    // Give the page a moment to disable Save after the last change.
+    const disabled = await expect
+      .poll(() => publish.isDisabled(), { timeout: 2000 })
+      .toBe(true)
+      .then(
+        () => true,
+        () => false,
+      );
+    if (disabled) {
+      return;
+    }
+    const navigated = await Promise.all([
+      this.page.waitForNavigation({ timeout: 5000 }).then(
+        () => true,
+        () => false,
+      ),
+      publish.click(),
+    ]).then(([didNavigate]) => didNavigate);
+    if (!navigated) {
+      // The browser blocked the submit.
+      return;
+    }
+    expect(await this.errors(), 'expected the settings page to refuse the save').not.toEqual([]);
+  }
+
+  /**
+   * Saves with the page's own checks turned off (Save enabled, the browser's
+   * field checks skipped), as a request made without the browser would be,
+   * expecting the plugin to reject it. Returns its error messages.
+   */
+  async saveSkippingPageChecksExpectingErrors(): Promise<string[]> {
+    await this.page.locator('#publish').evaluate((button: HTMLInputElement) => {
+      button.disabled = false;
+      if (button.form) button.form.noValidate = true;
+    });
+    return this.saveExpectingErrors();
   }
 
   private async submit(): Promise<void> {

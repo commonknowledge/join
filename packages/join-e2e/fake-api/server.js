@@ -58,7 +58,32 @@ function parseFormEncoded(raw) {
   return result;
 }
 
-/** A tiny in-memory Stripe: enough for the plugin's product and price set-up. */
+/**
+ * A Stripe list, filtered as Stripe filters it for the parameters the plugin
+ * sends: plain fields (?customer=cus_1), ranges (?created[gte]=...), and
+ * subscriptions' status, where "all" means any and leaving it out means any
+ * but canceled.
+ */
+function listStripe(type, store, url) {
+  const ignored = ['limit', 'starting_after', 'ending_before'];
+  const params = [...url.searchParams].filter(([key]) => !ignored.includes(key) && !key.startsWith('expand'));
+  const ranges = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b };
+  const hasStatus = params.some(([key]) => key === 'status');
+  return store.filter((object) => {
+    if (type === 'subscriptions' && !hasStatus && object.status === 'canceled') return false;
+    return params.every(([key, value]) => {
+      const range = key.match(/^([a-z_]+)\[(gt|gte|lt|lte)\]$/);
+      if (range) return ranges[range[2]](Number(object[range[1]]), Number(value));
+      if (key === 'status' && value === 'all') return true;
+      return String(object[key]) === value;
+    });
+  });
+}
+
+/**
+ * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
+ * and for the customer and subscription look-ups its webhook handlers make.
+ */
 function fakeStripe(method, url, body) {
   const match = url.pathname.match(/^\/v1\/([a-z_]+)(?:\/([^/]+))?$/);
   if (!match) return null;
@@ -82,6 +107,9 @@ function fakeStripe(method, url, body) {
       }),
     );
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
+  }
+  if (method === 'GET' && !idOrAction) {
+    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
@@ -170,6 +198,14 @@ function handleControl(request, response) {
       }
       overrides.unshift(rule);
       return send(200, { ok: true });
+    }
+    // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
+    // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
+    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
+      const object = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      stripe.objects[stripeSeed[1]].push(object);
+      return send(200, object);
     }
     if (request.method === 'GET' && request.url === '/health') return send(200, { ok: true });
     send(404, { error: 'unknown control endpoint' });
