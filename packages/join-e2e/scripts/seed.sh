@@ -16,4 +16,8 @@ cd "${PACKAGE_DIR}"
 scripts/env.sh wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php
 scripts/env.sh wp rewrite flush --hard
 
+# The settings tests restore this after changing settings (tests/settings/support.ts).
+echo "--- Snapshotting options ---"
+scripts/env.sh wp db export /var/www/html/wp-content/e2e-options-snapshot.sql --tables="$(scripts/env.sh wp db prefix)options"
+
 echo "--- Seed complete ---"

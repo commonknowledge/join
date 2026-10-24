@@ -13,10 +13,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 URL="http://localhost:8889"
 READY_TIMEOUT="${WP_READY_TIMEOUT:-120}"
 
-# COMPOSE_PROGRESS rather than --progress: older Compose versions reject the
-# flag but ignore the variable.
 wp() {
-  COMPOSE_PROGRESS=quiet docker compose run --rm --no-deps -T cli wp "$@"
+  if [ -z "$(docker compose ps --status running --quiet cli 2>/dev/null)" ]; then
+    echo "The E2E containers aren't running. Start them with: scripts/env.sh start" >&2
+    exit 1
+  fi
+  docker compose exec -T cli wp "$@"
 }
 
 # On first start the wordpress container copies WordPress into the shared
