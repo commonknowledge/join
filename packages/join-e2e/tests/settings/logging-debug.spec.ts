@@ -1,5 +1,19 @@
 import { APIRequestContext } from '@playwright/test';
-import { STANDARD_JOIN_PAGE, expect, getSettings, joinFormEnv, loadLegacySettings, openJoinForm, test, wpEvalJson } from './fixtures';
+import {
+  PHP_LOG_FILES,
+  STANDARD_JOIN_PAGE,
+  backUpLogFiles,
+  expect,
+  getSettings,
+  joinFormEnv,
+  loadLegacySettings,
+  logInfo,
+  logInvalidPlan,
+  openJoinForm,
+  restoreLogFiles,
+  test,
+  wpEvalJson,
+} from './fixtures';
 
 /**
  * Settings page, Logging and Debug tabs.
@@ -11,41 +25,58 @@ import { STANDARD_JOIN_PAGE, expect, getSettings, joinFormEnv, loadLegacySetting
  * Debug: turning off the join form's test data.
  */
 
-/** Makes the plugin log a line naming `email` ("Recording CK Join form step"). */
-async function logStep(request: APIRequestContext, email: string): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/step', { data: { email, stage: 'details' } });
-  expect(response.ok()).toBe(true);
-}
+// These tests replace the log files; each test's are put back afterwards.
+test.beforeEach(() => backUpLogFiles());
+test.afterEach(() => restoreLogFiles());
 
 /**
- * Lays down a log file for each of the last `days` days (as if the site had
- * been logging that long), removes today's so the next log line starts a new
- * day's file, and returns the dates of the files left once that has happened.
+ * Replaces the log files with one for each of the `days` days before today
+ * (as if the site had been logging that long), so the next log line starts a
+ * new day's file and the plugin rotates the old ones. Returns the dates laid
+ * down and the dates kept after rotation, both newest first.
  */
-async function logFilesKeptAfter(request: APIRequestContext, days: number): Promise<string[]> {
-  wpEvalJson(`
+async function rotateLogFiles(request: APIRequestContext, days: number) {
+  const laidDown = wpEvalJson<string[]>(`
     $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
-    $existing = glob("$dir/debug-*.log") ?: [];
+    $existing = ${PHP_LOG_FILES};
     preg_match('/debug-([0-9a-f]+)-/', basename($existing[0] ?? 'debug-e2e-'), $match);
     $hash = $match[1] ?? bin2hex(random_bytes(18));
     array_map('unlink', $existing);
+    $dates = [];
     for ($i = 1; $i <= ${days}; $i++) {
-      file_put_contents("$dir/debug-$hash-" . date('Y-m-d', strtotime("-$i days")) . '.log', "old\\n");
+      $dates[] = date('Y-m-d', strtotime("-$i days"));
+      file_put_contents("$dir/debug-$hash-" . end($dates) . '.log', "old\\n");
     }
-    return true;
+    return $dates;
   `);
-  await logStep(request, 'rotation@example.org');
-  return wpEvalJson<string[]>(`
-    $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
-    return array_map(fn ($file) => substr(basename($file, '.log'), -10), glob("$dir/debug-*.log") ?: []);
-  `).sort();
+  await logInfo(request);
+  const kept = wpEvalJson<string[]>(`return array_map(fn ($file) => substr(basename($file, '.log'), -10), ${PHP_LOG_FILES});`)
+    .sort()
+    .reverse();
+  return { laidDown, kept };
 }
 
-/** The date `daysAgo` days ago in the WordPress container, e.g. 2026-10-20. */
-const daysAgo = (days: number) => wpEvalJson<string>(`return date('Y-m-d', strtotime('-${days} days'));`);
+/**
+ * Checks rotation kept `days` days of files: the new day's, and the newest of
+ * those laid down. (Worked out from the dates rotateLogFiles saw, so a run
+ * across midnight still passes.)
+ */
+function expectKept({ laidDown, kept }: { laidDown: string[]; kept: string[] }, days: number): void {
+  expect(kept).toHaveLength(days);
+  expect(kept[0] > laidDown[0]).toBe(true);
+  expect(kept.slice(1)).toEqual(laidDown.slice(0, days - 1));
+}
+
+/** JOIN_FLOW_LOG_RETENTION_DAYS from the plugin's environment (packages/join-block/.env), if set. */
+const retentionFromEnvironment = () =>
+  wpEvalJson<string | null>(`return $_ENV['JOIN_FLOW_LOG_RETENTION_DAYS'] ?? null;`);
 
 test.describe('Logging', () => {
   test('logs are kept for 10 days unless Log Retention says otherwise', async ({ settings, request }) => {
+    test.skip(
+      retentionFromEnvironment() !== null,
+      'JOIN_FLOW_LOG_RETENTION_DAYS is set in packages/join-block/.env, which replaces the default',
+    );
     expect(getSettings(['join_flow_log_retention_days']).join_flow_log_retention_days).toBe('');
 
     await settings.open('Logging');
@@ -55,9 +86,7 @@ test.describe('Logging', () => {
       ),
     ).toBeVisible();
 
-    const kept = await logFilesKeptAfter(request, 14);
-    expect(kept).toHaveLength(10);
-    expect(kept[0]).toBe(daysAgo(9));
+    expectKept(await rotateLogFiles(request, 14), 10);
   });
 
   test('Log Retention (days) sets how many days of log files are kept', async ({ settings, request }) => {
@@ -72,8 +101,7 @@ test.describe('Logging', () => {
       settings.page.getByText('Logs are retained for 3 days (from the Log Retention setting above).'),
     ).toBeVisible();
 
-    const kept = await logFilesKeptAfter(request, 6);
-    expect(kept).toEqual([daysAgo(2), daysAgo(1), daysAgo(0)]);
+    expectKept(await rotateLogFiles(request, 6), 3);
   });
 
   for (const value of ['0', '2.5', '-1']) {
@@ -85,6 +113,12 @@ test.describe('Logging', () => {
 
       await settings.expectSaveRefused();
       // The plugin checks it too, for saves that skip the browser's checks.
+      // (If the refusal above was a reload, the page shows the saved values
+      // again, so enter the invalid ones again.)
+      await settings.tab('Logging');
+      await settings.setText('Log Retention (days)', value);
+      await settings.tab('Debug');
+      await settings.setCheckbox('Disable Test Data', true);
       expect(await settings.saveSkippingPageChecksExpectingErrors()).toEqual([
         'Log Retention must be a whole number of days, at least 1 (see Logging tab).',
       ]);
@@ -96,13 +130,32 @@ test.describe('Logging', () => {
   }
 
   test('the tab shows the latest log', async ({ settings, request }) => {
-    // A join on a plan that doesn't exist logs the plan's ID.
     const plan = `log-viewer-${Date.now()}`;
-    const response = await request.post('/wp-json/join/v1/join', { data: { email: 'someone@example.com', membership: plan } });
-    expect(response.status()).toBe(500);
+    await logInvalidPlan(request, plan);
 
     await settings.open('Logging');
-    await expect(settings.page.locator('.cf-container__fields pre')).toContainText(`Invalid membership plan: ${plan}`);
+    await expect(settings.page.locator('pre', { hasText: `Invalid membership plan: ${plan}` })).toBeVisible();
+  });
+
+  // The tab picks its file by a different rule from the plugin's, so with
+  // another log file in the folder it can show a stale one (Linear JOIN-172).
+  // Re-enable once it's fixed.
+  test.fixme('the tab shows the log being written, even with another log file in the folder', async ({
+    settings,
+    request,
+  }) => {
+    await logInfo(request);
+    // A stale file under another name, as an earlier install might leave.
+    wpEvalJson(`
+      $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
+      file_put_contents("$dir/debug-zzzz-" . date('Y-m-d', strtotime('-1 day')) . '.log', "stale\\n");
+      return true;
+    `);
+    const plan = `log-viewer-${Date.now()}`;
+    await logInvalidPlan(request, plan);
+
+    await settings.open('Logging');
+    await expect(settings.page.locator('pre', { hasText: `Invalid membership plan: ${plan}` })).toBeVisible();
   });
 });
 
@@ -147,6 +200,6 @@ test.describe('Logging and Debug settings saved before the settings page was reb
     await expect(
       settings.page.getByText('Logs are retained for 4 days (from the Log Retention setting above).'),
     ).toBeVisible();
-    expect(await logFilesKeptAfter(request, 8)).toHaveLength(4);
+    expectKept(await rotateLogFiles(request, 8), 4);
   });
 });

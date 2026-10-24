@@ -151,6 +151,45 @@ export async function postJoin(request: APIRequestContext, data: Record<string, 
   });
 }
 
+/** Makes the plugin log an info line ("Recording CK Join form step"). */
+export async function logInfo(request: APIRequestContext): Promise<void> {
+  const response = await request.post('/wp-json/join/v1/step', { data: { email: 'someone@example.com', stage: 'details' } });
+  expect(response.ok()).toBe(true);
+}
+
+/** Makes the plugin log an error naming `plan` ("Invalid membership plan: <plan>"). */
+export async function logInvalidPlan(request: APIRequestContext, plan = 'no-such-plan'): Promise<void> {
+  const response = await request.post('/wp-json/join/v1/join', { data: { email: 'someone@example.com', membership: plan } });
+  expect(response.status()).toBe(500);
+}
+
+/** PHP for the paths of the plugin's log files, for use in wpEvalJson(). */
+export const PHP_LOG_FILES = `(glob(\\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory() . '/debug-*.log') ?: [])`;
+
+const PHP_LOG_BACKUP = `WP_CONTENT_DIR . '/e2e-log-backup'`;
+
+/** Copies the plugin's log files aside, for tests that change them (see restoreLogFiles). */
+export function backUpLogFiles(): void {
+  wpEvalJson(`
+    $backup = ${PHP_LOG_BACKUP};
+    wp_mkdir_p($backup);
+    array_map('unlink', glob("$backup/*") ?: []);
+    foreach (${PHP_LOG_FILES} as $file) copy($file, "$backup/" . basename($file));
+    return true;
+  `);
+}
+
+/** Puts the plugin's log files back as backUpLogFiles() found them. */
+export function restoreLogFiles(): void {
+  wpEvalJson(`
+    $backup = ${PHP_LOG_BACKUP};
+    $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
+    array_map('unlink', ${PHP_LOG_FILES});
+    foreach (glob("$backup/*") ?: [] as $file) rename($file, "$dir/" . basename($file));
+    return true;
+  `);
+}
+
 /** Delivers an event to the plugin's Stripe webhook endpoint, as Stripe would. */
 export async function postStripeWebhook(request: APIRequestContext, type: string, data: Record<string, unknown>) {
   const response = await request.post('/wp-json/join/v1/stripe/webhook', { data: { type, data } });
