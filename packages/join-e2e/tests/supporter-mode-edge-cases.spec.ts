@@ -52,9 +52,7 @@ test.describe('One-off tab disabled when STRIPE_DIRECT_DEBIT_ONLY=true', () => {
   });
 
   test('explanatory note about Direct Debit is shown', async ({ page }) => {
-    await expect(
-      page.locator('p:has-text("One-off donations are not available with Direct Debit")'),
-    ).toBeVisible();
+    await expect(page.locator('p:has-text("One-off donations are not available with Direct Debit")')).toBeVisible();
   });
 
   test('Monthly tab still works and advances the form', async ({ page }) => {
@@ -79,9 +77,7 @@ test.describe('No plans configured warning', () => {
   });
 
   test('"No donation amounts configured" warning is shown', async ({ page }) => {
-    await expect(
-      page.locator('[role="alert"]:has-text("No donation amounts configured")'),
-    ).toBeVisible();
+    await expect(page.locator('[role="alert"]:has-text("No donation amounts configured")')).toBeVisible();
   });
 
   test('no tier buttons or frequency toggle are rendered', async ({ page }) => {

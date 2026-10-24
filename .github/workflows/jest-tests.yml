@@ -41,4 +41,27 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Check formatting
-        run: npx prettier --check packages/join-flow
+        run: npx prettier --check packages/join-flow packages/join-e2e
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # TypeScript, plus each package's dependencies. The root postinstall
+      # also runs Composer, which the type check doesn't need, so it's
+      # skipped and join-flow's dependencies are installed directly.
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix packages/join-flow ci
+          npm --prefix packages/join-e2e ci
+
+      # The join form and its Jest tests, the E2E tests and the fake API.
+      - name: Type check
+        run: npm run typecheck

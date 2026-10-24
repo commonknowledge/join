@@ -25,9 +25,7 @@ const REDIRECT_CHECKBOX = 'Redirect to a page instead of taking payment';
 function field(scope: Locator, label: string): Locator {
   // One selector rather than a `has` filter, so it also works inside the
   // block editor's iframe.
-  return scope
-    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
-    .first();
+  return scope.locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`).first();
 }
 
 /** The CK Join Form block. The block editor renders its content in an iframe. */
@@ -82,7 +80,12 @@ async function openNewPageWithJoinBlock(page: Page): Promise<void> {
 
   // New pages open with WordPress's starter pattern picker over the editor.
   const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
-  if (await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
+  if (
+    await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(
+      () => true,
+      () => false,
+    )
+  ) {
     await patterns.getByRole('button', { name: 'Close' }).click();
   }
 
@@ -207,9 +210,9 @@ test.describe('Redirect help text', () => {
       await openNewPageWithJoinBlock(page);
       const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
       await plansField.locator('.cf-complex__inserter-button').click();
-      await expect(
-        plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
-      ).toContainText(NOT_RECORDED);
+      await expect(plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first()).toContainText(
+        NOT_RECORDED,
+      );
     } finally {
       resetSettings();
     }
@@ -225,14 +228,13 @@ test.describe('Custom plans in the CK Join Form block', () => {
 
   // Same as above, but picks the page without the picker's search, so the
   // redirect itself stays covered while JOIN-158 is open.
-  test('a redirecting plan set up in the block editor redirects on the published page, picking the page from the full list', async ({ page }) => {
+  test('a redirecting plan set up in the block editor redirects on the published page, picking the page from the full list', async ({
+    page,
+  }) => {
     await redirectingPlanInBlockEditor(page, pickRedirectTargetFromList);
   });
 
-  async function redirectingPlanInBlockEditor(
-    page: Page,
-    choose: (picker: Locator) => Promise<void>,
-  ): Promise<void> {
+  async function redirectingPlanInBlockEditor(page: Page, choose: (picker: Locator) => Promise<void>): Promise<void> {
     await loginAsAdmin(page);
     await openNewPageWithJoinBlock(page);
 

@@ -153,13 +153,17 @@ export async function postJoin(request: APIRequestContext, data: Record<string, 
 
 /** Makes the plugin log an info line ("Recording CK Join form step"). */
 export async function logInfo(request: APIRequestContext): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/step', { data: { email: 'someone@example.com', stage: 'details' } });
+  const response = await request.post('/wp-json/join/v1/step', {
+    data: { email: 'someone@example.com', stage: 'details' },
+  });
   expect(response.ok()).toBe(true);
 }
 
 /** Makes the plugin log an error naming `plan` ("Invalid membership plan: <plan>"). */
 export async function logInvalidPlan(request: APIRequestContext, plan = 'no-such-plan'): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/join', { data: { email: 'someone@example.com', membership: plan } });
+  const response = await request.post('/wp-json/join/v1/join', {
+    data: { email: 'someone@example.com', membership: plan },
+  });
   expect(response.status()).toBe(500);
 }
 

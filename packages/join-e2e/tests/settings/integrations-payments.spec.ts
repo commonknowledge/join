@@ -93,7 +93,7 @@ test.describe('Stripe', () => {
     });
   });
 
-  test('Download Subscriptions exports Stripe\'s subscriptions as a spreadsheet', async ({ settings }) => {
+  test("Download Subscriptions exports Stripe's subscriptions as a spreadsheet", async ({ settings }) => {
     await settings.open('Features');
     await settings.enableIntegration('Use Stripe');
     await settings.save();
@@ -115,7 +115,10 @@ test.describe('Stripe', () => {
       status: 'active',
       created: 1767225600,
       current_period_end: 1769904000,
-      items: { object: 'list', data: [{ id: 'si_export', object: 'subscription_item', price: { id: 'price_export', object: 'price' } }] },
+      items: {
+        object: 'list',
+        data: [{ id: 'si_export', object: 'subscription_item', price: { id: 'price_export', object: 'price' } }],
+      },
     });
     // With no invoices the export breaks (Linear JOIN-167, tested below).
     await seedFakeStripe('invoices', {
@@ -132,13 +135,17 @@ test.describe('Stripe', () => {
       settings.page.waitForEvent('download'),
       settings.page.getByRole('link', { name: 'Download Subscriptions' }).click(),
     ]);
-    const csv = readFileSync((await download.path()) as string, 'utf8').trim().split('\n');
+    const csv = readFileSync((await download.path()) as string, 'utf8')
+      .trim()
+      .split('\n');
 
     expect(csv[0]).toBe(
       '"Email","Customer ID","Subscription ID","Subscription Status","Subscription Created","Subscription End","Price ID","Price Name","First Payment","Last Payment"',
     );
     expect(csv[1]).toMatch(/^"exported@example.org","cus_export","sub_export","active",/);
-    expect(csv[1]).toContain('"price_export","Membership: Standard - GBP 5.00","2026-01-02 00:00:00","2026-01-02 00:00:00"');
+    expect(csv[1]).toContain(
+      '"price_export","Membership: Standard - GBP 5.00","2026-01-02 00:00:00","2026-01-02 00:00:00"',
+    );
 
     // The plugin reads Stripe with the secret key set on this tab.
     const exportReads = (await fakeApiRequests('api.stripe.com')).filter(
@@ -170,7 +177,9 @@ test.describe('Stripe', () => {
       settings.page.waitForEvent('download'),
       settings.page.getByRole('link', { name: 'Download Subscriptions' }).click(),
     ]);
-    const csv = readFileSync((await download.path()) as string, 'utf8').trim().split('\n');
+    const csv = readFileSync((await download.path()) as string, 'utf8')
+      .trim()
+      .split('\n');
     expect(csv[0]).toMatch(/^"Email",/);
     expect(csv[1]).toMatch(/^"exported@example.org","cus_export","sub_export",/);
   });
@@ -278,7 +287,15 @@ test.describe('Chargebee', () => {
       host: 'e2e.chargebee.com',
       method: 'POST',
       path: '/hosted_pages/checkout_new_for_items$',
-      body: { hosted_page: { id: 'hp_e2e', type: 'checkout_new', url: hostedPageUrl, state: 'created', object: 'hosted_page' } },
+      body: {
+        hosted_page: {
+          id: 'hp_e2e',
+          type: 'checkout_new',
+          url: hostedPageUrl,
+          state: 'created',
+          object: 'hosted_page',
+        },
+      },
     });
     await page.route('https://e2e.chargebee.example/**', (route) =>
       route.fulfill({ contentType: 'text/html', body: '<h1>Chargebee</h1>' }),
@@ -348,7 +365,10 @@ test.describe('Postcode address lookup', () => {
       postcode_address_provider: 'get_address_io',
       get_address_io_api_key: 'e2e-getaddress-key',
     });
-    expect(await joinFormEnv(page)).toMatchObject({ USE_POSTCODE_LOOKUP: true, POSTCODE_ADDRESS_PROVIDER: 'get_address_io' });
+    expect(await joinFormEnv(page)).toMatchObject({
+      USE_POSTCODE_LOOKUP: true,
+      POSTCODE_ADDRESS_PROVIDER: 'get_address_io',
+    });
 
     await overrideFakeApi({
       host: 'api.getaddress.io',
@@ -382,13 +402,25 @@ test.describe('Postcode address lookup', () => {
       postcode_address_provider: 'ideal_postcodes',
       ideal_postcodes_api_key: 'e2e-ideal-key',
     });
-    expect(await joinFormEnv(page)).toMatchObject({ USE_POSTCODE_LOOKUP: true, POSTCODE_ADDRESS_PROVIDER: 'ideal_postcodes' });
+    expect(await joinFormEnv(page)).toMatchObject({
+      USE_POSTCODE_LOOKUP: true,
+      POSTCODE_ADDRESS_PROVIDER: 'ideal_postcodes',
+    });
 
     await overrideFakeApi({
       host: 'api.ideal-postcodes.co.uk',
       path: '^/v1/postcodes/',
       body: {
-        result: [{ line_1: '2 Ideal Street', line_2: '', post_town: 'Oxford', county: 'Oxfordshire', postcode: 'OX1 4PE', country: 'England' }],
+        result: [
+          {
+            line_1: '2 Ideal Street',
+            line_2: '',
+            post_town: 'Oxford',
+            county: 'Oxfordshire',
+            postcode: 'OX1 4PE',
+            country: 'England',
+          },
+        ],
       },
     });
 

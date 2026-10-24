@@ -50,7 +50,9 @@ async function rotateLogFiles(request: APIRequestContext, days: number) {
     return $dates;
   `);
   await logInfo(request);
-  const kept = wpEvalJson<string[]>(`return array_map(fn ($file) => substr(basename($file, '.log'), -10), ${PHP_LOG_FILES});`)
+  const kept = wpEvalJson<string[]>(
+    `return array_map(fn ($file) => substr(basename($file, '.log'), -10), ${PHP_LOG_FILES});`,
+  )
     .sort()
     .reverse();
   return { laidDown, kept };

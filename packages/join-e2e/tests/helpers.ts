@@ -42,17 +42,14 @@ export async function injectEnvOverrides(
   await page.route(urlPattern, async (route) => {
     const response = await route.fetch();
     let body = await response.text();
-    body = body.replace(
-      ENV_SCRIPT_PATTERN,
-      (_, open: string, json: string, close: string) => {
-        try {
-          const env = JSON.parse(json);
-          return `${open}${JSON.stringify({ ...env, ...overrides })}${close}`;
-        } catch {
-          return `${open}${json}${close}`;
-        }
-      },
-    );
+    body = body.replace(ENV_SCRIPT_PATTERN, (_, open: string, json: string, close: string) => {
+      try {
+        const env = JSON.parse(json);
+        return `${open}${JSON.stringify({ ...env, ...overrides })}${close}`;
+      } catch {
+        return `${open}${json}${close}`;
+      }
+    });
     await route.fulfill({ response, body });
   });
 }
@@ -68,10 +65,7 @@ export async function injectEnvOverrides(
  * Call this after the form has advanced past the details stage (so that
  * sessionStorage already contains the accumulated form data).
  */
-export async function captureJoinBodyViaStripeRedirect(
-  page: Page,
-  pageUrl: string,
-): Promise<Record<string, unknown>> {
+export async function captureJoinBodyViaStripeRedirect(page: Page, pageUrl: string): Promise<Record<string, unknown>> {
   // Inject the fake payment intent ID into the existing session state.
   await page.evaluate((key: string) => {
     const state = JSON.parse(sessionStorage.getItem(key) || '{}');
@@ -94,10 +88,7 @@ export async function captureJoinBodyViaStripeRedirect(
   await page.goto(`${pageUrl}?stripe_success=true`);
 
   // Wait for the confirm page heading to appear.
-  await page.waitForFunction(
-    () => document.querySelector('h2') !== null,
-    { timeout: 10000 },
-  );
+  await page.waitForFunction(() => document.querySelector('h2') !== null, { timeout: 10000 });
 
   // Poll until /join fires — the confirm page auto-submits on mount and the
   // POST may arrive slightly after the heading renders.

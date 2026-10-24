@@ -436,13 +436,17 @@ cd packages/join-flow
 npm test
 ```
 
-### Frontend formatting
+### Formatting and type checks
 
-CI fails if `packages/join-flow` isn't formatted with Prettier. To fix formatting, from the repository root:
+CI fails if `packages/join-flow` or `packages/join-e2e` isn't formatted with Prettier, or if either doesn't type-check (the join form, its Jest tests, the E2E tests and the E2E suite's fake API). The type check needs the E2E dependencies, which `npm install` at the root doesn't install. From the repository root:
 
 ```bash
-npm run prettier
+npm --prefix packages/join-e2e ci   # once
+npm run prettier    # fix formatting
+npm run typecheck   # type check both packages
 ```
+
+`packages/join-e2e` has its own Prettier settings (`packages/join-e2e/.prettierrc.json`), matching how its tests were already written.
 
 ### Backend unit tests
 
@@ -453,7 +457,7 @@ cd packages/join-block
 
 ### Backend linting
 
-CI runs phpcs and PHPStan on `packages/join-block` and fails on any phpcs error or PHPStan error. Run both locally with:
+CI runs phpcs and PHPStan on `packages/join-block`, its PHPUnit tests included, and fails on any phpcs error or PHPStan error. Run both locally with:
 
 ```bash
 cd packages/join-block

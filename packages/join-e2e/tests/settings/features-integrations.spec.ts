@@ -180,7 +180,7 @@ test.describe('Payment providers', () => {
     await expect(logo(page, 'Stripe')).toBeVisible();
   });
 
-  test('Use GoCardless sends Direct Debit members to GoCardless\'s hosted pages', async ({ settings, page }) => {
+  test("Use GoCardless sends Direct Debit members to GoCardless's hosted pages", async ({ settings, page }) => {
     await settings.open('Features');
     await settings.enableIntegration('Use GoCardless');
     await settings.save();
@@ -224,7 +224,10 @@ test.describe('Payment providers', () => {
     expect(redirected).toBe(false);
   });
 
-  test('Use Chargebee shows the Chargebee logo and sets Chargebee up with the site and publishable key', async ({ settings, page }) => {
+  test('Use Chargebee shows the Chargebee logo and sets Chargebee up with the site and publishable key', async ({
+    settings,
+    page,
+  }) => {
     await settings.open('Features');
     await settings.enableIntegration('Use Chargebee');
     await settings.save();

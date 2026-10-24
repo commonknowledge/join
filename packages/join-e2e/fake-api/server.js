@@ -27,6 +27,7 @@ function freshStripe() {
   return { counter: 0, objects: { products: [], prices: [], customers: [], subscriptions: [], invoices: [] } };
 }
 
+/** @returns {{ counter: number, tags: { id: number, title: string }[] }} */
 function freshZetkin() {
   return { counter: 0, tags: [] };
 }
@@ -115,18 +116,29 @@ function fakeStripe(method, url, body) {
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
   }
   if (method === 'GET' && !idOrAction) {
-    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
+    return {
+      status: 200,
+      body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) },
+    };
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
-    const object = { id: `${prefix}_e2e_${stripe.counter}`, object: type.replace(/s$/, ''), active: true, livemode: false, ...body };
+    const object = {
+      id: `${prefix}_e2e_${stripe.counter}`,
+      object: type.replace(/s$/, ''),
+      active: true,
+      livemode: false,
+      ...body,
+    };
     if (body && body.unit_amount) object.unit_amount = Number(body.unit_amount);
     store.push(object);
     return { status: 200, body: object };
   }
   if (method === 'GET' && idOrAction) {
     const object = store.find((candidate) => candidate.id === idOrAction);
-    return object ? { status: 200, body: object } : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
+    return object
+      ? { status: 200, body: object }
+      : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
   }
   return null;
 }
@@ -180,12 +192,17 @@ function respond(host, method, url, body) {
   return { status: 200, body: {} };
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleService(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
     const host = (request.headers.host || '').split(':')[0];
-    const url = new URL(request.url, `https://${host}`);
+    const url = new URL(request.url || '/', `https://${host}`);
     let buffer = Buffer.concat(chunks);
     // Sentry, for one, gzips what it sends. A body that won't unzip is
     // recorded as it came, rather than crashing the fake.
@@ -213,7 +230,12 @@ function handleService(request, response) {
   });
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleControl(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
@@ -252,7 +274,7 @@ function handleControl(request, response) {
     }
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
     // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
-    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    const stripeSeed = (request.url || '').match(/^\/stripe\/([a-z_]+)$/);
     if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
       const object = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       stripe.objects[stripeSeed[1]].push(object);
@@ -265,7 +287,10 @@ function handleControl(request, response) {
 
 const certs = path.join(__dirname, 'certs');
 https
-  .createServer({ key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) }, handleService)
+  .createServer(
+    { key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) },
+    handleService,
+  )
   .listen(443);
 http.createServer(handleService).listen(80);
 http.createServer(handleControl).listen(8080);

@@ -324,18 +324,24 @@ test.describe('Details step', () => {
 
   test('Privacy Copy', async ({ settings, page }) => {
     await settings.open('Copy');
-    await settings.setRichText('Privacy Copy', '<p>Read our <a href="https://example.org/privacy">privacy policy</a>.</p>');
+    await settings.setRichText(
+      'Privacy Copy',
+      '<p>Read our <a href="https://example.org/privacy">privacy policy</a>.</p>',
+    );
     await settings.save();
 
     expect(getSetting('privacy_copy')).toContain('<a href="https://example.org/privacy">privacy policy</a>');
 
     await openJoinForm(page);
-    await expect(page.getByRole('link', { name: 'privacy policy' })).toHaveAttribute('href', 'https://example.org/privacy');
+    await expect(page.getByRole('link', { name: 'privacy policy' })).toHaveAttribute(
+      'href',
+      'https://example.org/privacy',
+    );
   });
 });
 
 test.describe('Plan step', () => {
-  test('Membership Tiers Heading and Copy, with the copy\'s built-in default', async ({ settings, page }) => {
+  test("Membership Tiers Heading and Copy, with the copy's built-in default", async ({ settings, page }) => {
     expect(getSetting('membership_tiers_copy')).toBe('');
     await goToPlans(page);
     await expect(page.getByText('You can change or cancel whenever you want.')).toBeVisible();
@@ -370,7 +376,10 @@ test.describe('Plan step', () => {
   });
 
   // Linear JOIN-163: passed to the form, but nothing in the form shows it.
-  test.fixme('"Only valid for monthly subscriptions" (day of month copy) labels the payment day', async ({ settings, page }) => {
+  test.fixme('"Only valid for monthly subscriptions" (day of month copy) labels the payment day', async ({
+    settings,
+    page,
+  }) => {
     await settings.open('Copy');
     await settings.setText('Only valid for monthly subscriptions', 'Which day should we take payment?');
     await settings.save();
