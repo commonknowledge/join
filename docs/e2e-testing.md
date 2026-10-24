@@ -81,8 +81,8 @@ The join form specs (the table below) are listed with their test counts. The set
 | Theme | `theme.spec.ts` | Every setting: colour defaults, each colour reaching the form's styles (the primary colour on its buttons), custom CSS applied. |
 | Copy | `copy.spec.ts` | Every setting: each one's default (or none), the fallbacks for blank sidebar, stage label and joining verb, and where each shows (details, plan and bank-details steps, confirmation step, sidebar). Known problems: JOIN-162 (Home Address Copy never shows), JOIN-163 (day-of-month copy unused), JOIN-164 (organisation details marked required but not enforced). |
 | Integrations | `integrations-crm.spec.ts`, `integrations-payments.spec.ts`, `integrations-logging.spec.ts` | Every setting. Joins through the real form reach Zetkin (join form, or the API with OAuth; sandbox/live), Mailchimp, Action Network, Auth0 and the join-complete webhook with the credentials and IDs set here; the step webhook; webhook URLs never reach the form. Stripe direct debit and Direct Debit only (the payment methods Stripe's fields are set up with), the subscriptions download; GoCardless sandbox/live; Chargebee hosted pages; getAddress.io and Ideal Postcodes lookups and their key checks; Sentry, Google Cloud Logging and Loggly receiving the plugin's logs (all fake API). Known problem: JOIN-167 (subscriptions download breaks with no Stripe invoices). |
-| Logging | | Not yet |
-| Debug | | Not yet |
+| Logging | `logging-debug.spec.ts` | Every setting. Log Retention: default of 10 days, the set number of days of log files kept, refused unless a whole number of at least 1 (by the browser and by the plugin), and the tab's note on where the number came from. The latest log is shown on the tab. Where else logs go is on the Integrations tab. Known problem: JOIN-172 (the tab can show a stale log file). |
+| Debug | `logging-debug.spec.ts` | Every setting: Disable Test Data leaves the join form empty in a test-data build. |
 
 ## What is not covered
 
@@ -92,11 +92,11 @@ The `captureJoinBodyViaStripeRedirect` helper bypasses the payment stage entirel
 
 ### GoCardless flow
 
-Zero coverage. GoCardless is the primary payment method for Direct Debit members. The hosted redirect flow, API flow, and mandate creation are all untested. There is no equivalent of `captureJoinBodyViaStripeRedirect` for GoCardless.
+Partly covered by the settings tests (`tests/settings/integrations-payments.spec.ts`, `features-integrations.spec.ts`): members are sent to GoCardless's hosted billing flow, set up with the access token and environment, and Custom Pages take bank details in the form. Coming back from GoCardless, mandate creation and the join that follows are untested; there is no equivalent of `captureJoinBodyViaStripeRedirect` for GoCardless.
 
 ### Chargebee flow
 
-Zero coverage. Neither the hosted pages flow nor the API flow is tested.
+Partly covered by the settings tests (`tests/settings/integrations-payments.spec.ts`): with hosted pages on, card payments go to a Chargebee page created with the site and API key; without, the form shows its card fields. Coming back from Chargebee and the join that follows are untested.
 
 ### Update flow (`IS_UPDATE_FLOW=true`)
 
@@ -116,7 +116,7 @@ Now covered by the settings tests (`tests/settings/features.spec.ts`).
 
 ### Address lookup
 
-`USE_POSTCODE_LOOKUP` enables a postcode-to-address autocomplete. Not tested.
+`USE_POSTCODE_LOOKUP` enables a postcode-to-address autocomplete. Now covered by the settings tests (`tests/settings/integrations-payments.spec.ts`), for both getAddress.io and Ideal Postcodes.
 
 ### `/join` response handling
 

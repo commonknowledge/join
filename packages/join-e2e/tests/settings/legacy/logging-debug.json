@@ -1,0 +1,4 @@
+{
+  "_join_flow_log_retention_days": "4",
+  "_disable_test_data": "yes"
+}
