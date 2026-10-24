@@ -27,9 +27,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Confirm stage reached without payment', () => {
-  test('continuing through Details and Plan skips payment and shows confirm stage', async ({
-    page,
-  }) => {
+  test('continuing through Details and Plan skips payment and shows confirm stage', async ({ page }) => {
     // Intercept the /join endpoint so the confirm page does not error on submit.
     await page.route('**/wp-json/join/v1/join', async (route) => {
       await route.fulfill({

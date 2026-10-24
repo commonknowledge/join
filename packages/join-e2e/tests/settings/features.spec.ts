@@ -243,7 +243,10 @@ test.describe('Enable international phone numbers', () => {
     await expect(page.getByText('Please enter a valid UK phone number')).toBeVisible();
   });
 
-  test('when on, a country code can be chosen and other countries\' numbers are accepted', async ({ settings, page }) => {
+  test("when on, a country code can be chosen and other countries' numbers are accepted", async ({
+    settings,
+    page,
+  }) => {
     await settings.open('Features');
     await settings.setCheckbox('Enable international phone numbers', true);
     await settings.save();

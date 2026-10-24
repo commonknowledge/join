@@ -1,5 +1,14 @@
 import { APIRequestContext } from '@playwright/test';
-import { STANDARD_JOIN_PAGE, expect, getSettings, joinFormEnv, loadLegacySettings, openJoinForm, test, wpEvalJson } from './fixtures';
+import {
+  STANDARD_JOIN_PAGE,
+  expect,
+  getSettings,
+  joinFormEnv,
+  loadLegacySettings,
+  openJoinForm,
+  test,
+  wpEvalJson,
+} from './fixtures';
 
 /**
  * Settings page, Logging and Debug tabs.
@@ -98,7 +107,9 @@ test.describe('Logging', () => {
   test('the tab shows the latest log', async ({ settings, request }) => {
     // A join on a plan that doesn't exist logs the plan's ID.
     const plan = `log-viewer-${Date.now()}`;
-    const response = await request.post('/wp-json/join/v1/join', { data: { email: 'someone@example.com', membership: plan } });
+    const response = await request.post('/wp-json/join/v1/join', {
+      data: { email: 'someone@example.com', membership: plan },
+    });
     expect(response.status()).toBe(500);
 
     await settings.open('Logging');

@@ -106,7 +106,7 @@ test.describe('Zetkin', () => {
     expect(await fakeApiRequests('api.dev.zetkin.org')).toEqual([]);
   });
 
-  test('with the OAuth credentials, the member is added through Zetkin\'s API and tagged', async ({
+  test("with the OAuth credentials, the member is added through Zetkin's API and tagged", async ({
     settings,
     page,
   }) => {
@@ -239,7 +239,7 @@ test.describe('Webhooks', () => {
     expect(await fakeApiRequests('fake-api')).toEqual([]);
   });
 
-  test('Step Webhook Url is sent the form\'s data after each step', async ({ settings, page }) => {
+  test("Step Webhook Url is sent the form's data after each step", async ({ settings, page }) => {
     await settings.open('Integrations');
     await settings.setText('Step Webhook Url', STEP_WEBHOOK);
     await settings.save();
@@ -259,7 +259,7 @@ test.describe('Webhooks', () => {
 });
 
 test.describe('Auth0', () => {
-  test('a join creates the member\'s Auth0 account, with the credentials set here', async ({ settings, page }) => {
+  test("a join creates the member's Auth0 account, with the credentials set here", async ({ settings, page }) => {
     await settings.open('Features');
     await settings.enableIntegration('Create Auth0 Account');
     await settings.save();

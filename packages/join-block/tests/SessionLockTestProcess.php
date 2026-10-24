@@ -3,8 +3,8 @@
 require_once(__DIR__ . "/../vendor/autoload.php");
 
 // Load WordPress functions required by JoinService::acquireLock()
-define( 'ABSPATH', __DIR__ . '/../wordpress/' );
-define( 'WPINC', 'wp-includes' );
+define('ABSPATH', __DIR__ . '/../wordpress/');
+define('WPINC', 'wp-includes');
 require_once(__DIR__ . "/../wordpress/wp-includes/formatting.php");
 require_once(__DIR__ . "/../wordpress/wp-includes/functions.php");
 

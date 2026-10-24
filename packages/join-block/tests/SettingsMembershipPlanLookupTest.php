@@ -160,6 +160,7 @@ class SettingsMembershipPlanLookupTest extends TestCase
     private function stubWpdbWithRows(array $rows): void
     {
         global $wpdb;
+        /** @var \wpdb&\Mockery\MockInterface $wpdb */
         $wpdb = Mockery::mock();
         $wpdb->options = 'wp_options';
         $wpdb->shouldReceive('esc_like')->andReturnUsing(fn($s) => $s);

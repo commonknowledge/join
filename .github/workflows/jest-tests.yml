@@ -41,4 +41,30 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Check formatting
-        run: npx prettier --check packages/join-flow
+        run: npx prettier --check packages/join-flow packages/join-e2e
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The postinstall installs join-flow's dependencies, which its type
+      # check needs.
+      - name: Install root deps
+        run: npm ci
+
+      - name: Type check the join form and its Jest tests
+        run: npx tsc --noEmit -p packages/join-flow
+
+      - name: Install E2E deps
+        working-directory: packages/join-e2e
+        run: npm ci
+
+      - name: Type check the E2E tests
+        working-directory: packages/join-e2e
+        run: npm run typecheck

@@ -102,14 +102,22 @@ function fakeStripe(method, url, body) {
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
-    const object = { id: `${prefix}_e2e_${stripe.counter}`, object: type.replace(/s$/, ''), active: true, livemode: false, ...body };
+    const object = {
+      id: `${prefix}_e2e_${stripe.counter}`,
+      object: type.replace(/s$/, ''),
+      active: true,
+      livemode: false,
+      ...body,
+    };
     if (body && body.unit_amount) object.unit_amount = Number(body.unit_amount);
     store.push(object);
     return { status: 200, body: object };
   }
   if (method === 'GET' && idOrAction) {
     const object = store.find((candidate) => candidate.id === idOrAction);
-    return object ? { status: 200, body: object } : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
+    return object
+      ? { status: 200, body: object }
+      : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
   }
   return null;
 }
@@ -227,7 +235,10 @@ function handleControl(request, response) {
 
 const certs = path.join(__dirname, 'certs');
 https
-  .createServer({ key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) }, handleService)
+  .createServer(
+    { key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) },
+    handleService,
+  )
   .listen(443);
 http.createServer(handleService).listen(80);
 http.createServer(handleControl).listen(8080);

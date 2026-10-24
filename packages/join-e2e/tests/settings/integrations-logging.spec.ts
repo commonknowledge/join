@@ -14,7 +14,9 @@ import { expect, fakeApiRequests, getSettings, joinFormEnv, openJoinForm, test, 
 
 /** Makes the plugin log an info line ("Recording CK Join form step"). */
 async function logSomething(request: APIRequestContext): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/step', { data: { email: 'someone@example.com', stage: 'details' } });
+  const response = await request.post('/wp-json/join/v1/step', {
+    data: { email: 'someone@example.com', stage: 'details' },
+  });
   expect(response.ok()).toBe(true);
 }
 
@@ -98,7 +100,7 @@ test.describe('Loggly', () => {
 test.describe('Sentry', () => {
   const DSN = 'https://e2epublickey@sentry.e2e.example/42';
 
-  test('Sentry Dsn sends the plugin\'s errors to Sentry, and sets Sentry up in the join form', async ({
+  test("Sentry Dsn sends the plugin's errors to Sentry, and sets Sentry up in the join form", async ({
     settings,
     request,
     page,
@@ -126,16 +128,18 @@ test.describe('Sentry', () => {
       return route.fulfill({ status: 200, body: '{}' });
     });
     await openJoinForm(page);
-    await page.evaluate(() => setTimeout(() => {
-      throw new Error('e2e form error');
-    }));
+    await page.evaluate(() =>
+      setTimeout(() => {
+        throw new Error('e2e form error');
+      }),
+    );
     await expect.poll(() => reported.length).toBeGreaterThan(0);
     expect(reported[0]).toContain('/api/42/');
   });
 });
 
 test.describe('Google Cloud Logging', () => {
-  test('Google Cloud Project Id and Key File Contents send logs to that project\'s log', async ({
+  test("Google Cloud Project Id and Key File Contents send logs to that project's log", async ({
     settings,
     request,
   }) => {
