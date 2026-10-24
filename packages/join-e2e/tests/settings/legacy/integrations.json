@@ -36,6 +36,6 @@
   "_sentry_dsn": "https://legacykey@sentry.e2e.example/7",
   "_google_cloud_project_id": "",
   "_google_cloud_key_file_contents": "",
-  "_loggly_token": "",
-  "_loggly_tags": ""
+  "_loggly_token": "legacy-loggly-token",
+  "_loggly_tags": "legacy-site, join"
 }

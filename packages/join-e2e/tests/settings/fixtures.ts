@@ -148,6 +148,19 @@ export async function stubStripe(page: Page): Promise<void> {
   );
 }
 
+/** From the details step, on to the plan step. */
+export async function continueToPlans(page: Page): Promise<void> {
+  await page.locator(CONTINUE).click();
+  await page.waitForSelector('[role="radiogroup"]');
+}
+
+/** From the details step, through the plan step (first plan), to whatever comes next. */
+export async function continueToPayment(page: Page): Promise<void> {
+  await continueToPlans(page);
+  await page.locator('label.radio-panel').first().click();
+  await page.locator(CONTINUE).click();
+}
+
 /**
  * Clicks Continue and checks the form rejected the details: it marks a field
  * invalid and stays on the details step.
@@ -181,8 +194,7 @@ export async function joinThroughForm(
   if (fillDetails) {
     await fillDetails(page);
   }
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  await continueToPlans(page);
   const join = await captureJoinBodyViaStripeRedirect(page, url);
   const response = await postJoin(page.request, join);
   expect(response.ok(), `the plugin refused the join: ${await response.text()}`).toBe(true);

@@ -174,9 +174,6 @@ function respond(host, method, url, body) {
     const result = fakeZetkin(method, url, body);
     if (result) return result;
   }
-  if (host === 'oauth2.googleapis.com' && method === 'POST' && url.pathname === '/token') {
-    return { status: 200, body: { access_token: 'e2e-google-access-token', token_type: 'Bearer', expires_in: 3600 } };
-  }
   if (host.endsWith('.auth0.com') && method === 'POST' && url.pathname === '/oauth/token') {
     return { status: 200, body: { access_token: 'e2e-auth0-access-token', token_type: 'Bearer', expires_in: 86400 } };
   }
@@ -190,8 +187,15 @@ function handleService(request, response) {
     const host = (request.headers.host || '').split(':')[0];
     const url = new URL(request.url, `https://${host}`);
     let buffer = Buffer.concat(chunks);
-    // Sentry, for one, gzips what it sends.
-    if (request.headers['content-encoding'] === 'gzip') buffer = zlib.gunzipSync(buffer);
+    // Sentry, for one, gzips what it sends. A body that won't unzip is
+    // recorded as it came, rather than crashing the fake.
+    if (request.headers['content-encoding'] === 'gzip') {
+      try {
+        buffer = zlib.gunzipSync(buffer);
+      } catch (error) {
+        console.error(`Could not gunzip a request to ${host}${request.url}: ${error.message}`);
+      }
+    }
     const raw = buffer.toString('utf8');
     const body = parseBody(raw, request.headers['content-type']);
     requests.push({

@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
-import { CONTINUE } from '../helpers';
 import {
   STANDARD_JOIN_PAGE,
+  continueToPayment,
   expect,
   expectDetailsAccepted,
   expectDetailsRejected,
@@ -156,14 +156,6 @@ test.describe('Create Auth0 Account', () => {
 });
 
 test.describe('Payment providers', () => {
-  /** From the details step, through the plan step, to whatever comes next. */
-  async function continueToPayment(page: Page) {
-    await page.locator(CONTINUE).click();
-    await page.waitForSelector('[role="radiogroup"]');
-    await page.locator('label.radio-panel').first().click();
-    await page.locator(CONTINUE).click();
-  }
-
   const logo = (page: Page, provider: string) => page.locator(`.progress-steps img[alt="${provider}"]`);
 
   test('none is on by default: no provider logos', async ({ page }) => {
