@@ -290,7 +290,9 @@ class Settings
             if (!$log) {
                 $log = 'Could not load error log. Please contact Common Knowledge support.';
             }
-            return "<pre style=\"max-width:150ch\">$log</pre>";
+            // The log holds text sent by visitors (join and step requests), so
+            // it must be shown as text, never as markup.
+            return '<pre style="max-width:150ch">' . esc_html($log) . '</pre>';
         });
         /** @var Html_Field $logRetentionField */
         $logRetentionField = Field::make('html', 'ck_join_flow_log_retention');
