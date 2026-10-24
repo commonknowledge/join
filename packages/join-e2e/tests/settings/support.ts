@@ -214,6 +214,11 @@ export class JoinSettingsPage {
     await this.field(label).fill(value);
   }
 
+  /** Chooses an option of a select field by its value, e.g. 'live'. */
+  async setSelect(label: string, value: string): Promise<void> {
+    await this.field(label).selectOption(value);
+  }
+
   /** Sets a colour field to a hex colour, e.g. '#336699', through its colour picker. */
   async setColor(label: string, hex: string): Promise<void> {
     const field = this.page.locator('.cf-field.cf-color').filter({

@@ -15,14 +15,20 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const path = require('path');
+const zlib = require('zlib');
 const { URL } = require('url');
 
 let requests = [];
 let overrides = [];
 let stripe = freshStripe();
+let zetkin = freshZetkin();
 
 function freshStripe() {
-  return { counter: 0, objects: { products: [], prices: [], customers: [], subscriptions: [] } };
+  return { counter: 0, objects: { products: [], prices: [], customers: [], subscriptions: [], invoices: [] } };
+}
+
+function freshZetkin() {
+  return { counter: 0, tags: [] };
 }
 
 function parseBody(raw, contentType) {
@@ -68,7 +74,7 @@ function fakeStripe(method, url, body) {
   const [, type, idOrAction] = match;
   const store = stripe.objects[type];
   if (!store) return null;
-  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub' }[type];
+  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub', invoices: 'in' }[type];
 
   if (method === 'GET' && idOrAction === 'search') {
     const query = url.searchParams.get('query') || '';
@@ -108,6 +114,33 @@ function fakeStripe(method, url, body) {
   return null;
 }
 
+/**
+ * A tiny in-memory Zetkin (api.zetk.in and api.dev.zetkin.org): enough for
+ * the plugin's OAuth sign-in, adding a person and tagging them.
+ */
+function fakeZetkin(method, url, body) {
+  const path = url.pathname.replace(/^\/v1/, '');
+  if (method === 'POST' && path === '/oauth/token') {
+    return { status: 200, body: { access_token: 'e2e-zetkin-access-token', token_type: 'bearer' } };
+  }
+  if (method === 'POST' && /^\/orgs\/[^/]+\/people$/.test(path)) {
+    return { status: 200, body: { data: { id: 4242, ...body } } };
+  }
+  if (/^\/orgs\/[^/]+\/people\/tags$/.test(path)) {
+    if (method === 'GET') return { status: 200, body: { data: zetkin.tags } };
+    if (method === 'POST') {
+      zetkin.counter += 1;
+      const tag = { id: zetkin.counter, title: body && body.title };
+      zetkin.tags.push(tag);
+      return { status: 200, body: { data: tag } };
+    }
+  }
+  if (/^\/orgs\/[^/]+\/people\/[^/]+\/tags\/[^/]+$/.test(path)) {
+    return { status: 200, body: { data: {} } };
+  }
+  return null;
+}
+
 function respond(host, method, url, body) {
   const override = overrides.find(
     (rule) =>
@@ -120,6 +153,16 @@ function respond(host, method, url, body) {
     const result = fakeStripe(method, url, body);
     if (result) return result;
   }
+  if (host === 'api.zetk.in' || host === 'api.dev.zetkin.org') {
+    const result = fakeZetkin(method, url, body);
+    if (result) return result;
+  }
+  if (host === 'oauth2.googleapis.com' && method === 'POST' && url.pathname === '/token') {
+    return { status: 200, body: { access_token: 'e2e-google-access-token', token_type: 'Bearer', expires_in: 3600 } };
+  }
+  if (host.endsWith('.auth0.com') && method === 'POST' && url.pathname === '/oauth/token') {
+    return { status: 200, body: { access_token: 'e2e-auth0-access-token', token_type: 'Bearer', expires_in: 86400 } };
+  }
   return { status: 200, body: {} };
 }
 
@@ -129,7 +172,10 @@ function handleService(request, response) {
   request.on('end', () => {
     const host = (request.headers.host || '').split(':')[0];
     const url = new URL(request.url, `https://${host}`);
-    const raw = Buffer.concat(chunks).toString('utf8');
+    let buffer = Buffer.concat(chunks);
+    // Sentry, for one, gzips what it sends.
+    if (request.headers['content-encoding'] === 'gzip') buffer = zlib.gunzipSync(buffer);
+    const raw = buffer.toString('utf8');
     const body = parseBody(raw, request.headers['content-type']);
     requests.push({
       time: new Date().toISOString(),
@@ -159,6 +205,7 @@ function handleControl(request, response) {
       requests = [];
       overrides = [];
       stripe = freshStripe();
+      zetkin = freshZetkin();
       return send(200, { ok: true });
     }
     if (request.method === 'POST' && request.url === '/overrides') {
