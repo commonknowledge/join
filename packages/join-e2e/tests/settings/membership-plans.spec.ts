@@ -1,8 +1,10 @@
 import { Page } from '@playwright/test';
+import { createHash } from 'crypto';
 import { CONTINUE } from '../helpers';
 import {
   GLOBAL_PLANS_PAGE,
   JoinSettingsPage,
+  MEMBER_EMAIL,
   expect,
   fakeApiRequests,
   getSettings,
@@ -31,13 +33,21 @@ import {
  */
 
 const MAILCHIMP = 'us1.api.mailchimp.com';
-const MEMBER_EMAIL = 'member@example.org';
 /** Mailchimp addresses a member by the MD5 of their lower-cased email. */
-const MEMBER_TAGS_PATH = '/3.0/lists/e2e-audience/members/adf3c55fec42518eefba5901a7ca837f/tags';
+const MEMBER_TAGS_PATH = `/3.0/lists/e2e-audience/members/${createHash('md5').update(MEMBER_EMAIL.toLowerCase()).digest('hex')}/tags`;
 
-/** A plan as stored under its ID (ck_join_flow_membership_plan_<id>), or false. */
-const storedPlan = (id: string) =>
-  wpEvalJson<Record<string, any> | false>(`return get_option(${JSON.stringify(`ck_join_flow_membership_plan_${id}`)});`);
+/** Plans as stored under their IDs (ck_join_flow_membership_plan_<id>), false for none, in one WP-CLI call. */
+const storedPlans = (ids: string[]) =>
+  wpEvalJson<Record<string, Record<string, any> | false>>(`
+    $plans = [];
+    foreach (json_decode(${JSON.stringify(JSON.stringify(ids))}) as $id) {
+      $plans[$id] = get_option('ck_join_flow_membership_plan_' . $id);
+    }
+    return $plans;
+  `);
+
+/** A plan as stored under its ID, or false. */
+const storedPlan = (id: string) => storedPlans([id])[id];
 
 /** The plans the join form on GLOBAL_PLANS_PAGE is given. */
 const formPlans = async (page: Page) => (await joinFormEnv(page, GLOBAL_PLANS_PAGE)).MEMBERSHIP_PLANS;
@@ -89,8 +99,9 @@ test.describe('Global membership plans', () => {
       add_tags: 'Supporter, Yearly',
     });
     // With no Price Point ID, the ID is made from the name, frequency and currency.
-    expect(storedPlan('supporter_yearly_eur')).toMatchObject({ label: 'Supporter', amount: '12', currency: 'EUR' });
-    expect(storedPlan('baseline-plan_monthly_gbp')).toMatchObject({ label: 'Baseline Plan', amount: '7' });
+    const stored = storedPlans(['supporter_yearly_eur', 'baseline-plan_monthly_gbp']);
+    expect(stored['supporter_yearly_eur']).toMatchObject({ label: 'Supporter', amount: '12', currency: 'EUR' });
+    expect(stored['baseline-plan_monthly_gbp']).toMatchObject({ label: 'Baseline Plan', amount: '7' });
 
     expect(await formPlans(page)).toEqual([
       expect.objectContaining({ value: 'baseline-plan_monthly_gbp', label: 'Baseline Plan' }),
@@ -122,8 +133,9 @@ test.describe('Membership plan fields', () => {
     await settings.addPlan({ name: 'Gold', id: 'gold-tier', price: '20' });
     await settings.save();
 
-    expect(storedPlan('gold-tier')).toMatchObject({ label: 'Gold', id: 'gold-tier' });
-    expect(storedPlan('gold_monthly_gbp')).toBe(false);
+    const stored = storedPlans(['gold-tier', 'gold_monthly_gbp']);
+    expect(stored['gold-tier']).toMatchObject({ label: 'Gold', id: 'gold-tier' });
+    expect(stored['gold_monthly_gbp']).toBe(false);
     expect((await formPlans(page)).map((plan: any) => plan.value)).toContain('gold-tier');
 
     // Joins name the plan by this ID.
@@ -195,7 +207,9 @@ test.describe('Changing the plan list', () => {
     expect((await formPlans(page)).map((plan: any) => plan.label)).toEqual(['Replacement']);
 
     // Its stored copy is kept, so a join form that was opened before the plan
-    // was removed can still be completed.
+    // was removed can still be completed. This pins today's behaviour, which
+    // also leaves the plan joinable for good: whether it should is Linear
+    // JOIN-170.
     expect(storedPlan('baseline-plan_monthly_gbp')).toMatchObject({ label: 'Baseline Plan' });
     expect((await postJoin(request, { membership: 'baseline-plan_monthly_gbp' })).ok()).toBe(true);
   });
@@ -238,7 +252,24 @@ test.describe('Changing the plan list', () => {
   }
 
   test('a join naming a plan that was never saved is refused', async ({ request }) => {
+    // The same join on a stored plan (the seeded join form's) goes through,
+    // so the refusal is down to the plan.
+    expect((await postJoin(request, { membership: 'standard' })).ok()).toBe(true);
     expect((await postJoin(request, { membership: 'no-such-plan' })).status()).toBe(500);
+  });
+
+  // Only the page checks a plan has a Name and Price; the plugin saves one
+  // without (Linear JOIN-169). Re-enable once it's fixed.
+  test.fixme('the plugin refuses a plan without a Name, even when the page\'s own checks are skipped', async ({
+    settings,
+  }) => {
+    await settings.open('Membership Plans');
+    await settings.addPlan({ price: '5' });
+
+    expect(await settings.saveSkippingPageChecksExpectingErrors()).not.toEqual([]);
+    expect((getSettings(['membership_plans']).membership_plans as any[]).map((saved) => saved.label)).toEqual([
+      'Baseline Plan',
+    ]);
   });
 });
 
@@ -274,8 +305,9 @@ test.describe('Global plans in Stripe', () => {
     ]);
 
     // Each stored plan remembers its Stripe product and price.
-    for (const id of ['baseline-plan_weekly_gbp', 'dollars_monthly_usd', 'euros_yearly_eur']) {
-      expect(storedPlan(id)).toMatchObject({
+    const stored = storedPlans(['baseline-plan_weekly_gbp', 'dollars_monthly_usd', 'euros_yearly_eur']);
+    for (const plan of Object.values(stored)) {
+      expect(plan).toMatchObject({
         stripe_product_id: expect.stringMatching(/^prod_/),
         stripe_price_id: expect.stringMatching(/^price_/),
       });
@@ -388,6 +420,20 @@ test.describe('Member tags', () => {
     expect(await mailchimpTagChanges()).toEqual(['Lapsed: active', 'Left: inactive', 'Payment trouble: inactive']);
   });
 
+  test('a member with another active subscription is not tagged when one ends', async ({ settings, request }) => {
+    await setUpTagging(settings);
+    await settings.save();
+    await seedFakeStripe('customers', CUSTOMER);
+    // For example the replacement /join creates when a member changes plan.
+    await seedFakeStripe('subscriptions', { id: 'sub_new', object: 'subscription', customer: CUSTOMER.id, status: 'active' });
+
+    await postStripeWebhook(request, 'customer.subscription.deleted', subscriptionDeleted('cancellation_requested'));
+
+    // It did look, so it's the other subscription that stopped the tagging.
+    expect((await fakeApiRequests('api.stripe.com')).some((request) => request.path === '/v1/subscriptions')).toBe(true);
+    expect(await mailchimpTagChanges()).toEqual([]);
+  });
+
   test('a subscription the member cancelled gets the Cancelled Tag', async ({ settings, request }) => {
     await setUpTagging(settings);
     await settings.save();
@@ -437,8 +483,9 @@ test.describe('Member tags', () => {
     await settings.save();
     await seedFakeStripe('customers', CUSTOMER);
 
-    const oldPrice = (storedPlan('baseline-plan_monthly_gbp') as Record<string, any>).stripe_price_id;
-    const newPrice = (storedPlan('gold_monthly_gbp') as Record<string, any>).stripe_price_id;
+    const stored = storedPlans(['baseline-plan_monthly_gbp', 'gold_monthly_gbp']) as Record<string, Record<string, any>>;
+    const oldPrice = stored['baseline-plan_monthly_gbp'].stripe_price_id;
+    const newPrice = stored['gold_monthly_gbp'].stripe_price_id;
     await postStripeWebhook(request, 'customer.subscription.updated', {
       object: {
         id: 'sub_1',

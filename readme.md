@@ -493,11 +493,11 @@ CI runs the same setup (`.github/workflows/e2e.yml`). See [docs/e2e-testing.md](
 1. **It was saved:** read back through the plugin's own `Settings::get`, not the raw database rows, so the check survives a change of storage format.
 2. **It has its effect:** on the join form's settings (the page's `<script id="env">`), on what the form shows and does, and on what the plugin sends to other services.
 
-Each spec also has a "saved before the settings page was rebuilt" test. It loads settings as Carbon Fields stored them (`tests/settings/legacy/*.json`) straight into the database, standing for existing sites, and checks they still work.
+Each settings tab also has a "saved before the settings page was rebuilt" test. It loads settings as Carbon Fields stored them (`tests/settings/legacy/*.json`) straight into the database, standing for existing sites, and checks they still work.
 
 How the tests are put together:
 
-- **`JoinSettingsPage`** (`tests/settings/support.ts`) is the only code that knows how the settings page is built. It finds fields by their visible labels. When the page is rebuilt, update it (and any labels that change); the specs should not need to change.
+- **`JoinSettingsPage`** (`tests/settings/support.ts`) is the only code that knows how the settings page is built. It finds fields by their visible labels. When the page is rebuilt, update it (and any labels that change), and `setBaselinePlan()` next to it, which writes a plan straight into storage; the specs should not need to change.
 - **Isolation:** every test starts from the seeded site plus one global membership plan (the settings page won't save without one). Seeding snapshots the options table; tests restore it afterwards, so other specs are unaffected.
 - **Known problems** are `test.fixme` tests that link to a Linear issue. Change them to `test` once the issue is fixed.
 

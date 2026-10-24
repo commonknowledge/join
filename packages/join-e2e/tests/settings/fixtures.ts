@@ -1,10 +1,10 @@
 import { Page, test as base, expect } from '@playwright/test';
-import { mkdtempSync } from 'fs';
+import { mkdtempSync, rmSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import { CONTINUE, captureJoinBodyViaStripeRedirect, loginAsAdmin, mockRestEndpoints } from '../helpers';
 import { resetFakeApi } from './fake-api';
-import { JoinSettingsPage, STANDARD_JOIN_PAGE, postJoin, resetSettings, resetToSettingsBaseline } from './support';
+import { JoinSettingsPage, STANDARD_JOIN_PAGE, postJoin, resetSettings, setBaselinePlan } from './support';
 
 export * from './support';
 export * from './fake-api';
@@ -17,15 +17,16 @@ export * from './fake-api';
  * - `page`: a separate, logged-out browser for the join form, as a visitor
  *   sees it.
  *
- * Every test starts from resetToSettingsBaseline() with the fake APIs reset,
- * and afterwards settings are put back as the seed left them, so other specs
- * are unaffected.
+ * Every test starts from the seeded settings plus setBaselinePlan(), with the
+ * fake APIs reset. Afterwards the settings are put back as the seed left them
+ * (which is also what the next test starts from), so other specs are
+ * unaffected.
  */
 export const test = base.extend<{ settings: JoinSettingsPage; baseline: void }, { adminStorageState: string }>({
   baseline: [
     async ({}, use) => {
       await resetFakeApi();
-      resetToSettingsBaseline();
+      setBaselinePlan();
       await use();
       resetSettings();
     },
@@ -34,12 +35,15 @@ export const test = base.extend<{ settings: JoinSettingsPage; baseline: void }, 
 
   adminStorageState: [
     async ({ browser }, use) => {
-      const file = path.join(mkdtempSync(path.join(os.tmpdir(), 'join-e2e-')), 'admin.json');
+      // Holds the admin's session cookies: removed when the worker is done.
+      const dir = mkdtempSync(path.join(os.tmpdir(), 'join-e2e-'));
+      const file = path.join(dir, 'admin.json');
       const page = await browser.newPage();
       await loginAsAdmin(page);
       await page.context().storageState({ path: file });
       await page.close();
       await use(file);
+      rmSync(dir, { recursive: true, force: true });
     },
     { scope: 'worker' },
   ],
@@ -53,6 +57,9 @@ export const test = base.extend<{ settings: JoinSettingsPage; baseline: void }, 
 
 export { expect };
 
+/** Pages whose join form REST calls are already stubbed (stub them once each). */
+const pagesWithStubs = new WeakSet<Page>();
+
 /**
  * Opens a join form at its first step as a visitor, with the form's REST
  * calls stubbed. The form remembers progress in the browser tab (session
@@ -60,7 +67,10 @@ export { expect };
  * both are cleared first.
  */
 export async function openJoinForm(page: Page, url = STANDARD_JOIN_PAGE): Promise<void> {
-  await mockRestEndpoints(page);
+  if (!pagesWithStubs.has(page)) {
+    await mockRestEndpoints(page);
+    pagesWithStubs.add(page);
+  }
   if (page.url().startsWith('http')) {
     await page.evaluate(() => {
       sessionStorage.clear();
@@ -138,16 +148,20 @@ export async function stubStripe(page: Page): Promise<void> {
   );
 }
 
-/** Clicks Continue and checks the form stayed on the details step. */
+/**
+ * Clicks Continue and checks the form rejected the details: it marks a field
+ * invalid and stays on the details step.
+ */
 export async function expectDetailsRejected(page: Page): Promise<void> {
   await page.locator(CONTINUE).click();
+  await expect(page.locator('.is-invalid, .invalid-feedback:visible').first()).toBeVisible();
   await expect(page.locator('.progress-step--current')).toContainText('Your Details');
 }
 
-/** Clicks Continue and checks the form moved on from the details step. */
+/** Clicks Continue and checks the form moved on: the details step is done. */
 export async function expectDetailsAccepted(page: Page): Promise<void> {
   await page.locator(CONTINUE).click();
-  await expect(page.locator('.progress-step--current')).not.toContainText('Your Details');
+  await expect(page.locator('.progress-step--done').first()).toContainText('Your Details');
 }
 
 /**
