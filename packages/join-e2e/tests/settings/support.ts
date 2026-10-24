@@ -330,14 +330,31 @@ export class JoinSettingsPage {
 
   /**
    * Checks the page will not save as it stands: either it won't let the save
-   * be made (today it disables Save while a required field is empty), or it
-   * rejects it with an error.
+   * be made (today it disables Save while a required field is empty, and the
+   * browser won't submit a field that breaks its own rules, such as a number
+   * below its minimum), or it rejects it with an error.
    */
   async expectSaveRefused(): Promise<void> {
-    if (await this.page.locator('#publish').isDisabled()) {
+    const publish = this.page.locator('#publish');
+    if (await publish.isDisabled()) {
+      return;
+    }
+    if (!(await publish.evaluate((button: HTMLInputElement) => button.form?.checkValidity() ?? true))) {
       return;
     }
     await this.saveExpectingErrors();
+  }
+
+  /**
+   * Saves with the browser's own checks on fields turned off, as a request
+   * made without the browser would be, expecting the plugin to reject it.
+   * Returns its error messages.
+   */
+  async saveSkippingBrowserChecksExpectingErrors(): Promise<string[]> {
+    await this.page.locator('#publish').evaluate((button: HTMLInputElement) => {
+      if (button.form) button.form.noValidate = true;
+    });
+    return this.saveExpectingErrors();
   }
 
   private async submit(): Promise<void> {

@@ -81,8 +81,8 @@ The suite currently contains 78 tests across 11 spec files (one skipped pending 
 | Theme | `theme.spec.ts` | Every setting: colour defaults, each colour reaching the form's styles (the primary colour on its buttons), custom CSS applied. |
 | Copy | `copy.spec.ts` | Every setting: defaults and fallbacks, and where each shows (details, plan and bank-details steps, confirmation step, sidebar). Known problems: JOIN-162 (Home Address Copy never shows), JOIN-163 (day-of-month copy unused), JOIN-164 (organisation details marked required but not enforced). |
 | Integrations | `integrations-crm.spec.ts`, `integrations-payments.spec.ts`, `integrations-logging.spec.ts` | Every setting. Joins through the real form reach Zetkin (join form, or the API with OAuth; sandbox/live), Mailchimp, Action Network, Auth0 and the join-complete webhook with the credentials and IDs set here; the step webhook; webhook URLs never reach the form. Stripe direct debit and Direct Debit only (the payment methods Stripe's fields are set up with), the subscriptions download; GoCardless sandbox/live; Chargebee hosted pages; getAddress.io and Ideal Postcodes lookups and their key checks; Sentry, Google Cloud Logging and Loggly receiving the plugin's logs (all fake API). Known problem: JOIN-167 (subscriptions download breaks with no Stripe invoices). |
-| Logging | | Not yet |
-| Debug | | Not yet |
+| Logging | `logging-debug.spec.ts` | Every setting. Log Retention: default of 10 days, the set number of days of log files kept, refused unless a whole number of at least 1 (by the browser and by the plugin), and the tab's note on where the number came from. The latest log is shown on the tab. Where else logs go is on the Integrations tab. |
+| Debug | `logging-debug.spec.ts` | Every setting: Disable Test Data leaves the join form empty in a test-data build. |
 
 ## What is not covered
 
