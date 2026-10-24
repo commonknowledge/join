@@ -77,7 +77,7 @@ The suite currently contains 78 tests across 11 spec files (one skipped pending 
 | Tab | Spec | Covered |
 |---|---|---|
 | Features | `features.spec.ts`, `features-integrations.spec.ts` | Every setting. Integration switches: refused without credentials, saved with them, payment-step and form effects. Use Stripe sets global plans up in Stripe on save (fake API). Known problem: JOIN-161 (a rejected Stripe key crashes the save). |
-| Membership Plans | | Not yet |
+| Membership Plans | `membership-plans.spec.ts` | Every setting. Plans: added, edited and removed, stored under their ID, offered on join forms without their own plans; each plan field's effect on the form and on joins (`/join`, including the custom-amount minimum); Name, Price and at least one plan required; each frequency and currency set up in Stripe (fake API). Tags: defaults; on a join, the plan's Add Tags added and the lapsed, cancelled, lapsing and other plans' tags removed; lapsed, cancelled and lapsing tags applied by Stripe webhook events; tier changes swap plan tags (fake Mailchimp). Known problem: JOIN-166 (duplicate Stripe prices for prices with pence). |
 | Theme | `theme.spec.ts` | Every setting: colour defaults, each colour reaching the form's styles (the primary colour on its buttons), custom CSS applied. |
 | Copy | `copy.spec.ts` | Every setting: defaults and fallbacks, and where each shows (details, plan and bank-details steps, confirmation step, sidebar). Known problems: JOIN-162 (Home Address Copy never shows), JOIN-163 (day-of-month copy unused), JOIN-164 (organisation details marked required but not enforced). |
 | Integrations | | Not yet. What Mailchimp, Action Network and Zetkin receive on a join will be covered here. |

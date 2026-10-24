@@ -58,7 +58,10 @@ function parseFormEncoded(raw) {
   return result;
 }
 
-/** A tiny in-memory Stripe: enough for the plugin's product and price set-up. */
+/**
+ * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
+ * and for the customer and subscription look-ups its webhook handlers make.
+ */
 function fakeStripe(method, url, body) {
   const match = url.pathname.match(/^\/v1\/([a-z_]+)(?:\/([^/]+))?$/);
   if (!match) return null;
@@ -82,6 +85,14 @@ function fakeStripe(method, url, body) {
       }),
     );
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
+  }
+  if (method === 'GET' && !idOrAction) {
+    // List, filtered on plain fields, e.g. ?customer=cus_1&status=active
+    const filters = Object.entries(Object.fromEntries(url.searchParams)).filter(
+      ([key]) => !['limit', 'starting_after', 'ending_before'].includes(key) && !key.startsWith('expand'),
+    );
+    const data = store.filter((object) => filters.every(([key, value]) => String(object[key]) === value));
+    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data } };
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
@@ -153,6 +164,14 @@ function handleControl(request, response) {
     if (request.method === 'POST' && request.url === '/overrides') {
       overrides.unshift(JSON.parse(Buffer.concat(chunks).toString('utf8')));
       return send(200, { ok: true });
+    }
+    // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
+    // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
+    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
+      const object = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      stripe.objects[stripeSeed[1]].push(object);
+      return send(200, object);
     }
     if (request.method === 'GET' && request.url === '/health') return send(200, { ok: true });
     send(404, { error: 'unknown control endpoint' });
