@@ -6,6 +6,8 @@ import {
   joinFormEnv,
   joinThroughForm,
   loadLegacySettings,
+  openJoinForm,
+  continueToPlans,
   test,
   wpEvalJson,
 } from './fixtures';
@@ -24,6 +26,13 @@ const MEMBER = { email: 'someone@example.com', firstName: 'Test', lastName: 'Per
 
 /** Today's date as the plugin writes it in the container, e.g. 2026-10-24. */
 const today = () => wpEvalJson<string>('return date("Y-m-d");');
+
+/** Joins through the form, and returns the dates it could have been joined on (it may span midnight). */
+async function joinAndNoteDates(page: Parameters<typeof joinThroughForm>[0]): Promise<string[]> {
+  const before = today();
+  await joinThroughForm(page);
+  return [before, today()];
+}
 
 test.describe('Zetkin', () => {
   test('a join is sent to the Zetkin join form, with the organisation, form and token set here', async ({
@@ -55,7 +64,7 @@ test.describe('Zetkin', () => {
       zetkin_environment: 'sandbox',
     });
 
-    await joinThroughForm(page);
+    const joinDates = await joinAndNoteDates(page);
 
     // Without OAuth credentials, the plugin submits Zetkin's join form. The
     // sandbox environment (the default) is Zetkin's development server.
@@ -70,10 +79,10 @@ test.describe('Zetkin', () => {
           first_name: MEMBER.firstName,
           last_name: MEMBER.lastName,
           membership_tier: 'Standard',
-          joined_on: today(),
         },
       },
     });
+    expect(joinDates).toContain(submission.body.form_data.joined_on);
     expect(await fakeApiRequests('api.zetk.in')).toEqual([]);
   });
 
@@ -82,11 +91,12 @@ test.describe('Zetkin', () => {
     await settings.enableIntegration('Use Zetkin');
     await settings.save();
 
-    await joinThroughForm(page);
+    const joinDates = await joinAndNoteDates(page);
 
     const [submission] = await fakeApiRequests('api.dev.zetkin.org');
-    expect(Object.values(submission.body.form_data)).not.toContain('Standard');
-    expect(Object.values(submission.body.form_data)).not.toContain(today());
+    const sent = Object.values(submission.body.form_data);
+    expect(sent).not.toContain('Standard');
+    for (const date of joinDates) expect(sent).not.toContain(date);
   });
 
   test('Zetkin Environment "Live" sends joins to Zetkin\'s live server', async ({ settings, page }) => {
@@ -135,12 +145,17 @@ test.describe('Zetkin', () => {
     expect(person?.headers.authorization).toBe('Bearer e2e-zetkin-access-token');
     expect(person?.body).toMatchObject({ email: MEMBER.email, first_name: MEMBER.firstName });
 
-    // Every new member is tagged Unconfirmed; the join form was not used.
+    // Every new member is tagged Unconfirmed: the tag is created (the fake
+    // numbers tags 1, 2, ... in the order they're created), then put on the
+    // person the fake created (4242). The join form was not used.
     const createdTags = requests
       .filter((request) => request.method === 'POST' && request.path === '/v1/orgs/1/people/tags')
       .map((request) => request.body.title);
-    expect(createdTags).toContain('Unconfirmed');
-    expect(requests.filter((request) => request.method === 'PUT').length).toBeGreaterThan(0);
+    const unconfirmedId = createdTags.indexOf('Unconfirmed') + 1;
+    expect(unconfirmedId).toBeGreaterThan(0);
+    expect(requests.filter((request) => request.method === 'PUT').map((request) => request.path)).toContain(
+      `/v1/orgs/1/people/4242/tags/${unconfirmedId}`,
+    );
     expect(requests.some((request) => request.path.includes('/join_forms/'))).toBe(false);
   });
 });
@@ -174,7 +189,11 @@ test.describe('Mailchimp', () => {
 });
 
 test.describe('Action Network', () => {
-  test('a join adds the member to Action Network, with the API key set here', async ({ settings, page }) => {
+  test('a join adds the member to Action Network, with the API key set here, and updates their tags', async ({
+    settings,
+    page,
+  }) => {
+    // Another plan's tags, which a member on the form's own plan shouldn't have.
     await settings.open('Membership Plans');
     await settings.editPlan(0, { addTags: 'Member' });
     await settings.tab('Features');
@@ -195,7 +214,24 @@ test.describe('Action Network', () => {
         given_name: MEMBER.firstName,
         family_name: MEMBER.lastName,
       },
+      // The other plan's tags, and the lapsed, cancelled and lapsing tags, come off.
+      remove_tags: expect.arrayContaining(['Member', 'Lapsed - failed payment', 'Cancelled', 'Lapsing']),
     });
+  });
+
+  // The plugin sends [""] instead of no tags (Linear JOIN-171). Re-enable once it's fixed.
+  test.fixme('a join on a plan without Add Tags sends Action Network no empty tag', async ({ settings, page }) => {
+    await settings.open('Features');
+    await settings.enableIntegration('Use Action Network');
+    await settings.save();
+
+    // The form's own plan has no Add Tags.
+    await joinThroughForm(page);
+
+    const signup = (await fakeApiRequests('actionnetwork.org')).find(
+      (request) => request.method === 'POST' && request.path === '/api/v2/people/',
+    );
+    expect(signup?.body.add_tags).toEqual([]);
   });
 });
 
@@ -246,15 +282,22 @@ test.describe('Webhooks', () => {
 
     expect(getSettings(['step_webhook_url']).step_webhook_url).toBe(STEP_WEBHOOK);
 
-    // The form reports each step to the plugin's /step endpoint.
-    const response = await page.request.post('/wp-json/join/v1/step', {
-      data: { ...MEMBER, sessionToken: 'e2e-session', stage: 'details', ddAccountNumber: '55779911' },
-    });
-    expect(response.ok()).toBe(true);
+    // The form reports each step to the plugin's /step endpoint: let that
+    // request through to the plugin, rather than the usual stub.
+    await openJoinForm(page);
+    await page.route('**/wp-json/join/v1/step', (route) => route.continue());
+    await continueToPlans(page);
 
+    await expect.poll(async () => (await fakeApiRequests('fake-api')).length).toBeGreaterThan(0);
     const [delivery] = await fakeApiRequests('fake-api');
-    expect(delivery).toMatchObject({ method: 'POST', path: '/step', body: { email: MEMBER.email, stage: 'details' } });
+    expect(delivery).toMatchObject({
+      method: 'POST',
+      path: '/step',
+      body: { email: MEMBER.email, firstName: MEMBER.firstName, stage: 'enter-details' },
+    });
+    // The form's test data includes bank details; they're never passed on.
     expect(delivery.body).not.toHaveProperty('ddAccountNumber');
+    expect(delivery.body).not.toHaveProperty('ddSortCode');
   });
 });
 
@@ -331,6 +374,8 @@ test.describe('Integrations saved before the settings page was rebuilt', () => {
         'auth0_client_secret',
         'auth0_management_audience',
         'sentry_dsn',
+        'loggly_token',
+        'loggly_tags',
       ]),
     ).toEqual({
       zetkin_organisation_id: '11',
@@ -362,6 +407,8 @@ test.describe('Integrations saved before the settings page was rebuilt', () => {
       auth0_client_secret: 'legacy-auth0-client-secret',
       auth0_management_audience: 'https://legacy.eu.auth0.com/api/v2/',
       sentry_dsn: 'https://legacykey@sentry.e2e.example/7',
+      loggly_token: 'legacy-loggly-token',
+      loggly_tags: 'legacy-site, join',
     });
   });
 
@@ -372,13 +419,14 @@ test.describe('Integrations saved before the settings page was rebuilt', () => {
       USE_POSTCODE_LOOKUP: true,
     });
 
-    await joinThroughForm(page);
+    const joinDates = await joinAndNoteDates(page);
 
     const [zetkin] = await fakeApiRequests('api.zetk.in');
     expect(zetkin).toMatchObject({
       path: '/v1/orgs/11/join_forms/22/submissions',
-      body: { submit_token: 'legacy-zetkin-token', form_data: { legacy_tier: 'Standard', legacy_joined: today() } },
+      body: { submit_token: 'legacy-zetkin-token', form_data: { legacy_tier: 'Standard' } },
     });
+    expect(joinDates).toContain(zetkin.body.form_data.legacy_joined);
     expect(
       (await fakeApiRequests('us1.api.mailchimp.com')).some(
         (request) => request.path === '/3.0/lists/legacy-audience/members',
@@ -387,5 +435,9 @@ test.describe('Integrations saved before the settings page was rebuilt', () => {
     const [actionNetwork] = await fakeApiRequests('actionnetwork.org');
     expect(actionNetwork.headers['osdi-api-token']).toBe('legacy-action-network-key');
     expect((await fakeApiRequests('fake-api')).map((request) => request.path)).toContain('/legacy-join-complete');
+    // Logging reads its settings on its own path, early in each request.
+    const [loggly] = await fakeApiRequests('logs-01.loggly.com');
+    expect(loggly).toMatchObject({ path: '/bulk/legacy-loggly-token/' });
+    expect(loggly.headers['x-loggly-tag']).toBe('legacy-site,join');
   });
 });

@@ -14,6 +14,10 @@ URL="http://localhost:8889"
 READY_TIMEOUT="${WP_READY_TIMEOUT:-120}"
 
 wp() {
+  if [ -z "$(docker compose ps --status running --quiet cli 2>/dev/null)" ]; then
+    echo "The E2E containers aren't running. Start them with: scripts/env.sh start" >&2
+    exit 1
+  fi
   docker compose exec -T cli wp "$@"
 }
 

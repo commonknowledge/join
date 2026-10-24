@@ -1,8 +1,12 @@
 import { Page } from '@playwright/test';
 import { CONTINUE } from '../helpers';
 import {
+  CUSTOM_FIELDS_PAGE,
   FREE_JOIN_PAGE,
+  JoinSettingsPage,
+  MULTI_CURRENCY_PAGE,
   STANDARD_JOIN_PAGE,
+  continueToPlans,
   expect,
   getSetting,
   getSettings,
@@ -19,16 +23,12 @@ import {
  * through the settings page, and where it shows on the join form.
  */
 
-const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
-const MULTI_CURRENCY_PAGE = '/e2e-multi-currency/';
-
 const details = (page: Page) => page.locator('form.form-content').first();
 
 /** From the details step to the plan step. */
 async function goToPlans(page: Page, url = STANDARD_JOIN_PAGE) {
   await openJoinForm(page, url);
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  await continueToPlans(page);
 }
 
 /**
@@ -36,7 +36,7 @@ async function goToPlans(page: Page, url = STANDARD_JOIN_PAGE) {
  * form), the route by which a Direct Debit member reaches the confirmation
  * step. Leaves the settings page unsaved.
  */
-async function useGoCardlessCustomPages(settings: import('./support').JoinSettingsPage) {
+async function useGoCardlessCustomPages(settings: JoinSettingsPage) {
   await settings.open('Features');
   await settings.enableIntegration('Use GoCardless');
   await settings.setCheckbox('Use GoCardless Custom Pages', true);
@@ -57,6 +57,11 @@ async function goToConfirmStep(page: Page) {
   await expect(page.getByText('Confirm your details')).toBeVisible();
 }
 
+// clickJoin holds the join request open; let it go when the test is done.
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+});
+
 /** Clicks the confirmation step's join button, holding the join request open. */
 async function clickJoin(page: Page, buttonText: string) {
   await page.route('**/wp-json/join/v1/join', () => {
@@ -64,6 +69,57 @@ async function clickJoin(page: Page, buttonText: string) {
   });
   await page.getByRole('button', { name: buttonText }).click();
 }
+
+test('every Copy setting has its default before anything is saved', () => {
+  expect(
+    getSettings([
+      'about_you_heading',
+      'about_you_copy',
+      'date_of_birth_heading',
+      'date_of_birth_copy',
+      'password_purpose',
+      'home_address_copy',
+      'custom_fields_heading',
+      'contact_details_heading',
+      'contact_details_copy',
+      'contact_consent_copy',
+      'hear_about_us_heading',
+      'hear_about_us_options',
+      'hear_about_us_details',
+      'privacy_copy',
+      'membership_tiers_heading',
+      'membership_tiers_copy',
+      'currency_selection_copy',
+      'subscription_day_of_month_copy',
+      'join_form_sidebar_heading',
+      'membership_stage_label',
+      'joining_verb',
+    ]),
+  ).toEqual({
+    about_you_heading: 'Tell us about you',
+    about_you_copy: 'All fields marked with an asterisk (*) are required.',
+    date_of_birth_heading: 'Date of birth',
+    date_of_birth_copy: "We collect every member's date of birth because our membership types are based on age.",
+    password_purpose: '',
+    home_address_copy: '',
+    custom_fields_heading: 'More about you',
+    contact_details_heading: 'Contact details',
+    contact_details_copy: 'We’ll use this to keep in touch about things that matter to you.',
+    contact_consent_copy: 'How would you like us to contact you?',
+    hear_about_us_heading: 'How did you hear about us?',
+    hear_about_us_options: 'From another member, An email from us, Social media, Press/radio, TV, Other',
+    hear_about_us_details: 'Further information',
+    privacy_copy: '',
+    membership_tiers_heading: "Choose the plan that's right for you",
+    membership_tiers_copy: '',
+    currency_selection_copy: '',
+    subscription_day_of_month_copy: 'Day of month to take payment',
+    join_form_sidebar_heading: 'Join Us',
+    membership_stage_label: 'Your Membership',
+    joining_verb: 'Joining',
+  });
+  // The organisation details have no defaults; the seed sets them (scripts/setup.php).
+});
 
 test.describe('Organisation details', () => {
   // Linear JOIN-164: marked required (*), but a blank value saves.
@@ -152,7 +208,9 @@ test.describe('Details step', () => {
     await settings.setRichText('Date Of Birth Copy', '<p>We ask so we can check your age.</p>');
     await settings.save();
 
-    expect(getSettings(['date_of_birth_heading'])).toEqual({ date_of_birth_heading: 'Your birthday' });
+    const saved = getSettings(['date_of_birth_heading', 'date_of_birth_copy']);
+    expect(saved.date_of_birth_heading).toBe('Your birthday');
+    expect(saved.date_of_birth_copy).toContain('We ask so we can check your age.');
 
     await openJoinForm(page);
     await expect(page.getByRole('heading', { name: 'Your birthday' })).toBeVisible();
@@ -211,7 +269,9 @@ test.describe('Details step', () => {
     await settings.setRichText('Contact Details Copy', '<p>We only use these for membership.</p>');
     await settings.save();
 
-    expect(getSetting('contact_details_heading')).toBe('How to reach you');
+    const saved = getSettings(['contact_details_heading', 'contact_details_copy']);
+    expect(saved.contact_details_heading).toBe('How to reach you');
+    expect(saved.contact_details_copy).toContain('We only use these for membership.');
 
     await openJoinForm(page);
     await expect(page.getByRole('heading', { name: 'How to reach you' })).toBeVisible();
@@ -224,6 +284,8 @@ test.describe('Details step', () => {
     await settings.tab('Copy');
     await settings.setRichText('Contact Consent Copy', '<p>Tick how we may contact you.</p>');
     await settings.save();
+
+    expect(getSetting('contact_consent_copy')).toContain('Tick how we may contact you.');
 
     await openJoinForm(page);
     await expect(page.getByText('Tick how we may contact you.')).toBeVisible();
@@ -238,7 +300,11 @@ test.describe('Details step', () => {
     await settings.setText('"How did you hear about us?" additional details textbox label', 'Tell us more');
     await settings.save();
 
-    expect(getSetting('hear_about_us_options')).toBe(' A friend ,Social media,, A poster ');
+    expect(getSettings(['hear_about_us_heading', 'hear_about_us_options', 'hear_about_us_details'])).toEqual({
+      hear_about_us_heading: 'Where did you find us?',
+      hear_about_us_options: ' A friend ,Social media,, A poster ',
+      hear_about_us_details: 'Tell us more',
+    });
     // Trimmed, and empty entries dropped.
     expect((await joinFormEnv(page)).HEAR_ABOUT_US_OPTIONS).toEqual(['A friend', 'Social media', 'A poster']);
 
@@ -261,6 +327,8 @@ test.describe('Details step', () => {
     await settings.setRichText('Privacy Copy', '<p>Read our <a href="https://example.org/privacy">privacy policy</a>.</p>');
     await settings.save();
 
+    expect(getSetting('privacy_copy')).toContain('<a href="https://example.org/privacy">privacy policy</a>');
+
     await openJoinForm(page);
     await expect(page.getByRole('link', { name: 'privacy policy' })).toHaveAttribute('href', 'https://example.org/privacy');
   });
@@ -277,6 +345,10 @@ test.describe('Plan step', () => {
     await settings.setRichText('Membership Tiers Copy', '<p>All plans include voting rights.</p>');
     await settings.save();
 
+    const saved = getSettings(['membership_tiers_heading', 'membership_tiers_copy']);
+    expect(saved.membership_tiers_heading).toBe('Pick a plan');
+    expect(saved.membership_tiers_copy).toContain('All plans include voting rights.');
+
     await goToPlans(page);
     await expect(page.getByRole('heading', { name: 'Pick a plan' })).toBeVisible();
     await expect(page.getByText('All plans include voting rights.')).toBeVisible();
@@ -287,6 +359,8 @@ test.describe('Plan step', () => {
     await settings.open('Copy');
     await settings.setRichText('Currency Selection Copy', '<p>Pay in the currency of your bank account.</p>');
     await settings.save();
+
+    expect(getSetting('currency_selection_copy')).toContain('Pay in the currency of your bank account.');
 
     await goToPlans(page, MULTI_CURRENCY_PAGE);
     await expect(page.getByText('Pay in the currency of your bank account.')).toBeVisible();
@@ -343,13 +417,11 @@ test.describe('Sidebar and steps', () => {
 test.describe('Copy saved before the settings page was rebuilt', () => {
   // See tests/settings/legacy/README.md.
   test('is still read and still shows on the form', async ({ page }) => {
-    loadLegacySettings('copy');
+    const legacy = loadLegacySettings('copy');
 
-    expect(getSettings(['organisation_name', 'about_you_heading', 'hear_about_us_options'])).toEqual({
-      organisation_name: 'Legacy Union',
-      about_you_heading: 'Legacy about you',
-      hear_about_us_options: 'Legacy friend,Legacy poster',
-    });
+    // Every row, read back by its setting's key (the row name without the "_").
+    const expected = Object.fromEntries(Object.entries(legacy).map(([option, value]) => [option.slice(1), value]));
+    expect(getSettings(Object.keys(expected))).toEqual(expected);
 
     const env = await joinFormEnv(page);
     expect(env.ABOUT_YOU_COPY).toContain('Legacy <em>about</em> copy');

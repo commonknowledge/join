@@ -31,6 +31,9 @@ export async function mockRestEndpoints(page: Page): Promise<void> {
  * Must be called BEFORE page.goto() so the route is in place when the page
  * loads. The overrides are merged on top of whatever the server returns.
  */
+/** The join form's settings: the page's <script type="application/json" id="env"> element. */
+export const ENV_SCRIPT_PATTERN = /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/;
+
 export async function injectEnvOverrides(
   page: Page,
   urlPattern: string,
@@ -40,7 +43,7 @@ export async function injectEnvOverrides(
     const response = await route.fetch();
     let body = await response.text();
     body = body.replace(
-      /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/,
+      ENV_SCRIPT_PATTERN,
       (_, open: string, json: string, close: string) => {
         try {
           const env = JSON.parse(json);

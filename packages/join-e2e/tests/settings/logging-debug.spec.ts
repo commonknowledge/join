@@ -85,7 +85,7 @@ test.describe('Logging', () => {
 
       await settings.expectSaveRefused();
       // The plugin checks it too, for saves that skip the browser's checks.
-      expect(await settings.saveSkippingBrowserChecksExpectingErrors()).toEqual([
+      expect(await settings.saveSkippingPageChecksExpectingErrors()).toEqual([
         'Log Retention must be a whole number of days, at least 1 (see Logging tab).',
       ]);
       expect(getSettings(['join_flow_log_retention_days', 'disable_test_data'])).toEqual({

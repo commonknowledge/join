@@ -42,6 +42,9 @@ test('Primary Color colours the form\'s buttons', async ({ settings, page }) => 
   expect(await computed(page, CONTINUE, 'background-color')).toBe('rgb(51, 102, 153)');
 });
 
+/** The circle of a step still to come, which Gray Color borders. */
+const NEXT_STEP_CIRCLE = '.progress-step--next .progress-circle';
+
 test('Gray Color and Background Color reach the form\'s styles', async ({ settings, page }) => {
   await settings.open('Theme');
   await settings.setColor('Gray Color', '#aabbcc');
@@ -55,6 +58,9 @@ test('Gray Color and Background Color reach the form\'s styles', async ({ settin
   await openJoinForm(page);
   expect((await cssVariable(page, '--ck-join-form-gray-color')).toLowerCase()).toBe('#aabbcc');
   expect((await cssVariable(page, '--ck-join-form-background-color')).toLowerCase()).toBe('#fafafa');
+  // And the form's styles use them.
+  expect(await computed(page, NEXT_STEP_CIRCLE, 'border-top-color')).toBe('rgb(170, 187, 204)');
+  expect(await computed(page, 'body', 'background-color')).toBe('rgb(250, 250, 250)');
 });
 
 test('Custom Css is added to the join form\'s page', async ({ settings, page }) => {
@@ -83,6 +89,8 @@ test.describe('Theme saved before the settings page was rebuilt', () => {
 
     await openJoinForm(page);
     expect(await computed(page, CONTINUE, 'background-color')).toBe('rgb(51, 102, 153)');
+    expect(await computed(page, NEXT_STEP_CIRCLE, 'border-top-color')).toBe('rgb(170, 187, 204)');
+    expect(await computed(page, 'body', 'background-color')).toBe('rgb(250, 250, 250)');
     expect(await computed(page, '.ck-join-flow', 'outline')).toBe('rgb(255, 0, 0) solid 3px');
   });
 });

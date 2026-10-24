@@ -91,7 +91,7 @@ test.describe('Loggly', () => {
 
     await settings.tab('Logging');
     await expect(settings.page.getByText('Logs are sent to Loggly and are not stored on this server.')).toBeVisible();
-    await expect(settings.page.locator('.cf-container__fields strong', { hasText: 'e2e-site' })).toBeVisible();
+    await expect(settings.page.getByText('e2e-site', { exact: true })).toBeVisible();
   });
 });
 
