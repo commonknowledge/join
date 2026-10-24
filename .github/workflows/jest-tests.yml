@@ -53,18 +53,15 @@ jobs:
         with:
           node-version: '20'
 
-      # The postinstall installs join-flow's dependencies, which its type
-      # check needs.
-      - name: Install root deps
-        run: npm ci
+      # TypeScript, plus each package's dependencies. The root postinstall
+      # also runs Composer, which the type check doesn't need, so it's
+      # skipped and join-flow's dependencies are installed directly.
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix packages/join-flow ci
+          npm --prefix packages/join-e2e ci
 
-      - name: Type check the join form and its Jest tests
-        run: npx tsc --noEmit -p packages/join-flow
-
-      - name: Install E2E deps
-        working-directory: packages/join-e2e
-        run: npm ci
-
-      - name: Type check the E2E tests
-        working-directory: packages/join-e2e
+      # The join form and its Jest tests, the E2E tests and the fake API.
+      - name: Type check
         run: npm run typecheck

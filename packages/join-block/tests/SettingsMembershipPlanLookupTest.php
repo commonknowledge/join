@@ -161,7 +161,7 @@ class SettingsMembershipPlanLookupTest extends TestCase
     {
         global $wpdb;
         /** @var \wpdb&\Mockery\MockInterface $wpdb */
-        $wpdb = Mockery::mock();
+        $wpdb = Mockery::mock(\wpdb::class);
         $wpdb->options = 'wp_options';
         $wpdb->shouldReceive('esc_like')->andReturnUsing(fn($s) => $s);
         $wpdb->shouldReceive('prepare')->andReturnUsing(fn($sql) => $sql);

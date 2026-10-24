@@ -27,6 +27,7 @@ function freshStripe() {
   return { counter: 0, objects: { products: [], prices: [], customers: [], subscriptions: [], invoices: [] } };
 }
 
+/** @returns {{ counter: number, tags: { id: number, title: string }[] }} */
 function freshZetkin() {
   return { counter: 0, tags: [] };
 }
@@ -191,12 +192,17 @@ function respond(host, method, url, body) {
   return { status: 200, body: {} };
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleService(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
     const host = (request.headers.host || '').split(':')[0];
-    const url = new URL(request.url, `https://${host}`);
+    const url = new URL(request.url || '/', `https://${host}`);
     let buffer = Buffer.concat(chunks);
     // Sentry, for one, gzips what it sends. A body that won't unzip is
     // recorded as it came, rather than crashing the fake.
@@ -224,7 +230,12 @@ function handleService(request, response) {
   });
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleControl(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
@@ -263,7 +274,7 @@ function handleControl(request, response) {
     }
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
     // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
-    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    const stripeSeed = (request.url || '').match(/^\/stripe\/([a-z_]+)$/);
     if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
       const object = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       stripe.objects[stripeSeed[1]].push(object);

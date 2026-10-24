@@ -438,9 +438,10 @@ npm test
 
 ### Formatting and type checks
 
-CI fails if `packages/join-flow` or `packages/join-e2e` isn't formatted with Prettier, or if either doesn't type-check (the join form, its Jest tests, and the E2E tests). From the repository root:
+CI fails if `packages/join-flow` or `packages/join-e2e` isn't formatted with Prettier, or if either doesn't type-check (the join form, its Jest tests, the E2E tests and the E2E suite's fake API). The type check needs the E2E dependencies, which `npm install` at the root doesn't install. From the repository root:
 
 ```bash
+npm --prefix packages/join-e2e ci   # once
 npm run prettier    # fix formatting
 npm run typecheck   # type check both packages
 ```

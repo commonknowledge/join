@@ -46,12 +46,10 @@ class SettingsComputeTagsToRemoveTest extends TestCase
             {
                 return $query;
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function esc_like(string $text): string
             {
                 return $text;
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function get_results(string $query, $output = null): array
             {
                 return $this->rows;
