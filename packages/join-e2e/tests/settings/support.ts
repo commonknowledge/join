@@ -2,6 +2,7 @@ import { Locator, Page, expect } from '@playwright/test';
 import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import path from 'path';
+import { ENV_SCRIPT_PATTERN } from '../helpers';
 
 /**
  * Shared helpers for the settings page regression tests (tests/settings).
@@ -13,9 +14,10 @@ import path from 'path';
  * Settings::get, so the check survives a change of storage format) and that
  * it has the effect the rest of the plugin expects.
  *
- * Everything that knows how the current settings page is built lives in
- * JoinSettingsPage. When the page is rebuilt, that class is the part to
- * rewrite; the specs should not need to change.
+ * Two things here know how settings are stored and shown today, and are the
+ * parts to rewrite when the settings page is rebuilt: JoinSettingsPage (how
+ * the page is built) and setBaselinePlan() (writes a plan straight into
+ * storage). The specs should not need to change.
  */
 
 const PACKAGE_DIR = path.resolve(__dirname, '../..');
@@ -76,12 +78,15 @@ export function resetSettings(): void {
 }
 
 /**
- * The state every settings test starts from: the seeded site, plus the one
- * global membership plan the settings page needs before it will save anything
- * ("You must add at least one membership plan").
+ * Adds the one global membership plan the settings page needs before it will
+ * save anything ("You must add at least one membership plan"), straight into
+ * storage. Together with the seeded site, this is the state every settings
+ * test starts from.
+ *
+ * Knows how plans are stored today: update it along with JoinSettingsPage
+ * when the settings page is rebuilt.
  */
-export function resetToSettingsBaseline(): void {
-  resetSettings();
+export function setBaselinePlan(): void {
   wpEvalJson(`
     carbon_set_theme_option('membership_plans', [[
       'label' => 'Baseline Plan',
@@ -113,9 +118,9 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
   const response = await page.request.get(url);
   expect(response.ok()).toBe(true);
   const html = await response.text();
-  const match = html.match(/<script type="application\/json" id="env">([\s\S]*?)<\/script>/);
+  const match = html.match(ENV_SCRIPT_PATTERN);
   expect(match, `no env script on ${url}`).not.toBeNull();
-  return JSON.parse((match as RegExpMatchArray)[1]);
+  return JSON.parse((match as RegExpMatchArray)[2]);
 }
 
 /**

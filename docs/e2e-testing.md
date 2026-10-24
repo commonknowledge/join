@@ -49,7 +49,7 @@ The setup script (`scripts/setup.php`) creates these WordPress pages:
 
 ## What is covered
 
-The suite currently contains 78 tests across 11 spec files (one skipped pending JOIN-158).
+The join form specs (the table below) are listed with their test counts. The settings page specs in `tests/settings/` are covered in "Settings page coverage" below. Run `npx playwright test --list` in `packages/join-e2e` for the current total.
 
 | Spec file | Area | Tests | What it verifies |
 |-----------|------|------:|------------------|
