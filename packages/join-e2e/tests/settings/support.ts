@@ -2,6 +2,7 @@ import { APIRequestContext, Locator, Page, expect } from '@playwright/test';
 import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import path from 'path';
+import { ENV_SCRIPT_PATTERN } from '../helpers';
 
 /**
  * Shared helpers for the settings page regression tests (tests/settings).
@@ -13,9 +14,10 @@ import path from 'path';
  * Settings::get, so the check survives a change of storage format) and that
  * it has the effect the rest of the plugin expects.
  *
- * Everything that knows how the current settings page is built lives in
- * JoinSettingsPage. When the page is rebuilt, that class is the part to
- * rewrite; the specs should not need to change.
+ * Two things here know how settings are stored and shown today, and are the
+ * parts to rewrite when the settings page is rebuilt: JoinSettingsPage (how
+ * the page is built) and setBaselinePlan() (writes a plan straight into
+ * storage). The specs should not need to change.
  */
 
 const PACKAGE_DIR = path.resolve(__dirname, '../..');
@@ -25,8 +27,15 @@ const OPTIONS_SNAPSHOT = '/var/www/html/wp-content/e2e-options-snapshot.sql';
 
 export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
 export const FREE_JOIN_PAGE = '/e2e-free-join/';
+/** A join form with one custom field, so it shows the "more about you" section. */
+export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
+/** A join form offering the same plan in GBP and EUR. */
+export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
 /** A join form with no plans of its own, so it offers the global plans. */
 export const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
+
+/** A pattern matching exactly `text`, with any pattern characters in it escaped. */
+const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
 
 /** Runs WP-CLI against the E2E site and returns its standard output. */
 export function wp(...args: string[]): string {
@@ -78,12 +87,15 @@ export function resetSettings(): void {
 }
 
 /**
- * The state every settings test starts from: the seeded site, plus the one
- * global membership plan the settings page needs before it will save anything
- * ("You must add at least one membership plan").
+ * Adds the one global membership plan the settings page needs before it will
+ * save anything ("You must add at least one membership plan"), straight into
+ * storage. Together with the seeded site, this is the state every settings
+ * test starts from.
+ *
+ * Knows how plans are stored today: update it along with JoinSettingsPage
+ * when the settings page is rebuilt.
  */
-export function resetToSettingsBaseline(): void {
-  resetSettings();
+export function setBaselinePlan(): void {
   wpEvalJson(`
     carbon_set_theme_option('membership_plans', [[
       'label' => 'Baseline Plan',
@@ -101,13 +113,18 @@ export function resetToSettingsBaseline(): void {
  * page was rebuilt (see tests/settings/legacy), to check that existing sites
  * keep working.
  */
-export function loadRawOptions(options: Record<string, string>): void {
+export function loadRawOptions(options: Record<string, unknown>): void {
   wp('eval-file', '/var/www/html/wp-content/e2e-scripts/load-raw-options.php', JSON.stringify(options));
 }
 
-/** Loads tests/settings/legacy/<name>.json: settings as Carbon Fields stored them. */
-export function loadLegacySettings(name: string): void {
-  loadRawOptions(JSON.parse(readFileSync(path.join(__dirname, 'legacy', `${name}.json`), 'utf8')));
+/**
+ * Loads tests/settings/legacy/<name>.json, settings as Carbon Fields stored
+ * them, and returns the rows it loaded.
+ */
+export function loadLegacySettings(name: string): Record<string, any> {
+  const options = JSON.parse(readFileSync(path.join(__dirname, 'legacy', `${name}.json`), 'utf8'));
+  loadRawOptions(options);
+  return options;
 }
 
 /** The settings the plugin hands the join form: the page's <script id="env"> JSON. */
@@ -115,9 +132,9 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
   const response = await page.request.get(url);
   expect(response.ok()).toBe(true);
   const html = await response.text();
-  const match = html.match(/<script type="application\/json" id="env">([\s\S]*?)<\/script>/);
+  const match = html.match(ENV_SCRIPT_PATTERN);
   expect(match, `no env script on ${url}`).not.toBeNull();
-  return JSON.parse((match as RegExpMatchArray)[1]);
+  return JSON.parse((match as RegExpMatchArray)[2]);
 }
 
 /**
@@ -217,7 +234,7 @@ export class JoinSettingsPage {
   /** Sets a colour field to a hex colour, e.g. '#336699', through its colour picker. */
   async setColor(label: string, hex: string): Promise<void> {
     const field = this.page.locator('.cf-field.cf-color').filter({
-      has: this.page.locator('.cf-field__label', { hasText: new RegExp(`^${label}$`) }),
+      has: this.page.locator('.cf-field__label', { hasText: exactly(label) }),
     });
     await field.locator('.cf-color__toggle').click();
     const hexInput = field.locator('.sketch-picker input').first();
@@ -226,13 +243,13 @@ export class JoinSettingsPage {
     // Clicking outside closes the picker.
     await field.locator('.cf-field__label').click();
     await expect(this.page.locator('.cf-color__picker')).toHaveCount(0);
-    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(`^${hex}$`, 'i'));
+    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(exactly(hex).source, 'i'));
   }
 
   /** Sets a rich text (editor) field's content to the given HTML. */
   async setRichText(label: string, html: string): Promise<void> {
     const editorId = await this.page
-      .locator('.cf-container__fields .cf-field__label', { hasText: new RegExp(`^${label}$`) })
+      .locator('.cf-container__fields .cf-field__label', { hasText: exactly(label) })
       .getAttribute('for');
     await this.page.waitForFunction((id) => (window as any).tinymce?.get(id), editorId);
     await this.page.evaluate(

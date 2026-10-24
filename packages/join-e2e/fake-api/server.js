@@ -113,7 +113,7 @@ function respond(host, method, url, body) {
     (rule) =>
       (!rule.host || rule.host === host) &&
       (!rule.method || rule.method === method) &&
-      (!rule.path || new RegExp(rule.path).test(url.pathname)),
+      (!rule.pathPattern || rule.pathPattern.test(url.pathname)),
   );
   if (override) return { status: override.status || 200, body: override.body ?? {} };
   if (host === 'api.stripe.com') {
@@ -154,6 +154,16 @@ function handleControl(request, response) {
       response.writeHead(status, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify(body));
     };
+    // A bad request from a test gets a 400, rather than crashing the fake for
+    // every test after it.
+    const readJson = () => {
+      try {
+        return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      } catch (error) {
+        send(400, { error: `invalid JSON: ${error.message}` });
+        return undefined;
+      }
+    };
     if (request.method === 'GET' && request.url === '/requests') return send(200, requests);
     if (request.method === 'POST' && request.url === '/reset') {
       requests = [];
@@ -162,7 +172,14 @@ function handleControl(request, response) {
       return send(200, { ok: true });
     }
     if (request.method === 'POST' && request.url === '/overrides') {
-      overrides.unshift(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      const rule = readJson();
+      if (rule === undefined) return;
+      try {
+        rule.pathPattern = rule.path ? new RegExp(rule.path) : null;
+      } catch (error) {
+        return send(400, { error: `invalid path pattern: ${error.message}` });
+      }
+      overrides.unshift(rule);
       return send(200, { ok: true });
     }
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers

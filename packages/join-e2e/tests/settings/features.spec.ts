@@ -285,6 +285,8 @@ test.describe('Hide price display for zero-price items', () => {
     expect((await joinFormEnv(page, FREE_JOIN_PAGE)).HIDE_ZERO_PRICE_DISPLAY).toBe(true);
 
     await goToPlans(page);
+    await expect(page.locator('label.radio-panel')).toHaveCount(1);
+    await expect(page.locator('label.radio-panel')).toContainText('Free');
     await expect(page.locator('[role="radiogroup"]')).not.toContainText('£0');
   });
 });
