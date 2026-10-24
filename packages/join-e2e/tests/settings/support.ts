@@ -27,6 +27,13 @@ const OPTIONS_SNAPSHOT = '/var/www/html/wp-content/e2e-options-snapshot.sql';
 
 export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
 export const FREE_JOIN_PAGE = '/e2e-free-join/';
+/** A join form with one custom field, so it shows the "more about you" section. */
+export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
+/** A join form offering the same plan in GBP and EUR. */
+export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
+
+/** A pattern matching exactly `text`, with any pattern characters in it escaped. */
+const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
 
 /** Runs WP-CLI against the E2E site and returns its standard output. */
 export function wp(...args: string[]): string {
@@ -104,13 +111,18 @@ export function setBaselinePlan(): void {
  * page was rebuilt (see tests/settings/legacy), to check that existing sites
  * keep working.
  */
-export function loadRawOptions(options: Record<string, string>): void {
+export function loadRawOptions(options: Record<string, unknown>): void {
   wp('eval-file', '/var/www/html/wp-content/e2e-scripts/load-raw-options.php', JSON.stringify(options));
 }
 
-/** Loads tests/settings/legacy/<name>.json: settings as Carbon Fields stored them. */
-export function loadLegacySettings(name: string): void {
-  loadRawOptions(JSON.parse(readFileSync(path.join(__dirname, 'legacy', `${name}.json`), 'utf8')));
+/**
+ * Loads tests/settings/legacy/<name>.json, settings as Carbon Fields stored
+ * them, and returns the rows it loaded.
+ */
+export function loadLegacySettings(name: string): Record<string, any> {
+  const options = JSON.parse(readFileSync(path.join(__dirname, 'legacy', `${name}.json`), 'utf8'));
+  loadRawOptions(options);
+  return options;
 }
 
 /** The settings the plugin hands the join form: the page's <script id="env"> JSON. */
@@ -189,7 +201,7 @@ export class JoinSettingsPage {
   /** Sets a colour field to a hex colour, e.g. '#336699', through its colour picker. */
   async setColor(label: string, hex: string): Promise<void> {
     const field = this.page.locator('.cf-field.cf-color').filter({
-      has: this.page.locator('.cf-field__label', { hasText: new RegExp(`^${label}$`) }),
+      has: this.page.locator('.cf-field__label', { hasText: exactly(label) }),
     });
     await field.locator('.cf-color__toggle').click();
     const hexInput = field.locator('.sketch-picker input').first();
@@ -198,13 +210,13 @@ export class JoinSettingsPage {
     // Clicking outside closes the picker.
     await field.locator('.cf-field__label').click();
     await expect(this.page.locator('.cf-color__picker')).toHaveCount(0);
-    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(`^${hex}$`, 'i'));
+    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(exactly(hex).source, 'i'));
   }
 
   /** Sets a rich text (editor) field's content to the given HTML. */
   async setRichText(label: string, html: string): Promise<void> {
     const editorId = await this.page
-      .locator('.cf-container__fields .cf-field__label', { hasText: new RegExp(`^${label}$`) })
+      .locator('.cf-container__fields .cf-field__label', { hasText: exactly(label) })
       .getAttribute('for');
     await this.page.waitForFunction((id) => (window as any).tinymce?.get(id), editorId);
     await this.page.evaluate(

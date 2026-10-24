@@ -79,7 +79,7 @@ The join form specs (the table below) are listed with their test counts. The set
 | Features | `features.spec.ts`, `features-integrations.spec.ts` | Every setting. Integration switches: refused without credentials, saved with them, payment-step and form effects. Use Stripe sets global plans up in Stripe on save (fake API). Known problem: JOIN-161 (a rejected Stripe key crashes the save). |
 | Membership Plans | | Not yet |
 | Theme | `theme.spec.ts` | Every setting: colour defaults, each colour reaching the form's styles (the primary colour on its buttons), custom CSS applied. |
-| Copy | `copy.spec.ts` | Every setting: defaults and fallbacks, and where each shows (details, plan and bank-details steps, confirmation step, sidebar). Known problems: JOIN-162 (Home Address Copy never shows), JOIN-163 (day-of-month copy unused), JOIN-164 (organisation details marked required but not enforced). |
+| Copy | `copy.spec.ts` | Every setting: each one's default (or none), the fallbacks for blank sidebar, stage label and joining verb, and where each shows (details, plan and bank-details steps, confirmation step, sidebar). Known problems: JOIN-162 (Home Address Copy never shows), JOIN-163 (day-of-month copy unused), JOIN-164 (organisation details marked required but not enforced). |
 | Integrations | | Not yet. What Mailchimp, Action Network and Zetkin receive on a join will be covered here. |
 | Logging | | Not yet |
 | Debug | | Not yet |

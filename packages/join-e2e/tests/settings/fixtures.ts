@@ -57,6 +57,9 @@ export const test = base.extend<{ settings: JoinSettingsPage; baseline: void }, 
 
 export { expect };
 
+/** Pages whose join form REST calls are already stubbed (stub them once each). */
+const pagesWithStubs = new WeakSet<Page>();
+
 /**
  * Opens a join form at its first step as a visitor, with the form's REST
  * calls stubbed. The form remembers progress in the browser tab (session
@@ -64,7 +67,10 @@ export { expect };
  * both are cleared first.
  */
 export async function openJoinForm(page: Page, url = STANDARD_JOIN_PAGE): Promise<void> {
-  await mockRestEndpoints(page);
+  if (!pagesWithStubs.has(page)) {
+    await mockRestEndpoints(page);
+    pagesWithStubs.add(page);
+  }
   if (page.url().startsWith('http')) {
     await page.evaluate(() => {
       sessionStorage.clear();
