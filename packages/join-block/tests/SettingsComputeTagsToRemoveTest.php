@@ -23,9 +23,6 @@ class SettingsComputeTagsToRemoveTest extends TestCase
     /** Values returned by the carbon_get_theme_option stub, keyed by field name. */
     private array $settings = [];
 
-    /** Plan rows returned by the $wpdb stub, as stored in wp_options. */
-    private array $storedPlans = [];
-
     protected function setUp(): void
     {
         parent::setUp();

@@ -15,7 +15,10 @@ const cssVariable = (page: Page, name: string) =>
 
 /** A computed style property of the first element matching `selector`. */
 const computed = (page: Page, selector: string, property: string) =>
-  page.locator(selector).first().evaluate((element, name) => getComputedStyle(element).getPropertyValue(name), property);
+  page
+    .locator(selector)
+    .first()
+    .evaluate((element, name) => getComputedStyle(element).getPropertyValue(name), property);
 
 test('the colours have defaults before anything is saved', async ({ page }) => {
   expect(getSettings(['theme_primary_color', 'theme_gray_color', 'theme_background_color'])).toEqual({
@@ -30,7 +33,7 @@ test('the colours have defaults before anything is saved', async ({ page }) => {
   expect(await cssVariable(page, '--ck-join-form-background-color')).toBe('#f4f1ee');
 });
 
-test('Primary Color colours the form\'s buttons', async ({ settings, page }) => {
+test("Primary Color colours the form's buttons", async ({ settings, page }) => {
   await settings.open('Theme');
   await settings.setColor('Primary Color', '#336699');
   await settings.save();
@@ -42,7 +45,7 @@ test('Primary Color colours the form\'s buttons', async ({ settings, page }) => 
   expect(await computed(page, CONTINUE, 'background-color')).toBe('rgb(51, 102, 153)');
 });
 
-test('Gray Color and Background Color reach the form\'s styles', async ({ settings, page }) => {
+test("Gray Color and Background Color reach the form's styles", async ({ settings, page }) => {
   await settings.open('Theme');
   await settings.setColor('Gray Color', '#aabbcc');
   await settings.setColor('Background Color', '#fafafa');
@@ -57,7 +60,7 @@ test('Gray Color and Background Color reach the form\'s styles', async ({ settin
   expect((await cssVariable(page, '--ck-join-form-background-color')).toLowerCase()).toBe('#fafafa');
 });
 
-test('Custom Css is added to the join form\'s page', async ({ settings, page }) => {
+test("Custom Css is added to the join form's page", async ({ settings, page }) => {
   const css = '.ck-join-flow { outline: 3px solid rgb(255, 0, 0); }';
   await settings.open('Theme');
   await settings.setText('Custom Css', css);

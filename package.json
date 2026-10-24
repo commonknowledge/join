@@ -11,7 +11,8 @@
     "build": "npm --prefix packages/join-flow run build",
     "dist": "npm run build && scripts/package.sh",
     "deploy": "npm run build && sh scripts/deploy.sh",
-    "prettier": "prettier --write packages/join-flow"
+    "prettier": "prettier --write packages/join-flow packages/join-e2e",
+    "typecheck": "tsc --noEmit -p packages/join-flow && npm --prefix packages/join-e2e run typecheck"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

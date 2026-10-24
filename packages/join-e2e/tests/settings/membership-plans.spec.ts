@@ -37,7 +37,9 @@ const MEMBER_TAGS_PATH = '/3.0/lists/e2e-audience/members/adf3c55fec42518eefba59
 
 /** A plan as stored under its ID (ck_join_flow_membership_plan_<id>), or false. */
 const storedPlan = (id: string) =>
-  wpEvalJson<Record<string, any> | false>(`return get_option(${JSON.stringify(`ck_join_flow_membership_plan_${id}`)});`);
+  wpEvalJson<Record<string, any> | false>(
+    `return get_option(${JSON.stringify(`ck_join_flow_membership_plan_${id}`)});`,
+  );
 
 /** The plans the join form on GLOBAL_PLANS_PAGE is given. */
 const formPlans = async (page: Page) => (await joinFormEnv(page, GLOBAL_PLANS_PAGE)).MEMBERSHIP_PLANS;
@@ -57,7 +59,9 @@ const planPanel = (page: Page, label: string) =>
 async function mailchimpTagChanges(): Promise<string[]> {
   return (await fakeApiRequests(MAILCHIMP))
     .filter((request) => request.method === 'POST' && request.path === MEMBER_TAGS_PATH)
-    .flatMap((request) => request.body.tags.map((tag: { name: string; status: string }) => `${tag.name}: ${tag.status}`));
+    .flatMap((request) =>
+      request.body.tags.map((tag: { name: string; status: string }) => `${tag.name}: ${tag.status}`),
+    );
 }
 
 test.describe('Global membership plans', () => {
@@ -117,7 +121,7 @@ test.describe('Global membership plans', () => {
 });
 
 test.describe('Membership plan fields', () => {
-  test('Price Point ID becomes the plan\'s ID', async ({ settings, page, request }) => {
+  test("Price Point ID becomes the plan's ID", async ({ settings, page, request }) => {
     await settings.open('Membership Plans');
     await settings.addPlan({ name: 'Gold', id: 'gold-tier', price: '20' });
     await settings.save();
@@ -167,8 +171,12 @@ test.describe('Membership plan fields', () => {
     await expect(page.locator(CONTINUE)).toHaveText('Continue and pay £15 monthly');
 
     // The plugin enforces the minimum too, not just the form.
-    expect((await postJoin(request, { membership: 'baseline-plan_monthly_gbp', customMembershipAmount: 5 })).status()).toBe(500);
-    expect((await postJoin(request, { membership: 'baseline-plan_monthly_gbp', customMembershipAmount: 15 })).ok()).toBe(true);
+    expect(
+      (await postJoin(request, { membership: 'baseline-plan_monthly_gbp', customMembershipAmount: 5 })).status(),
+    ).toBe(500);
+    expect(
+      (await postJoin(request, { membership: 'baseline-plan_monthly_gbp', customMembershipAmount: 15 })).ok(),
+    ).toBe(true);
   });
 
   test('without it, the price is fixed', async ({ page }) => {
@@ -258,7 +266,10 @@ test.describe('Global plans in Stripe', () => {
     const prices = created.filter((request) => request.path === '/v1/prices').map((request) => request.body);
 
     expect(products).toEqual([
-      expect.objectContaining({ name: 'Membership: Baseline Plan', metadata: { membership_plan: 'baseline-plan_weekly_gbp' } }),
+      expect.objectContaining({
+        name: 'Membership: Baseline Plan',
+        metadata: { membership_plan: 'baseline-plan_weekly_gbp' },
+      }),
       expect.objectContaining({
         name: 'Membership: Dollars',
         description: 'Paid in dollars',
@@ -335,7 +346,13 @@ test.describe('Member tags', () => {
   }
 
   const subscriptionDeleted = (reason: string) => ({
-    object: { id: 'sub_old', object: 'subscription', customer: CUSTOMER.id, status: 'canceled', cancellation_details: { reason } },
+    object: {
+      id: 'sub_old',
+      object: 'subscription',
+      customer: CUSTOMER.id,
+      status: 'canceled',
+      cancellation_details: { reason },
+    },
   });
 
   test('have defaults', () => {
@@ -346,7 +363,7 @@ test.describe('Member tags', () => {
     });
   });
 
-  test('joining adds the plan\'s Add Tags, and takes off the other plans\' tags and the lapsed, cancelled and lapsing tags', async ({
+  test("joining adds the plan's Add Tags, and takes off the other plans' tags and the lapsed, cancelled and lapsing tags", async ({
     settings,
     request,
   }) => {
@@ -427,7 +444,7 @@ test.describe('Member tags', () => {
     expect(await mailchimpTagChanges()).toEqual(['Left: inactive', 'Payment trouble: inactive']);
   });
 
-  test('moving to another plan in Stripe swaps the old plan\'s Add Tags for the new one\'s', async ({
+  test("moving to another plan in Stripe swaps the old plan's Add Tags for the new one's", async ({
     settings,
     request,
   }) => {

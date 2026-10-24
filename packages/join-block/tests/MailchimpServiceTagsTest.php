@@ -39,10 +39,14 @@ class MailchimpServiceTagsTest extends TestCase
             public array $errors = [];
 
             // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function info(string $msg, array $ctx = []): void {}
+            public function info(string $msg, array $ctx = []): void
+            {
+            }
 
             // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function warning(string $msg, array $ctx = []): void {}
+            public function warning(string $msg, array $ctx = []): void
+            {
+            }
 
             // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function error(string $msg, array $ctx = []): void
