@@ -1,8 +1,8 @@
 import { Page } from '@playwright/test';
 import { readFileSync } from 'fs';
-import { CONTINUE } from '../helpers';
 import {
   STANDARD_JOIN_PAGE,
+  continueToPayment,
   expect,
   fakeApiRequests,
   getSettings,
@@ -24,14 +24,6 @@ import {
  * provider settings that change how members pay, and the credentials and
  * environment the plugin uses when it calls each provider (fake API).
  */
-
-/** From the details step, through the plan step, to whatever comes next. */
-async function continueToPayment(page: Page): Promise<void> {
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
-  await page.locator('label.radio-panel').first().click();
-  await page.locator(CONTINUE).click();
-}
 
 /** The payment methods the form offers through Stripe's payment fields. */
 async function stripePaymentMethods(page: Page): Promise<string[]> {
@@ -156,8 +148,11 @@ test.describe('Stripe', () => {
     );
 
     // The plugin reads Stripe with the secret key set on this tab.
-    const [first] = await fakeApiRequests('api.stripe.com');
-    expect(first.headers.authorization).toBe('Bearer sk_test_e2e');
+    const exportReads = (await fakeApiRequests('api.stripe.com')).filter(
+      (request) => request.method === 'GET' && ['/v1/subscriptions', '/v1/invoices'].includes(request.path),
+    );
+    expect(exportReads.length).toBeGreaterThan(0);
+    for (const read of exportReads) expect(read.headers.authorization).toBe('Bearer sk_test_e2e');
   });
 
   // An empty Stripe list makes the export print a PHP warning into the

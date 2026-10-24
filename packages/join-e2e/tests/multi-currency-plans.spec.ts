@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { CONTINUE, mockRestEndpoints } from './helpers';
+import { MULTI_CURRENCY_PAGE } from './settings/support';
 
 /**
  * Multi-currency plan selection
@@ -16,8 +17,6 @@ import { CONTINUE, mockRestEndpoints } from './helpers';
  *   - "Standard" GBP £5/month  (id: standard-gbp)
  *   - "Standard" EUR €7/month  (id: standard-eur)
  */
-
-const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
 
 async function advanceToPlanStep(page: import('@playwright/test').Page) {
   await mockRestEndpoints(page);

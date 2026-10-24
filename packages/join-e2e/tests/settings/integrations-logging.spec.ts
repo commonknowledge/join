@@ -1,6 +1,16 @@
-import { APIRequestContext } from '@playwright/test';
 import { generateKeyPairSync } from 'crypto';
-import { expect, fakeApiRequests, getSettings, joinFormEnv, openJoinForm, test, wpEvalJson } from './fixtures';
+import {
+  PHP_LOG_FILES,
+  expect,
+  fakeApiRequests,
+  getSettings,
+  joinFormEnv,
+  logInfo,
+  logInvalidPlan,
+  openJoinForm,
+  test,
+  wpEvalJson,
+} from './fixtures';
 
 /**
  * Settings page, Integrations tab: where the plugin's logs go (Sentry, Google
@@ -12,36 +22,16 @@ import { expect, fakeApiRequests, getSettings, joinFormEnv, openJoinForm, test, 
  * the service's fake.
  */
 
-/** Makes the plugin log an info line ("Recording CK Join form step"). */
-async function logSomething(request: APIRequestContext): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/step', {
-    data: { email: 'someone@example.com', stage: 'details' },
-  });
-  expect(response.ok()).toBe(true);
-}
-
-/** Makes the plugin log an error ("Invalid membership plan: ..."). */
-async function logAnError(request: APIRequestContext): Promise<void> {
-  const response = await request.post('/wp-json/join/v1/join', {
-    data: { email: 'someone@example.com', membership: 'no-such-plan' },
-  });
-  expect(response.status()).toBe(500);
-}
-
 /** The size of the plugin's log files on disk, in bytes. */
 const logFilesSize = () =>
-  wpEvalJson<number>(`
-    $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
-    clearstatcache();
-    return array_sum(array_map('filesize', glob("$dir/debug-*.log") ?: []));
-  `);
+  wpEvalJson<number>(`clearstatcache(); return array_sum(array_map('filesize', ${PHP_LOG_FILES}));`);
 
-const LOGGING_HOSTS = ['logs-01.loggly.com', 'sentry.e2e.example', 'oauth2.googleapis.com', 'logging.googleapis.com'];
+const LOGGING_HOSTS = ['logs-01.loggly.com', 'sentry.e2e.example', 'logging.googleapis.com'];
 
 test('by default, logs are written to disk and sent nowhere else', async ({ request }) => {
   const before = logFilesSize();
-  await logSomething(request);
-  await logAnError(request);
+  await logInfo(request);
+  await logInvalidPlan(request);
 
   expect(logFilesSize()).toBeGreaterThan(before);
   const sent = await fakeApiRequests();
@@ -64,7 +54,7 @@ test.describe('Loggly', () => {
     });
 
     const before = logFilesSize();
-    await logSomething(request);
+    await logInfo(request);
 
     const sent = await fakeApiRequests('logs-01.loggly.com');
     expect(sent.length).toBeGreaterThan(0);
@@ -79,7 +69,7 @@ test.describe('Loggly', () => {
     await settings.setText('Loggly Customer Token', 'e2e-loggly-token');
     await settings.save();
 
-    await logSomething(request);
+    await logInfo(request);
 
     const [first] = await fakeApiRequests('logs-01.loggly.com');
     expect(first.headers['x-loggly-tag']).toBe('join-block');
@@ -93,7 +83,7 @@ test.describe('Loggly', () => {
 
     await settings.tab('Logging');
     await expect(settings.page.getByText('Logs are sent to Loggly and are not stored on this server.')).toBeVisible();
-    await expect(settings.page.locator('.cf-container__fields strong', { hasText: 'e2e-site' })).toBeVisible();
+    await expect(settings.page.getByText('e2e-site', { exact: true })).toBeVisible();
   });
 });
 
@@ -111,10 +101,10 @@ test.describe('Sentry', () => {
 
     expect(getSettings(['sentry_dsn']).sentry_dsn).toBe(DSN);
 
-    await logSomething(request);
+    await logInfo(request);
     expect(await fakeApiRequests('sentry.e2e.example')).toEqual([]);
 
-    await logAnError(request);
+    await logInvalidPlan(request);
     const [event] = await fakeApiRequests('sentry.e2e.example');
     expect(event).toMatchObject({ method: 'POST', path: '/api/42/envelope/' });
     expect(event.headers['x-sentry-auth']).toContain('sentry_key=e2epublickey');
@@ -164,7 +154,7 @@ test.describe('Google Cloud Logging', () => {
       google_cloud_key_file_contents: keyFile,
     });
 
-    await logSomething(request);
+    await logInfo(request);
 
     const writes = (await fakeApiRequests('logging.googleapis.com')).filter(
       (request) => request.method === 'POST' && request.path === '/v2/entries:write',

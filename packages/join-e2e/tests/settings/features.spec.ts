@@ -1,6 +1,7 @@
 import { CONTINUE } from '../helpers';
 import {
   FREE_JOIN_PAGE,
+  continueToPlans,
   expect,
   expectDetailsAccepted,
   expectDetailsRejected,
@@ -269,8 +270,7 @@ test.describe('Enable international phone numbers', () => {
 test.describe('Hide price display for zero-price items', () => {
   async function goToPlans(page: import('@playwright/test').Page) {
     await openJoinForm(page, FREE_JOIN_PAGE);
-    await page.locator(CONTINUE).click();
-    await page.waitForSelector('[role="radiogroup"]');
+    await continueToPlans(page);
   }
 
   test('is off by default: a free plan shows its £0 price', async ({ page }) => {
@@ -288,6 +288,8 @@ test.describe('Hide price display for zero-price items', () => {
     expect((await joinFormEnv(page, FREE_JOIN_PAGE)).HIDE_ZERO_PRICE_DISPLAY).toBe(true);
 
     await goToPlans(page);
+    await expect(page.locator('label.radio-panel')).toHaveCount(1);
+    await expect(page.locator('label.radio-panel')).toContainText('Free');
     await expect(page.locator('[role="radiogroup"]')).not.toContainText('£0');
   });
 });

@@ -496,19 +496,19 @@ CI runs the same setup (`.github/workflows/e2e.yml`). See [docs/e2e-testing.md](
 1. **It was saved:** read back through the plugin's own `Settings::get`, not the raw database rows, so the check survives a change of storage format.
 2. **It has its effect:** on the join form's settings (the page's `<script id="env">`), on what the form shows and does, and on what the plugin sends to other services.
 
-Each spec also has a "saved before the settings page was rebuilt" test. It loads settings as Carbon Fields stored them (`tests/settings/legacy/*.json`) straight into the database, standing for existing sites, and checks they still work.
+Each settings tab also has a "saved before the settings page was rebuilt" test. It loads settings as Carbon Fields stored them (`tests/settings/legacy/*.json`) straight into the database, standing for existing sites, and checks they still work.
 
 How the tests are put together:
 
-- **`JoinSettingsPage`** (`tests/settings/support.ts`) is the only code that knows how the settings page is built. It finds fields by their visible labels. When the page is rebuilt, update it (and any labels that change); the specs should not need to change.
+- **`JoinSettingsPage`** (`tests/settings/support.ts`) is the only code that knows how the settings page is built. It finds fields by their visible labels. When the page is rebuilt, update it (and any labels that change), and `setBaselinePlan()` next to it, which writes a plan straight into storage; the specs should not need to change.
 - **Isolation:** every test starts from the seeded site plus one global membership plan (the settings page won't save without one). Seeding snapshots the options table; tests restore it afterwards, so other specs are unaffected.
 - **Known problems** are `test.fixme` tests that link to a Linear issue. Change them to `test` once the issue is fixed.
 
 #### Fake third-party APIs
 
-The `fake-api` container (`packages/join-e2e/fake-api/server.js`) stands in for every service the plugin calls: Stripe, Mailchimp, Action Network, Zetkin, GoCardless, Chargebee, Auth0 and postcode lookups. Inside the Docker network, their hostnames (`api.stripe.com` and so on) resolve to it. It answers over HTTPS with a test certificate that only the E2E WordPress containers trust, so the plugin's real code and SDKs run unchanged and nothing reaches the real services.
+The `fake-api` container (`packages/join-e2e/fake-api/server.js`) stands in for every service the plugin calls: Stripe, Mailchimp, Action Network, Zetkin, GoCardless, Chargebee, Auth0, postcode lookups, and the logging services (Sentry, Google Cloud Logging, Loggly). Inside the Docker network, their hostnames (`api.stripe.com` and so on) resolve to it. It answers over HTTPS with a test certificate that only the E2E WordPress containers trust, so the plugin's real code and SDKs run unchanged and nothing reaches the real services.
 
-It records every request it receives. Tests read them, reset it and override its answers through its control API on `localhost:8890` (`tests/settings/fake-api.ts`). By default it answers `200 {}`, except Stripe, where it keeps the products and prices the plugin creates so searches find them, and lists and looks up customers and subscriptions. Tests can put a Stripe object in place first (`seedFakeStripe`), e.g. the customer a webhook event names. Zetkin, Auth0 and Google's token endpoint answer just enough for the plugin to sign in and add a member. The fake is also reachable as `http://fake-api`, for tests that need a webhook URL to send to.
+It records every request it receives. Tests read them, reset it and override its answers through its control API on `localhost:8890` (`tests/settings/fake-api.ts`). By default it answers `200 {}`, except Stripe, where it keeps the products and prices the plugin creates so searches find them, and lists and looks up customers and subscriptions. Tests can put a Stripe object in place first (`seedFakeStripe`), e.g. the customer a webhook event names. Zetkin and Auth0 answer just enough for the plugin to sign in and add a member. The fake is also reachable as `http://fake-api`, for tests that need a webhook URL to send to.
 
 To fake another hostname, add it to `fake-api/certs/san.cnf`, run `fake-api/certs/generate.sh`, and add it to the `fake-api` network aliases in `docker-compose.yml`.
 

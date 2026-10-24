@@ -65,6 +65,28 @@ function parseFormEncoded(raw) {
 }
 
 /**
+ * A Stripe list, filtered as Stripe filters it for the parameters the plugin
+ * sends: plain fields (?customer=cus_1), ranges (?created[gte]=...), and
+ * subscriptions' status, where "all" means any and leaving it out means any
+ * but canceled.
+ */
+function listStripe(type, store, url) {
+  const ignored = ['limit', 'starting_after', 'ending_before'];
+  const params = [...url.searchParams].filter(([key]) => !ignored.includes(key) && !key.startsWith('expand'));
+  const ranges = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b };
+  const hasStatus = params.some(([key]) => key === 'status');
+  return store.filter((object) => {
+    if (type === 'subscriptions' && !hasStatus && object.status === 'canceled') return false;
+    return params.every(([key, value]) => {
+      const range = key.match(/^([a-z_]+)\[(gt|gte|lt|lte)\]$/);
+      if (range) return ranges[range[2]](Number(object[range[1]]), Number(value));
+      if (key === 'status' && value === 'all') return true;
+      return String(object[key]) === value;
+    });
+  });
+}
+
+/**
  * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
  * and for the customer and subscription look-ups its webhook handlers make.
  */
@@ -93,12 +115,10 @@ function fakeStripe(method, url, body) {
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
   }
   if (method === 'GET' && !idOrAction) {
-    // List, filtered on plain fields, e.g. ?customer=cus_1&status=active
-    const filters = Object.entries(Object.fromEntries(url.searchParams)).filter(
-      ([key]) => !['limit', 'starting_after', 'ending_before'].includes(key) && !key.startsWith('expand'),
-    );
-    const data = store.filter((object) => filters.every(([key, value]) => String(object[key]) === value));
-    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data } };
+    return {
+      status: 200,
+      body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) },
+    };
   }
   if (method === 'POST' && !idOrAction) {
     stripe.counter += 1;
@@ -154,7 +174,7 @@ function respond(host, method, url, body) {
     (rule) =>
       (!rule.host || rule.host === host) &&
       (!rule.method || rule.method === method) &&
-      (!rule.path || new RegExp(rule.path).test(url.pathname)),
+      (!rule.pathPattern || rule.pathPattern.test(url.pathname)),
   );
   if (override) return { status: override.status || 200, body: override.body ?? {} };
   if (host === 'api.stripe.com') {
@@ -164,9 +184,6 @@ function respond(host, method, url, body) {
   if (host === 'api.zetk.in' || host === 'api.dev.zetkin.org') {
     const result = fakeZetkin(method, url, body);
     if (result) return result;
-  }
-  if (host === 'oauth2.googleapis.com' && method === 'POST' && url.pathname === '/token') {
-    return { status: 200, body: { access_token: 'e2e-google-access-token', token_type: 'Bearer', expires_in: 3600 } };
   }
   if (host.endsWith('.auth0.com') && method === 'POST' && url.pathname === '/oauth/token') {
     return { status: 200, body: { access_token: 'e2e-auth0-access-token', token_type: 'Bearer', expires_in: 86400 } };
@@ -181,8 +198,15 @@ function handleService(request, response) {
     const host = (request.headers.host || '').split(':')[0];
     const url = new URL(request.url, `https://${host}`);
     let buffer = Buffer.concat(chunks);
-    // Sentry, for one, gzips what it sends.
-    if (request.headers['content-encoding'] === 'gzip') buffer = zlib.gunzipSync(buffer);
+    // Sentry, for one, gzips what it sends. A body that won't unzip is
+    // recorded as it came, rather than crashing the fake.
+    if (request.headers['content-encoding'] === 'gzip') {
+      try {
+        buffer = zlib.gunzipSync(buffer);
+      } catch (error) {
+        console.error(`Could not gunzip a request to ${host}${request.url}: ${error.message}`);
+      }
+    }
     const raw = buffer.toString('utf8');
     const body = parseBody(raw, request.headers['content-type']);
     requests.push({
@@ -208,6 +232,16 @@ function handleControl(request, response) {
       response.writeHead(status, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify(body));
     };
+    // A bad request from a test gets a 400, rather than crashing the fake for
+    // every test after it.
+    const readJson = () => {
+      try {
+        return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      } catch (error) {
+        send(400, { error: `invalid JSON: ${error.message}` });
+        return undefined;
+      }
+    };
     if (request.method === 'GET' && request.url === '/requests') return send(200, requests);
     if (request.method === 'POST' && request.url === '/reset') {
       requests = [];
@@ -217,7 +251,14 @@ function handleControl(request, response) {
       return send(200, { ok: true });
     }
     if (request.method === 'POST' && request.url === '/overrides') {
-      overrides.unshift(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      const rule = readJson();
+      if (rule === undefined) return;
+      try {
+        rule.pathPattern = rule.path ? new RegExp(rule.path) : null;
+      } catch (error) {
+        return send(400, { error: `invalid path pattern: ${error.message}` });
+      }
+      overrides.unshift(rule);
       return send(200, { ok: true });
     }
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
