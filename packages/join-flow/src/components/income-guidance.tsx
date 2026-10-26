@@ -4,6 +4,7 @@ import { get as getEnv, getStr as getEnvStr } from "../env";
 
 export interface IncomeGuidancePlan {
   value: string;
+  label: string;
   amount: string | number;
   currency: string;
   frequency: string;
@@ -20,8 +21,14 @@ interface IncomeGuidanceProps {
 
 const HEADING_ID = "income-guidance-heading";
 
-const feeLabel = (plan: IncomeGuidancePlan) =>
-  `${currencyCodeToSymbol(plan.currency)}${plan.amount} ${plan.frequency}`;
+// Names a free tier instead of pricing it when zero prices are hidden, as
+// the tier panels do.
+const feeLabel = (plan: IncomeGuidancePlan) => {
+  if (getEnv("HIDE_ZERO_PRICE_DISPLAY") && Number(plan.amount) === 0) {
+    return plan.label;
+  }
+  return `${currencyCodeToSymbol(plan.currency)}${plan.amount} ${plan.frequency}`;
+};
 
 /**
  * Income bands against the plans they suggest, so people can see which tier

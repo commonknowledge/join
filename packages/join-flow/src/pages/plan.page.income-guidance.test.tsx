@@ -221,3 +221,58 @@ describe("Income guidance table — choosing a plan", () => {
     expect(rowButton("£25 monthly")).toHaveAttribute("aria-pressed", "false");
   });
 });
+
+describe("Income guidance table — zero-price tiers", () => {
+  const PLANS_WITH_FREE_TIER = [
+    plan("waged", "Waged", "10", { incomeWeekly: "More than £300" }),
+    plan("unwaged", "Unwaged", "0", { incomeWeekly: "Less than £300" })
+  ];
+
+  const feeCells = () =>
+    within(guidanceTable()!)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell").pop()!.textContent);
+
+  test("names a free tier instead of showing its price when zero prices are hidden", () => {
+    withEnv({
+      MEMBERSHIP_PLANS: PLANS_WITH_FREE_TIER,
+      HIDE_ZERO_PRICE_DISPLAY: true
+    });
+    renderPlanPage("waged");
+
+    expect(feeCells()).toEqual(["£10 monthly", "Unwaged"]);
+    expect(
+      within(guidanceTable()!).getByRole("button", { name: "Choose Unwaged" })
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/£0/)).not.toBeInTheDocument();
+  });
+
+  test("a free tier named in the table can still be chosen", async () => {
+    withEnv({
+      MEMBERSHIP_PLANS: PLANS_WITH_FREE_TIER,
+      HIDE_ZERO_PRICE_DISPLAY: true
+    });
+    renderPlanPage("waged");
+
+    fireEvent.click(
+      within(guidanceTable()!).getByRole("button", { name: "Choose Unwaged" })
+    );
+
+    await waitFor(() =>
+      expect(document.getElementById("membership-Unwaged")).toBeChecked()
+    );
+  });
+
+  test("shows a free tier's price as normal when zero prices are not hidden", () => {
+    withEnv({ MEMBERSHIP_PLANS: PLANS_WITH_FREE_TIER });
+    renderPlanPage("waged");
+
+    expect(feeCells()).toEqual(["£10 monthly", "£0 monthly"]);
+    expect(
+      within(guidanceTable()!).getByRole("button", {
+        name: "Choose £0 monthly"
+      })
+    ).toBeInTheDocument();
+  });
+});
