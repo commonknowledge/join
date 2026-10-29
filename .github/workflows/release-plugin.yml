@@ -1,25 +1,79 @@
 name: Deploy to WordPress.org
+
+# Releases whenever master carries a version that has not been tagged yet, so
+# merging a PR that bumps the version ships it. Pushes without a version bump
+# find the tag already exists and skip everything after the check.
+#
+# Tags are created by this workflow, not pushed by hand. Pushing a tag no longer
+# triggers a release, and the tag this workflow pushes with GITHUB_TOKEN does
+# not start any other workflow run. To retry a failed release, use "Re-run
+# failed jobs".
 on:
   push:
-    tags:
-    - "*"
+    branches:
+      - master
+  workflow_dispatch:
+
+# One release run at a time, so two quick merges cannot deploy the same version
+# twice. A run that has started is never cancelled part way through a deploy.
+concurrency:
+  group: release-plugin
+  cancel-in-progress: false
 
 jobs:
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.tag.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version numbers and changelog
+        id: version
+        run: echo "version=$(./scripts/check-version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether this version has been released
+        id: tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" > /dev/null; then
+            echo "Tag $VERSION already exists, nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag $VERSION does not exist yet, releasing."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   php-tests:
+    needs: check
+    if: needs.check.outputs.release == 'true'
     uses: ./.github/workflows/php-tests.yml
 
   jest-tests:
+    needs: check
+    if: needs.check.outputs.release == 'true'
     uses: ./.github/workflows/jest-tests.yml
 
   e2e:
+    needs: check
+    if: needs.check.outputs.release == 'true'
     uses: ./.github/workflows/e2e.yml
 
-  tag:
+  release:
     name: Build plugin and deploy to WordPress.org
     runs-on: ubuntu-latest
-    needs: [php-tests, jest-tests, e2e]
+    needs: [check, php-tests, jest-tests, e2e]
+    if: needs.check.outputs.release == 'true'
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -40,6 +94,8 @@ jobs:
       run: |
         rm common-knowledge-join-flow.zip
 
+    # Skips the SVN commit if this version is already on WordPress.org, so
+    # re-running after a later step fails is safe.
     - name: WordPress Plugin Deploy
       uses: 10up/action-wordpress-plugin-deploy@stable
       env:
@@ -48,7 +104,19 @@ jobs:
         SLUG: common-knowledge-join-flow
         BUILD_DIR: dist/common-knowledge-join-flow
 
+    # Tagged only after the deploy succeeds, because the check job treats an
+    # existing tag as already released.
+    - name: Tag the release
+      run: |
+        if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" > /dev/null; then
+          echo "Tag $VERSION already exists."
+        else
+          git tag "$VERSION" "$GITHUB_SHA"
+          git push origin "refs/tags/$VERSION"
+        fi
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: ${{ env.VERSION }}
         generate_release_notes: true
