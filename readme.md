@@ -496,6 +496,16 @@ The suite tests against one pinned WordPress release: the `wordpress:<version>-p
 
 The PHP version in the tags (8.2) matches the plugin's minimum and the PHP version used in CI and `composer.json`; change them together.
 
+### Dev server
+
+`.github/workflows/dev-server.yml` runs `scripts/dev-server-smoke.sh` on every PR, which starts the dev server and checks it serves the page, compiles the bundle and answers the stubbed REST endpoints. Run it locally with `npm --prefix packages/join-flow run test:dev-server` (port 3000 must be free).
+
+### Dependabot PRs
+
+The `/verify-dependabot` Claude Code skill (`.claude/skills/verify-dependabot/SKILL.md`) decides whether a Dependabot PR can merge. The first time a package is bumped, it adds the smallest test that pins down how our code uses the package, proves the test can fail, and pushes it to the Dependabot branch. If the upgrade breaks anything, new tests or existing ones, it fixes our code until CI is green. Fresh review agents then review its commits as review comments on the PR, and it fixes what they find and answers each thread, for up to three rounds. Only then does it ask the person who added the dependency to review. If three rounds aren't enough, it asks that person for help instead. After that first review, minor and patch bumps of the same package auto-merge when CI is green. Major bumps always wait for a human.
+
+`.github/dependency-coverage/` records which packages have reviewed tests, one file per package. A file only reaches `master` through a reviewed, merged PR, so adding or editing one by hand bypasses that review.
+
 ### Claude Code cloud sessions
 
 `.claude/hooks/session-start.sh` runs at the start of each Claude Code cloud session (and does nothing elsewhere). It installs the npm and Composer dependencies and starts Docker, so all three test suites can run. Two things are specific to that environment:
