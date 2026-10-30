@@ -295,18 +295,26 @@ that push, or when CI on it comes back red.
    `run_in_background: false`, never `fork`, which would inherit your
    reasoning. Give it the PR, not your opinion of it:
 
-   > Run the `code-review` skill (Skill tool, args `high <PR number>`) on
-   > commonknowledge/join#<PR number>. It is a Dependabot dependency bump.
-   > The commits after Dependabot's add tests, fixes and a ledger entry under
-   > `.github/dependency-coverage/` that verify how our code uses the bumped
-   > package. Review all of it. Do not post anything on GitHub. Reply with
-   > each finding (file:line, what is wrong, how serious) and end with exactly
-   > one line: `VERDICT: ready` if nothing blocking remains, or
-   > `VERDICT: changes needed`.
+   > Run the `code-review` skill (Skill tool, args
+   > `high --comment <PR number>`) on commonknowledge/join#<PR number>, so
+   > your findings are posted as inline review comments on the PR. It is a
+   > Dependabot dependency bump. The commits after Dependabot's add tests,
+   > fixes and a ledger entry under `.github/dependency-coverage/` that
+   > verify how our code uses the bumped package. Review all of it. Then
+   > reply to me with each finding (file:line, what is wrong, how serious)
+   > and end with exactly one line: `VERDICT: ready` if nothing blocking
+   > remains, or `VERDICT: changes needed`.
 
 3. **Act on the findings.** Fix every finding that is correct and in
-   proportion. For each one you decide not to fix, note a one-line reason for
-   the hand-off. If you pushed anything, that push starts the next round,
+   proportion, then answer every thread the review agent opened, so the
+   person reviewing later can follow what happened:
+   - Fixed: reply with the commit that fixes it, and resolve the thread
+     (`mcp__github__add_reply_to_pull_request_comment`,
+     `mcp__github__resolve_review_thread`).
+   - Not fixed: reply with the reason and leave the thread open, so the
+     person reviewing can see it and decide.
+
+   If you pushed anything, that push starts the next round,
    which gets a **new** review agent. Never resume an earlier one with
    `SendMessage`: every review needs a fresh read.
 
@@ -338,8 +346,9 @@ status comment's edits don't notify anyone) with:
   them affect our usage.
 - Any change to our code, and why it was needed. Call out any test whose
   expectation changed, and why the new behaviour is right.
-- The review rounds from step 7: how many, what the review agents found, what
-  was fixed, and why anything they raised was left.
+- The review rounds from step 7: how many, and a short summary of what was
+  fixed. The detail is in the review threads. Point the reviewer at any
+  thread left open, which is a finding we chose not to fix.
 - What the reviewer should check: that the tests assert on behaviour we
   actually depend on, and that nothing we use was missed.
 
