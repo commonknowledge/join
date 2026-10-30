@@ -1,0 +1,20 @@
+{
+  "packages": {
+    "npm:packages/join-flow:fast-uri": {
+      "class": "build",
+      "via": [
+        "babel-loader, css-loader, html-webpack-plugin, sass-loader, style-loader, webpack, webpack-cli, webpack-dev-server",
+        "schema-utils",
+        "ajv-formats",
+        "ajv"
+      ],
+      "usage": [],
+      "tests": [
+        "ci: E2E Tests › Build join-flow bundle (E2E mode)",
+        "ci: Dev Server › Dev server smoke test"
+      ],
+      "reviewedVersion": "3.1.9",
+      "reviewedIn": "#141"
+    }
+  }
+}
