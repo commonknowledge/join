@@ -502,7 +502,7 @@ The PHP version in the tags (8.2) matches the plugin's minimum and the PHP versi
 
 ### Dependabot PRs
 
-The `/verify-dependabot` Claude Code skill (`.claude/skills/verify-dependabot/SKILL.md`) decides whether a Dependabot PR can merge. The first time a package is bumped, it adds the smallest test that pins down how our code uses the package, proves the test can fail, pushes it to the Dependabot branch and leaves the PR for a human to review. After that, minor and patch bumps of the same package auto-merge when CI is green. Major bumps always wait for a human.
+The `/verify-dependabot` Claude Code skill (`.claude/skills/verify-dependabot/SKILL.md`) decides whether a Dependabot PR can merge. The first time a package is bumped, it adds the smallest test that pins down how our code uses the package, proves the test can fail, and pushes it to the Dependabot branch. If the upgrade breaks anything, new tests or existing ones, it fixes our code until CI is green. Fresh review agents then review its commits, and it fixes what they find, for up to three rounds. Only then does it ask the person who added the dependency to review. If three rounds aren't enough, it asks that person for help instead. After that first review, minor and patch bumps of the same package auto-merge when CI is green. Major bumps always wait for a human.
 
 `.github/dependency-coverage/` records which packages have reviewed tests, one file per package. A file only reaches `master` through a reviewed, merged PR, so adding or editing one by hand bypasses that review.
 

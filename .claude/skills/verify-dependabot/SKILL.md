@@ -1,6 +1,6 @@
 ---
 name: verify-dependabot
-description: Decide whether a Dependabot pull request can be merged. Finds where the bumped package touches our code, adds the smallest test that would catch a change in that integration (proved with red/green), pushes it to the Dependabot branch, and either hands the PR to a human or enables auto-merge, depending on whether the package has been verified before and how big the version jump is. Use when asked to check, verify, triage or merge Dependabot PRs, or with a PR number of a Dependabot PR.
+description: Get a Dependabot pull request to merge-ready. Finds where the bumped package touches our code, adds the smallest test that would catch a change in that integration (proved with red/green), fixes whatever the upgrade breaks until CI is green, has fresh review agents review our commits until they are satisfied (at most three rounds), then either hands the PR to a human or enables auto-merge, depending on whether the package has been verified before and how big the version jump is. Use when asked to check, verify, triage, fix or merge Dependabot PRs, or with a PR number of a Dependabot PR.
 ---
 
 # Verify a Dependabot PR
@@ -14,6 +14,12 @@ can merge on their own as long as the test stays green.
 We are not testing the library. It has its own tests. We are testing the seam
 between the library and our code: the inputs we pass it and the outputs we
 rely on.
+
+Broken things get fixed, not reported. If the upgrade breaks a new test, an
+existing test, the build, lint or E2E, fix our code until CI is green. A
+person should only ever be handed a PR that works and that review agents have
+already been through (step 7), or one that three rounds of fixing and review
+could not get there, with a clear ask for help.
 
 Arguments: a PR number, or nothing to work through every open Dependabot PR
 (oldest first).
@@ -31,17 +37,19 @@ exists on `master`" is the approval record. Read it from `origin/master`
 
 | Situation | Gear | What happens |
 |---|---|---|
-| No ledger entry on `master` | 1 | Write tests, push them, comment, **wait for a human**. |
+| No ledger entry on `master` | 1 | Write tests, fix what breaks, get CI green and review agents satisfied, **then hand to a human**. |
 | Ledger entry, minor or patch bump | 2 | Re-check usage, wait for CI, **enable auto-merge**. |
-| Major bump (any ledger state) | 3 | Do the gear 1 or 2 checks, read the changelog, **wait for a human**. |
+| Major bump (any ledger state) | 3 | As gear 1 or 2, plus read the changelog, **then hand to a human**. |
 
 Rules that decide the gear:
 
 - `0.x` versions: treat a minor bump (`0.10` to `0.11`) as major, since semver
   allows breaking changes there.
 - A PR that bumps several packages takes the highest gear of any of them.
-- If anything in gear 2 needs a code change (a new test, a fix to our code),
-  the PR drops to gear 1.
+- If anything in gear 2 needs a code change (a new test, a fix to our code,
+  because CI is red), the PR drops to gear 1.
+- Red CI on a Dependabot PR is always work to do, whatever the gear and
+  whether or not we have pushed anything to it yet. Go to step 7.
 - Anything you are unsure about goes to a human. Auto-merge is the reward for
   certainty, not the default.
 
@@ -156,13 +164,12 @@ order and keep the output of each run for the PR comment.
    Run the test again.
    - Passes: good.
    - Fails: this is what the skill exists to catch. Read the package's
-     changelog for the change. If our code needs a small, clear fix, make
-     it and note it for the human reviewer. Otherwise leave the code alone and
-     report the failure on the PR. Either way the PR goes to a human.
+     changelog and find out what changed, then fix our code so it works with
+     the new version (step 7 says what counts as a fix). The test stays as
+     it is unless our expectation, not our code, was what was out of date.
 
 After the proof, `git status` must show only the new or changed test files,
-the ledger, and any fix to our code. No leftover mutations, and no changes to
-`package.json` or the lockfiles beyond what Dependabot made.
+the ledger, and any fix. No leftover mutations.
 
 Then run the full suite for the affected package on the new version (the
 same commands CI runs: `npm test`, `npx prettier --check packages/join-flow`
@@ -245,11 +252,81 @@ Things to know about pushing to a Dependabot branch:
   `mcp__github__update_pull_request_branch`, or merge `origin/master` into it
   and push. Never rebase or force-push a Dependabot branch, and never comment
   `@dependabot recreate`: both throw away commits.
-- Don't touch `package.json` or the lockfiles. Dependabot owns those.
+- Never change the version Dependabot bumped. If the fix needs another
+  dependency to move too (a companion or peer package), change it with
+  `npm install <package>@<version>` or `composer require`, so the lockfile is
+  regenerated properly, and explain why in the commit and the hand-off.
 
-## Step 7: Hand off or merge
+## Step 7: Get it green and reviewed
 
-**Gear 1 and 3: hand off to a human.** Post one comment on the PR with:
+Every PR we have pushed commits to (tests, fixes, even a ledger entry alone)
+goes through this before a person sees it. Tests are code, and code gets
+reviewed. So does every Dependabot PR whose CI is red, even before we have
+added anything: an existing test, lint, the build or E2E failing on the new
+version is a break to fix.
+
+Keep one status comment on the PR, with `<!-- verify-dependabot -->` as its
+first line, and edit it (`mcp__github__update_issue_comment`) rather than
+posting new ones. It holds the gear, the current round, and what is
+outstanding, so a later run can pick up where this one stopped.
+
+**A round** starts when you push and ends when a review agent has reviewed
+that push, or when CI on it comes back red.
+
+1. **Get CI green.** For each failing check, read its log
+   (`get_check_runs`, `get_job_logs`), reproduce the failure locally, find
+   the root cause and fix it, as you would for any broken build. Fixing
+   means making our code work with the new version: adapting a call to a
+   changed API, updating a type, handling a new return value, updating
+   config. Run the affected suites locally, then push. Then subscribe to the
+   PR (`mcp__claude-code-remote__subscribe_pr_activity`) and end your turn:
+   the CI result wakes you, so don't poll. Never:
+   - skip, disable, delete or weaken a test or assertion to get green;
+   - pin the package back to its old version, which undoes the PR;
+   - push an empty commit, or close and reopen the PR, to re-run CI.
+
+   Changing a test's expectation is fine only when the library's new
+   behaviour is correct and our expectation was what was out of date. Say
+   so explicitly in the hand-off. If the fix would change something members
+   or organisers notice (the form, an email, a payment, CRM data), stop and
+   escalate (below), because that is a product decision.
+2. **Review.** Once CI is green on the head commit, start a review agent with
+   fresh context. Use `Agent` with `subagent_type: "general-purpose"` and
+   `run_in_background: false`, never `fork`, which would inherit your
+   reasoning. Give it the PR, not your opinion of it:
+
+   > Run the `code-review` skill (Skill tool, args `high <PR number>`) on
+   > commonknowledge/join#<PR number>. It is a Dependabot dependency bump.
+   > The commits after Dependabot's add tests, fixes and a ledger entry under
+   > `.github/dependency-coverage/` that verify how our code uses the bumped
+   > package. Review all of it. Do not post anything on GitHub. Reply with
+   > each finding (file:line, what is wrong, how serious) and end with exactly
+   > one line: `VERDICT: ready` if nothing blocking remains, or
+   > `VERDICT: changes needed`.
+
+3. **Act on the findings.** Fix every finding that is correct and in
+   proportion. For each one you decide not to fix, note a one-line reason for
+   the hand-off. If you pushed anything, that push starts the next round,
+   which gets a **new** review agent. Never resume an earlier one with
+   `SendMessage`: every review needs a fresh read.
+
+The PR is ready for a person when CI is green on the head and the latest
+review agent said `VERDICT: ready`. Go to step 8.
+
+**At most three rounds.** If after the third round CI is still red or the
+latest review agent still says `VERDICT: changes needed`, stop pushing and
+escalate. Also escalate straight away, at any round, when the fix is a product
+decision or the new version can't work with our code without a larger change
+than a dependency bump should carry. To escalate, post a new comment (so the
+mention notifies) that mentions the reviewer chosen as in step 8 and asks for
+their help. Say what is still failing (check names and log excerpts), the
+open review findings, what you tried and what you think the options are.
+Request their review too. Update the status comment to say it was escalated.
+
+## Step 8: Hand off or merge
+
+**Gear 1 and 3: hand off to a human.** Post one new comment on the PR (the
+status comment's edits don't notify anyone) with:
 
 - The packages, versions, class and gear, and why it needs a human ("first
   time this package has been verified", or "major version").
@@ -259,7 +336,10 @@ Things to know about pushing to a Dependabot branch:
   mutation you made and a short excerpt of each failure.
 - For major bumps: the breaking changes in the changelog and whether any of
   them affect our usage.
-- Any change to our code, and why it was needed.
+- Any change to our code, and why it was needed. Call out any test whose
+  expectation changed, and why the new behaviour is right.
+- The review rounds from step 7: how many, what the review agents found, what
+  was fixed, and why anything they raised was left.
 - What the reviewer should check: that the tests assert on behaviour we
   actually depend on, and that nothing we use was missed.
 
@@ -297,7 +377,8 @@ everyone who qualifies, without duplicates. Request reviews with
 `mcp__github__update_pull_request` (`reviewers`).
 
 **Gear 2: merge on green.** All of the following must hold. If any of them
-fails, drop to gear 1.
+fails, drop to gear 1. If a check is red or a ledgered test fails, fix it in
+step 7 rather than handing it over as it is.
 
 1. The package's ledger file exists on `origin/master`.
 2. The usage grep from step 2 finds no files beyond the entry's `usage`. If
@@ -318,8 +399,13 @@ that approved it.
 
 ## When working through every open PR
 
-List open PRs by `dependabot[bot]` and handle them one at a time, oldest
-first. Several PRs often bump packages in the same lockfile. After one
-merges, the others may need updating from `master` (see step 6) before
-their CI means anything. Finish with a table: PR, packages, class, gear, outcome (handed to
-human / auto-merge enabled / failed, and why).
+List open PRs by `dependabot[bot]` and take them oldest first. For each one,
+read its status comment first and carry on from the round it records,
+instead of starting again. While one PR waits for CI, move on to the next
+and come back when the CI result arrives. Several PRs often bump packages in
+the same lockfile. After one merges, the others may need updating from
+`master` (see step 6) before their CI means anything.
+
+Finish with a table: PR, packages, class, gear, rounds used, and outcome
+(handed to a person / auto-merge enabled / waiting on CI / escalated, and
+why).
