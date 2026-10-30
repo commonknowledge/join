@@ -496,6 +496,12 @@ The suite tests against one pinned WordPress release: the `wordpress:<version>-p
 
 The PHP version in the tags (8.2) matches the plugin's minimum and the PHP version used in CI and `composer.json`; change them together.
 
+### Dependabot PRs
+
+The `/verify-dependabot` Claude Code skill (`.claude/skills/verify-dependabot/SKILL.md`) decides whether a Dependabot PR can merge. The first time a package is bumped, it adds the smallest test that pins down how our code uses the package, proves the test can fail, pushes it to the Dependabot branch and leaves the PR for a human to review. After that, minor and patch bumps of the same package auto-merge when CI is green. Major bumps always wait for a human.
+
+`.github/dependency-coverage.json` records which packages have reviewed tests. An entry only reaches `master` through a reviewed, merged PR, so editing it by hand bypasses that review.
+
 ### Claude Code cloud sessions
 
 `.claude/hooks/session-start.sh` runs at the start of each Claude Code cloud session (and does nothing elsewhere). It installs the npm and Composer dependencies and starts Docker, so all three test suites can run. Two things are specific to that environment:
