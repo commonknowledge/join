@@ -17,7 +17,8 @@ fi
 
 cd "$ROOT/packages/join-flow"
 # Run webpack's own binary rather than npx so $! is the server process.
-node node_modules/.bin/webpack serve --config ./webpack/dev.js >"$LOG" 2>&1 &
+# --no-color keeps the log greppable: webpack colours its output on CI.
+node node_modules/.bin/webpack serve --config ./webpack/dev.js --no-color >"$LOG" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
 
