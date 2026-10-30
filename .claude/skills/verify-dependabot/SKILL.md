@@ -69,8 +69,8 @@ test" is.
 |---|---|---|
 | `runtime-direct` | We import it in `src/` (JS) or `src/` (PHP) | A unit test of our code that calls it. |
 | `runtime-transitive` | A direct dependency we import at runtime depends on it, and it ends up in the shipped bundle or plugin | A unit test of our code that calls the direct dependency, along a path that reaches this package. |
-| `build` | Only webpack, Babel, loaders or Sass depend on it | `npm run build` succeeds, and the E2E suite (which runs on the built bundle) passes. |
-| `dev-server` | Only `webpack-dev-server` depends on it | Start the dev server and fetch a page and a proxied path (see below). Never ships to users. |
+| `build` | Only webpack, Babel, loaders or Sass depend on it, and none of its code ends up in the bundle | `npm run build` succeeds, and the E2E suite (which runs on the built bundle) passes. |
+| `dev-server` | Only `webpack-dev-server` depends on it | `scripts/dev-server-smoke.sh`, which CI also runs as the Dev Server workflow. Never ships to users, but designers, engineers and headless Claude Code sessions all depend on the dev server, so it must keep working. |
 | `test-tooling` | Only Jest, Testing Library, PHPUnit, PHPStan, phpcs or Playwright depend on it | The suite that uses it runs and passes. |
 
 For `runtime-direct` and `runtime-transitive`, list every call site:
@@ -158,26 +158,22 @@ the ledger, and any fix to our code. No leftover mutations, and no changes to
 `package.json` or the lockfiles beyond what Dependabot made.
 
 Then run the full suite for the affected package on the new version (the
-same commands CI runs: `npm test` and `npx prettier --check packages/join-flow`
-for join-flow; `./vendor/bin/phpunit` and `composer lint` for join-block).
+same commands CI runs: `npm test`, `npx prettier --check packages/join-flow`
+and `scripts/dev-server-smoke.sh` for join-flow; `./vendor/bin/phpunit` and
+`composer lint` for join-block).
 
 ## Step 4: Non-runtime classes
 
-- `build`: on the PR's lockfile, run `npm --prefix packages/join-flow run build`
-  and check it finishes without new errors or warnings compared with the base.
-  CI's E2E job runs the test build and the suite against it.
-- `dev-server`: no CI job runs the dev server, so smoke-test it yourself on the
-  PR's lockfile:
-  ```bash
-  cd packages/join-flow && npx webpack serve --config ./webpack/dev.js &
-  # wait until it reports it is listening, then:
-  curl -fsS http://localhost:<port>/ >/dev/null && echo "page ok"
-  kill %1
-  ```
-  If the PR touches the proxy chain (`http-proxy`, `http-proxy-middleware`,
-  `follow-redirects`), also fetch a path that goes through the proxy and check
-  you get the WordPress response, or a clean proxy error if WordPress isn't
-  running, rather than a crash.
+- `build`: first confirm none of the package's code ends up in the bundle.
+  `scripts/bundled-packages.js <package>` builds the production bundle and
+  prints how many of the package's modules are in it. If the count isn't 0,
+  the package ships to users. It is `runtime-transitive`,
+  so go back to step 3. Otherwise compare `npm run build` on the base and PR
+  lockfiles and check for no new errors or warnings. CI's E2E job runs the
+  test build and the suite against it.
+- `dev-server`: run `scripts/dev-server-smoke.sh` on the PR's lockfile. It
+  checks the page, the in-memory bundle (with hot reloading) and the stubbed
+  `/join/v1/*` endpoints. CI runs the same script in the Dev Server workflow.
 - `test-tooling`: the suite that uses it is the test. Run it.
 
 These classes have nothing new to commit except the ledger entry.
@@ -248,7 +244,38 @@ Things to know about pushing to a Dependabot branch:
 - What the reviewer should check: that the tests assert on behaviour we
   actually depend on, and that nothing we use was missed.
 
+Then request a review from the person who chose the dependency (see below)
+and mention them in the comment, saying why they were picked.
+
 Do not merge, approve, or enable auto-merge.
+
+**Choosing the reviewer.** The reviewer is the person who added the
+dependency to our `package.json` or `composer.json`: the package itself if it
+is direct, or the top-level dependency that pulls it in if it is transitive
+(the top of the `via` chain). They chose the library, so they know best what
+we use it for.
+
+1. For each top-level dependency, find the commit that added it. History must
+   be complete first: `git fetch --unshallow origin` if
+   `git rev-parse --is-shallow-repository` says `true`.
+   ```bash
+   git log --reverse --format='%H %an <%ae>' -S '"<top-level>"' -- <dir>/package.json | head -1
+   ```
+   For Composer, search `packages/join-block/composer.json` instead.
+2. Get their GitHub login from `mcp__github__get_commit` (`author.login`).
+3. Use them if they have a login, aren't a bot, and are in
+   `mcp__github__list_repository_collaborators`.
+4. Otherwise use the most recent person who changed that dependency's line,
+   skipping bots and anyone who fails step 3:
+   ```bash
+   git log --format='%H %an <%ae>' -G '^\s+"<top-level>": ' -- <dir>/package.json
+   ```
+5. If nobody qualifies, request no reviewer and say so in the comment.
+
+A transitive package can have several top-level parents, for example
+`fast-uri` comes in through both `babel-loader` and `webpack`. Request
+everyone who qualifies, without duplicates. Request reviews with
+`mcp__github__update_pull_request` (`reviewers`).
 
 **Gear 2: merge on green.** All of the following must hold. If any of them
 fails, drop to gear 1.

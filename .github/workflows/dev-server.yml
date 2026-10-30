@@ -1,0 +1,27 @@
+name: Dev Server
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_call:
+
+jobs:
+  dev-server:
+    name: Dev server smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps
+        run: npm ci
+
+      # Designers, engineers and Claude Code cloud sessions all use the dev
+      # server, so check it starts, compiles and answers the stubbed endpoints.
+      - name: Start dev server and check it
+        run: scripts/dev-server-smoke.sh

@@ -496,6 +496,10 @@ The suite tests against one pinned WordPress release: the `wordpress:<version>-p
 
 The PHP version in the tags (8.2) matches the plugin's minimum and the PHP version used in CI and `composer.json`; change them together.
 
+### Dev server
+
+`.github/workflows/dev-server.yml` runs `scripts/dev-server-smoke.sh` on every PR, which starts the dev server and checks it serves the page, compiles the bundle and answers the stubbed REST endpoints. Run it locally with `npm --prefix packages/join-flow run test:dev-server` (port 3000 must be free).
+
 ### Dependabot PRs
 
 The `/verify-dependabot` Claude Code skill (`.claude/skills/verify-dependabot/SKILL.md`) decides whether a Dependabot PR can merge. The first time a package is bumped, it adds the smallest test that pins down how our code uses the package, proves the test can fail, pushes it to the Dependabot branch and leaves the PR for a human to review. After that, minor and patch bumps of the same package auto-merge when CI is green. Major bumps always wait for a human.
