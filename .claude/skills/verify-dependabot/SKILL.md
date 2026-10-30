@@ -20,11 +20,14 @@ Arguments: a PR number, or nothing to work through every open Dependabot PR
 
 ## The gears
 
-The ledger is `.github/dependency-coverage.json`. An entry for a package on
+The ledger is `.github/dependency-coverage/`, with one JSON file per package
+at `<ecosystem>/<directory>/<package>.json`, for example
+`npm/packages/join-flow/fast-uri.json`. One file per package means Dependabot
+PRs that are open at the same time never conflict over the ledger. An entry on
 the default branch means a human has reviewed and merged the tests listed in
-it. The ledger only reaches the default branch through a merged PR, so "the
-entry exists on `master`" is the approval record. Read it from `origin/master`,
-never from the PR branch.
+it. Entries only reach the default branch through a merged PR, so "the file
+exists on `master`" is the approval record. Read it from `origin/master`
+(`git show origin/master:<path>`), never from the PR branch.
 
 | Situation | Gear | What happens |
 |---|---|---|
@@ -51,7 +54,11 @@ Rules that decide the gear:
    with old and new versions, and the directory (`packages/join-flow`,
    `packages/join-e2e`, `packages/join-block`, or the root).
 3. Work out the gear for each package from the table above.
-4. Fetch the branch: `git fetch origin <head-ref>` and check it out.
+4. If the PR is behind `master`, bring it up to date first with
+   `mcp__github__update_pull_request_branch`. This merges `master` into the
+   branch, so CI runs the current checks (such as the Dev Server workflow)
+   and the helper scripts in `scripts/` are there to use.
+5. Fetch the branch (`git fetch origin <head-ref>`) and check it out.
 
 ## Step 2: Find where it touches our code
 
@@ -176,43 +183,54 @@ and `scripts/dev-server-smoke.sh` for join-flow; `./vendor/bin/phpunit` and
   `/join/v1/*` endpoints. CI runs the same script in the Dev Server workflow.
 - `test-tooling`: the suite that uses it is the test. Run it.
 
-These classes have nothing new to commit except the ledger entry.
+These classes have nothing new to commit except the ledger entry, but they
+still need the red/green proof from step 3. It shows the build or the dev
+server really does exercise the package:
+
+1. Green on the old version, green on the new version (as in step 3).
+2. Red on our side: break something in our use of the tool. For a package
+   used for options validation (`schema-utils`, `ajv`), add an unknown option
+   to a loader in `webpack/common.js` that actually runs. Use the `.scss`
+   rule: nothing imports `.css`, so that rule never runs.
+3. Red on the library side: edit the package in `node_modules` so a function
+   on the path returns something different, and check the build or dev server
+   fails. If it still passes, the tool never calls that code. Say so on the
+   PR, because then our checks can't catch a bad upgrade of this package.
 
 ## Step 5: Update the ledger
 
-Add or update the package's entry in `.github/dependency-coverage.json`:
+Create or update the package's file in `.github/dependency-coverage/`, for
+example `npm/packages/join-flow/google-libphonenumber.json`:
 
 ```json
 {
-  "packages": {
-    "npm:packages/join-flow:google-libphonenumber": {
-      "class": "runtime-direct",
-      "via": [],
-      "usage": [
-        "packages/join-flow/src/schema.ts"
-      ],
-      "tests": [
-        "packages/join-flow/src/schema.test.ts › dependency: google-libphonenumber"
-      ],
-      "reviewedVersion": "3.2.40",
-      "reviewedIn": "#142"
-    }
-  }
+  "class": "runtime-direct",
+  "via": [],
+  "usage": [
+    "packages/join-flow/src/schema.ts"
+  ],
+  "tests": [
+    "packages/join-flow/src/schema.test.ts › dependency: google-libphonenumber"
+  ],
+  "reviewedVersion": "3.2.40",
+  "reviewedIn": "#142"
 }
 ```
 
-- The key is `<ecosystem>:<directory>:<package>`. The same package in
-  two directories gets two entries, because the usage is different.
-- `via` is the dependency chain from `npm why`/`composer why`, top level first.
-  It is empty for direct dependencies.
+- The path is `<ecosystem>/<directory>/<package>.json`, with the ecosystem
+  `npm` or `composer`. A scoped or vendored name becomes a subdirectory
+  (`npm/packages/join-flow/@sentry/react.json`,
+  `composer/packages/join-block/guzzlehttp/guzzle.json`). The same package in
+  two directories gets two files, because the usage is different.
+- `via` is the dependency chain from `npm why`/`composer why`, top level
+  first. When several top-level dependencies pull it in, list them all,
+  comma-separated, as the first item. It is empty for direct dependencies.
 - `usage` lists the files of ours that use it (from step 2). It is empty for
   non-runtime classes.
 - `tests` lists what verifies it. For non-runtime classes, name the CI
   job or the smoke check, for example `"ci: E2E Tests › Build join-flow bundle"`.
 - `reviewedVersion` and `reviewedIn` are the new version and this PR. Only
   gear 1 and 3 PRs, which a human reviews, write them.
-
-Keep keys sorted so diffs stay readable.
 
 ## Step 6: Push to the Dependabot branch
 
@@ -222,10 +240,11 @@ branch, with a message saying what the tests pin down. Then
 
 Things to know about pushing to a Dependabot branch:
 
-- After anyone else commits, Dependabot stops rebasing the PR. If it later
-  needs a rebase, rebase it yourself (`git rebase origin/master`, then
-  `git push --force-with-lease`). Do not comment `@dependabot recreate`,
-  because that throws away our commit.
+- After anyone else commits, Dependabot stops rebasing the PR. When it falls
+  behind `master` or conflicts, update it with
+  `mcp__github__update_pull_request_branch`, or merge `origin/master` into it
+  and push. Never rebase or force-push a Dependabot branch, and never comment
+  `@dependabot recreate`: both throw away commits.
 - Don't touch `package.json` or the lockfiles. Dependabot owns those.
 
 ## Step 7: Hand off or merge
@@ -280,7 +299,7 @@ everyone who qualifies, without duplicates. Request reviews with
 **Gear 2: merge on green.** All of the following must hold. If any of them
 fails, drop to gear 1.
 
-1. The ledger entry on `origin/master` matches this package and directory.
+1. The package's ledger file exists on `origin/master`.
 2. The usage grep from step 2 finds no files beyond the entry's `usage`. If
    it finds new ones, the package is used in a new way that has no test yet:
    cover it (step 3), which makes this PR gear 1.
@@ -301,6 +320,6 @@ that approved it.
 
 List open PRs by `dependabot[bot]` and handle them one at a time, oldest
 first. Several PRs often bump packages in the same lockfile. After one
-merges, the others may need a rebase (see step 6) before their CI means
-anything. Finish with a table: PR, packages, class, gear, outcome (handed to
+merges, the others may need updating from `master` (see step 6) before
+their CI means anything. Finish with a table: PR, packages, class, gear, outcome (handed to
 human / auto-merge enabled / failed, and why).
