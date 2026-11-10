@@ -24,6 +24,10 @@ class ActionNetworkService
     // from [] (person has zero tags).
     private const TAG_ENUMERATION_ABORTED = false;
 
+    // Action Network responds with a 500 Internal Server Error (not a 400)
+    // when any address line is longer than 50 characters.
+    public const MAX_ADDRESS_LINE_LENGTH = 50;
+
     public static function signup($data)
     {
         global $joinBlockLog;
@@ -83,6 +87,7 @@ class ActionNetworkService
                 "remove_tags" => $removeTags,
             ];
         } else {
+            $addressLines = self::fitAddressLines($data["addressLine1"], $data["addressLine2"]);
             $anData = [
                 "person" => [
                     "email_addresses" => [[
@@ -99,10 +104,7 @@ class ActionNetworkService
                     "family_name" => $data["lastName"],
                     "postal_addresses" => [[
                         "primary" => true,
-                        "address_lines" => [
-                            $data["addressLine1"],
-                            $data["addressLine2"],
-                        ],
+                        "address_lines" => $addressLines,
                         "locality" => $data["addressCity"],
                         "postal_code" => $data["addressPostcode"],
                         "country" => $data["addressCountry"]
@@ -135,6 +137,64 @@ class ActionNetworkService
             $joinBlockLog->error("Action Network request failed with payload: $jsonData. Response: $responseBody");
             throw $e;
         }
+    }
+
+    /**
+     * Fit the two address lines within Action Network's length limit. A line
+     * that is too long is wrapped at word boundaries, with the overflow moved
+     * to the start of line 2. Line 2 is only truncated if it still does not
+     * fit, so in practice no address data is lost.
+     *
+     * @return string[] [line1, line2]
+     */
+    public static function fitAddressLines($line1, $line2)
+    {
+        $max = self::MAX_ADDRESS_LINE_LENGTH;
+        $line1 = (string) $line1;
+        $line2 = (string) $line2;
+
+        if (mb_strlen($line1) <= $max && mb_strlen($line2) <= $max) {
+            return [$line1, $line2];
+        }
+
+        $chunks = self::wrapAddressLine($line1);
+        $first = array_shift($chunks) ?? "";
+        $rest = trim(implode(" ", $chunks) . " " . trim($line2));
+
+        return [$first, rtrim(mb_substr($rest, 0, $max))];
+    }
+
+    private static function wrapAddressLine($line)
+    {
+        $max = self::MAX_ADDRESS_LINE_LENGTH;
+        $chunks = [];
+        $current = "";
+
+        foreach (preg_split('/\s+/u', trim($line), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            // A single word longer than the limit has to be hard-split.
+            while (mb_strlen($word) > $max) {
+                if ($current !== "") {
+                    $chunks[] = $current;
+                    $current = "";
+                }
+                $chunks[] = mb_substr($word, 0, $max);
+                $word = mb_substr($word, $max);
+            }
+
+            $candidate = $current === "" ? $word : "$current $word";
+            if (mb_strlen($candidate) <= $max) {
+                $current = $candidate;
+            } else {
+                $chunks[] = $current;
+                $current = $word;
+            }
+        }
+
+        if ($current !== "") {
+            $chunks[] = $current;
+        }
+
+        return $chunks;
     }
 
     public static function personExists($email)

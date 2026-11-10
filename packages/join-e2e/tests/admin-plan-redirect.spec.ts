@@ -1,5 +1,15 @@
 import { test, expect, Locator, Page } from '@playwright/test';
-import { loginAsAdmin, mockRestEndpoints, CONTINUE } from './helpers';
+import {
+  choosePage,
+  choosePlan,
+  field,
+  fillPlan,
+  joinFormBlock,
+  loginAsAdmin,
+  mockRestEndpoints,
+  openNewPageWithJoinBlock,
+  pickPageFromList,
+} from './helpers';
 import { JoinSettingsPage, resetSettings, setBaselinePlan, wp } from './settings/support';
 
 /**
@@ -15,89 +25,29 @@ import { JoinSettingsPage, resetSettings, setBaselinePlan, wp } from './settings
  * all settings are put back as the seed left them afterwards, for the specs
  * that follow.
  */
+
 const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
 const REDIRECT_TARGET = '/e2e-redirect-target/';
 const REDIRECT_TARGET_TITLE = 'E2E Redirect Target';
 const REDIRECT_TARGET_COPY = 'You have been redirected here instead of paying.';
 const REDIRECT_CHECKBOX = 'Redirect to a page instead of taking payment';
 
-/** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */
-function field(scope: Locator, label: string): Locator {
-  // One selector rather than a `has` filter, so it also works inside the
-  // block editor's iframe.
-  return scope
-    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
-    .first();
-}
-
-/** The CK Join Form block. The block editor renders its content in an iframe. */
-function joinFormBlock(page: Page): Locator {
-  return page.frameLocator('iframe[name="editor-canvas"]').locator('[data-type="carbon-fields/ck-join-form"]');
-}
-
-/** Fills in a plan's name and price. "Price" alone would also match "Price Point ID". */
-async function fillPlan(plan: Locator, name: string, price: string): Promise<void> {
-  await field(plan, 'Name').locator('input').fill(name);
-  await field(plan, 'Price').locator('input').fill(price);
-}
-
 function redirectPicker(plan: Locator): Locator {
   return field(plan, 'Page to redirect to');
 }
 
 async function chooseRedirectTarget(picker: Locator): Promise<void> {
-  await picker.locator('.cf-search-input__inner').fill(REDIRECT_TARGET_TITLE);
-  // The search runs over AJAX; clicking before it lands hits the old list.
-  await expect(picker.locator('.cf-association__counter')).toHaveText(/Showing 1 of 1 results/);
-  await picker
-    .locator('.cf-association__option', { hasText: REDIRECT_TARGET_TITLE })
-    // The block editor renders this button without an accessible name.
-    .locator('button.dashicons-plus-alt')
-    .click();
+  await choosePage(picker, REDIRECT_TARGET_TITLE);
 }
 
 /** Picks the redirect target straight from the unfiltered list, without searching. */
 async function pickRedirectTargetFromList(picker: Locator): Promise<void> {
-  await picker
-    .locator('.cf-association__option', { hasText: REDIRECT_TARGET_TITLE })
-    .locator('button.dashicons-plus-alt')
-    .click();
+  await pickPageFromList(picker, REDIRECT_TARGET_TITLE);
 }
 
 /** Selected pages are shown in the association field's second column. */
 function selectedPages(picker: Locator): Locator {
   return picker.locator('.cf-association__col').nth(1);
-}
-
-/** Opens a new, unsaved page in the block editor with a CK Join Form block on it. */
-async function openNewPageWithJoinBlock(page: Page): Promise<void> {
-  await page.goto('/wp-admin/post-new.php?post_type=page');
-  await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
-
-  // A user's first visit to the editor opens the "Welcome to the editor" guide
-  // over it. Turning the preference off closes it.
-  await page.evaluate(() => {
-    (window as any).wp.data.dispatch('core/preferences').set('core/edit-post', 'welcomeGuide', false);
-  });
-
-  // New pages open with WordPress's starter pattern picker over the editor.
-  const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
-  if (await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
-    await patterns.getByRole('button', { name: 'Close' }).click();
-  }
-
-  await page.evaluate(() => {
-    const wp = (window as any).wp;
-    wp.data.dispatch('core/editor').editPost({ title: 'E2E Block Editor Redirect' });
-    wp.data.dispatch('core/block-editor').insertBlocks(wp.blocks.createBlock('carbon-fields/ck-join-form'));
-  });
-}
-
-async function choosePlan(page: Page, label: string): Promise<void> {
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
-  await page.locator('label.radio-panel', { has: page.locator(`[id="membership-${label}"]`) }).click();
-  await page.locator(CONTINUE).click();
 }
 
 test.describe('Global plans on the Join settings page', () => {
@@ -190,10 +140,11 @@ test.describe('Redirect help text', () => {
   test('names the CRMs the site uses, since redirected people are not recorded in them', async ({ page }) => {
     const NOT_RECORDED = 'They are not signed up as members and not recorded in Mailchimp and Zetkin.';
 
-    // The checkbox is part of each plan, so there must be one to see.
-    setBaselinePlan();
-    wp('eval', 'carbon_set_theme_option("use_mailchimp", true); carbon_set_theme_option("use_zetkin", true);');
     try {
+      // The checkbox is part of each plan, so there must be one to see. Set up
+      // inside the try, so the settings are put back even if this fails.
+      setBaselinePlan();
+      wp('eval', 'carbon_set_theme_option("use_mailchimp", true); carbon_set_theme_option("use_zetkin", true);');
       await loginAsAdmin(page);
       await page.goto(JoinSettingsPage.URL);
       await page.getByRole('tab', { name: 'Membership Plans' }).click();
@@ -204,7 +155,7 @@ test.describe('Redirect help text', () => {
       await expect(checkbox).toContainText(NOT_RECORDED);
 
       // The block's own plans are built separately, so check them too.
-      await openNewPageWithJoinBlock(page);
+      await openNewPageWithJoinBlock(page, 'E2E Block Editor Redirect');
       const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
       await plansField.locator('.cf-complex__inserter-button').click();
       await expect(
@@ -234,7 +185,7 @@ test.describe('Custom plans in the CK Join Form block', () => {
     choose: (picker: Locator) => Promise<void>,
   ): Promise<void> {
     await loginAsAdmin(page);
-    await openNewPageWithJoinBlock(page);
+    await openNewPageWithJoinBlock(page, 'E2E Block Editor Redirect');
 
     const block = joinFormBlock(page);
     await choose(field(block, 'Page to redirect to after joining'));

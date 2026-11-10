@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { mockRestEndpoints, CONTINUE, SAVED_STATE_KEY } from './helpers';
+import { choosePlan, mockRestEndpoints, CONTINUE, SAVED_STATE_KEY } from './helpers';
 
 /**
  * Membership plans that redirect instead of taking payment
@@ -23,14 +23,6 @@ const REDIRECT_TARGET_COPY = 'You have been redirected here instead of paying.';
 
 async function readEnv(page: Page): Promise<Record<string, any>> {
   return page.evaluate(() => JSON.parse(document.getElementById('env')!.textContent || '{}'));
-}
-
-async function choosePlan(page: Page, label: string): Promise<void> {
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
-  // Each plan's radio is given the id "membership-<label>".
-  await page.locator('label.radio-panel', { has: page.locator(`[id="membership-${label}"]`) }).click();
-  await page.locator(CONTINUE).click();
 }
 
 /** Records every call to the join endpoint, which a redirect must never make. */
