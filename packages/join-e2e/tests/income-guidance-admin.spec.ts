@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { field, joinFormBlock, loginAsAdmin, openNewPageWithJoinBlock, SETTINGS_PAGE, wpCli } from './helpers';
+import { field, joinFormBlock, loginAsAdmin, openNewPageWithJoinBlock, SETTINGS_PAGE, wp } from './helpers';
 
 /**
  * Income guidance settings in wp-admin
@@ -12,7 +12,7 @@ import { field, joinFormBlock, loginAsAdmin, openNewPageWithJoinBlock, SETTINGS_
 const DEFAULT_HEADING = 'Below are some recommended monthly dues amounts, based on income';
 
 function setIncomeGuidance(on: boolean): void {
-  wpCli(`wp option update ck_e2e_income_guidance_enabled '${on ? '1' : ''}'`);
+  wp('option', 'update', 'ck_e2e_income_guidance_enabled', on ? '1' : '');
 }
 
 async function openSettingsTab(page: Page, tab: string): Promise<void> {

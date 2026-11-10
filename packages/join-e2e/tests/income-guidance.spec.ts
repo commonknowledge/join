@@ -7,7 +7,7 @@ import {
   mockRestEndpoints,
   openNewPageWithJoinBlock,
   pickPageFromList,
-  wpCli,
+  wp,
   CONTINUE,
   SAVED_STATE_KEY,
 } from './helpers';
@@ -109,8 +109,8 @@ test.describe('On a phone', () => {
 });
 
 test.describe('With income guidance switched off', () => {
-  test.beforeAll(() => wpCli("wp option update ck_e2e_income_guidance_enabled ''"));
-  test.afterAll(() => wpCli("wp option update ck_e2e_income_guidance_enabled '1'"));
+  test.beforeAll(() => wp('option', 'update', 'ck_e2e_income_guidance_enabled', ''));
+  test.afterAll(() => wp('option', 'update', 'ck_e2e_income_guidance_enabled', '1'));
 
   test('the plan step shows the tiers without the table', async ({ page }) => {
     await goToPlanStep(page);
@@ -157,7 +157,7 @@ test.describe('Bands entered in the block editor', () => {
       await rowButton(page, '£2 monthly').click();
       await expect(page.locator('[id="membership-Unwaged"]')).toBeChecked();
     } finally {
-      wpCli(`wp post delete ${pageId} --force`);
+      wp('post', 'delete', String(pageId), '--force');
     }
   });
 });

@@ -1,5 +1,5 @@
 import { Locator, Page, expect } from '@playwright/test';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import path from 'path';
 
 export const SAVED_STATE_KEY = 'ck_join_state_flow';
@@ -26,6 +26,9 @@ export async function mockRestEndpoints(page: Page): Promise<void> {
   });
 }
 
+/** The join form's settings: the page's <script type="application/json" id="env"> element. */
+export const ENV_SCRIPT_PATTERN = /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/;
+
 /**
  * Intercepts the HTML response for the given URL pattern and injects
  * additional key/value pairs into the <script id="env"> JSON block.
@@ -42,7 +45,7 @@ export async function injectEnvOverrides(
     const response = await route.fetch();
     let body = await response.text();
     body = body.replace(
-      /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/,
+      ENV_SCRIPT_PATTERN,
       (_, open: string, json: string, close: string) => {
         try {
           const env = JSON.parse(json);
@@ -123,14 +126,20 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 
+/** WP Admin > Join. The settings tests reach it through JoinSettingsPage. */
 export const SETTINGS_PAGE = '/wp-admin/admin.php?page=crb_carbon_fields_container_ck_join_flow.php';
 
-export function wpCli(command: string): void {
-  execSync(`scripts/env.sh ${command}`, { cwd: path.resolve(__dirname, '..'), stdio: 'ignore' });
-}
-
-export function reseed(): void {
-  wpCli('wp eval-file /var/www/html/wp-content/e2e-scripts/setup.php');
+/**
+ * Runs WP-CLI against the E2E site and returns its standard output. Pass each
+ * argument separately, e.g. wp('option', 'get', 'home'): nothing goes through
+ * a shell, so values need no quoting.
+ */
+export function wp(...args: string[]): string {
+  return execFileSync('bash', ['scripts/env.sh', 'wp', ...args], {
+    cwd: path.resolve(__dirname, '..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
 }
 
 /** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */

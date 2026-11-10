@@ -9,10 +9,8 @@ import {
   mockRestEndpoints,
   openNewPageWithJoinBlock,
   pickPageFromList,
-  reseed,
-  SETTINGS_PAGE,
-  wpCli,
 } from './helpers';
+import { JoinSettingsPage, resetSettings, setBaselinePlan, wp } from './settings/support';
 
 /**
  * Configuring a redirecting plan through wp-admin, end to end
@@ -24,7 +22,8 @@ import {
  * The settings test replaces the global plans, which no other spec relies on.
  * Saving the settings page also rewrites every other global setting from the
  * form, including ones the seed sets directly (STRIPE_DIRECT_DEBIT_ONLY), so
- * the seed is re-run afterwards to put them back for the specs that follow.
+ * all settings are put back as the seed left them afterwards, for the specs
+ * that follow.
  */
 
 const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
@@ -54,12 +53,12 @@ function selectedPages(picker: Locator): Locator {
 test.describe('Global plans on the Join settings page', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test.afterAll(reseed);
+  test.afterAll(resetSettings);
 
   test('the page picker only shows once the box is ticked, and the choice is saved', async ({ page }) => {
     page.on('dialog', (dialog) => dialog.accept());
     await loginAsAdmin(page);
-    await page.goto(SETTINGS_PAGE);
+    await page.goto(JoinSettingsPage.URL);
     await page.getByRole('tab', { name: 'Membership Plans' }).click();
 
     const plansField = field(page.locator('.cf-container'), 'Membership Plans');
@@ -102,7 +101,7 @@ test.describe('Global plans on the Join settings page', () => {
     await redirecting.getByLabel(REDIRECT_CHECKBOX).check();
     await expect(selectedPages(redirectPicker(redirecting))).toContainText(REDIRECT_TARGET_TITLE);
 
-    await Promise.all([page.waitForNavigation(), page.locator('#publish').click()]);
+    await new JoinSettingsPage(page).save();
 
     await page.getByRole('tab', { name: 'Membership Plans' }).click();
     const saved = field(page.locator('.cf-container'), 'Membership Plans').locator('.cf-complex__group');
@@ -140,13 +139,14 @@ test.describe('Global plans on the Join settings page', () => {
 test.describe('Redirect help text', () => {
   test('names the CRMs the site uses, since redirected people are not recorded in them', async ({ page }) => {
     const NOT_RECORDED = 'They are not signed up as members and not recorded in Mailchimp and Zetkin.';
-    const setCrms = (on: boolean) =>
-      wpCli(`wp eval 'carbon_set_theme_option("use_mailchimp", ${on}); carbon_set_theme_option("use_zetkin", ${on});'`);
 
-    setCrms(true);
     try {
+      // The checkbox is part of each plan, so there must be one to see. Set up
+      // inside the try, so the settings are put back even if this fails.
+      setBaselinePlan();
+      wp('eval', 'carbon_set_theme_option("use_mailchimp", true); carbon_set_theme_option("use_zetkin", true);');
       await loginAsAdmin(page);
-      await page.goto(SETTINGS_PAGE);
+      await page.goto(JoinSettingsPage.URL);
       await page.getByRole('tab', { name: 'Membership Plans' }).click();
 
       const checkbox = field(page.locator('.cf-container'), 'Membership Plans')
@@ -162,7 +162,7 @@ test.describe('Redirect help text', () => {
         plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
       ).toContainText(NOT_RECORDED);
     } finally {
-      setCrms(false);
+      resetSettings();
     }
   });
 });
@@ -227,7 +227,7 @@ test.describe('Custom plans in the CK Join Form block', () => {
       await choosePlan(page, 'Block Standard');
       await expect(page.locator('.progress-step--current')).toContainText('Payment');
     } finally {
-      wpCli(`wp post delete ${pageId} --force`);
+      wp('post', 'delete', String(pageId), '--force');
     }
   }
 });

@@ -1,0 +1,22 @@
+[req]
+distinguished_name = dn
+[dn]
+[ext]
+subjectAltName = @alt
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+[alt]
+DNS.1 = api.stripe.com
+DNS.2 = actionnetwork.org
+DNS.3 = api.zetk.in
+DNS.4 = api.dev.zetkin.org
+DNS.5 = us1.api.mailchimp.com
+DNS.6 = e2e.eu.auth0.com
+DNS.7 = api.gocardless.com
+DNS.8 = api-sandbox.gocardless.com
+DNS.9 = e2e.chargebee.com
+DNS.10 = api.postcodes.io
+DNS.11 = api.getaddress.io
+DNS.12 = api.ideal-postcodes.co.uk
+DNS.13 = fake-api
