@@ -14,9 +14,12 @@ URL="http://localhost:8889"
 READY_TIMEOUT="${WP_READY_TIMEOUT:-120}"
 
 wp() {
-  if [ -z "$(docker compose ps --status running --quiet cli 2>/dev/null)" ]; then
+  # Without -a, ps lists only running containers (unlike --status, this works
+  # on every Compose v2). Returns rather than exits, so wait_for_wordpress can
+  # retry while cli is still starting.
+  if [ -z "$(docker compose ps --quiet cli 2>/dev/null)" ]; then
     echo "The E2E containers aren't running. Start them with: scripts/env.sh start" >&2
-    exit 1
+    return 1
   fi
   docker compose exec -T cli wp "$@"
 }

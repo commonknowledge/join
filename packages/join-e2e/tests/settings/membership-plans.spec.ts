@@ -116,6 +116,10 @@ test.describe('Global membership plans', () => {
         frequency: 'yearly',
         description: 'For people who back the union',
         redirectUrl: null,
+        // Income bands, blank as none were set. The E2E site has income
+        // guidance switched on (mu-plugins/ck-e2e-income-guidance.php).
+        incomeWeekly: '',
+        incomeMonthly: '',
       },
     ]);
 

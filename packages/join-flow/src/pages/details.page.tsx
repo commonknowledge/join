@@ -8,6 +8,7 @@ import {
   DetailsSchema,
   FormSchema,
   getFieldCondition,
+  MAX_ADDRESS_LINE_LENGTH,
   matchesTrigger,
   validate
 } from "../schema";
@@ -251,12 +252,14 @@ export const DetailsPage: StagerComponent<FormSchema> = ({
               >
                 <Form.Control
                   autoComplete="address-line1"
+                  maxLength={MAX_ADDRESS_LINE_LENGTH}
                   disabled={addressLookup.loading}
                 />
               </FormItem>
               <FormItem label="Address line 2" name="addressLine2" form={form}>
                 <Form.Control
                   autoComplete="address-line2"
+                  maxLength={MAX_ADDRESS_LINE_LENGTH}
                   disabled={addressLookup.loading}
                 />
               </FormItem>

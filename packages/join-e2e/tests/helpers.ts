@@ -1,4 +1,6 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
+import { execFileSync } from 'child_process';
+import path from 'path';
 
 export const SAVED_STATE_KEY = 'ck_join_state_flow';
 export const CONTINUE = 'button[type="submit"]:has-text("Continue")';
@@ -24,6 +26,9 @@ export async function mockRestEndpoints(page: Page): Promise<void> {
   });
 }
 
+/** The join form's settings: the page's <script type="application/json" id="env"> element. */
+export const ENV_SCRIPT_PATTERN = /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/;
+
 /**
  * Intercepts the HTML response for the given URL pattern and injects
  * additional key/value pairs into the <script id="env"> JSON block.
@@ -31,9 +36,6 @@ export async function mockRestEndpoints(page: Page): Promise<void> {
  * Must be called BEFORE page.goto() so the route is in place when the page
  * loads. The overrides are merged on top of whatever the server returns.
  */
-/** The join form's settings: the page's <script type="application/json" id="env"> element. */
-export const ENV_SCRIPT_PATTERN = /(<script type="application\/json" id="env">)([\s\S]*?)(<\/script>)/;
-
 export async function injectEnvOverrides(
   page: Page,
   urlPattern: string,
@@ -113,4 +115,96 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   expect(response.ok()).toBe(true);
   await page.goto('/wp-admin/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#wpadminbar')).toBeVisible();
+}
+
+/** WP Admin > Join. The settings tests reach it through JoinSettingsPage. */
+export const SETTINGS_PAGE = '/wp-admin/admin.php?page=crb_carbon_fields_container_ck_join_flow.php';
+
+/**
+ * Runs WP-CLI against the E2E site and returns its standard output. Pass each
+ * argument separately, e.g. wp('option', 'get', 'home'): nothing goes through
+ * a shell, so values need no quoting.
+ */
+export function wp(...args: string[]): string {
+  return execFileSync('bash', ['scripts/env.sh', 'wp', ...args], {
+    cwd: path.resolve(__dirname, '..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
+/** A Carbon Fields field inside `scope`, matched on its exact label. Section headings are skipped. */
+export function field(scope: Locator, label: string): Locator {
+  // One selector rather than a `has` filter, so it also works inside the
+  // block editor's iframe.
+  return scope.locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`).first();
+}
+
+/** The CK Join Form block. The block editor renders its content in an iframe. */
+export function joinFormBlock(page: Page): Locator {
+  return page.frameLocator('iframe[name="editor-canvas"]').locator('[data-type="carbon-fields/ck-join-form"]');
+}
+
+/** Fills in a plan's name and price. "Price" alone would also match "Price Point ID". */
+export async function fillPlan(plan: Locator, name: string, price: string): Promise<void> {
+  await field(plan, 'Name').locator('input').fill(name);
+  await field(plan, 'Price').locator('input').fill(price);
+}
+
+/** Opens a new, unsaved page in the block editor with a CK Join Form block on it. */
+export async function openNewPageWithJoinBlock(page: Page, title: string): Promise<void> {
+  await page.goto('/wp-admin/post-new.php?post_type=page');
+  await page.waitForFunction(() => (window as any).wp?.data?.select('core/editor'));
+
+  // A user's first visit to the editor opens the "Welcome to the editor" guide
+  // over it. Turning the preference off closes it.
+  await page.evaluate(() => {
+    (window as any).wp.data.dispatch('core/preferences').set('core/edit-post', 'welcomeGuide', false);
+  });
+
+  // New pages open with WordPress's starter pattern picker over the editor.
+  const patterns = page.getByRole('dialog', { name: 'Choose a pattern' });
+  if (
+    await patterns.waitFor({ state: 'visible', timeout: 5000 }).then(
+      () => true,
+      () => false,
+    )
+  ) {
+    await patterns.getByRole('button', { name: 'Close' }).click();
+  }
+
+  await page.evaluate((title) => {
+    const wp = (window as any).wp;
+    wp.data.dispatch('core/editor').editPost({ title });
+    wp.data.dispatch('core/block-editor').insertBlocks(wp.blocks.createBlock('carbon-fields/ck-join-form'));
+  }, title);
+}
+
+/** Continues from the details step, picks the plan by its label, and continues again. */
+export async function choosePlan(page: Page, label: string): Promise<void> {
+  await page.locator(CONTINUE).click();
+  await page.waitForSelector('[role="radiogroup"]');
+  await page.locator('label.radio-panel', { has: page.locator(`[id="membership-${label}"]`) }).click();
+  await page.locator(CONTINUE).click();
+}
+
+/** Chooses a page, by its exact title, in a Carbon Fields page picker. */
+export async function choosePage(picker: Locator, title: string): Promise<void> {
+  await picker.locator('.cf-search-input__inner').fill(title);
+  // The search runs over AJAX; clicking before it lands hits the old list.
+  await expect(picker.locator('.cf-association__counter')).toHaveText(/Showing 1 of 1 results/);
+  await picker
+    .locator('.cf-association__option', { hasText: title })
+    // The block editor renders this button without an accessible name.
+    .locator('button.dashicons-plus-alt')
+    .click();
+}
+
+/**
+ * Picks a page, by its title, straight from a Carbon Fields page picker's
+ * unfiltered list. Use this in the block editor, where the picker's search
+ * does nothing in WordPress 7's iframed editor (Linear JOIN-158).
+ */
+export async function pickPageFromList(picker: Locator, title: string): Promise<void> {
+  await picker.locator('.cf-association__option', { hasText: title }).locator('button.dashicons-plus-alt').click();
 }
