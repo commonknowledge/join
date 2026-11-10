@@ -25,7 +25,7 @@ export const PlanPage: StagerComponent<FormSchema> = ({
   data,
   onCompleted
 }) => {
-  const form = useForm({
+  const form = useForm<FormSchema>({
     defaultValues: data as {}
   });
 
