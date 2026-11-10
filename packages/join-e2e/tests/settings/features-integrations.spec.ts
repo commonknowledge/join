@@ -97,8 +97,9 @@ test.describe('Use Stripe', () => {
     });
     expect(productCreated?.headers.authorization).toBe('Bearer sk_test_e2e');
 
+    // Read back the way the join flow finds a plan, not by its storage key.
     const saved = wpEvalJson<Record<string, string>>(
-      `return get_option('ck_join_flow_membership_plan_baseline-plan_monthly_gbp');`,
+      `return \\CommonKnowledge\\JoinBlock\\Settings::getMembershipPlan('baseline-plan_monthly_gbp');`,
     );
     expect(saved).toMatchObject({ stripe_product_id: 'prod_e2e_1', stripe_price_id: 'price_e2e_2' });
   });

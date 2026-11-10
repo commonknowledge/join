@@ -42,6 +42,9 @@ function ck_e2e_make_block_content(array $plans, array $overrides = []): string
 
 /**
  * Create or update a page by post_name slug.
+ *
+ * WordPress unslashes post content on save, which would turn the \u escapes
+ * in the block's JSON (e.g. \u00a3 for £) into plain text, so slash it first.
  * Returns the page ID on success; exits with status 1 on failure.
  */
 function ck_e2e_upsert_page(string $slug, string $title, string $content): int
@@ -55,7 +58,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 
     if ($existing) {
         $page_id = $existing[0]->ID;
-        wp_update_post(['ID' => $page_id, 'post_content' => $content]);
+        wp_update_post(['ID' => $page_id, 'post_content' => wp_slash($content)]);
         echo "Updated page '{$slug}' (ID: {$page_id}).\n";
         return $page_id;
     }
@@ -65,7 +68,7 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
         'post_title'   => $title,
         'post_status'  => 'publish',
         'post_type'    => 'page',
-        'post_content' => $content,
+        'post_content' => wp_slash($content),
     ], true);
 
     if (is_wp_error($page_id)) {
@@ -81,11 +84,41 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 // administration email still correct?" screen.
 update_option('admin_email_lifespan', time() + 10 * YEAR_IN_SECONDS);
 
+// Start from a fresh site's Join settings. seed.sh snapshots the options table
+// after this script, and every settings test restores that snapshot, so a
+// setting left behind by an interrupted run (say Use Stripe ticked) would
+// otherwise become every later test's starting point. This clears every field
+// on WP Admin > Join, and the Stripe IDs and webhook URLs the plugin stores
+// beside them. Everything the specs need is set again below.
+foreach (\Carbon_Fields\Carbon_Fields::resolve('container_repository')->get_containers() as $ck_e2e_container) {
+    if ($ck_e2e_container->get_id() === 'carbon_fields_container_ck_join_flow') {
+        foreach ($ck_e2e_container->get_fields() as $ck_e2e_field) {
+            $ck_e2e_field->delete();
+        }
+    }
+}
+global $wpdb; // wp eval-file runs this script inside a function.
+foreach (['ck_join_flow_membership_plan_', 'ck_join_flow_webhook_'] as $ck_e2e_prefix) {
+    $ck_e2e_options = $wpdb->get_col($wpdb->prepare(
+        "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+        $wpdb->esc_like($ck_e2e_prefix) . '%'
+    ));
+    foreach ($ck_e2e_options as $ck_e2e_option) {
+        delete_option($ck_e2e_option);
+    }
+}
+wp_cache_flush();
+
 // The settings page will not save until its required fields are filled in,
 // and a fresh site has none of them.
 carbon_set_theme_option('organisation_name', 'E2E Organisation');
 carbon_set_theme_option('organisation_bank_name', 'E2E ORG');
 carbon_set_theme_option('organisation_email_address', 'e2e@example.org');
+
+// Income guidance is on unless a spec turns it off (see mu-plugins/). It has
+// to be on before this script starts for the guidance settings below to save,
+// so this only puts it back for the next run after an interrupted spec.
+update_option('ck_e2e_income_guidance_enabled', '1');
 
 // Configure pretty permalinks so test URLs are predictable.
 update_option('permalink_structure', '/%postname%/');
@@ -333,6 +366,34 @@ $global_plans_page_id = ck_e2e_upsert_page(
     'e2e-global-plans-join',
     'E2E Global Plans Test',
     ck_e2e_make_block_content([])
+);
+
+// Income guidance: three banded tiers, and a custom-amount tier with no band
+// that stays out of the table.
+$income_guidance_page_id = ck_e2e_upsert_page(
+    'e2e-income-guidance-join',
+    'E2E Income Guidance Test',
+    ck_e2e_make_block_content([
+        $ck_e2e_plan('Higher', 'higher', '25', [
+            'income_weekly'  => 'More than £800',
+            'income_monthly' => 'More than £3,200',
+        ]),
+        $ck_e2e_plan('Middle', 'middle', '12', [
+            'income_weekly'  => '£400 to £800',
+            'income_monthly' => '£1,600 to £3,200',
+        ]),
+        $ck_e2e_plan('Lower', 'lower', '5', [
+            'income_weekly'  => 'Less than £400',
+            'income_monthly' => 'Less than £1,600',
+        ]),
+        $ck_e2e_plan('Other', 'other', '1', ['allow_custom_amount' => '1']),
+    ])
+);
+// The image's handler is script an admin without unfiltered_html could save;
+// the form must strip it rather than run it.
+carbon_set_theme_option(
+    'income_guidance_note',
+    "Can't afford dues? Email dues@example.org.<img src=\"x\" onerror=\"document.body.dataset.injected='yes'\">"
 );
 
 // Enable STRIPE_DIRECT_DEBIT_ONLY globally so that allow_cards_override has
