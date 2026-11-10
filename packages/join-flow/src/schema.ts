@@ -197,6 +197,15 @@ const CustomFieldsSchema = customFields.reduce((o, field) => {
 const requireAddress =
   Boolean(getEnv("REQUIRE_ADDRESS")) && !Boolean(getEnv("HIDE_ADDRESS"));
 
+// Action Network rejects (with a 500 error) address lines longer than this.
+export const MAX_ADDRESS_LINE_LENGTH = 50;
+
+const addressLineSchema = () =>
+  string().max(
+    MAX_ADDRESS_LINE_LENGTH,
+    `Please keep each address line to ${MAX_ADDRESS_LINE_LENGTH} characters or fewer, using the second line if needed`
+  );
+
 export const DetailsSchema = object({
   firstName: string().required("First name is required"),
   lastName: string().required("Second name is required"),
@@ -253,8 +262,10 @@ export const DetailsSchema = object({
         )
         .required()
     : number(),
-  addressLine1: requireAddress ? string().required() : string(),
-  addressLine2: string(),
+  addressLine1: requireAddress
+    ? addressLineSchema().required()
+    : addressLineSchema(),
+  addressLine2: addressLineSchema(),
   addressCity: requireAddress ? string().required() : string(),
   addressCounty: getEnv("COLLECT_COUNTY") ? string().required() : string(),
   addressPostcode: requireAddress ? string().required() : string(),

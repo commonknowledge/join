@@ -103,7 +103,9 @@ function fakeStripe(method, url, body) {
         if (metadataKey) return (object.metadata || {})[metadataKey] === value;
         if (field === 'active') return String(object.active) === value;
         if (field === 'type') return (object.recurring ? 'recurring' : 'one_time') === value;
-        return String(object[field]) === value;
+        // Stripe's ':' is an exact match that ignores case (currency:'GBP'
+        // finds 'gbp'), so a test can't pass here and fail against Stripe.
+        return String(object[field]).toLowerCase() === value.toLowerCase();
       }),
     );
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
@@ -115,6 +117,8 @@ function fakeStripe(method, url, body) {
     stripe.counter += 1;
     const object = { id: `${prefix}_e2e_${stripe.counter}`, object: type.replace(/s$/, ''), active: true, livemode: false, ...body };
     if (body && body.unit_amount) object.unit_amount = Number(body.unit_amount);
+    // Stripe stores and returns currencies in lowercase, whatever was sent.
+    if (body && typeof body.currency === 'string') object.currency = body.currency.toLowerCase();
     store.push(object);
     return { status: 200, body: object };
   }

@@ -181,6 +181,21 @@ class Settings
                 ->set_default_value("Joining")
                 ->set_help_text("The verb used in the loading spinner (e.g., 'Joining Organisation Name')"),
         ];
+        if (self::isIncomeGuidanceEnabled()) {
+            $after_tiers_copy = 1 + array_search(
+                'currency_selection_copy',
+                array_map(fn($field) => $field->get_base_name(), $copy_fields),
+                true
+            );
+            array_splice($copy_fields, $after_tiers_copy, 0, [
+                Field::make('text', 'income_guidance_heading', 'Income guidance heading')
+                    ->set_default_value('Below are some recommended monthly dues amounts, based on income')
+                    ->set_help_text('Shown above the income guidance table on the membership step.'),
+                Field::make('rich_text', 'income_guidance_note', 'Income guidance note')
+                    ->set_help_text("Optional. Shown below the income guidance table, e.g. \"Can't afford dues? Email us.\""),
+            ]);
+        }
+
         $integration_fields = [
             Field::make('separator', 'zetkin', 'Zetkin'),
             Field::make('text', 'zetkin_organisation_id', 'Zetkin Organisation ID')->set_attribute('type', 'number'),
@@ -290,7 +305,14 @@ class Settings
             if (!$log) {
                 $log = 'Could not load error log. Please contact Common Knowledge support.';
             }
-            return "<pre style=\"max-width:150ch\">$log</pre>";
+            // The log holds text sent by visitors (join and step requests), so
+            // it must be shown as text, never as markup. esc_html() returns an
+            // empty string if any byte is invalid UTF-8, which would let one bad
+            // request blank the whole log, so invalid bytes are replaced with
+            // U+FFFD instead.
+            return '<pre style="max-width:150ch">' .
+                htmlspecialchars($log, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .
+                '</pre>';
         });
         /** @var Html_Field $logRetentionField */
         $logRetentionField = Field::make('html', 'ck_join_flow_log_retention');
@@ -564,6 +586,15 @@ class Settings
         self::describePlanRedirectCheckboxes();
         /** @var Complex_Field $membership_plans */
         $membership_plans = Field::make('complex', $name);
+        $income_band_fields = [];
+        if (self::isIncomeGuidanceEnabled()) {
+            $income_band_fields = [
+                Field::make('text', 'income_weekly', 'Weekly income')
+                    ->set_help_text('Shown in the income guidance table, e.g. "£600 to £800". Leave both incomes blank to leave this plan out of the table.'),
+                Field::make('text', 'income_monthly', 'Monthly income')
+                    ->set_help_text('E.g. "£2,400 to £3,200".'),
+            ];
+        }
         $membership_plans->add_fields([
             Field::make('text', 'label', "Name")->set_required(true),
             Field::make('text', 'id', "Price Point ID")->set_help_text("Membership price point ID (required for Chargebee)"),
@@ -575,6 +606,7 @@ class Settings
             $payment_currency_select,
             Field::make('text', 'description'),
             Field::make('text', 'add_tags')->set_help_text("Comma-separated tags to add to this member in Action Network, Mailchimp and Zetkin."),
+            ...$income_band_fields,
             $redirect_checkbox,
             $redirect_page,
         ])->set_min(1)
@@ -677,6 +709,38 @@ class Settings
         foreach (self::$planRedirectCheckboxes as $checkbox) {
             $checkbox->set_help_text(self::getMembershipPlanRedirectHelpText());
         }
+    }
+
+    // Income guidance is off unless an add-on switches it on.
+    public static function isIncomeGuidanceEnabled()
+    {
+        return (bool) apply_filters('ck_join_flow_income_guidance_enabled', false);
+    }
+
+    // A plan's income bands, for the form's income guidance table.
+    public static function getMembershipPlanIncomeBands($membership_plan)
+    {
+        if (!self::isIncomeGuidanceEnabled()) {
+            return [];
+        }
+
+        return [
+            'incomeWeekly' => trim((string) ($membership_plan['income_weekly'] ?? '')),
+            'incomeMonthly' => trim((string) ($membership_plan['income_monthly'] ?? '')),
+        ];
+    }
+
+    public static function getIncomeGuidanceEnv()
+    {
+        if (!self::isIncomeGuidanceEnabled()) {
+            return ['INCOME_GUIDANCE_ENABLED' => false];
+        }
+
+        return [
+            'INCOME_GUIDANCE_ENABLED' => true,
+            'INCOME_GUIDANCE_HEADING' => (string) self::get('INCOME_GUIDANCE_HEADING'),
+            'INCOME_GUIDANCE_NOTE' => wp_kses_post(wpautop((string) self::get('INCOME_GUIDANCE_NOTE'))),
+        ];
     }
 
     // Names the CRMs this site uses, so admins can see where redirected people
