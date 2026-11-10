@@ -351,23 +351,27 @@ This produces a deployable WordPress plugin in `packages/join-block`.
 
 Releases are automated via GitHub Actions (`.github/workflows/release-plugin.yml`).
 
-1. Bump the version:
+1. In the PR that should ship, bump the version and add changelog entries:
 
 ```bash
 ./scripts/bump-version.sh           # auto-increments patch
 ./scripts/bump-version.sh 1.4.0     # or specify a version
 ```
 
-2. Commit and tag:
+2. Commit the bump to the PR:
 
 ```bash
 git add -A
 git commit -m "Bump version to 1.4.0"
-git tag 1.4.0
-git push && git push --tags
 ```
 
-The GitHub Action will build, package, and deploy to the WordPress.org plugin repository automatically. Monitor progress in the Actions tab.
+3. Merge the PR.
+
+On every push to `master`, the workflow reads the version from `packages/join-block/join.php`. If no tag exists for it yet, it runs the PHP, Jest and E2E tests, builds the plugin, deploys it to the WordPress.org plugin repository, then creates the tag and the GitHub Release. If the tag already exists, nothing is released. Monitor progress in the Actions tab.
+
+The workflow fails before releasing if the version in `join.php`, the `Stable tag:` in `readme.txt` and the `release:` in `packages/join-flow/src/index.tsx` disagree, or if `readme.txt` has no changelog entry for the version. Run `./scripts/check-version.sh` to check this locally.
+
+Don't push tags by hand: a tag push no longer triggers a release, and a hand-made tag would make the workflow skip that version. If a release fails, use "Re-run failed jobs" on the run. Re-running is safe: the deploy skips a version already on WordPress.org, and the tag is only created after the deploy succeeds.
 
 ### Manual deployment
 
