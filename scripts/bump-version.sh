@@ -122,6 +122,5 @@ echo ""
 echo "Next steps:"
 echo "  1. Review changes: git diff"
 echo "  2. Commit: git add -A && git commit -m 'Bump version to $NEW_VERSION'"
-echo "  3. Tag: git tag $NEW_VERSION"
-echo "  4. Push: git push && git push --tags"
+echo "  3. Push and merge the PR. Merging to master releases $NEW_VERSION, so don't tag it by hand."
 

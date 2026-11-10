@@ -9,13 +9,14 @@ x-wordpress-volumes: &wordpress-volumes
   - wordpress:/var/www/html
   - ../join-block:/var/www/html/wp-content/plugins/join-block
   - ./scripts:/var/www/html/wp-content/e2e-scripts
+  # E2E-only must-use plugins: the income guidance switch and the fake API CA.
+  - ./mu-plugins:/var/www/html/wp-content/mu-plugins
   # Trust the fake API's test CA: PHP's curl and streams, WordPress's own
-  # HTTP API (via a must-use plugin) and the Stripe and Chargebee SDKs each have their own CA
+  # HTTP API (via mu-plugins/e2e-fake-api-ca.php) and the Stripe and Chargebee SDKs each have their own CA
   # setting. Nothing may be mounted over WordPress's core files: the image
   # copies them into the volume on first start and fails if one is in the way.
   - ./fake-api/certs/ca.crt:/usr/local/share/e2e-fake-api-ca.crt:ro
   - ./fake-api/php-ca.ini:/usr/local/etc/php/conf.d/zz-e2e-fake-api-ca.ini:ro
-  - ./fake-api/e2e-fake-api-ca.php:/var/www/html/wp-content/mu-plugins/e2e-fake-api-ca.php:ro
   - ./fake-api/certs/ca.crt:/var/www/html/wp-content/plugins/join-block/vendor/stripe/stripe-php/data/ca-certificates.crt:ro
   - ./fake-api/certs/ca.crt:/var/www/html/wp-content/plugins/join-block/vendor/chargebee/chargebee-php/lib/ssl/ca-certs.crt:ro
 
