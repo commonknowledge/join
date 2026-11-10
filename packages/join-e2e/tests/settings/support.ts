@@ -1,8 +1,9 @@
 import { Locator, Page, expect } from '@playwright/test';
-import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { ENV_SCRIPT_PATTERN } from '../helpers';
+import { ENV_SCRIPT_PATTERN, SETTINGS_PAGE, wp } from '../helpers';
+
+export { wp };
 
 /**
  * Shared helpers for the settings page regression tests (tests/settings).
@@ -20,22 +21,11 @@ import { ENV_SCRIPT_PATTERN } from '../helpers';
  * storage). The specs should not need to change.
  */
 
-const PACKAGE_DIR = path.resolve(__dirname, '../..');
-
 /** Inside the WordPress container. Written by scripts/seed.sh. */
 const OPTIONS_SNAPSHOT = '/var/www/html/wp-content/e2e-options-snapshot.sql';
 
 export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
 export const FREE_JOIN_PAGE = '/e2e-free-join/';
-
-/** Runs WP-CLI against the E2E site and returns its standard output. */
-export function wp(...args: string[]): string {
-  return execFileSync('bash', ['scripts/env.sh', 'wp', ...args], {
-    cwd: PACKAGE_DIR,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim();
-}
 
 /** Runs PHP inside WordPress and returns the JSON it echoes, decoded. */
 export function wpEvalJson<T = unknown>(php: string): T {
@@ -158,7 +148,7 @@ export const INTEGRATION_CREDENTIALS: Record<string, Record<string, string>> = {
  * This is the only code that knows how the page is built.
  */
 export class JoinSettingsPage {
-  static readonly URL = '/wp-admin/admin.php?page=crb_carbon_fields_container_ck_join_flow.php';
+  static readonly URL = SETTINGS_PAGE;
 
   constructor(readonly page: Page) {}
 

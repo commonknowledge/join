@@ -84,6 +84,31 @@ function ck_e2e_upsert_page(string $slug, string $title, string $content): int
 // administration email still correct?" screen.
 update_option('admin_email_lifespan', time() + 10 * YEAR_IN_SECONDS);
 
+// Start from a fresh site's Join settings. seed.sh snapshots the options table
+// after this script, and every settings test restores that snapshot, so a
+// setting left behind by an interrupted run (say Use Stripe ticked) would
+// otherwise become every later test's starting point. This clears every field
+// on WP Admin > Join, and the Stripe IDs and webhook URLs the plugin stores
+// beside them. Everything the specs need is set again below.
+foreach (\Carbon_Fields\Carbon_Fields::resolve('container_repository')->get_containers() as $ck_e2e_container) {
+    if ($ck_e2e_container->get_id() === 'carbon_fields_container_ck_join_flow') {
+        foreach ($ck_e2e_container->get_fields() as $ck_e2e_field) {
+            $ck_e2e_field->delete();
+        }
+    }
+}
+global $wpdb; // wp eval-file runs this script inside a function.
+foreach (['ck_join_flow_membership_plan_', 'ck_join_flow_webhook_'] as $ck_e2e_prefix) {
+    $ck_e2e_options = $wpdb->get_col($wpdb->prepare(
+        "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+        $wpdb->esc_like($ck_e2e_prefix) . '%'
+    ));
+    foreach ($ck_e2e_options as $ck_e2e_option) {
+        delete_option($ck_e2e_option);
+    }
+}
+wp_cache_flush();
+
 // The settings page will not save until its required fields are filled in,
 // and a fresh site has none of them.
 carbon_set_theme_option('organisation_name', 'E2E Organisation');

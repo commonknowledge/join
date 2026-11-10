@@ -140,10 +140,11 @@ test.describe('Redirect help text', () => {
   test('names the CRMs the site uses, since redirected people are not recorded in them', async ({ page }) => {
     const NOT_RECORDED = 'They are not signed up as members and not recorded in Mailchimp and Zetkin.';
 
-    // The checkbox is part of each plan, so there must be one to see.
-    setBaselinePlan();
-    wp('eval', 'carbon_set_theme_option("use_mailchimp", true); carbon_set_theme_option("use_zetkin", true);');
     try {
+      // The checkbox is part of each plan, so there must be one to see. Set up
+      // inside the try, so the settings are put back even if this fails.
+      setBaselinePlan();
+      wp('eval', 'carbon_set_theme_option("use_mailchimp", true); carbon_set_theme_option("use_zetkin", true);');
       await loginAsAdmin(page);
       await page.goto(JoinSettingsPage.URL);
       await page.getByRole('tab', { name: 'Membership Plans' }).click();
