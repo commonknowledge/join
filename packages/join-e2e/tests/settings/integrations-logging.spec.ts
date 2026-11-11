@@ -36,7 +36,7 @@ async function sentTo(host: string): Promise<Awaited<ReturnType<typeof fakeApiRe
 const logFilesSize = () =>
   wpEvalJson<number>(`clearstatcache(); return array_sum(array_map('filesize', ${PHP_LOG_FILES}));`);
 
-const LOGGING_HOSTS = ['logs-01.loggly.com', 'sentry.e2e.example', 'logging.googleapis.com'];
+const LOGGING_HOSTS = ['logs-01.loggly.com', 'sentry.e2e.example', 'oauth2.googleapis.com', 'logging.googleapis.com'];
 
 test('by default, logs are written to disk and sent nowhere else', async ({ request }) => {
   const before = logFilesSize();
