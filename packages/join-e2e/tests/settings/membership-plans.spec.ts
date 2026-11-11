@@ -16,6 +16,7 @@ import {
   seedFakeStripe,
   test,
   wpEvalJson,
+  INTEGRATION_CREDENTIALS,
 } from './fixtures';
 
 /**
@@ -33,8 +34,10 @@ import {
  */
 
 const MAILCHIMP = 'us1.api.mailchimp.com';
+/** The audience the plugin adds members to, as enableIntegration('Use Mailchimp') sets it. */
+const MEMBERS_PATH = `/3.0/lists/${INTEGRATION_CREDENTIALS['Use Mailchimp']['Mailchimp audience ID']}/members`;
 /** Mailchimp addresses a member by the MD5 of their lower-cased email. */
-const MEMBER_TAGS_PATH = `/3.0/lists/e2e-audience/members/${createHash('md5').update(MEMBER_EMAIL.toLowerCase()).digest('hex')}/tags`;
+const MEMBER_TAGS_PATH = `${MEMBERS_PATH}/${createHash('md5').update(MEMBER_EMAIL.toLowerCase()).digest('hex')}/tags`;
 
 /** Plans as stored under their IDs (ck_join_flow_membership_plan_<id>), false for none, in one WP-CLI call. */
 const storedPlans = (ids: string[]) =>
@@ -402,7 +405,7 @@ test.describe('Member tags', () => {
     expect((await postJoin(request, { membership: 'baseline-plan_monthly_gbp' })).ok()).toBe(true);
 
     const signup = (await fakeApiRequests(MAILCHIMP)).find(
-      (request) => request.method === 'POST' && request.path === '/3.0/lists/e2e-audience/members',
+      (request) => request.method === 'POST' && request.path === MEMBERS_PATH,
     );
     expect(signup?.body).toMatchObject({ email_address: MEMBER_EMAIL, tags: ['Member', 'Monthly'] });
     expect(await mailchimpTagChanges()).toEqual([

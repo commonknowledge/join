@@ -127,13 +127,14 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
   return JSON.parse((match as RegExpMatchArray)[2]);
 }
 
+/** The email postJoin() joins with, unless given another. */
+export const MEMBER_EMAIL = 'member@example.org';
+
 /**
  * Sends a join to the plugin's /join endpoint, as the join form does at its
  * last step, and returns the response. Only the fields the test cares about
  * need passing; `membership` is the chosen plan's ID.
  */
-/** The email postJoin() joins with, unless given another. */
-export const MEMBER_EMAIL = 'member@example.org';
 
 export async function postJoin(request: APIRequestContext, data: Record<string, unknown>) {
   return request.post('/wp-json/join/v1/join', {
@@ -358,17 +359,24 @@ export class JoinSettingsPage {
     if (disabled) {
       return;
     }
-    const navigated = await Promise.all([
-      this.page.waitForNavigation({ timeout: 5000 }).then(
+    // A submit the browser lets through sends its request straight away; one
+    // it blocks sends nothing. So wait for the request, not the next page: a
+    // save that is made but slow must be waited for and checked, not taken
+    // for one the browser blocked.
+    const navigation = this.page.waitForNavigation();
+    navigation.catch(() => {}); // Never settles if the browser blocks the submit.
+    const sent = this.page
+      .waitForRequest((request) => request.isNavigationRequest() && request.method() === 'POST', { timeout: 5000 })
+      .then(
         () => true,
         () => false,
-      ),
-      publish.click(),
-    ]).then(([didNavigate]) => didNavigate);
-    if (!navigated) {
+      );
+    await publish.click();
+    if (!(await sent)) {
       // The browser blocked the submit.
       return;
     }
+    await navigation;
     expect(await this.errors(), 'expected the settings page to refuse the save').not.toEqual([]);
   }
 

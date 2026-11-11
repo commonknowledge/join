@@ -81,6 +81,29 @@ function listStripe(type, store, url) {
 }
 
 /**
+ * A Stripe object as Stripe would store it, whether the plugin created it or
+ * a test seeded it: an id and the fields every object has (seeded objects
+ * can set their own, e.g. an older `created`), amounts as integers and
+ * currencies in lowercase.
+ */
+function newStripeObject(type, fields) {
+  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub', invoices: 'in' }[type] || type;
+  stripe.counter += 1;
+  const object = {
+    id: `${prefix}_e2e_${stripe.counter}`,
+    object: type.replace(/s$/, ''),
+    active: true,
+    livemode: false,
+    // Seconds, as Stripe gives it. List filters such as created[gte] use it.
+    created: Math.floor(Date.now() / 1000),
+    ...fields,
+  };
+  if (fields && fields.unit_amount !== undefined) object.unit_amount = Number(fields.unit_amount);
+  if (fields && typeof fields.currency === 'string') object.currency = fields.currency.toLowerCase();
+  return object;
+}
+
+/**
  * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
  * and for the customer and subscription look-ups its webhook handlers make.
  */
@@ -90,7 +113,6 @@ function fakeStripe(method, url, body) {
   const [, type, idOrAction] = match;
   const store = stripe.objects[type];
   if (!store) return null;
-  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub' }[type];
 
   if (method === 'GET' && idOrAction === 'search') {
     const query = url.searchParams.get('query') || '';
@@ -114,11 +136,7 @@ function fakeStripe(method, url, body) {
     return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
   }
   if (method === 'POST' && !idOrAction) {
-    stripe.counter += 1;
-    const object = { id: `${prefix}_e2e_${stripe.counter}`, object: type.replace(/s$/, ''), active: true, livemode: false, ...body };
-    if (body && body.unit_amount) object.unit_amount = Number(body.unit_amount);
-    // Stripe stores and returns currencies in lowercase, whatever was sent.
-    if (body && typeof body.currency === 'string') object.currency = body.currency.toLowerCase();
+    const object = newStripeObject(type, body);
     store.push(object);
     return { status: 200, body: object };
   }
@@ -205,9 +223,10 @@ function handleControl(request, response) {
     }
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
     // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
+    // It is stored as Stripe would store it (newStripeObject).
     const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
     if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
-      const object = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const object = newStripeObject(stripeSeed[1], JSON.parse(Buffer.concat(chunks).toString('utf8')));
       stripe.objects[stripeSeed[1]].push(object);
       return send(200, object);
     }
