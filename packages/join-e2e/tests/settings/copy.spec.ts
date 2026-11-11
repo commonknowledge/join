@@ -5,7 +5,6 @@ import {
   JoinSettingsPage,
   MULTI_CURRENCY_PAGE,
   STANDARD_JOIN_PAGE,
-  continueToPlans,
   expect,
   getSetting,
   getSettings,

@@ -5,7 +5,6 @@ import {
   GLOBAL_PLANS_PAGE,
   JoinSettingsPage,
   MEMBER_EMAIL,
-  continueToPlans,
   expect,
   fakeApiRequests,
   getSettings,
