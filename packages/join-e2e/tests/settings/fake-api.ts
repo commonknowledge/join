@@ -51,3 +51,11 @@ export async function overrideFakeApi(rule: {
 }): Promise<void> {
   await control('POST', '/overrides', rule);
 }
+
+/**
+ * Puts an object straight into the fake Stripe, as if it had been created
+ * there earlier, e.g. seedFakeStripe('customers', { id: 'cus_1', email: '...' }).
+ */
+export async function seedFakeStripe(type: 'products' | 'prices' | 'customers' | 'subscriptions', object: Record<string, unknown>): Promise<void> {
+  await control('POST', `/stripe/${type}`, object);
+}

@@ -58,14 +58,61 @@ function parseFormEncoded(raw) {
   return result;
 }
 
-/** A tiny in-memory Stripe: enough for the plugin's product and price set-up. */
+/**
+ * A Stripe list, filtered as Stripe filters it for the parameters the plugin
+ * sends: plain fields (?customer=cus_1), ranges (?created[gte]=...), and
+ * subscriptions' status, where "all" means any and leaving it out means any
+ * but canceled.
+ */
+function listStripe(type, store, url) {
+  const ignored = ['limit', 'starting_after', 'ending_before'];
+  const params = [...url.searchParams].filter(([key]) => !ignored.includes(key) && !key.startsWith('expand'));
+  const ranges = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b };
+  const hasStatus = params.some(([key]) => key === 'status');
+  return store.filter((object) => {
+    if (type === 'subscriptions' && !hasStatus && object.status === 'canceled') return false;
+    return params.every(([key, value]) => {
+      const range = key.match(/^([a-z_]+)\[(gt|gte|lt|lte)\]$/);
+      if (range) return ranges[range[2]](Number(object[range[1]]), Number(value));
+      if (key === 'status' && value === 'all') return true;
+      return String(object[key]) === value;
+    });
+  });
+}
+
+/**
+ * A Stripe object as Stripe would store it, whether the plugin created it or
+ * a test seeded it: an id and the fields every object has (seeded objects
+ * can set their own, e.g. an older `created`), amounts as integers and
+ * currencies in lowercase.
+ */
+function newStripeObject(type, fields) {
+  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub', invoices: 'in' }[type] || type;
+  stripe.counter += 1;
+  const object = {
+    id: `${prefix}_e2e_${stripe.counter}`,
+    object: type.replace(/s$/, ''),
+    active: true,
+    livemode: false,
+    // Seconds, as Stripe gives it. List filters such as created[gte] use it.
+    created: Math.floor(Date.now() / 1000),
+    ...fields,
+  };
+  if (fields && fields.unit_amount !== undefined) object.unit_amount = Number(fields.unit_amount);
+  if (fields && typeof fields.currency === 'string') object.currency = fields.currency.toLowerCase();
+  return object;
+}
+
+/**
+ * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
+ * and for the customer and subscription look-ups its webhook handlers make.
+ */
 function fakeStripe(method, url, body) {
   const match = url.pathname.match(/^\/v1\/([a-z_]+)(?:\/([^/]+))?$/);
   if (!match) return null;
   const [, type, idOrAction] = match;
   const store = stripe.objects[type];
   if (!store) return null;
-  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub' }[type];
 
   if (method === 'GET' && idOrAction === 'search') {
     const query = url.searchParams.get('query') || '';
@@ -85,12 +132,11 @@ function fakeStripe(method, url, body) {
     );
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
   }
+  if (method === 'GET' && !idOrAction) {
+    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
+  }
   if (method === 'POST' && !idOrAction) {
-    stripe.counter += 1;
-    const object = { id: `${prefix}_e2e_${stripe.counter}`, object: type.replace(/s$/, ''), active: true, livemode: false, ...body };
-    if (body && body.unit_amount) object.unit_amount = Number(body.unit_amount);
-    // Stripe stores and returns currencies in lowercase, whatever was sent.
-    if (body && typeof body.currency === 'string') object.currency = body.currency.toLowerCase();
+    const object = newStripeObject(type, body);
     store.push(object);
     return { status: 200, body: object };
   }
@@ -174,6 +220,15 @@ function handleControl(request, response) {
       }
       overrides.unshift(rule);
       return send(200, { ok: true });
+    }
+    // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
+    // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
+    // It is stored as Stripe would store it (newStripeObject).
+    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
+      const object = newStripeObject(stripeSeed[1], JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      stripe.objects[stripeSeed[1]].push(object);
+      return send(200, object);
     }
     if (request.method === 'GET' && request.url === '/health') return send(200, { ok: true });
     send(404, { error: 'unknown control endpoint' });

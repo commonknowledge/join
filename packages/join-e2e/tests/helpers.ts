@@ -12,6 +12,8 @@ export const FREE_JOIN_PAGE = '/e2e-free-join/';
 export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
 /** A join form offering the same plan in GBP and EUR. */
 export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
+/** A join form with no plans of its own, so it offers the global plans. */
+export const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
 
 /** `text` with any regular expression characters in it escaped. */
 export const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
