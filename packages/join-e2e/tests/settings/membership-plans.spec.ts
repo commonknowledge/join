@@ -304,10 +304,11 @@ test.describe('Global plans in Stripe', () => {
       expect.objectContaining({ name: 'Membership: Euros', metadata: { membership_plan: 'euros_yearly_eur' } }),
     ]);
     expect(products[0]).not.toHaveProperty('description');
+    // The plugin sends Stripe the plan's currency in lowercase, as Stripe stores it.
     expect(prices).toEqual([
-      expect.objectContaining({ unit_amount: '200', currency: 'GBP', recurring: { interval: 'week' } }),
-      expect.objectContaining({ unit_amount: '950', currency: 'USD', recurring: { interval: 'month' } }),
-      expect.objectContaining({ unit_amount: '6000', currency: 'EUR', recurring: { interval: 'year' } }),
+      expect.objectContaining({ unit_amount: '200', currency: 'gbp', recurring: { interval: 'week' } }),
+      expect.objectContaining({ unit_amount: '950', currency: 'usd', recurring: { interval: 'month' } }),
+      expect.objectContaining({ unit_amount: '6000', currency: 'eur', recurring: { interval: 'year' } }),
     ]);
 
     // Each stored plan remembers its Stripe product and price.
