@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { CONTINUE, mockRestEndpoints } from './helpers';
+import { CONTINUE, continueToPlans, mockRestEndpoints, MULTI_CURRENCY_PAGE } from './helpers';
 
 /**
  * Multi-currency plan selection
@@ -17,16 +17,14 @@ import { CONTINUE, mockRestEndpoints } from './helpers';
  *   - "Standard" EUR €7/month  (id: standard-eur)
  */
 
-const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
 
 async function advanceToPlanStep(page: import('@playwright/test').Page) {
   await mockRestEndpoints(page);
   await page.goto(MULTI_CURRENCY_PAGE);
   await page.waitForSelector('input#firstName');
 
-  // Test data auto-fills the details form; click Continue to advance.
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  // Test data auto-fills the details form; Continue to the plans.
+  await continueToPlans(page);
 }
 
 test.describe('Multi-currency plan selection', () => {

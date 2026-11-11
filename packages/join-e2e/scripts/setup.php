@@ -405,6 +405,22 @@ carbon_set_theme_option(
 // that care about it.
 carbon_set_theme_option('stripe_direct_debit_only', true);
 
+// Custom fields page: standard join with one custom field, so the form shows
+// its "more about you" section (and the settings page's heading for it).
+$custom_fields_page_id = ck_e2e_upsert_page(
+    'e2e-custom-fields',
+    'E2E Custom Fields Test',
+    ck_e2e_make_block_content($standard_plans, [
+        'custom_fields' => [[
+            '_type'      => '_',
+            'label'      => 'Branch',
+            'id'         => 'branch',
+            'required'   => false,
+            'field_type' => 'text',
+        ]],
+    ])
+);
+
 // Persist URLs as options so get-page-url.sh can retrieve them.
 update_option('ck_e2e_standard_page_url', get_permalink($standard_page_id));
 update_option('ck_e2e_free_page_url', get_permalink($free_page_id));
@@ -414,6 +430,7 @@ update_option('ck_e2e_supporter_custom_page_url', get_permalink($supporter_custo
 update_option('ck_e2e_supporter_no_plans_page_url', get_permalink($supporter_no_plans_page_id));
 update_option('ck_e2e_allow_cards_override_page_url', get_permalink($allow_cards_override_page_id));
 update_option('ck_e2e_multi_currency_page_url', get_permalink($multi_currency_page_id));
+update_option('ck_e2e_custom_fields_page_url', get_permalink($custom_fields_page_id));
 
 echo 'Standard page URL: '                . get_permalink($standard_page_id)              . "\n";
 echo 'Free page URL: '                    . get_permalink($free_page_id)                   . "\n";
@@ -423,4 +440,5 @@ echo 'Supporter custom page URL: '        . get_permalink($supporter_custom_page
 echo 'Supporter no-plans page URL: '      . get_permalink($supporter_no_plans_page_id)     . "\n";
 echo 'Allow cards override page URL: '    . get_permalink($allow_cards_override_page_id)   . "\n";
 echo 'Multi-currency page URL: '          . get_permalink($multi_currency_page_id)         . "\n";
+echo 'Custom fields page URL: '           . get_permalink($custom_fields_page_id)          . "\n";
 echo "Setup complete.\n";
