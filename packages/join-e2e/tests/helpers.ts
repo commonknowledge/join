@@ -5,6 +5,26 @@ import path from 'path';
 export const SAVED_STATE_KEY = 'ck_join_state_flow';
 export const CONTINUE = 'button[type="submit"]:has-text("Continue")';
 
+// Join form pages created by scripts/setup.php.
+export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
+export const FREE_JOIN_PAGE = '/e2e-free-join/';
+/** A join form with one custom field, so it shows the "more about you" section. */
+export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
+/** A join form offering the same plan in GBP and EUR. */
+export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
+
+/** `text` with any regular expression characters in it escaped. */
+export const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** A pattern matching exactly `text`, e.g. exactly('#336699', 'i') for any case. */
+export const exactly = (text: string, flags?: string) => new RegExp(`^${escapeRegExp(text)}$`, flags);
+
+/** Clicks Continue on the join form's details step and waits for the plan step. */
+export async function continueToPlans(page: Page): Promise<void> {
+  await page.locator(CONTINUE).click();
+  await page.waitForSelector('[role="radiogroup"]');
+}
+
 /**
  * Intercepts both REST endpoints the form calls during navigation and fulfils
  * them with empty 200 responses so that network errors never block progression.
@@ -146,9 +166,9 @@ export function wp(...args: string[]): string {
 export function field(scope: Locator, label: string): Locator {
   // One selector rather than a `has` filter, so it also works inside the
   // block editor's iframe.
-  return scope
-    .locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches("^${label}[*]?$"))`)
-    .first();
+  // JSON.stringify quotes the pattern for the selector, escaping its backslashes.
+  const pattern = JSON.stringify(`^${escapeRegExp(label)}[*]?$`);
+  return scope.locator(`.cf-field:not(.cf-separator):has(.cf-field__label:text-matches(${pattern}))`).first();
 }
 
 /** The CK Join Form block. The block editor renders its content in an iframe. */
@@ -188,8 +208,7 @@ export async function openNewPageWithJoinBlock(page: Page, title: string): Promi
 
 /** Continues from the details step, picks the plan by its label, and continues again. */
 export async function choosePlan(page: Page, label: string): Promise<void> {
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
+  await continueToPlans(page);
   await page.locator('label.radio-panel', { has: page.locator(`[id="membership-${label}"]`) }).click();
   await page.locator(CONTINUE).click();
 }
