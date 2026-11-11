@@ -340,9 +340,9 @@ test.describe('Global plans in Stripe', () => {
     expect(prices.map((request) => request.body.unit_amount)).toEqual(['700', '800']);
   });
 
-  // Each save makes another Stripe price for a plan whose price has pence in
-  // it (Linear JOIN-166). Re-enable once it's fixed.
-  test.fixme('saving again reuses the Stripe price of a plan priced in pence', async ({ settings }) => {
+  // Each save used to make another Stripe price for a plan priced in pence
+  // (Linear JOIN-166, fixed by #146).
+  test('saving again reuses the Stripe price of a plan priced in pence', async ({ settings }) => {
     await settings.open('Membership Plans');
     await settings.editPlan(0, { price: '9.50' });
     await settings.enableIntegration('Use Stripe');
