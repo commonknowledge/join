@@ -92,7 +92,8 @@ test.describe('Use Stripe', () => {
     expect(priceCreated?.body).toMatchObject({
       product: 'prod_e2e_1',
       unit_amount: '700',
-      currency: 'GBP',
+      // Stripe stores currencies lowercase, so prices are searched for and created that way.
+      currency: 'gbp',
       recurring: { interval: 'month' },
     });
     expect(productCreated?.headers.authorization).toBe('Bearer sk_test_e2e');
