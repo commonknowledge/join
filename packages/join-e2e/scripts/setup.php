@@ -440,4 +440,5 @@ echo 'Supporter custom page URL: '        . get_permalink($supporter_custom_page
 echo 'Supporter no-plans page URL: '      . get_permalink($supporter_no_plans_page_id)     . "\n";
 echo 'Allow cards override page URL: '    . get_permalink($allow_cards_override_page_id)   . "\n";
 echo 'Multi-currency page URL: '          . get_permalink($multi_currency_page_id)         . "\n";
+echo 'Custom fields page URL: '           . get_permalink($custom_fields_page_id)          . "\n";
 echo "Setup complete.\n";
