@@ -273,10 +273,12 @@ class StripeService
 
         $existingPrices = \Stripe\Price::search([
             'query' => "active:'true' AND product:'{$product->id}' AND type:'one_time' AND currency:'{$currency}'",
+            'limit' => 100,
         ]);
 
-        foreach ($existingPrices->data as $price) {
-            if ($price->unit_amount === $stripeAmount) {
+        // Products can hold hundreds of prices, so look beyond the first page.
+        foreach ($existingPrices->autoPagingIterator() as $price) {
+            if ((int) $price->unit_amount === $stripeAmount) {
                 $joinBlockLog->info("One-time price for product '{$product->id}' amount {$stripeAmount} already exists.");
                 return $price;
             }
@@ -565,17 +567,28 @@ class StripeService
         // Stripe requires the price in lowest denomination of the currency. E.G. cents for USD, pence for GBP.
         // So we multiply the amount by 100 to get the price in this format.
         // We store the amount in whole units of the currency, e.g. dollars for USD, pounds for GBP.
-        $stripePrice = $amount * 100;
+        //
+        // The cast matters: callers pass floats, and Stripe returns unit_amount
+        // as an int, so a float here never strictly equals an existing price.
+        // That made every custom-amount join create a fresh Price, which in
+        // turn changed the subscription request on every retry and tripped
+        // Stripe's idempotency check (see RE-174).
+        $stripePrice = (int) round(((float) $amount) * 100);
+        // Stripe stores currencies lowercase; plan config uses uppercase.
+        $currency = strtolower((string) $currency);
 
         try {
             $joinBlockLog->info("Searching for existing Stripe price for recurring product '{$product->id}' with currency '{$currency}' and amount {$stripePrice}");
 
             $existingPrices = \Stripe\Price::search([
                 'query' => "active:'true' AND product:'{$product->id}' AND type:'recurring' AND currency:'{$currency}'",
+                'limit' => 100,
             ]);
 
-            foreach ($existingPrices->data as $price) {
-                if ($price->unit_amount === $stripePrice) {
+            // Products can hold hundreds of prices, so look beyond the first page.
+            foreach ($existingPrices->autoPagingIterator() as $price) {
+                $priceInterval = $price->recurring->interval ?? null;
+                if ((int) $price->unit_amount === $stripePrice && $priceInterval === $interval) {
                     $joinBlockLog->info("Recurring price for product '{$product->id}' with currency '{$currency}' and amount {$stripePrice} already exists.");
                     return $price;
                 }

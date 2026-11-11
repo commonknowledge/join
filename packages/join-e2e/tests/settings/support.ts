@@ -1,7 +1,17 @@
 import { APIRequestContext, Locator, Page, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { ENV_SCRIPT_PATTERN, SETTINGS_PAGE, wp } from '../helpers';
+import {
+  ENV_SCRIPT_PATTERN,
+  SETTINGS_PAGE,
+  wp,
+  CUSTOM_FIELDS_PAGE,
+  FREE_JOIN_PAGE,
+  MULTI_CURRENCY_PAGE,
+  STANDARD_JOIN_PAGE,
+  exactly,
+  GLOBAL_PLANS_PAGE,
+} from '../helpers';
 
 export { wp };
 
@@ -24,17 +34,7 @@ export { wp };
 /** Inside the WordPress container. Written by scripts/seed.sh. */
 const OPTIONS_SNAPSHOT = '/var/www/html/wp-content/e2e-options-snapshot.sql';
 
-export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
-export const FREE_JOIN_PAGE = '/e2e-free-join/';
-/** A join form with one custom field, so it shows the "more about you" section. */
-export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
-/** A join form offering the same plan in GBP and EUR. */
-export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
-/** A join form with no plans of its own, so it offers the global plans. */
-export const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
-
-/** A pattern matching exactly `text`, with any pattern characters in it escaped. */
-const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+export { STANDARD_JOIN_PAGE, FREE_JOIN_PAGE, CUSTOM_FIELDS_PAGE, MULTI_CURRENCY_PAGE, GLOBAL_PLANS_PAGE };
 
 /** Runs PHP inside WordPress and returns the JSON it echoes, decoded. */
 export function wpEvalJson<T = unknown>(php: string): T {
@@ -127,13 +127,14 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
   return JSON.parse((match as RegExpMatchArray)[2]);
 }
 
+/** The email postJoin() joins with, unless given another. */
+export const MEMBER_EMAIL = 'member@example.org';
+
 /**
  * Sends a join to the plugin's /join endpoint, as the join form does at its
  * last step, and returns the response. Only the fields the test cares about
  * need passing; `membership` is the chosen plan's ID.
  */
-/** The email postJoin() joins with, unless given another. */
-export const MEMBER_EMAIL = 'member@example.org';
 
 export async function postJoin(request: APIRequestContext, data: Record<string, unknown>) {
   return request.post('/wp-json/join/v1/join', {
@@ -241,7 +242,7 @@ export class JoinSettingsPage {
     // Clicking outside closes the picker.
     await field.locator('.cf-field__label').click();
     await expect(this.page.locator('.cf-color__picker')).toHaveCount(0);
-    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(exactly(hex).source, 'i'));
+    await expect(field.locator('input[type="hidden"]')).toHaveValue(exactly(hex, 'i'));
   }
 
   /** Sets a rich text (editor) field's content to the given HTML. */
@@ -363,17 +364,24 @@ export class JoinSettingsPage {
     if (disabled) {
       return;
     }
-    const navigated = await Promise.all([
-      this.page.waitForNavigation({ timeout: 5000 }).then(
+    // A submit the browser lets through sends its request straight away; one
+    // it blocks sends nothing. So wait for the request, not the next page: a
+    // save that is made but slow must be waited for and checked, not taken
+    // for one the browser blocked.
+    const navigation = this.page.waitForNavigation();
+    navigation.catch(() => {}); // Never settles if the browser blocks the submit.
+    const sent = this.page
+      .waitForRequest((request) => request.isNavigationRequest() && request.method() === 'POST', { timeout: 5000 })
+      .then(
         () => true,
         () => false,
-      ),
-      publish.click(),
-    ]).then(([didNavigate]) => didNavigate);
-    if (!navigated) {
+      );
+    await publish.click();
+    if (!(await sent)) {
       // The browser blocked the submit.
       return;
     }
+    await navigation;
     expect(await this.errors(), 'expected the settings page to refuse the save').not.toEqual([]);
   }
 

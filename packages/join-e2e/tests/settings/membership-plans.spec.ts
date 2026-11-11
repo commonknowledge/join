@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { createHash } from 'crypto';
-import { CONTINUE } from '../helpers';
+import { CONTINUE, continueToPlans } from '../helpers';
 import {
   GLOBAL_PLANS_PAGE,
   JoinSettingsPage,
@@ -17,6 +17,7 @@ import {
   seedFakeStripe,
   test,
   wpEvalJson,
+  INTEGRATION_CREDENTIALS,
 } from './fixtures';
 
 /**
@@ -34,8 +35,10 @@ import {
  */
 
 const MAILCHIMP = 'us1.api.mailchimp.com';
+/** The audience the plugin adds members to, as enableIntegration('Use Mailchimp') sets it. */
+const MEMBERS_PATH = `/3.0/lists/${INTEGRATION_CREDENTIALS['Use Mailchimp']['Mailchimp audience ID']}/members`;
 /** Mailchimp addresses a member by the MD5 of their lower-cased email. */
-const MEMBER_TAGS_PATH = `/3.0/lists/e2e-audience/members/${createHash('md5').update(MEMBER_EMAIL.toLowerCase()).digest('hex')}/tags`;
+const MEMBER_TAGS_PATH = `${MEMBERS_PATH}/${createHash('md5').update(MEMBER_EMAIL.toLowerCase()).digest('hex')}/tags`;
 
 /** Plans as stored under their IDs (ck_join_flow_membership_plan_<id>), false for none, in one WP-CLI call. */
 const storedPlans = (ids: string[]) =>
@@ -302,10 +305,11 @@ test.describe('Global plans in Stripe', () => {
       expect.objectContaining({ name: 'Membership: Euros', metadata: { membership_plan: 'euros_yearly_eur' } }),
     ]);
     expect(products[0]).not.toHaveProperty('description');
+    // The plugin sends Stripe the plan's currency in lowercase, as Stripe stores it.
     expect(prices).toEqual([
-      expect.objectContaining({ unit_amount: '200', currency: 'GBP', recurring: { interval: 'week' } }),
-      expect.objectContaining({ unit_amount: '950', currency: 'USD', recurring: { interval: 'month' } }),
-      expect.objectContaining({ unit_amount: '6000', currency: 'EUR', recurring: { interval: 'year' } }),
+      expect.objectContaining({ unit_amount: '200', currency: 'gbp', recurring: { interval: 'week' } }),
+      expect.objectContaining({ unit_amount: '950', currency: 'usd', recurring: { interval: 'month' } }),
+      expect.objectContaining({ unit_amount: '6000', currency: 'eur', recurring: { interval: 'year' } }),
     ]);
 
     // Each stored plan remembers its Stripe product and price.
@@ -337,9 +341,9 @@ test.describe('Global plans in Stripe', () => {
     expect(prices.map((request) => request.body.unit_amount)).toEqual(['700', '800']);
   });
 
-  // Each save makes another Stripe price for a plan whose price has pence in
-  // it (Linear JOIN-166). Re-enable once it's fixed.
-  test.fixme('saving again reuses the Stripe price of a plan priced in pence', async ({ settings }) => {
+  // Each save used to make another Stripe price for a plan priced in pence
+  // (Linear JOIN-166, fixed by #146).
+  test('saving again reuses the Stripe price of a plan priced in pence', async ({ settings }) => {
     await settings.open('Membership Plans');
     await settings.editPlan(0, { price: '9.50' });
     await settings.enableIntegration('Use Stripe');
@@ -403,7 +407,7 @@ test.describe('Member tags', () => {
     expect((await postJoin(request, { membership: 'baseline-plan_monthly_gbp' })).ok()).toBe(true);
 
     const signup = (await fakeApiRequests(MAILCHIMP)).find(
-      (request) => request.method === 'POST' && request.path === '/3.0/lists/e2e-audience/members',
+      (request) => request.method === 'POST' && request.path === MEMBERS_PATH,
     );
     expect(signup?.body).toMatchObject({ email_address: MEMBER_EMAIL, tags: ['Member', 'Monthly'] });
     expect(await mailchimpTagChanges()).toEqual([
