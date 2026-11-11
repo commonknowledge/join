@@ -4,7 +4,7 @@ Tags: membership, subscription, join
 Contributors: commonknowledgecoop
 Requires at least: 5.4
 Tested up to: 7.0
-Stable tag: 1.4.46
+Stable tag: 1.4.47
 Requires PHP: 8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,8 @@ Need help? Contact us at [hello@commonknowledge.coop](mailto:hello@commonknowled
 
 == Changelog ==
 
+= 1.4.47 =
+* Fix: retrying a custom-amount join after a declined card failed with a Stripe idempotency error, because a new Stripe price was created on every attempt
 = 1.4.46 =
 * Fix: members with an address line over 50 characters were not added to Action Network
 = 1.4.45 =
