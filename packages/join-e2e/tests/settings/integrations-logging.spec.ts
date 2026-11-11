@@ -26,6 +26,16 @@ async function logAnError(request: APIRequestContext): Promise<void> {
   expect(response.status()).toBe(500);
 }
 
+/**
+ * The requests that reached a service's fake, once at least one has. Some
+ * handlers (Loggly's buffer, Google's batch logger) only send as PHP finishes
+ * the request, which can be after the response has reached the test.
+ */
+async function sentTo(host: string): Promise<Awaited<ReturnType<typeof fakeApiRequests>>> {
+  await expect.poll(async () => (await fakeApiRequests(host)).length, { message: `nothing reached ${host}` }).toBeGreaterThan(0);
+  return fakeApiRequests(host);
+}
+
 /** The size of the plugin's log files on disk, in bytes. */
 const logFilesSize = () =>
   wpEvalJson<number>(`
@@ -64,8 +74,7 @@ test.describe('Loggly', () => {
     const before = logFilesSize();
     await logSomething(request);
 
-    const sent = await fakeApiRequests('logs-01.loggly.com');
-    expect(sent.length).toBeGreaterThan(0);
+    const sent = await sentTo('logs-01.loggly.com');
     expect(sent[0]).toMatchObject({ method: 'POST', path: '/bulk/e2e-loggly-token/' });
     expect(sent[0].headers['x-loggly-tag']).toBe('e2e-site,join');
     expect(sent.map((request) => JSON.stringify(request.body)).join('\n')).toContain('Recording CK Join form step');
@@ -79,7 +88,7 @@ test.describe('Loggly', () => {
 
     await logSomething(request);
 
-    const [first] = await fakeApiRequests('logs-01.loggly.com');
+    const [first] = await sentTo('logs-01.loggly.com');
     expect(first.headers['x-loggly-tag']).toBe('join-block');
   });
 
@@ -109,11 +118,13 @@ test.describe('Sentry', () => {
 
     expect(getSettings(['sentry_dsn']).sentry_dsn).toBe(DSN);
 
+    // Info first, then an error. Once the error's event has arrived, any event
+    // for the info line, sent during the earlier request, would have too.
     await logSomething(request);
-    expect(await fakeApiRequests('sentry.e2e.example')).toEqual([]);
-
     await logAnError(request);
-    const [event] = await fakeApiRequests('sentry.e2e.example');
+    const events = await sentTo('sentry.e2e.example');
+    expect(events.map((event) => event.body).join('\n')).not.toContain('Recording CK Join form step');
+    const [event] = events;
     expect(event).toMatchObject({ method: 'POST', path: '/api/42/envelope/' });
     expect(event.headers['x-sentry-auth']).toContain('sentry_key=e2epublickey');
     expect(event.body).toContain('Invalid membership plan: no-such-plan');
@@ -162,7 +173,7 @@ test.describe('Google Cloud Logging', () => {
 
     await logSomething(request);
 
-    const writes = (await fakeApiRequests('logging.googleapis.com')).filter(
+    const writes = (await sentTo('logging.googleapis.com')).filter(
       (request) => request.method === 'POST' && request.path === '/v2/entries:write',
     );
     expect(writes.length).toBeGreaterThan(0);
@@ -174,9 +185,13 @@ test.describe('Google Cloud Logging', () => {
       }),
     );
 
-    // Signed in as the key file's service account.
+    // Signed in as the key file's service account, with a token the plugin
+    // signs itself from the key file rather than one from Google's sign-in
+    // server. oauth2.googleapis.com is routed to the fake, so a token
+    // exchange would show here instead of reaching Google.
     const token = writes[0].headers.authorization.replace(/^Bearer /, '');
     const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
     expect(claims.iss).toBe('join-logs@e2e-project.iam.gserviceaccount.com');
+    expect(await fakeApiRequests('oauth2.googleapis.com')).toEqual([]);
   });
 });

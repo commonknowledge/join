@@ -196,6 +196,11 @@ function respond(host, method, url, body) {
     const result = fakeZetkin(method, url, body);
     if (result) return result;
   }
+  // Google's sign-in server. The plugin signs its own tokens today (see the
+  // Cloud Logging test), but if it ever exchanged one, it gets one here.
+  if (host === 'oauth2.googleapis.com' && method === 'POST' && url.pathname === '/token') {
+    return { status: 200, body: { access_token: 'e2e-google-access-token', token_type: 'Bearer', expires_in: 3600 } };
+  }
   if (host.endsWith('.auth0.com') && method === 'POST' && url.pathname === '/oauth/token') {
     return { status: 200, body: { access_token: 'e2e-auth0-access-token', token_type: 'Bearer', expires_in: 86400 } };
   }

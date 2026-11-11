@@ -257,6 +257,9 @@ test.describe('Webhooks', () => {
 
     const join = await joinThroughForm(page);
     expect(join.webhookUuid).toBe(env.WEBHOOK_UUID);
+    // The form sent bank details, so their absence below means they were removed.
+    expect(join).toHaveProperty('ddAccountNumber');
+    expect(join).toHaveProperty('ddSortCode');
 
     const [delivery] = await fakeApiRequests('fake-api');
     expect(delivery).toMatchObject({
@@ -286,7 +289,12 @@ test.describe('Webhooks', () => {
     // request through to the plugin, rather than the usual stub.
     await openJoinForm(page);
     await page.route('**/wp-json/join/v1/step', (route) => route.continue());
+    const step = page.waitForRequest('**/wp-json/join/v1/step');
     await continueToPlans(page);
+    // The form sent bank details, so their absence below means they were removed.
+    const sentByForm = (await step).postDataJSON();
+    expect(sentByForm).toHaveProperty('ddAccountNumber');
+    expect(sentByForm).toHaveProperty('ddSortCode');
 
     await expect.poll(async () => (await fakeApiRequests('fake-api')).length).toBeGreaterThan(0);
     const [delivery] = await fakeApiRequests('fake-api');
@@ -295,7 +303,7 @@ test.describe('Webhooks', () => {
       path: '/step',
       body: { email: MEMBER.email, firstName: MEMBER.firstName, stage: 'enter-details' },
     });
-    // The form's test data includes bank details; they're never passed on.
+    // They're never passed on.
     expect(delivery.body).not.toHaveProperty('ddAccountNumber');
     expect(delivery.body).not.toHaveProperty('ddSortCode');
   });

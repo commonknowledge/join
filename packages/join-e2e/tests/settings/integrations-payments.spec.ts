@@ -86,6 +86,10 @@ test.describe('Stripe', () => {
 
     // The seeded site has Direct Debit only stored without direct debit
     // enabled (see scripts/setup.php). Saving the page drops it.
+    expect(getSettings(['stripe_direct_debit', 'stripe_direct_debit_only'])).toEqual({
+      stripe_direct_debit: false,
+      stripe_direct_debit_only: true,
+    });
     await settings.save();
     expect(getSettings(['stripe_direct_debit', 'stripe_direct_debit_only'])).toEqual({
       stripe_direct_debit: false,
@@ -138,6 +142,8 @@ test.describe('Stripe', () => {
       '"Email","Customer ID","Subscription ID","Subscription Status","Subscription Created","Subscription End","Price ID","Price Name","First Payment","Last Payment"',
     );
     expect(csv[1]).toMatch(/^"exported@example.org","cus_export","sub_export","active",/);
+    // Dates are in UTC: the export uses PHP's date(), and WordPress always sets
+    // PHP's timezone to UTC, whatever the site or server timezone.
     expect(csv[1]).toContain('"price_export","Membership: Standard - GBP 5.00","2026-01-02 00:00:00","2026-01-02 00:00:00"');
 
     // The plugin reads Stripe with the secret key set on this tab.
