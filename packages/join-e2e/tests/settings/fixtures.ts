@@ -2,11 +2,18 @@ import { Page, test as base, expect } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'fs';
 import os from 'os';
 import path from 'path';
-import { CONTINUE, captureJoinBodyViaStripeRedirect, loginAsAdmin, mockRestEndpoints } from '../helpers';
+import {
+  CONTINUE,
+  captureJoinBodyViaStripeRedirect,
+  loginAsAdmin,
+  mockRestEndpoints,
+  continueToPlans,
+} from '../helpers';
 import { resetFakeApi } from './fake-api';
 import { JoinSettingsPage, STANDARD_JOIN_PAGE, postJoin, resetSettings, setBaselinePlan } from './support';
 
 export * from './support';
+export { continueToPlans };
 export * from './fake-api';
 
 /**
@@ -146,12 +153,6 @@ export async function stubStripe(page: Page): Promise<void> {
   await page.route('https://js.stripe.com/**', (route) =>
     route.fulfill({ contentType: 'application/javascript', body: script }),
   );
-}
-
-/** From the details step, on to the plan step. */
-export async function continueToPlans(page: Page): Promise<void> {
-  await page.locator(CONTINUE).click();
-  await page.waitForSelector('[role="radiogroup"]');
 }
 
 /** From the details step, through the plan step (first plan), to whatever comes next. */

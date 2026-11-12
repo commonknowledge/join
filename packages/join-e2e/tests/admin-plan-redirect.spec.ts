@@ -4,6 +4,7 @@ import {
   choosePlan,
   field,
   fillPlan,
+  GLOBAL_PLANS_PAGE,
   joinFormBlock,
   loginAsAdmin,
   mockRestEndpoints,
@@ -26,7 +27,6 @@ import { JoinSettingsPage, resetSettings, setBaselinePlan, wp } from './settings
  * that follow.
  */
 
-const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
 const REDIRECT_TARGET = '/e2e-redirect-target/';
 const REDIRECT_TARGET_TITLE = 'E2E Redirect Target';
 const REDIRECT_TARGET_COPY = 'You have been redirected here instead of paying.';

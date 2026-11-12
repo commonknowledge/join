@@ -1,12 +1,10 @@
 import { Page } from '@playwright/test';
-import { CONTINUE } from '../helpers';
+import { CONTINUE, continueToPlans } from '../helpers';
 import {
   CUSTOM_FIELDS_PAGE,
-  FREE_JOIN_PAGE,
   JoinSettingsPage,
   MULTI_CURRENCY_PAGE,
   STANDARD_JOIN_PAGE,
-  continueToPlans,
   expect,
   getSetting,
   getSettings,
@@ -182,17 +180,17 @@ test.describe('Organisation details', () => {
 
 test.describe('Details step', () => {
   test('About You Heading and Copy', async ({ settings, page }) => {
-    const defaults = getSettings(['about_you_heading', 'about_you_copy']);
     await openJoinForm(page);
-    await expect(page.getByRole('heading', { name: defaults.about_you_heading as string })).toBeVisible();
+    await expect(page.getByRole('heading', { name: getSetting<string>('about_you_heading') })).toBeVisible();
 
     await settings.open('Copy');
     await settings.setText('About You Heading', 'Who are you?');
     await settings.setRichText('About You Copy', '<p>Tell us <strong>who you are</strong>.</p>');
     await settings.save();
 
-    expect(getSetting('about_you_heading')).toBe('Who are you?');
-    expect(getSetting('about_you_copy')).toContain('Tell us <strong>who you are</strong>.');
+    const saved = getSettings(['about_you_heading', 'about_you_copy']);
+    expect(saved.about_you_heading).toBe('Who are you?');
+    expect(saved.about_you_copy).toContain('Tell us <strong>who you are</strong>.');
     expect((await joinFormEnv(page)).ABOUT_YOU_COPY).toContain('<p>Tell us <strong>who you are</strong>.</p>');
 
     await openJoinForm(page);
@@ -392,10 +390,15 @@ test.describe('Plan step', () => {
 });
 
 test.describe('Sidebar and steps', () => {
+  // Each check is made on the same page and the same elements, at the plan
+  // step, where the membership stage is the current one.
+  const sidebarHeading = (page: Page) => page.locator('.progress-steps h6');
+  const currentStage = (page: Page) => page.locator('.progress-step--current');
+
   test('Join Form Sidebar Heading and Membership Stage Label', async ({ settings, page }) => {
-    await openJoinForm(page);
-    await expect(page.locator('.progress-steps h6')).toHaveText('Join Us');
-    await expect(page.locator('.progress-steps')).toContainText('Your Membership');
+    await goToPlans(page);
+    await expect(sidebarHeading(page)).toHaveText('Join Us');
+    await expect(currentStage(page)).toContainText('Your Membership');
 
     await settings.open('Copy');
     await settings.setText('Join Form Sidebar Heading', 'Become a member');
@@ -407,9 +410,9 @@ test.describe('Sidebar and steps', () => {
       membership_stage_label: 'Your Plan',
     });
 
-    await goToPlans(page, FREE_JOIN_PAGE);
-    await expect(page.locator('.progress-steps h6')).toHaveText('Become a member');
-    await expect(page.locator('.progress-step--current')).toContainText('Your Plan');
+    await goToPlans(page);
+    await expect(sidebarHeading(page)).toHaveText('Become a member');
+    await expect(currentStage(page)).toContainText('Your Plan');
   });
 
   test('both fall back to their defaults when blank', async ({ settings, page }) => {
@@ -418,8 +421,17 @@ test.describe('Sidebar and steps', () => {
     await settings.setText('Membership Stage Label', '');
     await settings.save();
 
+    // Saved blank: the defaults are filled in when the form is built.
+    expect(getSettings(['join_form_sidebar_heading', 'membership_stage_label'])).toEqual({
+      join_form_sidebar_heading: '',
+      membership_stage_label: '',
+    });
     const env = await joinFormEnv(page);
     expect([env.JOIN_FORM_SIDEBAR_HEADING, env.MEMBERSHIP_STAGE_LABEL]).toEqual(['Join Us', 'Your Membership']);
+
+    await goToPlans(page);
+    await expect(sidebarHeading(page)).toHaveText('Join Us');
+    await expect(currentStage(page)).toContainText('Your Membership');
   });
 });
 

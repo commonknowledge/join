@@ -1,7 +1,17 @@
 import { APIRequestContext, Locator, Page, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { ENV_SCRIPT_PATTERN, SETTINGS_PAGE, wp } from '../helpers';
+import {
+  ENV_SCRIPT_PATTERN,
+  SETTINGS_PAGE,
+  wp,
+  CUSTOM_FIELDS_PAGE,
+  FREE_JOIN_PAGE,
+  MULTI_CURRENCY_PAGE,
+  STANDARD_JOIN_PAGE,
+  exactly,
+  GLOBAL_PLANS_PAGE,
+} from '../helpers';
 
 export { wp };
 
@@ -24,17 +34,7 @@ export { wp };
 /** Inside the WordPress container. Written by scripts/seed.sh. */
 const OPTIONS_SNAPSHOT = '/var/www/html/wp-content/e2e-options-snapshot.sql';
 
-export const STANDARD_JOIN_PAGE = '/e2e-standard-join/';
-export const FREE_JOIN_PAGE = '/e2e-free-join/';
-/** A join form with one custom field, so it shows the "more about you" section. */
-export const CUSTOM_FIELDS_PAGE = '/e2e-custom-fields/';
-/** A join form offering the same plan in GBP and EUR. */
-export const MULTI_CURRENCY_PAGE = '/e2e-multi-currency-join/';
-/** A join form with no plans of its own, so it offers the global plans. */
-export const GLOBAL_PLANS_PAGE = '/e2e-global-plans-join/';
-
-/** A pattern matching exactly `text`, with any pattern characters in it escaped. */
-const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+export { STANDARD_JOIN_PAGE, FREE_JOIN_PAGE, CUSTOM_FIELDS_PAGE, MULTI_CURRENCY_PAGE, GLOBAL_PLANS_PAGE };
 
 /** Runs PHP inside WordPress and returns the JSON it echoes, decoded. */
 export function wpEvalJson<T = unknown>(php: string): T {
@@ -127,13 +127,14 @@ export async function joinFormEnv(page: Page, url = STANDARD_JOIN_PAGE): Promise
   return JSON.parse((match as RegExpMatchArray)[2]);
 }
 
+/** The email postJoin() joins with, unless given another. */
+export const MEMBER_EMAIL = 'member@example.org';
+
 /**
  * Sends a join to the plugin's /join endpoint, as the join form does at its
  * last step, and returns the response. Only the fields the test cares about
  * need passing; `membership` is the chosen plan's ID.
  */
-/** The email postJoin() joins with, unless given another. */
-export const MEMBER_EMAIL = 'member@example.org';
 
 export async function postJoin(request: APIRequestContext, data: Record<string, unknown>) {
   return request.post('/wp-json/join/v1/join', {
@@ -157,17 +158,38 @@ export async function logInvalidPlan(request: APIRequestContext, plan = 'no-such
   expect(response.status()).toBe(500);
 }
 
+/**
+ * PHP for the plugin's log directory, for use in wpEvalJson(). Fails if the
+ * plugin has none (neither uploads nor wp-content writable), rather than let
+ * the helpers below work on files at the filesystem root.
+ */
+export const PHP_LOG_DIR = `(\\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory() ?: throw new \\RuntimeException('The plugin has no log directory'))`;
+
 /** PHP for the paths of the plugin's log files, for use in wpEvalJson(). */
-export const PHP_LOG_FILES = `(glob(\\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory() . '/debug-*.log') ?: [])`;
+export const PHP_LOG_FILES = `(glob(${PHP_LOG_DIR} . '/debug-*.log') ?: [])`;
 
 const PHP_LOG_BACKUP = `WP_CONTENT_DIR . '/e2e-log-backup'`;
 
-/** Copies the plugin's log files aside, for tests that change them (see restoreLogFiles). */
+/** PHP that moves the backed-up log files back in place of the current ones. */
+const PHP_RESTORE_LOG_FILES = `
+  $dir = ${PHP_LOG_DIR};
+  array_map('unlink', ${PHP_LOG_FILES});
+  foreach (glob(${PHP_LOG_BACKUP} . '/*') ?: [] as $file) rename($file, "$dir/" . basename($file));
+`;
+
+/**
+ * Copies the plugin's log files aside, for tests that change them (see
+ * restoreLogFiles). Restoring moves them back, so the backup folder is empty
+ * between tests. If it isn't, an earlier run stopped before restoring: what is
+ * there are the real logs, so they are put back first rather than replaced.
+ */
 export function backUpLogFiles(): void {
   wpEvalJson(`
     $backup = ${PHP_LOG_BACKUP};
     wp_mkdir_p($backup);
-    array_map('unlink', glob("$backup/*") ?: []);
+    if (glob("$backup/*")) {
+      ${PHP_RESTORE_LOG_FILES}
+    }
     foreach (${PHP_LOG_FILES} as $file) copy($file, "$backup/" . basename($file));
     return true;
   `);
@@ -175,13 +197,7 @@ export function backUpLogFiles(): void {
 
 /** Puts the plugin's log files back as backUpLogFiles() found them. */
 export function restoreLogFiles(): void {
-  wpEvalJson(`
-    $backup = ${PHP_LOG_BACKUP};
-    $dir = \\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory();
-    array_map('unlink', ${PHP_LOG_FILES});
-    foreach (glob("$backup/*") ?: [] as $file) rename($file, "$dir/" . basename($file));
-    return true;
-  `);
+  wpEvalJson(`${PHP_RESTORE_LOG_FILES} return true;`);
 }
 
 /** Delivers an event to the plugin's Stripe webhook endpoint, as Stripe would. */
@@ -284,7 +300,7 @@ export class JoinSettingsPage {
     // Clicking outside closes the picker.
     await field.locator('.cf-field__label').click();
     await expect(this.page.locator('.cf-color__picker')).toHaveCount(0);
-    await expect(field.locator('input[type="hidden"]')).toHaveValue(new RegExp(exactly(hex).source, 'i'));
+    await expect(field.locator('input[type="hidden"]')).toHaveValue(exactly(hex, 'i'));
   }
 
   /** Sets a rich text (editor) field's content to the given HTML. */
@@ -406,17 +422,24 @@ export class JoinSettingsPage {
     if (disabled) {
       return;
     }
-    const navigated = await Promise.all([
-      this.page.waitForNavigation({ timeout: 5000 }).then(
+    // A submit the browser lets through sends its request straight away; one
+    // it blocks sends nothing. So wait for the request, not the next page: a
+    // save that is made but slow must be waited for and checked, not taken
+    // for one the browser blocked.
+    const navigation = this.page.waitForNavigation();
+    navigation.catch(() => {}); // Never settles if the browser blocks the submit.
+    const sent = this.page
+      .waitForRequest((request) => request.isNavigationRequest() && request.method() === 'POST', { timeout: 5000 })
+      .then(
         () => true,
         () => false,
-      ),
-      publish.click(),
-    ]).then(([didNavigate]) => didNavigate);
-    if (!navigated) {
+      );
+    await publish.click();
+    if (!(await sent)) {
       // The browser blocked the submit.
       return;
     }
+    await navigation;
     expect(await this.errors(), 'expected the settings page to refuse the save').not.toEqual([]);
   }
 
