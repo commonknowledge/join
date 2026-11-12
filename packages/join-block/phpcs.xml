@@ -17,18 +17,16 @@
         <exclude name="PSR1.Files.SideEffects.FoundWithSymbols"/>
     </rule>
 
-    <!-- Test doubles mirror WordPress's snake_case APIs ($wpdb->get_results
-         and the like), and some tests use PHPUnit's test_snake_case names. -->
-    <rule ref="PSR1.Methods.CamelCapsMethodName.NotCamelCaps">
-        <exclude-pattern>tests/*</exclude-pattern>
-    </rule>
-
     <!-- CK_Theme_Options_Container extends Carbon Fields' snake_case API:
          to_json() overrides the parent method, so PSR12 naming cannot apply. -->
     <rule ref="Squiz.Classes.ValidClassName.NotCamelCaps">
         <exclude-pattern>src/CK_Theme_Options_Container.php</exclude-pattern>
     </rule>
+    <!-- Snake_case method names are also allowed in tests: test doubles
+         mirror WordPress's APIs ($wpdb->get_results and the like), and some
+         tests use PHPUnit's test_snake_case names. -->
     <rule ref="PSR1.Methods.CamelCapsMethodName.NotCamelCaps">
         <exclude-pattern>src/CK_Theme_Options_Container.php</exclude-pattern>
+        <exclude-pattern>tests/*</exclude-pattern>
     </rule>
 </ruleset>
