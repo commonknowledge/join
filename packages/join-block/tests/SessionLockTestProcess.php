@@ -28,7 +28,7 @@ $joinBlockLogLocation = sys_get_temp_dir() . '/join-block-tests.log';
 $joinBlockLogFile = fopen($joinBlockLogLocation, 'a');
 $joinBlockLog->pushHandler(new StreamHandler($joinBlockLogFile, Level::Info));
 
-$lockKey = $argv[1];
+$lockKey = $_SERVER['argv'][1];
 
 $joinBlockLog->info("Testing lock with key $lockKey");
 
