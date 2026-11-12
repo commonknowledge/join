@@ -2,7 +2,13 @@ import { Page, test as base, expect } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'fs';
 import os from 'os';
 import path from 'path';
-import { CONTINUE, captureJoinBodyViaStripeRedirect, loginAsAdmin, mockRestEndpoints, continueToPlans } from '../helpers';
+import {
+  CONTINUE,
+  captureJoinBodyViaStripeRedirect,
+  loginAsAdmin,
+  mockRestEndpoints,
+  continueToPlans,
+} from '../helpers';
 import { resetFakeApi } from './fake-api';
 import { JoinSettingsPage, STANDARD_JOIN_PAGE, postJoin, resetSettings, setBaselinePlan } from './support';
 

@@ -4,7 +4,6 @@ namespace CommonKnowledge\JoinBlock\Tests;
 
 use Brain\Monkey;
 use CommonKnowledge\JoinBlock\Settings;
-use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
 
@@ -160,10 +159,29 @@ class SettingsMembershipPlanLookupTest extends TestCase
     private function stubWpdbWithRows(array $rows): void
     {
         global $wpdb;
-        $wpdb = Mockery::mock();
-        $wpdb->options = 'wp_options';
-        $wpdb->shouldReceive('esc_like')->andReturnUsing(fn($s) => $s);
-        $wpdb->shouldReceive('prepare')->andReturnUsing(fn($sql) => $sql);
-        $wpdb->shouldReceive('get_results')->andReturn($rows);
+        // A plain stub rather than a Mockery double of \wpdb: WordPress isn't
+        // loaded here, and mocking the class would declare an empty global wpdb.
+        $wpdb = new class ($rows) {
+            public string $options = 'wp_options';
+
+            public function __construct(private array $rows)
+            {
+            }
+
+            public function prepare(string $query, ...$args): string
+            {
+                return $query;
+            }
+
+            public function esc_like(string $text): string
+            {
+                return $text;
+            }
+
+            public function get_results(string $query, $output = null): array
+            {
+                return $this->rows;
+            }
+        };
     }
 }

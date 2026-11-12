@@ -54,7 +54,7 @@ test.describe('With income guidance switched on', () => {
     await expect(field(container, 'Income guidance note')).toBeVisible();
   });
 
-  test('a block\'s own plans can be given income bands too', async ({ page }) => {
+  test("a block's own plans can be given income bands too", async ({ page }) => {
     await openNewPageWithJoinBlock(page, 'E2E Income Guidance Fields');
     const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
     await plansField.locator('.cf-complex__inserter-button').click();

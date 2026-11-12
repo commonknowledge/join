@@ -23,9 +23,6 @@ class SettingsComputeTagsToRemoveTest extends TestCase
     /** Values returned by the carbon_get_theme_option stub, keyed by field name. */
     private array $settings = [];
 
-    /** Plan rows returned by the $wpdb stub, as stored in wp_options. */
-    private array $storedPlans = [];
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,12 +46,10 @@ class SettingsComputeTagsToRemoveTest extends TestCase
             {
                 return $query;
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function esc_like(string $text): string
             {
                 return $text;
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function get_results(string $query, $output = null): array
             {
                 return $this->rows;

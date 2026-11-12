@@ -18,19 +18,44 @@ const path = require('path');
 const zlib = require('zlib');
 const { URL } = require('url');
 
+/**
+ * A request body as the fake parsed it: JSON or Stripe-style form data as an
+ * object, otherwise the raw text. Any shape can arrive, so it isn't narrowed.
+ * @typedef {any} Body
+ */
+/** @typedef {Record<string, any>} StripeObject An object in the fake Stripe, as JSON. */
+/** @typedef {{ status: number, body: unknown }} FakeResponse */
+/**
+ * A response override a test set through the control API.
+ * @typedef {{ host?: string, method?: string, path?: string, pathPattern?: RegExp | null, status?: number, body?: unknown }} Override
+ */
+/**
+ * @typedef {{ time: string, host: string, method?: string, path: string, query: Record<string, string>,
+ *   headers: import('http').IncomingHttpHeaders, body: Body }} RecordedRequest
+ */
+
+/** @type {RecordedRequest[]} */
 let requests = [];
+/** @type {Override[]} */
 let overrides = [];
 let stripe = freshStripe();
 let zetkin = freshZetkin();
 
+/** @returns {{ counter: number, objects: Record<string, StripeObject[]> }} */
 function freshStripe() {
   return { counter: 0, objects: { products: [], prices: [], customers: [], subscriptions: [], invoices: [] } };
 }
 
+/** @returns {{ counter: number, tags: { id: number, title: string }[] }} */
 function freshZetkin() {
   return { counter: 0, tags: [] };
 }
 
+/**
+ * @param {string} raw
+ * @param {string | undefined} contentType
+ * @returns {Body}
+ */
 function parseBody(raw, contentType) {
   if (!raw) return null;
   if ((contentType || '').includes('application/json')) {
@@ -46,8 +71,12 @@ function parseBody(raw, contentType) {
   return raw;
 }
 
-/** Stripe-style form encoding, with nested keys like metadata[membership_plan]. */
+/**
+ * Stripe-style form encoding, with nested keys like metadata[membership_plan].
+ * @param {string} raw
+ */
 function parseFormEncoded(raw) {
+  /** @type {Record<string, any>} */
   const result = {};
   for (const [key, value] of new URLSearchParams(raw)) {
     const parts = key.replace(/\]/g, '').split('[');
@@ -69,10 +98,14 @@ function parseFormEncoded(raw) {
  * sends: plain fields (?customer=cus_1), ranges (?created[gte]=...), and
  * subscriptions' status, where "all" means any and leaving it out means any
  * but canceled.
+ * @param {string} type
+ * @param {StripeObject[]} store
+ * @param {URL} url
  */
 function listStripe(type, store, url) {
   const ignored = ['limit', 'starting_after', 'ending_before'];
   const params = [...url.searchParams].filter(([key]) => !ignored.includes(key) && !key.startsWith('expand'));
+  /** @type {Record<string, (a: number, b: number) => boolean>} */
   const ranges = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b };
   const hasStatus = params.some(([key]) => key === 'status');
   return store.filter((object) => {
@@ -91,10 +124,16 @@ function listStripe(type, store, url) {
  * a test seeded it: an id and the fields every object has (seeded objects
  * can set their own, e.g. an older `created`), amounts as integers and
  * currencies in lowercase.
+ * @param {string} type
+ * @param {Body} fields
+ * @returns {StripeObject}
  */
 function newStripeObject(type, fields) {
-  const prefix = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub', invoices: 'in' }[type] || type;
+  /** @type {Record<string, string>} */
+  const prefixes = { products: 'prod', prices: 'price', customers: 'cus', subscriptions: 'sub', invoices: 'in' };
+  const prefix = prefixes[type] || type;
   stripe.counter += 1;
+  /** @type {StripeObject} */
   const object = {
     id: `${prefix}_e2e_${stripe.counter}`,
     object: type.replace(/s$/, ''),
@@ -112,6 +151,10 @@ function newStripeObject(type, fields) {
 /**
  * A tiny in-memory Stripe: enough for the plugin's product and price set-up,
  * and for the customer and subscription look-ups its webhook handlers make.
+ * @param {string | undefined} method
+ * @param {URL} url
+ * @param {Body} body
+ * @returns {FakeResponse | null}
  */
 function fakeStripe(method, url, body) {
   const match = url.pathname.match(/^\/v1\/([a-z_]+)(?:\/([^/]+))?$/);
@@ -139,7 +182,10 @@ function fakeStripe(method, url, body) {
     return { status: 200, body: { object: 'search_result', url: url.pathname, has_more: false, data } };
   }
   if (method === 'GET' && !idOrAction) {
-    return { status: 200, body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) } };
+    return {
+      status: 200,
+      body: { object: 'list', url: url.pathname, has_more: false, data: listStripe(type, store, url) },
+    };
   }
   if (method === 'POST' && !idOrAction) {
     const object = newStripeObject(type, body);
@@ -148,7 +194,9 @@ function fakeStripe(method, url, body) {
   }
   if (method === 'GET' && idOrAction) {
     const object = store.find((candidate) => candidate.id === idOrAction);
-    return object ? { status: 200, body: object } : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
+    return object
+      ? { status: 200, body: object }
+      : { status: 404, body: { error: { type: 'invalid_request_error', message: 'No such object' } } };
   }
   return null;
 }
@@ -156,6 +204,10 @@ function fakeStripe(method, url, body) {
 /**
  * A tiny in-memory Zetkin (api.zetk.in and api.dev.zetkin.org): enough for
  * the plugin's OAuth sign-in, adding a person and tagging them.
+ * @param {string | undefined} method
+ * @param {URL} url
+ * @param {Body} body
+ * @returns {FakeResponse | null}
  */
 function fakeZetkin(method, url, body) {
   const path = url.pathname.replace(/^\/v1/, '');
@@ -180,6 +232,13 @@ function fakeZetkin(method, url, body) {
   return null;
 }
 
+/**
+ * @param {string} host
+ * @param {string | undefined} method
+ * @param {URL} url
+ * @param {Body} body
+ * @returns {FakeResponse}
+ */
 function respond(host, method, url, body) {
   const override = overrides.find(
     (rule) =>
@@ -207,12 +266,17 @@ function respond(host, method, url, body) {
   return { status: 200, body: {} };
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleService(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
     const host = (request.headers.host || '').split(':')[0];
-    const url = new URL(request.url, `https://${host}`);
+    const url = new URL(request.url || '/', `https://${host}`);
     let buffer = Buffer.concat(chunks);
     // Sentry, for one, gzips what it sends. A body that won't unzip is
     // recorded as it came, rather than crashing the fake.
@@ -220,7 +284,7 @@ function handleService(request, response) {
       try {
         buffer = zlib.gunzipSync(buffer);
       } catch (error) {
-        console.error(`Could not gunzip a request to ${host}${request.url}: ${error.message}`);
+        console.error(`Could not gunzip a request to ${host}${request.url}: ${errorMessage(error)}`);
       }
     }
     const raw = buffer.toString('utf8');
@@ -240,10 +304,19 @@ function handleService(request, response) {
   });
 }
 
+/**
+ * @param {import('http').IncomingMessage} request
+ * @param {import('http').ServerResponse} response
+ */
 function handleControl(request, response) {
+  /** @type {Buffer[]} */
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
+    /**
+     * @param {number} status
+     * @param {unknown} body
+     */
     const send = (status, body) => {
       response.writeHead(status, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify(body));
@@ -254,7 +327,7 @@ function handleControl(request, response) {
       try {
         return JSON.parse(Buffer.concat(chunks).toString('utf8'));
       } catch (error) {
-        send(400, { error: `invalid JSON: ${error.message}` });
+        send(400, { error: `invalid JSON: ${errorMessage(error)}` });
         return undefined;
       }
     };
@@ -272,7 +345,7 @@ function handleControl(request, response) {
       try {
         rule.pathPattern = rule.path ? new RegExp(rule.path) : null;
       } catch (error) {
-        return send(400, { error: `invalid path pattern: ${error.message}` });
+        return send(400, { error: `invalid path pattern: ${errorMessage(error)}` });
       }
       overrides.unshift(rule);
       return send(200, { ok: true });
@@ -280,9 +353,11 @@ function handleControl(request, response) {
     // Puts an object straight into the fake Stripe, e.g. POST /stripe/customers
     // with {"id": "cus_1", "email": "..."}, for tests that need one to exist.
     // It is stored as Stripe would store it (newStripeObject).
-    const stripeSeed = request.url.match(/^\/stripe\/([a-z_]+)$/);
+    const stripeSeed = (request.url || '').match(/^\/stripe\/([a-z_]+)$/);
     if (request.method === 'POST' && stripeSeed && stripe.objects[stripeSeed[1]]) {
-      const object = newStripeObject(stripeSeed[1], JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      const fields = readJson();
+      if (fields === undefined) return;
+      const object = newStripeObject(stripeSeed[1], fields);
       stripe.objects[stripeSeed[1]].push(object);
       return send(200, object);
     }
@@ -291,9 +366,17 @@ function handleControl(request, response) {
   });
 }
 
+/** @param {unknown} error */
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 const certs = path.join(__dirname, 'certs');
 https
-  .createServer({ key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) }, handleService)
+  .createServer(
+    { key: fs.readFileSync(path.join(certs, 'server.key')), cert: fs.readFileSync(path.join(certs, 'server.crt')) },
+    handleService,
+  )
   .listen(443);
 http.createServer(handleService).listen(80);
 http.createServer(handleControl).listen(8080);

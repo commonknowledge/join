@@ -32,13 +32,14 @@ class StripeInvoicePaidTest extends TestCase
         $joinBlockLog = new class {
             public array $errors = [];
 
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function info(string $msg, array $ctx = []): void {}
+            public function info(string $msg, array $ctx = []): void
+            {
+            }
 
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function warning(string $msg, array $ctx = []): void {}
+            public function warning(string $msg, array $ctx = []): void
+            {
+            }
 
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function error(string $msg, array $ctx = []): void
             {
                 $this->errors[] = $msg;
@@ -52,7 +53,8 @@ class StripeInvoicePaidTest extends TestCase
     {
         global $joinBlockLog;
         $joinBlockLog = null;
-        \Stripe\ApiRequestor::setHttpClient(null);
+        // Back to the client Stripe uses by default.
+        \Stripe\ApiRequestor::setHttpClient(\Stripe\HttpClient\CurlClient::instance());
         Monkey\tearDown();
         parent::tearDown();
     }

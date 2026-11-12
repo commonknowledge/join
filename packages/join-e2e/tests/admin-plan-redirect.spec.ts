@@ -158,9 +158,9 @@ test.describe('Redirect help text', () => {
       await openNewPageWithJoinBlock(page, 'E2E Block Editor Redirect');
       const plansField = field(joinFormBlock(page), 'Custom Membership Plans');
       await plansField.locator('.cf-complex__inserter-button').click();
-      await expect(
-        plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first(),
-      ).toContainText(NOT_RECORDED);
+      await expect(plansField.locator('.cf-field.cf-checkbox', { hasText: REDIRECT_CHECKBOX }).first()).toContainText(
+        NOT_RECORDED,
+      );
     } finally {
       resetSettings();
     }
@@ -176,14 +176,13 @@ test.describe('Custom plans in the CK Join Form block', () => {
 
   // Same as above, but picks the page without the picker's search, so the
   // redirect itself stays covered while JOIN-158 is open.
-  test('a redirecting plan set up in the block editor redirects on the published page, picking the page from the full list', async ({ page }) => {
+  test('a redirecting plan set up in the block editor redirects on the published page, picking the page from the full list', async ({
+    page,
+  }) => {
     await redirectingPlanInBlockEditor(page, pickRedirectTargetFromList);
   });
 
-  async function redirectingPlanInBlockEditor(
-    page: Page,
-    choose: (picker: Locator) => Promise<void>,
-  ): Promise<void> {
+  async function redirectingPlanInBlockEditor(page: Page, choose: (picker: Locator) => Promise<void>): Promise<void> {
     await loginAsAdmin(page);
     await openNewPageWithJoinBlock(page, 'E2E Block Editor Redirect');
 

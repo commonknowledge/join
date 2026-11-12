@@ -6,6 +6,7 @@ parameters:
   paths:
     - src
     - join.php
+    - tests
   scanDirectories:
     - vendor
     - wordpress

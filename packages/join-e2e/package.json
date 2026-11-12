@@ -8,9 +8,12 @@
     "env:start": "bash scripts/env.sh start",
     "env:stop": "bash scripts/env.sh stop",
     "env:destroy": "bash scripts/env.sh destroy",
-    "pretest": "bash scripts/seed.sh"
+    "pretest": "bash scripts/seed.sh",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p fake-api"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.3"
   }
 }

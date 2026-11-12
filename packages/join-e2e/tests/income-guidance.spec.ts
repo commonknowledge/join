@@ -103,7 +103,10 @@ test.describe('On a phone', () => {
     await expect(table(page).locator('thead')).toBeHidden();
     const card = table(page).locator('tbody tr').first();
     await expect(card).toBeVisible();
-    const label = await card.locator('td').first().evaluate((td) => getComputedStyle(td, '::before').content);
+    const label = await card
+      .locator('td')
+      .first()
+      .evaluate((td) => getComputedStyle(td, '::before').content);
     expect(label).toBe('"Weekly income: "');
   });
 });

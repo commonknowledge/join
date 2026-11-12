@@ -54,14 +54,17 @@ class StripePriceReuseTest extends TestCase
 
         global $joinBlockLog;
         $joinBlockLog = new class {
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function info(string $msg, array $ctx = []): void {}
+            public function info(string $msg, array $ctx = []): void
+            {
+            }
 
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function warning(string $msg, array $ctx = []): void {}
+            public function warning(string $msg, array $ctx = []): void
+            {
+            }
 
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-            public function error(string $msg, array $ctx = []): void {}
+            public function error(string $msg, array $ctx = []): void
+            {
+            }
         };
 
         \Stripe\Stripe::setApiKey('sk_test_fake');
@@ -73,7 +76,7 @@ class StripePriceReuseTest extends TestCase
     {
         global $joinBlockLog;
         $joinBlockLog = null;
-        \Stripe\ApiRequestor::setHttpClient(null);
+        \Stripe\ApiRequestor::setHttpClient(\Stripe\HttpClient\CurlClient::instance());
         Monkey\tearDown();
         parent::tearDown();
     }

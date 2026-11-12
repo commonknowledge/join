@@ -23,15 +23,12 @@ class LapsingFilterTest extends TestCase
 
         global $joinBlockLog;
         $joinBlockLog = new class {
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function info($msg, $ctx = [])
             {
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function warning($msg, $ctx = [])
             {
             }
-            // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
             public function error($msg, $ctx = [])
             {
             }

@@ -17,7 +17,6 @@ import { CONTINUE, continueToPlans, mockRestEndpoints, MULTI_CURRENCY_PAGE } fro
  *   - "Standard" EUR €7/month  (id: standard-eur)
  */
 
-
 async function advanceToPlanStep(page: import('@playwright/test').Page) {
   await mockRestEndpoints(page);
   await page.goto(MULTI_CURRENCY_PAGE);

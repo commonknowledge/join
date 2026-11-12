@@ -200,8 +200,8 @@ class StripeWebhookTest extends TestCase
         $result = $this->callResolveTierTagChanges($newPlan, $oldPlan);
 
         $this->assertContains('high-wage', $result['addTags']);
-        $this->assertContains('member',    $result['addTags']);
-        $this->assertContains('low-wage',  $result['removeTags']);
+        $this->assertContains('member', $result['addTags']);
+        $this->assertContains('low-wage', $result['removeTags']);
         $this->assertNotContains('member', $result['removeTags'], 'member must not be removed when it is also being added');
     }
 
