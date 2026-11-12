@@ -142,6 +142,60 @@ export async function postJoin(request: APIRequestContext, data: Record<string, 
   });
 }
 
+/** Makes the plugin log an info line ("Recording CK Join form step"). */
+export async function logInfo(request: APIRequestContext): Promise<void> {
+  const response = await request.post('/wp-json/join/v1/step', { data: { email: 'someone@example.com', stage: 'details' } });
+  expect(response.ok()).toBe(true);
+}
+
+/** Makes the plugin log an error naming `plan` ("Invalid membership plan: <plan>"). */
+export async function logInvalidPlan(request: APIRequestContext, plan = 'no-such-plan'): Promise<void> {
+  const response = await request.post('/wp-json/join/v1/join', { data: { email: 'someone@example.com', membership: plan } });
+  expect(response.status()).toBe(500);
+}
+
+/**
+ * PHP for the plugin's log directory, for use in wpEvalJson(). Fails if the
+ * plugin has none (neither uploads nor wp-content writable), rather than let
+ * the helpers below work on files at the filesystem root.
+ */
+export const PHP_LOG_DIR = `(\\CommonKnowledge\\JoinBlock\\Logging::getLogDirectory() ?: throw new \\RuntimeException('The plugin has no log directory'))`;
+
+/** PHP for the paths of the plugin's log files, for use in wpEvalJson(). */
+export const PHP_LOG_FILES = `(glob(${PHP_LOG_DIR} . '/debug-*.log') ?: [])`;
+
+const PHP_LOG_BACKUP = `WP_CONTENT_DIR . '/e2e-log-backup'`;
+
+/** PHP that moves the backed-up log files back in place of the current ones. */
+const PHP_RESTORE_LOG_FILES = `
+  $dir = ${PHP_LOG_DIR};
+  array_map('unlink', ${PHP_LOG_FILES});
+  foreach (glob(${PHP_LOG_BACKUP} . '/*') ?: [] as $file) rename($file, "$dir/" . basename($file));
+`;
+
+/**
+ * Copies the plugin's log files aside, for tests that change them (see
+ * restoreLogFiles). Restoring moves them back, so the backup folder is empty
+ * between tests. If it isn't, an earlier run stopped before restoring: what is
+ * there are the real logs, so they are put back first rather than replaced.
+ */
+export function backUpLogFiles(): void {
+  wpEvalJson(`
+    $backup = ${PHP_LOG_BACKUP};
+    wp_mkdir_p($backup);
+    if (glob("$backup/*")) {
+      ${PHP_RESTORE_LOG_FILES}
+    }
+    foreach (${PHP_LOG_FILES} as $file) copy($file, "$backup/" . basename($file));
+    return true;
+  `);
+}
+
+/** Puts the plugin's log files back as backUpLogFiles() found them. */
+export function restoreLogFiles(): void {
+  wpEvalJson(`${PHP_RESTORE_LOG_FILES} return true;`);
+}
+
 /** Delivers an event to the plugin's Stripe webhook endpoint, as Stripe would. */
 export async function postStripeWebhook(request: APIRequestContext, type: string, data: Record<string, unknown>) {
   const response = await request.post('/wp-json/join/v1/stripe/webhook', { data: { type, data } });
